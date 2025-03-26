@@ -1,3 +1,5 @@
+[![Build & Push to GHCR](https://github.com/TRAC-Erzurum/trac-portal-ui/actions/workflows/docker-ghrc.yaml/badge.svg)](https://github.com/TRAC-Erzurum/trac-portal-ui/actions/workflows/docker-ghrc.yaml)
+
 # Nuxt 3 Minimal Starter
 
 Look at the [Nuxt 3 documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
