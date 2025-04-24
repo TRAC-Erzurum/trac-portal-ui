@@ -10,10 +10,11 @@
             <v-form @submit.prevent="handleSubmit" v-model="isFormValid">
               <v-text-field
                 v-model="identifier"
-                :label="$t('auth.identifierLabel')"
+                :label="$t('auth.callSign')"
                 required
                 :rules="identifierRules"
                 class="mb-2"
+                @input="handleCallSignInput"
               />
               <v-text-field
                 v-model="password"
@@ -143,5 +144,9 @@ const handleGoogleLogin = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const handleCallSignInput = () => {
+  identifier.value = identifier.value.toUpperCase()
 }
 </script>

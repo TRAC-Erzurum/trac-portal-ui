@@ -69,7 +69,7 @@
                 </div>
               </v-card-title>
 
-              <SessionTable
+              <SessionCardView
                 :sessions="sessions"
                 :loading="loading"
                 @start-session="startSession"
@@ -89,9 +89,8 @@ import { ref, onMounted } from 'vue'
 import { useApi } from '~/utils/api'
 import { useI18n } from 'vue-i18n'
 import { Role } from '~/constants/enums/role'
-import { REPEATER_FREQUENCY_LABELS } from '~/constants/enums/repeater-frequency'
 import { useCardStyles } from '~/composables/useCardStyles'
-import SessionTable from '~/components/SessionTable.vue'
+import SessionCardView from '~/components/SessionCardView.vue'
 
 const { t } = useI18n()
 const api = useApi()
