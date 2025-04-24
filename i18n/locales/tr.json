@@ -73,8 +73,8 @@
   "pages": {
     "dashboard": {
       "personal": "Kişisel İstatistiklerim",
-      "recentSessions": "Aktif Çevrimler",
-      "recentSessionsDescription": "Son 5 aktif çevrim",
+      "recentSessions": "Son Çevrimler",
+      "recentSessionsDescription": "Son 5 çevrim",
       "topOperatorsBySession": "En Çok Çevrim Yöneten Operatörler",
       "topOperatorsByParticipation": "En Çok Çevrime Katılan Operatörler",
       "topOperatorsBySignal": "Sinyal Gücü En Yüksek Operatörler",
@@ -238,7 +238,12 @@
     "noId": "Çevrim yok!",
     "existingAttendees": "Mevcut Katılımcılar",
     "backToSearch": "Yeniden Ara",
-    "exportError": "Katılımcılar dışa aktarılırken bir hata oluştu"
+    "exportError": "Katılımcılar dışa aktarılırken bir hata oluştu",
+    "edit": "Düzenle",
+    "updateSuccess": "Çevrim bilgileri başarıyla güncellendi",
+    "deleteAttendeeCount": "Çevrimde katılımcı bulunduğu için silinemez",
+    "deleteConfirm": "Bu çevrimi silmek istediğinizden emin misiniz?",
+    "deleteSuccess": "Çevrim başarıyla silindi"
   },
   "mode": {
     "fm": "FM",

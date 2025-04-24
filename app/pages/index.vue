@@ -148,7 +148,31 @@
                   </div>
                 </div>
               </div>
-              <v-tooltip text="Tümünü Gör">
+              <v-spacer></v-spacer>
+              <v-tooltip :text="$t('session.create')" v-if="$auth.user.value?.role === Role.ADMIN">
+                <template v-slot:activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    variant="tonal"
+                    color="primary"
+                    :to="'/sessions/create'"
+                    :icon="$vuetify.display.smAndDown"
+                    class="mr-2 hidden-sm-and-up"
+                  >
+                    <v-icon>mdi-plus</v-icon>
+                  </v-btn>
+                  <v-btn
+                    variant="tonal"
+                    color="primary"
+                    :to="'/sessions/create'"
+                    prepend-icon="mdi-plus"
+                    class="mr-2 hidden-xs"
+                  >
+                    {{ t('session.create') }}
+                  </v-btn>
+                </template>
+              </v-tooltip>
+              <v-tooltip :text="$t('common.viewAll')">
                 <template v-slot:activator="{ props }">
                   <v-btn
                     v-bind="props"
@@ -173,7 +197,7 @@
               </v-tooltip>
             </v-card-title>
             <v-card-text v-if="recentSessions.length">
-              <SessionTable
+              <SessionCardView
                 :sessions="recentSessions"
                 :loading="loadingSession"
                 :hide-pagination="true"
@@ -396,9 +420,8 @@
 
 <script setup>
 import { useI18n } from 'vue-i18n'
-import { REPEATER_FREQUENCY_LABELS } from '~/constants/enums/repeater-frequency'
 import { Role } from '~/constants/enums/role'
-import SessionTable from '~/components/SessionTable.vue'
+import SessionCardView from '~/components/SessionCardView.vue'
 
 const { $auth } = useNuxtApp()
 const api = useApi()

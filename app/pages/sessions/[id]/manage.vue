@@ -158,6 +158,14 @@
                 <v-icon size="24" class="mr-2">mdi-restart</v-icon>
                 {{ t('session.restart') }}
               </v-btn>
+              <v-btn
+                color="secondary"
+                size="large"
+                prepend-icon="mdi-pencil"
+                :to="`/sessions/${session.id}/edit`"
+              >
+                {{ t('session.edit') }}
+              </v-btn>
             </div>
           </div>
         </v-card-text>
@@ -170,6 +178,14 @@
               <div class="d-flex align-center">
                 <v-icon icon="mdi-account-group" size="24" class="mr-2" />
                 {{ t('session.attendees') }}
+                <v-btn
+                  class="ml-4"
+                  icon="mdi-refresh"
+                  size="small"
+                  variant="flat"
+                  :loading="loading"
+                  @click="fetchAttendees"
+                />
               </div>
 
               <div class="d-flex justify-end">
@@ -588,7 +604,7 @@ const attendeeHeaders = ref([
     width: '120px',
   },
   {
-    title: t('fullName'),
+    title: t('session.operator'),
     key: 'name',
     align: 'start',
   },
