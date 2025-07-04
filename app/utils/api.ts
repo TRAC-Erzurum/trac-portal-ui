@@ -57,8 +57,23 @@ export const useApi = () => {
   }
 
   return {
-    get: async (endpoint: string) => {
-      const url = `${baseUrl}${endpoint}`
+    get: async (endpoint: string, options?: { params?: Record<string, any> }) => {
+      let url = `${baseUrl}${endpoint}`
+
+      // Add query parameters if provided
+      if (options?.params) {
+        const searchParams = new URLSearchParams()
+        Object.entries(options.params).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            searchParams.append(key, value.toString())
+          }
+        })
+        const queryString = searchParams.toString()
+        if (queryString) {
+          url += `?${queryString}`
+        }
+      }
+
       console.debug('API GET Request:', url)
       try {
         const response = await fetch(url, {
