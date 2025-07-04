@@ -8,7 +8,7 @@ interface UserData {
   [key: string]: any
 }
 
-export default defineNuxtPlugin((_nuxtApp) => {
+export default defineNuxtPlugin(async (_nuxtApp) => {
   const user = useState<UserData | null>('user', () => null)
   const isAuthenticated = useState<boolean>('isAuthenticated', () => false)
   const isInitialized = useState<boolean>('isInitialized', () => false)
@@ -43,7 +43,7 @@ export default defineNuxtPlugin((_nuxtApp) => {
     user.value = userData
     isAuthenticated.value = !!userData
     console.debug('isAuthenticated', isAuthenticated.value)
-    if (userData) {
+    if (userData && import.meta.client) {
       console.debug('userData', userData)
       checkOperatorStatus(userData)
     }
@@ -60,6 +60,11 @@ export default defineNuxtPlugin((_nuxtApp) => {
   }
 
   const checkAuth = async () => {
+    // Prevent multiple simultaneous auth checks
+    if (isInitialized.value) {
+      return isAuthenticated.value
+    }
+
     try {
       const response = await api.get('/auth/check')
       console.debug('checkAuth response', response)
@@ -75,20 +80,20 @@ export default defineNuxtPlugin((_nuxtApp) => {
       console.error('Auth check failed:', error)
       setUser(null)
       return false
+    } finally {
+      isInitialized.value = true
     }
   }
 
-  if (import.meta.client) {
-    console.debug('initializing auth')
+  // Initialize auth on both server and client
+  console.debug('initializing auth')
 
-    checkAuth()
-      .then((isAuthenticated) => {
-        isInitialized.value = true
-        console.debug('Init auth completed', isAuthenticated)
-      })
-      .catch((error) => {
-        console.error('Init auth failed:', error)
-      })
+  try {
+    const isUserAuthenticated = await checkAuth()
+    console.debug('Init auth completed', isUserAuthenticated)
+  } catch (error) {
+    console.error('Init auth failed:', error)
+    isInitialized.value = true
   }
 
   return {
