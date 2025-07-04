@@ -182,7 +182,11 @@
     "operatorExists": "Bu operatör zaten mevcut",
     "alreadyInSession": "Bu operatör zaten çevrimde mevcut",
     "noGridSquare": "Locator bilgisi girilmemiş",
-    "noFullName": "Profile Git"
+    "noFullName": "Profile Git",
+    "country": "Ülke",
+    "city": "İl",
+    "district": "İlçe",
+    "importError": "Operatörler içe aktarılırken bir hata oluştu"
   },
   "session": {
     "list": "Çevrimler",
