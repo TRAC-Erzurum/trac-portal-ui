@@ -31,7 +31,7 @@
           <v-card class="custom-table-card">
             <v-card-title class="d-flex align-center py-4 px-6">
               <v-text-field
-                v-model="search"
+                v-model="searchQuery"
                 :label="t('operator.searchOperator')"
                 :placeholder="t('operator.searchOperatorPlaceholder')"
                 prepend-inner-icon="mdi-magnify"
@@ -40,6 +40,7 @@
                 hide-details
                 clearable
                 class="flex-grow-1"
+                @update:model-value="debouncedSearch"
               />
               <v-btn
                 class="ml-4"
@@ -47,15 +48,21 @@
                 size="small"
                 variant="flat"
                 :loading="loading"
-                @click="fetchOperators"
+                @click="loadOperators"
               />
             </v-card-title>
 
-            <v-data-table
+            <v-data-table-server
               :headers="headers"
-              :items="filteredOperators"
+              :items="operators"
               :loading="loading"
               :no-data-text="t('operator.noResults')"
+              :items-per-page="itemsPerPage"
+              :page="page"
+              :items-length="totalItems"
+              @update:page="onPageChange"
+              @update:items-per-page="onItemsPerPageChange"
+              @update:sort-by="onSortChange"
               hover
               class="custom-data-table"
             >
@@ -63,240 +70,162 @@
                 <v-skeleton-loader type="table-row" class="pa-4"></v-skeleton-loader>
               </template>
 
-              <template v-slot:header="{ props }">
-                <tr>
-                  <th
-                    v-for="header in props.headers"
-                    :key="header.key"
-                    class="text-primary font-weight-bold text-subtitle-2 px-6"
-                  >
-                    {{ header.title }}
-                  </th>
-                </tr>
+              <template v-slot:item.callSign="{ item }">
+                <v-tooltip :text="item.callSign" location="top">
+                  <template v-slot:activator="{ props }">
+                    <div class="text-truncate" v-bind="props">
+                      {{ formatCallSign(item) }}
+                    </div>
+                  </template>
+                </v-tooltip>
               </template>
 
-              <template v-slot:item="{ item }">
-                <tr
-                  :class="{
-                    'bg-error-lighten-4': item.user?.role === Role.GUEST,
-                    'bg-inactive-row': !item.user,
-                  }"
-                >
-                  <td class="px-6">
-                    <v-tooltip
-                      :text="`${item.prefix ? `${item.prefix}/` : ''}${item.callSign}${
-                        item.suffix ? `/${item.suffix}` : ''
-                      }`"
-                      location="top"
-                      :disabled="
-                        !shouldShowTooltip(
-                          `${item.prefix ? `${item.prefix}/` : ''}${item.callSign}${
-                            item.suffix ? `/${item.suffix}` : ''
-                          }`,
-                          cellRefs[`callSign-${item.id}`]
-                        )
-                      "
-                    >
-                      <template v-slot:activator="{ props }">
-                        <div
-                          class="text-truncate"
-                          v-bind="props"
-                          :ref="(el) => (cellRefs[`callSign-${item.id}`] = el)"
-                        >
-                          {{ item.prefix ? `${item.prefix}/` : '' }}{{ item.callSign
-                          }}{{ item.suffix ? `/${item.suffix}` : '' }}
-                        </div>
-                      </template>
-                    </v-tooltip>
-                  </td>
-
-                  <td class="px-6">
-                    <v-tooltip
-                      :text="formatQTH(item)"
-                      location="top"
-                      :disabled="!shouldShowTooltip(formatQTH(item), cellRefs[`qth-${item.id}`])"
-                    >
-                      <template v-slot:activator="{ props }">
-                        <div
-                          class="text-truncate d-flex align-center"
-                          v-bind="props"
-                          :ref="(el) => (cellRefs[`qth-${item.id}`] = el)"
-                        >
-                          <template v-if="canEdit(item)">
-                            <v-tooltip :text="t('operator.editQTH')" location="top">
-                              <template v-slot:activator="{ props }">
-                                <v-icon
-                                  size="small"
-                                  class="mr-2 clickable-cell"
-                                  v-bind="props"
-                                  @click="editQTH(item)"
-                                >
-                                  mdi-pencil
-                                </v-icon>
-                              </template>
-                            </v-tooltip>
-                          </template>
-                          {{ formatQTH(item) }}
-                        </div>
-                      </template>
-                    </v-tooltip>
-                  </td>
-
-                  <td class="px-6">
-                    <div class="d-flex align-center">
+              <template v-slot:item.qth="{ item }">
+                <v-tooltip :text="formatQTH(item)" location="top">
+                  <template v-slot:activator="{ props }">
+                    <div class="text-truncate d-flex align-center" v-bind="props">
                       <template v-if="canEdit(item)">
-                        <v-tooltip :text="t('operator.editGridSquare')" location="top">
+                        <v-tooltip :text="t('operator.editQTH')" location="top">
                           <template v-slot:activator="{ props }">
                             <v-icon
                               size="small"
                               class="mr-2 clickable-cell"
                               v-bind="props"
-                              @click="editGridSquare(item)"
+                              @click="editQTH(item)"
                             >
                               mdi-pencil
                             </v-icon>
                           </template>
                         </v-tooltip>
                       </template>
-                      <template v-if="item.gridSquare">
-                        <a
-                          :href="`https://k7fry.com/grid/?qth=${item.gridSquare}`"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="d-flex align-center"
-                        >
-                          {{ item.gridSquare }}
-                          <v-icon size="small" class="ml-2">mdi-open-in-new</v-icon>
-                        </a>
-                      </template>
-                      <template v-else>
-                        <a
-                          :href="`https://k7fry.com/grid`"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="d-flex align-center"
-                        >
-                          {{ t('common.find') }}
-                          <v-icon size="small" class="ml-2">mdi-open-in-new</v-icon>
-                        </a>
-                      </template>
+                      {{ formatQTH(item) }}
                     </div>
-                  </td>
-
-                  <td class="px-6">
-                    <v-tooltip
-                      v-if="item.user"
-                      :text="item.user.fullName"
-                      location="top"
-                      :disabled="
-                        !shouldShowTooltip(item.user.fullName, cellRefs[`name-${item.id}`])
-                      "
-                    >
-                      <template v-slot:activator="{ props }">
-                        <div
-                          class="text-truncate d-flex align-center"
-                          v-bind="props"
-                          :ref="(el) => (cellRefs[`name-${item.id}`] = el)"
-                          @click="navigateToUserProfile(item.user.id)"
-                        >
-                          <div class="d-flex flex-column">
-                            <span class="font-weight-medium">
-                              {{ item.user.fullName ?? t('operator.noFullName') }}
-                              <v-icon size="small">mdi-open-in-new</v-icon>
-                            </span>
-                            <span class="text-caption">{{ item.user.email }}</span>
-                          </div>
-                        </div>
-                      </template>
-                    </v-tooltip>
-                    <v-tooltip
-                      v-else-if="canEdit(item)"
-                      :text="item.fullName || '-'"
-                      location="top"
-                      :disabled="
-                        !shouldShowTooltip(item.fullName || '-', cellRefs[`name-${item.id}`])
-                      "
-                    >
-                      <template v-slot:activator="{ props }">
-                        <div
-                          class="text-truncate d-flex align-center"
-                          v-bind="props"
-                          :ref="(el) => (cellRefs[`name-${item.id}`] = el)"
-                        >
-                          <v-tooltip :text="t('operator.editFullName')" location="top">
-                            <template v-slot:activator="{ props }">
-                              <v-icon
-                                size="small"
-                                class="mr-2 clickable-cell"
-                                v-bind="props"
-                                @click="editFullName(item)"
-                              >
-                                mdi-pencil
-                              </v-icon>
-                            </template>
-                          </v-tooltip>
-                          {{ item.fullName || '-' }}
-                        </div>
-                      </template>
-                    </v-tooltip>
-                    <div v-else>{{ item.fullName || '-' }}</div>
-                  </td>
-
-                  <td class="px-6">
-                    <v-tooltip
-                      :text="formatDate(item.createdAt)"
-                      location="top"
-                      :disabled="
-                        !shouldShowTooltip(formatDate(item.createdAt), cellRefs[`date-${item.id}`])
-                      "
-                    >
-                      <template v-slot:activator="{ props }">
-                        <div
-                          class="text-truncate"
-                          v-bind="props"
-                          :ref="(el) => (cellRefs[`date-${item.id}`] = el)"
-                        >
-                          {{ formatDate(item.createdAt) }}
-                        </div>
-                      </template>
-                    </v-tooltip>
-                  </td>
-
-                  <template v-if="$auth.user.value?.role === Role.ADMIN">
-                    <td class="px-6">
-                      <v-select
-                        v-if="item.user"
-                        v-model="item.user.role"
-                        :items="roles"
-                        :loading="roleUpdateLoading[item.user.id]"
-                        density="comfortable"
-                        variant="outlined"
-                        hide-details
-                        class="custom-select"
-                        @update:model-value="updateUserRole(item.user)"
-                      />
-                      <v-btn
-                        v-if="!item.user"
-                        icon="mdi-delete"
-                        size="small"
-                        color="error"
-                        variant="text"
-                        @click="confirmDelete(item)"
-                        :disabled="item.sessionCount > 0"
-                      />
-                    </td>
                   </template>
-                </tr>
+                </v-tooltip>
               </template>
-            </v-data-table>
+
+              <template v-slot:item.gridSquare="{ item }">
+                <div class="d-flex align-center">
+                  <template v-if="canEdit(item)">
+                    <v-tooltip :text="t('operator.editGridSquare')" location="top">
+                      <template v-slot:activator="{ props }">
+                        <v-icon
+                          size="small"
+                          class="mr-2 clickable-cell"
+                          v-bind="props"
+                          @click="editGridSquare(item)"
+                        >
+                          mdi-pencil
+                        </v-icon>
+                      </template>
+                    </v-tooltip>
+                  </template>
+                  <template v-if="item.gridSquare">
+                    <a
+                      :href="`https://k7fry.com/grid/?qth=${item.gridSquare}`"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="d-flex align-center"
+                    >
+                      {{ item.gridSquare }}
+                      <v-icon size="small" class="ml-2">mdi-open-in-new</v-icon>
+                    </a>
+                  </template>
+                  <template v-else>
+                    <a
+                      href="https://k7fry.com/grid"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="d-flex align-center"
+                    >
+                      {{ t('common.find') }}
+                      <v-icon size="small" class="ml-2">mdi-open-in-new</v-icon>
+                    </a>
+                  </template>
+                </div>
+              </template>
+
+              <template v-slot:item.fullName="{ item }">
+                <v-tooltip v-if="item.user" :text="item.user.fullName" location="top">
+                  <template v-slot:activator="{ props }">
+                    <div
+                      class="text-truncate d-flex align-center"
+                      v-bind="props"
+                      @click="navigateToUserProfile(item.user.id)"
+                    >
+                      <div class="d-flex flex-column">
+                        <span class="font-weight-medium">
+                          {{ item.user.fullName || t('operator.noFullName') }}
+                          <v-icon size="small">mdi-open-in-new</v-icon>
+                        </span>
+                        <span class="text-caption">{{ item.user.email }}</span>
+                      </div>
+                    </div>
+                  </template>
+                </v-tooltip>
+                <v-tooltip v-else-if="canEdit(item)" :text="item.fullName || '-'" location="top">
+                  <template v-slot:activator="{ props }">
+                    <div class="text-truncate d-flex align-center" v-bind="props">
+                      <v-tooltip :text="t('operator.editFullName')" location="top">
+                        <template v-slot:activator="{ props }">
+                          <v-icon
+                            size="small"
+                            class="mr-2 clickable-cell"
+                            v-bind="props"
+                            @click="editFullName(item)"
+                          >
+                            mdi-pencil
+                          </v-icon>
+                        </template>
+                      </v-tooltip>
+                      {{ item.fullName || '-' }}
+                    </div>
+                  </template>
+                </v-tooltip>
+                <div v-else>{{ item.fullName || '-' }}</div>
+              </template>
+
+              <template v-slot:item.createdAt="{ item }">
+                <v-tooltip :text="formatDate(item.createdAt)" location="top">
+                  <template v-slot:activator="{ props }">
+                    <div class="text-truncate" v-bind="props">
+                      {{ formatDate(item.createdAt) }}
+                    </div>
+                  </template>
+                </v-tooltip>
+              </template>
+
+              <template v-slot:item.actions="{ item }" v-if="$auth.user.value?.role === Role.ADMIN">
+                <v-select
+                  v-if="item.user"
+                  v-model="item.user.role"
+                  :items="roles"
+                  :loading="roleUpdateLoading[item.user.id]"
+                  density="comfortable"
+                  variant="outlined"
+                  hide-details
+                  class="custom-select"
+                  @update:model-value="updateUserRole(item.user)"
+                />
+                <v-btn
+                  v-else
+                  icon="mdi-delete"
+                  size="small"
+                  color="error"
+                  variant="text"
+                  @click="confirmDelete(item)"
+                  :disabled="item.sessionCount > 0"
+                />
+              </template>
+            </v-data-table-server>
           </v-card>
 
-          <v-dialog v-model="showWarningDialog" max-width="600px">
+          <!-- Import Dialog -->
+          <v-dialog v-model="showImportDialog" max-width="600px">
             <v-card variant="elevated">
               <v-card-title>{{ t('operator.importMapping') }}</v-card-title>
               <v-card-text>
                 <p class="mb-4">{{ t('operator.importMappingText') }}</p>
-
                 <v-list>
                   <v-list-item v-for="field in mappableFields" :key="field.key">
                     <template v-slot:title>
@@ -313,7 +242,6 @@
                     />
                   </v-list-item>
                 </v-list>
-
                 <v-alert
                   v-if="!isCallSignMapped"
                   type="warning"
@@ -326,9 +254,9 @@
               </v-card-text>
               <v-card-actions>
                 <v-spacer></v-spacer>
-                <v-btn @click="showWarningDialog = false" variant="elevated" color="accent">{{
-                  t('cancel')
-                }}</v-btn>
+                <v-btn @click="showImportDialog = false" variant="elevated" color="accent">
+                  {{ t('cancel') }}
+                </v-btn>
                 <v-btn
                   color="primary"
                   @click="confirmImport"
@@ -341,6 +269,7 @@
             </v-card>
           </v-dialog>
 
+          <!-- Delete Dialog -->
           <v-dialog v-model="showDeleteDialog" max-width="400px">
             <v-card>
               <v-card-title>{{ t('operator.confirmDelete') }}</v-card-title>
@@ -360,9 +289,10 @@
       </v-card-text>
     </v-card>
 
+    <!-- Edit Modal -->
     <edit-modal
-      v-model="showEditDrawer"
-      :title="editDrawerTitle"
+      v-model="showEditModal"
+      :title="editModalTitle"
       :fields="editFields"
       :initial-data="editInitialData"
       :loading="editLoading"
@@ -379,7 +309,6 @@ import { Role } from '~/constants/enums/role'
 import { useCardStyles } from '~/composables/useCardStyles'
 import { useErrorMessage } from '~/composables/useErrorMessage'
 import EditModal from '~/components/EditModal.vue'
-import { useTruncate } from '~/composables/useTruncate'
 
 const { t } = useI18n()
 const api = useApi()
@@ -388,28 +317,48 @@ const { successToast, errorToast } = useToast()
 const { formatDate } = useFormatDate()
 const { getIconColor } = useCardStyles()
 const { getErrorMessage } = useErrorMessage()
-const { shouldShowTooltip } = useTruncate()
 
-const loading = ref(true)
+// Reactive state
+const loading = ref(false)
 const operators = ref([])
+const totalItems = ref(0)
+const page = ref(1)
+const itemsPerPage = ref(50)
+const searchQuery = ref('')
+const sortBy = ref([])
+
+// Role management
 const roleUpdateLoading = ref({})
-const fileInput = ref(null)
+
+// Import functionality
 const importing = ref(false)
-const showWarningDialog = ref(false)
+const showImportDialog = ref(false)
+const fileInput = ref(null)
 const selectedFile = ref(null)
 const columnMapping = ref({})
 const availableColumns = ref([])
+
+// Delete functionality
 const showDeleteDialog = ref(false)
 const deleting = ref(false)
 const operatorToDelete = ref(null)
-const search = ref('')
+
+// Edit functionality
+const showEditModal = ref(false)
+const editType = ref(null)
+const editItem = ref(null)
+const editLoading = ref(false)
+
+// Table headers
 const headers = ref([
-  { title: t('operator.callSign'), key: 'callSign' },
-  { title: t('operator.qth'), key: 'qth' },
-  { title: t('operator.gridSquare'), key: 'gridSquare' },
-  { title: t('operator.fullName'), key: 'fullName' },
-  { title: t('operator.createdAt'), key: 'createdAt' },
+  { title: t('operator.callSign'), key: 'callSign', sortable: true },
+  { title: t('operator.qth'), key: 'qth', sortable: true },
+  { title: t('operator.gridSquare'), key: 'gridSquare', sortable: true },
+  { title: t('operator.fullName'), key: 'fullName', sortable: true },
+  { title: t('operator.createdAt'), key: 'createdAt', sortable: true },
 ])
+
+// Import fields mapping
 const mappableFields = [
   { key: 'callSign', required: true },
   { key: 'country', required: false },
@@ -418,170 +367,18 @@ const mappableFields = [
   { key: 'fullName', required: false },
 ]
 
+// Role options
 const roles = Object.values(Role).map((role) => ({
   title: t(`roles.${role}`),
   value: role,
 }))
 
+// Computed properties
 const isCallSignMapped = computed(() => {
   return !!columnMapping.value.callSign
 })
 
-const filteredOperators = computed(() => {
-  if (!search.value) return operators.value
-
-  const searchTerm = search.value.toLowerCase()
-  return operators.value.filter((operator) => {
-    const callSign = `${operator.prefix || ''}${operator.callSign}${
-      operator.suffix || ''
-    }`.toLowerCase()
-    const fullName = operator.user
-      ? (operator.user.fullName || '').toLowerCase()
-      : (operator.fullName || '').toLowerCase()
-    const qth = formatQTH(operator).toLowerCase()
-
-    return (
-      callSign.includes(searchTerm) || fullName.includes(searchTerm) || qth.includes(searchTerm)
-    )
-  })
-})
-
-const formatQTH = (item) => {
-  return [item.district, item.city, item.country].filter((i) => i).join(', ')
-}
-
-const fetchOperators = async () => {
-  try {
-    loading.value = true
-    const response = await api.get('/operator')
-    operators.value = response
-  } catch (error) {
-    errorToast(t('common.error', { error: error.message }))
-    console.error('Error fetching operators:', error)
-    operators.value = []
-  } finally {
-    loading.value = false
-  }
-}
-
-const navigateToUserProfile = (userId) => {
-  return navigateTo(`/users/${userId}/profile`)
-}
-
-const updateUserRole = async (user) => {
-  try {
-    roleUpdateLoading.value[user.id] = true
-    await api.patch(`/user/${user.id}/role`, { role: user.role })
-    successToast(t('role.updated'))
-  } catch (error) {
-    errorToast(t('common.error', { error: error.message }))
-  } finally {
-    roleUpdateLoading.value[user.id] = false
-  }
-}
-
-const triggerFileInput = () => {
-  fileInput.value.click()
-}
-
-const handleFileUpload = async (event) => {
-  const file = event.target.files[0]
-  if (!file) return
-
-  if (!file.name.endsWith('.csv')) {
-    errorToast(t('operator.invalidFileType'))
-    event.target.value = ''
-    return
-  }
-
-  try {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const firstLine = e.target.result.split('\n')[0]
-      availableColumns.value = firstLine.split(',').map((header) => ({
-        title: header.trim(),
-        value: header.trim(),
-      }))
-      columnMapping.value = {}
-      selectedFile.value = file
-      showWarningDialog.value = true
-    }
-    reader.readAsText(file)
-  } catch (error) {
-    errorToast(getErrorMessage(error))
-    console.error('File upload error:', error)
-  }
-}
-
-const confirmImport = async () => {
-  if (!selectedFile.value) return
-
-  importing.value = true
-  showWarningDialog.value = false
-
-  try {
-    const formData = new FormData()
-    formData.append('file', selectedFile.value)
-    formData.append('mapping', JSON.stringify(columnMapping.value))
-
-    await api.upload('/operator/import', formData)
-    successToast(t('operator.importSuccess'))
-    await fetchOperators()
-  } catch (error) {
-    errorToast(t('operator.importError', { error: error.message }))
-    console.error('File upload error:', error)
-  } finally {
-    importing.value = false
-    selectedFile.value = null
-    fileInput.value.value = ''
-    columnMapping.value = {}
-  }
-}
-
-const confirmDelete = (operator) => {
-  operatorToDelete.value = operator
-  showDeleteDialog.value = true
-}
-
-const deleteOperator = async () => {
-  if (!operatorToDelete.value) return
-
-  try {
-    deleting.value = true
-    await api.delete(`/operator/${operatorToDelete.value.id}`)
-    successToast(t('operator.deleteSuccess'))
-    await fetchOperators()
-  } catch (error) {
-    errorToast(getErrorMessage(error))
-  } finally {
-    deleting.value = false
-    showDeleteDialog.value = false
-    operatorToDelete.value = null
-  }
-}
-
-const canEdit = (operator) => {
-  return $auth.user.value?.role === Role.ADMIN && !operator.user
-}
-
-const editQTH = (item) => {
-  editType.value = 'qth'
-  editItem.value = item
-  showEditDrawer.value = true
-}
-
-const editGridSquare = (item) => {
-  editType.value = 'gridSquare'
-  editItem.value = item
-  showEditDrawer.value = true
-}
-
-const showEditDrawer = ref(false)
-const editType = ref(null)
-const editItem = ref(null)
-const editLoading = ref(false)
-
-const editDrawerTitle = computed(() => {
+const editModalTitle = computed(() => {
   switch (editType.value) {
     case 'qth':
       return t('operator.editQTH')
@@ -650,6 +447,202 @@ const editInitialData = computed(() => {
   }
 })
 
+// Debounced search function
+let searchTimeout = null
+const debouncedSearch = () => {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    page.value = 1 // Reset to first page when searching
+    loadOperators()
+  }, 500)
+}
+
+// Load operators from API
+const loadOperators = async () => {
+  loading.value = true
+  try {
+    const params = {
+      pageNumber: page.value,
+      pageSize: itemsPerPage.value,
+      sort: sortBy.value.length > 0 ? sortBy.value[0].order.toUpperCase() : 'DESC',
+    }
+
+    if (searchQuery.value) {
+      params.search = searchQuery.value
+    }
+
+    const response = await api.get('/operator', { params })
+
+    operators.value = response.data || []
+    totalItems.value = response.total || 0
+
+    console.log('Loaded operators:', operators.value.length, 'Total:', totalItems.value)
+  } catch (error) {
+    console.error('Error loading operators:', error)
+    errorToast(getErrorMessage(error))
+    operators.value = []
+    totalItems.value = 0
+  } finally {
+    loading.value = false
+  }
+}
+
+// Event handlers
+const onPageChange = (newPage) => {
+  page.value = newPage
+  loadOperators()
+}
+
+const onItemsPerPageChange = (newItemsPerPage) => {
+  itemsPerPage.value = newItemsPerPage
+  page.value = 1
+  loadOperators()
+}
+
+const onSortChange = (newSortBy) => {
+  sortBy.value = newSortBy
+  page.value = 1
+  loadOperators()
+}
+
+// Utility functions
+const formatCallSign = (operator) => {
+  if (operator.prefix) {
+    return `${operator.prefix}/${operator.callSign}${operator.suffix ? `/${operator.suffix}` : ''}`
+  }
+  return operator.callSign
+}
+
+const formatQTH = (operator) => {
+  return [operator.district, operator.city, operator.country].filter(Boolean).join(', ')
+}
+
+const canEdit = (operator) => {
+  return $auth.user.value?.role === Role.ADMIN && !operator.user
+}
+
+const navigateToUserProfile = (userId) => {
+  return navigateTo(`/users/${userId}/profile`)
+}
+
+// Role management
+const updateUserRole = async (user) => {
+  try {
+    roleUpdateLoading.value[user.id] = true
+    await api.patch(`/user/${user.id}/role`, { role: user.role })
+    successToast(t('role.updated'))
+  } catch (error) {
+    errorToast(getErrorMessage(error))
+  } finally {
+    roleUpdateLoading.value[user.id] = false
+  }
+}
+
+// Import functionality
+const triggerFileInput = () => {
+  fileInput.value.click()
+}
+
+const handleFileUpload = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  if (!file.name.endsWith('.csv')) {
+    errorToast(t('operator.invalidFileType'))
+    event.target.value = ''
+    return
+  }
+
+  try {
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const firstLine = e.target.result.split('\n')[0]
+      availableColumns.value = firstLine.split(',').map((header) => ({
+        title: header.trim().replace(/^"|"$/g, ''),
+        value: header.trim().replace(/^"|"$/g, ''),
+      }))
+      columnMapping.value = {}
+      selectedFile.value = file
+      showImportDialog.value = true
+    }
+    reader.readAsText(file)
+  } catch (error) {
+    errorToast(getErrorMessage(error))
+  }
+}
+
+const confirmImport = async () => {
+  if (!selectedFile.value) return
+
+  importing.value = true
+  showImportDialog.value = false
+
+  try {
+    const formData = new FormData()
+    formData.append('file', selectedFile.value)
+
+    const cleanMapping = Object.entries(columnMapping.value).reduce((acc, [key, value]) => {
+      acc[key] = value.replace(/^"|"$/g, '')
+      return acc
+    }, {})
+
+    formData.append('mapping', JSON.stringify(cleanMapping))
+
+    await api.upload('/operator/import', formData)
+    successToast(t('operator.importSuccess'))
+    await loadOperators()
+  } catch (error) {
+    errorToast(getErrorMessage(error))
+  } finally {
+    importing.value = false
+    selectedFile.value = null
+    fileInput.value.value = ''
+    columnMapping.value = {}
+  }
+}
+
+// Delete functionality
+const confirmDelete = (operator) => {
+  operatorToDelete.value = operator
+  showDeleteDialog.value = true
+}
+
+const deleteOperator = async () => {
+  if (!operatorToDelete.value) return
+
+  try {
+    deleting.value = true
+    await api.delete(`/operator/${operatorToDelete.value.id}`)
+    successToast(t('operator.deleteSuccess'))
+    await loadOperators()
+  } catch (error) {
+    errorToast(getErrorMessage(error))
+  } finally {
+    deleting.value = false
+    showDeleteDialog.value = false
+    operatorToDelete.value = null
+  }
+}
+
+// Edit functionality
+const editQTH = (item) => {
+  editType.value = 'qth'
+  editItem.value = item
+  showEditModal.value = true
+}
+
+const editGridSquare = (item) => {
+  editType.value = 'gridSquare'
+  editItem.value = item
+  showEditModal.value = true
+}
+
+const editFullName = (item) => {
+  editType.value = 'fullName'
+  editItem.value = item
+  showEditModal.value = true
+}
+
 const handleEditSave = async (data) => {
   try {
     editLoading.value = true
@@ -677,42 +670,45 @@ const handleEditSave = async (data) => {
     }
 
     await api.patch(`/operator/${operatorId}`, updatedData)
-
-    const operatorIndex = operators.value.findIndex((op) => op.id === operatorId)
-    if (operatorIndex !== -1) {
-      operators.value[operatorIndex] = {
-        ...operators.value[operatorIndex],
-        ...updatedData,
-      }
-    }
-
     successToast(t('operator.updateSuccess'))
-    showEditDrawer.value = false
+    showEditModal.value = false
+    await loadOperators()
   } catch (error) {
-    errorToast(t('common.error', { error: error.message }))
+    errorToast(getErrorMessage(error))
   } finally {
     editLoading.value = false
   }
 }
 
-const editFullName = (item) => {
-  editType.value = 'fullName'
-  editItem.value = item
-  showEditDrawer.value = true
-}
-
-const cellRefs = ref({})
-
+// Lifecycle
 onMounted(() => {
   if ($auth.user.value?.role === Role.ADMIN) {
     headers.value.push({ title: t('common.actions'), key: 'actions', sortable: false })
   }
-
-  fetchOperators()
+  loadOperators()
 })
 
+// Page meta
 definePageMeta({
   requiresAuth: true,
   roles: [Role.ADMIN, Role.MEMBER, Role.VOLUNTEER],
 })
 </script>
+
+<style scoped>
+.clickable-cell {
+  cursor: pointer;
+}
+
+.custom-select {
+  min-width: 120px;
+}
+
+.bg-error-lighten-4 {
+  background-color: rgba(244, 67, 54, 0.1);
+}
+
+.bg-inactive-row {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+</style>

@@ -45,7 +45,7 @@
                   <v-col cols="12" sm="6">
                     <v-text-field
                       v-model="form.country"
-                      :label="$t('operator.country')"
+                      :label="$t('qth.country')"
                       variant="outlined"
                       prepend-inner-icon="mdi-earth"
                       class="input-field"
@@ -54,7 +54,7 @@
                   <v-col cols="12" sm="6">
                     <v-text-field
                       v-model="form.city"
-                      :label="$t('operator.city')"
+                      :label="$t('qth.city')"
                       variant="outlined"
                       prepend-inner-icon="mdi-city"
                       class="input-field"
@@ -63,7 +63,7 @@
                   <v-col cols="12" sm="6">
                     <v-text-field
                       v-model="form.district"
-                      :label="$t('operator.district')"
+                      :label="$t('qth.district')"
                       variant="outlined"
                       prepend-inner-icon="mdi-map-marker-radius"
                       class="input-field"
