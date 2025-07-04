@@ -149,4 +149,8 @@ const handleGoogleLogin = async () => {
 const handleCallSignInput = () => {
   identifier.value = identifier.value.toUpperCase()
 }
+
+definePageMeta({
+  requiresAuth: false,
+})
 </script>
