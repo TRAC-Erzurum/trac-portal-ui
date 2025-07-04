@@ -259,6 +259,7 @@ const exportToCsv = async () => {
 
 definePageMeta({
   layout: 'print',
+  requiresAuth: true,
   key: (route) => route.fullPath,
 })
 </script>

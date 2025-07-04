@@ -32,7 +32,7 @@ export default defineNuxtPlugin(async (_nuxtApp) => {
       return
     }
 
-    if (!userData.callSign && window.location.pathname !== '/profile') {
+    if (!userData.callSign && import.meta.client && window.location.pathname !== '/profile') {
       console.debug('user has no call sign, navigating to create operator')
       return navigateTo(`/users/${userData.id}/operator/create`)
     }
@@ -45,7 +45,10 @@ export default defineNuxtPlugin(async (_nuxtApp) => {
     console.debug('isAuthenticated', isAuthenticated.value)
     if (userData && import.meta.client) {
       console.debug('userData', userData)
-      checkOperatorStatus(userData)
+      // Use nextTick to avoid immediate redirects during login
+      nextTick(() => {
+        checkOperatorStatus(userData)
+      })
     }
   }
 
