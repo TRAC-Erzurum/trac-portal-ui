@@ -32,7 +32,7 @@ export default defineNuxtPlugin((_nuxtApp) => {
       return
     }
 
-    if (!userData.callSign && window.location.pathname !== '/profile') {
+    if (!userData.callSign && import.meta.client && window.location.pathname !== '/profile') {
       console.debug('user has no call sign, navigating to create operator')
       return navigateTo(`/users/${userData.id}/operator/create`)
     }
@@ -43,9 +43,12 @@ export default defineNuxtPlugin((_nuxtApp) => {
     user.value = userData
     isAuthenticated.value = !!userData
     console.debug('isAuthenticated', isAuthenticated.value)
-    if (userData) {
+    if (userData && import.meta.client) {
       console.debug('userData', userData)
-      checkOperatorStatus(userData)
+      // Use nextTick to avoid immediate redirects during login
+      nextTick(() => {
+        checkOperatorStatus(userData)
+      })
     }
   }
 
@@ -66,14 +69,17 @@ export default defineNuxtPlugin((_nuxtApp) => {
       if (response?.user) {
         console.debug('auth checked, setting user', response.user)
         setUser(response.user)
+        isInitialized.value = true
         return true
       }
       console.debug('auth checked, setting user to null')
       setUser(null)
+      isInitialized.value = true
       return false
     } catch (error) {
       console.error('Auth check failed:', error)
       setUser(null)
+      isInitialized.value = true
       return false
     }
   }
@@ -83,11 +89,11 @@ export default defineNuxtPlugin((_nuxtApp) => {
 
     checkAuth()
       .then((isAuthenticated) => {
-        isInitialized.value = true
         console.debug('Init auth completed', isAuthenticated)
       })
       .catch((error) => {
         console.error('Init auth failed:', error)
+        isInitialized.value = true
       })
   }
 

@@ -114,12 +114,16 @@ const passwordRules = computed(() => [(v) => !!v || t('auth.passwordRequired')])
 const handleSubmit = async () => {
   loading.value = true
   try {
+    console.debug('Login attempt for:', identifier.value)
+
     await api.post('/auth/login', {
       identifier: identifier.value,
       password: password.value,
     })
 
-    await $auth.checkAuth()
+    console.debug('Login successful, checking auth...')
+    const authResult = await $auth.checkAuth()
+    console.debug('Auth check result:', authResult, 'User:', $auth.user.value)
 
     if (query.returnUrl) {
       navigateTo(decodeURIComponent(query.returnUrl))
@@ -149,4 +153,8 @@ const handleGoogleLogin = async () => {
 const handleCallSignInput = () => {
   identifier.value = identifier.value.toUpperCase()
 }
+
+definePageMeta({
+  requiresAuth: false,
+})
 </script>
