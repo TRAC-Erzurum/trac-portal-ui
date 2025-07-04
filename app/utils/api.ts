@@ -15,6 +15,7 @@ export const useApi = () => {
       status: response.status,
       statusText: response.statusText,
       url: response.url,
+      isAuthCheck: response.url.includes('/auth/check'),
     })
 
     if (!response.ok) {
@@ -23,7 +24,12 @@ export const useApi = () => {
 
       if (response.status === 401) {
         console.debug('401, logging out')
-        await $auth?.logout()
+        if (
+          !window.location.pathname.includes('/login') &&
+          !window.location.pathname.includes('/register')
+        ) {
+          await $auth?.logout()
+        }
         errorMessage = 'Unauthorized'
       }
 
@@ -49,7 +55,13 @@ export const useApi = () => {
       }
 
       console.debug('Response will be parsed as JSON')
-      return JSON.parse(text)
+      const parsedData = JSON.parse(text)
+
+      if (response.url.includes('/auth/check')) {
+        console.debug('Auth check response data:', parsedData)
+      }
+
+      return parsedData
     } catch (e) {
       console.error('Failed to parse response:', e)
       return {}

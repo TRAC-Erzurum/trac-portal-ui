@@ -351,7 +351,7 @@ const hasExactMatch = computed(() => {
 
 const handleAddAttendee = () => {
   emit('add-attendee', {
-    callSign: newAttendee.value.builtCallSign,
+    callSign: newAttendee.value.builtCallSign.trim(),
     name: newAttendee.value.fullName,
     country: newAttendee.value.qthData.country || null,
     city: newAttendee.value.qthData.city || null,
@@ -389,7 +389,7 @@ const handleNewOperator = () => {
 }
 
 const preventSlash = (e) => {
-  if (e.key === '/') {
+  if (e.key === '/' || e.key === ' ') {
     e.preventDefault()
   }
 }
