@@ -193,4 +193,8 @@ const handleSubmit = async () => {
     loading.value = false
   }
 }
+
+definePageMeta({
+  requiresAuth: false,
+})
 </script>

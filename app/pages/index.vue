@@ -601,6 +601,10 @@ watch(
   },
   { immediate: true }
 )
+
+definePageMeta({
+  requiresAuth: false,
+})
 </script>
 
 <style lang="scss" scoped>
