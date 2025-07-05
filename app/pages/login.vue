@@ -126,9 +126,9 @@ const handleSubmit = async () => {
     console.debug('Auth check result:', authResult, 'User:', $auth.user.value)
 
     if (query.returnUrl) {
-      navigateTo(decodeURIComponent(query.returnUrl))
+      await navigateTo(decodeURIComponent(query.returnUrl))
     } else {
-      navigateTo('/')
+      await navigateTo('/')
     }
   } catch (error) {
     errorToast(getErrorMessage(error))

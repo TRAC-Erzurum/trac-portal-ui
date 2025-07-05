@@ -15,37 +15,19 @@ export default defineNuxtPlugin(async (_nuxtApp) => {
 
   const api = useApi()
 
-  console.debug(
-    'Auth plugin defined',
-    'User:',
-    user.value,
-    'isAuthenticated:',
-    isAuthenticated.value,
-    'API:',
-    api
-  )
-
   const checkOperatorStatus = (userData: UserData) => {
-    console.debug('checking operator status for', userData)
-    if (userData.role === Role.GUEST) {
-      console.debug('user is guest')
-      return
-    }
+    if (userData.role === Role.GUEST) return
 
     if (!userData.callSign && import.meta.client && window.location.pathname !== '/profile') {
-      console.debug('user has no call sign, navigating to create operator')
       return navigateTo(`/users/${userData.id}/operator/create`)
     }
   }
 
   const setUser = (userData: UserData | null) => {
-    console.debug('setting user to', userData)
     user.value = userData
     isAuthenticated.value = !!userData
-    console.debug('isAuthenticated', isAuthenticated.value)
+
     if (userData && import.meta.client) {
-      console.debug('userData', userData)
-      // Use nextTick to avoid immediate redirects during login
       nextTick(() => {
         checkOperatorStatus(userData)
       })
@@ -63,20 +45,14 @@ export default defineNuxtPlugin(async (_nuxtApp) => {
   }
 
   const checkAuth = async () => {
-    // Prevent multiple simultaneous auth checks
-    if (isInitialized.value) {
-      return isAuthenticated.value
-    }
-
     try {
       const response = await api.get('/auth/check')
-      console.debug('checkAuth response', response)
+
       if (response?.user) {
-        console.debug('auth checked, setting user', response.user)
         setUser(response.user)
         return true
       }
-      console.debug('auth checked, setting user to null')
+
       setUser(null)
       return false
     } catch (error) {
@@ -88,15 +64,15 @@ export default defineNuxtPlugin(async (_nuxtApp) => {
     }
   }
 
-  // Initialize auth on both server and client
-  console.debug('initializing auth')
-
-  try {
-    const isUserAuthenticated = await checkAuth()
-    console.debug('Init auth completed', isUserAuthenticated)
-  } catch (error) {
-    console.error('Init auth failed:', error)
-    isInitialized.value = true
+  if (import.meta.client) {
+    checkAuth()
+      .then((isAuthenticated) => {
+        console.debug('Auth initialized:', isAuthenticated)
+      })
+      .catch((error) => {
+        console.error('Auth init failed:', error)
+        isInitialized.value = true
+      })
   }
 
   return {

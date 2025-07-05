@@ -1,23 +1,32 @@
 import { Role, roleHierarchy } from '~/constants/enums/role'
 
 export default defineNuxtRouteMiddleware(async (to) => {
-  const { $auth } = useNuxtApp()
+  // Skip middleware on server-side to prevent SSR redirect issues
+  if (process.server) return
 
-  console.debug('global auth middleware', to.path, 'initialized:', $auth.isInitialized.value)
+  const { $auth } = useNuxtApp()
 
   // Wait for auth initialization if not ready
   if (!$auth.isInitialized.value) {
-    console.debug('waiting for auth initialization...')
     let attempts = 0
-    while (!$auth.isInitialized.value && attempts < 100) {
+    const maxAttempts = 200 // 10 seconds
+
+    while (!$auth.isInitialized.value && attempts < maxAttempts) {
       await new Promise((resolve) => setTimeout(resolve, 50))
       attempts++
+    }
+
+    if (!$auth.isInitialized.value) {
+      console.warn('Auth initialization timed out')
     }
   }
 
   // Handle login page when already authenticated
   if (to.path === '/login' && $auth.isAuthenticated.value) {
-    console.debug('redirecting to home', $auth.isAuthenticated.value)
+    const returnUrl = to.query.returnUrl as string
+    if (returnUrl) {
+      return navigateTo(decodeURIComponent(returnUrl))
+    }
     return navigateTo('/')
   }
 
@@ -25,16 +34,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const publicRoutes = ['/login', '/register', '/', '/privacy-policy', '/403']
   const isPublicRoute = publicRoutes.includes(to.path) || to.meta.requiresAuth === false
 
-  if (isPublicRoute) {
-    console.debug('allowing public route:', to.path)
-    return
-  }
+  if (isPublicRoute) return
 
   // Check authentication for protected routes
-  console.debug('checking auth for protected route:', to.path)
-
   if (!$auth.isAuthenticated.value) {
-    console.debug('not authenticated, redirecting to login')
     return navigateTo(`/login?returnUrl=${encodeURIComponent(to.fullPath)}`)
   }
 
@@ -42,13 +45,10 @@ export default defineNuxtRouteMiddleware(async (to) => {
   const userRole = $auth.user.value?.role
   const requiredRoles = to.meta.roles as Role[]
 
-  console.debug('userRole:', userRole, 'requiredRoles:', requiredRoles)
-
   if (
     requiredRoles &&
     (!userRole || !requiredRoles.some((role) => roleHierarchy[userRole].includes(role)))
   ) {
-    console.debug('insufficient role, redirecting to 403')
     return navigateTo('/403')
   }
 })
