@@ -210,6 +210,7 @@
                   v-model="showNewAttendeeModal"
                   :session-id="session?.id"
                   :existing-call-signs="attendees?.map((a) => a.callSign)"
+                  :attendees="attendees"
                   @add-attendee="addAttendee"
                 />
               </div>
@@ -227,6 +228,12 @@
               >
                 <template v-slot:loading>
                   <v-skeleton-loader type="table-row" class="pa-4"></v-skeleton-loader>
+                </template>
+
+                <template v-slot:item.orderNumber="{ item }">
+                  <span class="text-primary font-weight-medium cursor-pointer">
+                    {{ item.orderNumber }}
+                  </span>
                 </template>
 
                 <template v-slot:item.callSign="{ item }">
@@ -598,6 +605,12 @@ const cellRefs = ref({})
 const showNewAttendeeModal = ref(false)
 const attendeeHeaders = ref([
   {
+    title: '#',
+    key: 'orderNumber',
+    align: 'center',
+    width: '60px',
+  },
+  {
     title: t('operator.callSign'),
     key: 'callSign',
     align: 'start',
@@ -665,7 +678,8 @@ const canAddAttendee = computed(() => {
 })
 
 const tableItems = computed(() => {
-  return attendees.value.map((attendee) => ({
+  return attendees.value.map((attendee, index) => ({
+    orderNumber: attendees.value.length - index,
     callSign: attendee.callSign,
     name: attendee.name,
     qth: attendee.qth,

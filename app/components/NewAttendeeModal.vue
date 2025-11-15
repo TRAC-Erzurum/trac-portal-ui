@@ -238,13 +238,14 @@
               </div>
               <div class="list-content">
                 <div
-                  v-for="callSign in existingCallSigns"
-                  :key="callSign"
+                  v-for="(attendee, index) in attendeesWithOrder"
+                  :key="attendee.id || index"
                   class="existing-attendee"
                 >
-                  {{ callSign }}
+                  <span class="order-number">{{ attendee.orderNumber }}.</span>
+                  <span class="attendee-callsign">{{ attendee.callSign }}</span>
                 </div>
-                <div v-if="!existingCallSigns.length" class="no-attendees">
+                <div v-if="!attendeesWithOrder.length" class="no-attendees">
                   {{ t('session.noAttendees') }}
                 </div>
               </div>
@@ -278,6 +279,10 @@ const props = defineProps({
   sessionId: {
     type: String,
     required: true,
+  },
+  attendees: {
+    type: Array,
+    default: () => [],
   },
 })
 
@@ -531,6 +536,14 @@ const sortedOperatorResults = computed(() => {
   })
 })
 
+const attendeesWithOrder = computed(() => {
+  if (!props.attendees?.length) return []
+  return props.attendees.map((attendee, index) => ({
+    ...attendee,
+    orderNumber: props.attendees.length - index,
+  }))
+})
+
 const isMobile = ref(false)
 
 const checkMobile = () => {
@@ -754,9 +767,22 @@ watch(newAttendee, (newValue) => {
 .existing-attendee {
   padding: 8px 16px;
   border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 
   &:hover {
     background: rgb(var(--v-theme-surface-variant) / 0.5);
+  }
+
+  .order-number {
+    color: rgb(var(--v-theme-primary));
+    font-weight: 600;
+    min-width: 24px;
+  }
+
+  .attendee-callsign {
+    flex: 1;
   }
 }
 
