@@ -73,6 +73,17 @@
                 <v-icon size="small" color="primary" class="me-2">mdi-account-group</v-icon>
                 <span>{{ session.attendeeCount }} katılımcı</span>
               </div>
+              <template v-if="isSuperAdmin && (session.createdBy || session.updatedBy?.length)">
+                <v-divider class="my-2"></v-divider>
+                <div v-if="session.createdBy" class="info-row">
+                  <v-icon size="small" color="secondary" class="me-2">mdi-account-plus</v-icon>
+                  <span class="text-caption">{{ t('common.createdBy') }}: {{ session.createdBy }}</span>
+                </div>
+                <div v-if="session.updatedBy && session.updatedBy.length > 0" class="info-row">
+                  <v-icon size="small" color="secondary" class="me-2">mdi-account-edit</v-icon>
+                  <span class="text-caption">{{ t('common.updatedBy') }}: {{ session.updatedBy.join(', ') }}</span>
+                </div>
+              </template>
             </div>
           </v-card-text>
 
@@ -118,6 +129,19 @@
                 <v-icon>mdi-restart</v-icon>
                 <span class="ms-1">{{ t('session.restart') }}</span>
               </v-btn>
+
+              <v-btn
+                v-if="isAdmin"
+                color="error"
+                size="small"
+                variant="text"
+                class="action-button"
+                @click.stop="$emit('delete-session', session)"
+                :title="t('session.delete')"
+              >
+                <v-icon>mdi-delete</v-icon>
+                <span class="ms-1">{{ t('session.delete') }}</span>
+              </v-btn>
             </template>
 
             <v-btn
@@ -161,9 +185,10 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['start-session', 'end-session', 'restart-session'])
+const emit = defineEmits(['start-session', 'end-session', 'restart-session', 'delete-session'])
 
-const isAdmin = computed(() => $auth.user.value?.role === Role.ADMIN)
+const isAdmin = computed(() => $auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN)
+const isSuperAdmin = computed(() => $auth.user.value?.role === Role.SUPER_ADMIN)
 
 const isSessionOperator = (session) => {
   return $auth.user.value?.id === session.operator?.user?.id

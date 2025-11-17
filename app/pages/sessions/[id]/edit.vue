@@ -101,9 +101,6 @@
           </v-row>
 
           <div class="d-flex justify-end gap-2 mt-4">
-            <v-btn color="error" variant="outlined" @click="handleDelete" :loading="deleting">
-              {{ t('delete') }}
-            </v-btn>
             <v-btn
               color="secondary"
               variant="outlined"
@@ -139,7 +136,6 @@ const { getErrorMessage } = useErrorMessage()
 const route = useRoute()
 
 const loading = ref(false)
-const deleting = ref(false)
 const errors = ref({})
 const loadingOperators = ref(false)
 const operators = ref([])
@@ -236,28 +232,6 @@ const handleSubmit = async () => {
     }
   } finally {
     loading.value = false
-  }
-}
-
-const handleDelete = async () => {
-  if (sessionData.value.attendeeCount > 0) {
-    errorToast(t('session.deleteAttendeeCount'))
-    return
-  }
-
-  if (!confirm(t('session.deleteConfirm'))) {
-    return
-  }
-
-  try {
-    deleting.value = true
-    await api.delete(`/session/${route.params.id}`)
-    successToast(t('session.deleteSuccess'))
-    return navigateTo('/sessions')
-  } catch (error) {
-    errorToast(t(getErrorMessage(error)))
-  } finally {
-    deleting.value = false
   }
 }
 

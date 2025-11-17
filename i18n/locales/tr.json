@@ -68,7 +68,9 @@
     "actions": "İşlemler",
     "poweredBy": "Geliştirici: TA9MFE",
     "exportAsCsv": "CSV",
-    "report": "Rapor"
+    "report": "Rapor",
+    "createdBy": "Oluşturan",
+    "updatedBy": "Güncelleyen"
   },
   "pages": {
     "dashboard": {
@@ -121,6 +123,7 @@
     }
   },
   "roles": {
+    "super_admin": "Süper Yönetici",
     "admin": "Yönetici",
     "member": "Üye",
     "volunteer": "Gönüllü",
@@ -247,7 +250,8 @@
     "updateSuccess": "Çevrim bilgileri başarıyla güncellendi",
     "deleteAttendeeCount": "Çevrimde katılımcı bulunduğu için silinemez",
     "deleteConfirm": "Bu çevrimi silmek istediğinizden emin misiniz?",
-    "deleteSuccess": "Çevrim başarıyla silindi"
+    "deleteSuccess": "Çevrim başarıyla silindi",
+    "delete": "Çevrimi Sil"
   },
   "mode": {
     "fm": "FM",

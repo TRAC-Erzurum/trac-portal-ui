@@ -13,7 +13,7 @@
                 </div>
               </div>
               <v-btn
-                v-if="$auth.user.value?.role === Role.ADMIN"
+                v-if="$auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN"
                 prepend-icon="mdi-plus"
                 size="small"
                 variant="tonal"
@@ -75,6 +75,7 @@
                 @start-session="startSession"
                 @end-session="endSession"
                 @restart-session="restartSession"
+                @delete-session="deleteSession"
               />
             </v-card>
           </v-card-text>
@@ -90,6 +91,7 @@ import { useApi } from '~/utils/api'
 import { useI18n } from 'vue-i18n'
 import { Role } from '~/constants/enums/role'
 import { useCardStyles } from '~/composables/useCardStyles'
+import { useErrorMessage } from '~/composables/useErrorMessage'
 import SessionCardView from '~/components/SessionCardView.vue'
 
 const { t } = useI18n()
@@ -98,6 +100,7 @@ const { errorToast, successToast } = useToast()
 const { $auth } = useNuxtApp()
 const { formatDate, formatDuration } = useFormatDate()
 const { getIconColor } = useCardStyles()
+const { getErrorMessage } = useErrorMessage()
 
 const loading = ref(true)
 const sessions = ref([])
@@ -182,6 +185,28 @@ const restartSession = async (session) => {
     await fetchSessions()
   } catch (error) {
     errorToast(t('session.restartError'))
+  } finally {
+    loading.value = false
+  }
+}
+
+const deleteSession = async (session) => {
+  if (session.attendeeCount > 0) {
+    errorToast(t('session.deleteAttendeeCount'))
+    return
+  }
+
+  if (!confirm(t('session.deleteConfirm'))) {
+    return
+  }
+
+  try {
+    loading.value = true
+    await api.delete(`/session/${session.id}`)
+    successToast(t('session.deleteSuccess'))
+    await fetchSessions()
+  } catch (error) {
+    errorToast(t(getErrorMessage(error)))
   } finally {
     loading.value = false
   }

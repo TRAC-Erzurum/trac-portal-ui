@@ -258,7 +258,7 @@ const loading = ref(true)
 const { getImageUrl } = useImageUrl()
 
 const allowEdit = computed(() => {
-  return $auth.user.value?.role === Role.ADMIN || $auth.user.value?.id === route.params.id
+  return ($auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN) || $auth.user.value?.id === route.params.id
 })
 
 const isOwnProfile = computed(() => {

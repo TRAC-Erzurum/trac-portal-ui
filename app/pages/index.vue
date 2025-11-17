@@ -149,7 +149,7 @@
                 </div>
               </div>
               <v-spacer></v-spacer>
-              <v-tooltip :text="$t('session.create')" v-if="$auth.user.value?.role === Role.ADMIN">
+              <v-tooltip :text="$t('session.create')" v-if="$auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN">
                 <template v-slot:activator="{ props }">
                   <v-btn
                     v-bind="props"
