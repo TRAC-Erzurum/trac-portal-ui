@@ -3,7 +3,7 @@
     <v-card class="custom-card">
       <v-card-title class="d-flex align-center py-4 px-6">
         <v-icon icon="mdi-calendar-edit" size="24" class="mr-2" />
-        {{ $t('session.edit') }}
+        {{ $t('net.edit') }}
       </v-card-title>
 
       <v-card-text>
@@ -12,8 +12,8 @@
             <v-col cols="0" md="2"></v-col>
             <v-col cols="12" md="5">
               <v-text-field
-                v-model="sessionData.name"
-                :label="t('session.name')"
+                v-model="netData.name"
+                :label="t('net.name')"
                 :error-messages="errors.name"
                 :rules="[(v) => !!v || t('validation.required')]"
                 required
@@ -22,9 +22,9 @@
             </v-col>
             <v-col cols="12" md="5">
               <v-select
-                v-model="sessionData.operatorId"
+                v-model="netData.operatorId"
                 :items="operators"
-                :label="t('session.operator')"
+                :label="t('net.operator')"
                 :error-messages="errors.operatorId"
                 :rules="[(v) => !!v || t('validation.required')]"
                 :item-title="formatOperatorDisplayName"
@@ -40,14 +40,14 @@
             <v-col cols="0" md="2"></v-col>
             <v-col cols="12" md="3">
               <v-select
-                v-model="sessionData.type"
+                v-model="netData.type"
                 :items="
-                  Object.values(SessionType).map((type) => ({
-                    title: t(`sessionType.${type}`),
+                  Object.values(NetType).map((type) => ({
+                    title: t(`netType.${type}`),
                     value: type,
                   }))
                 "
-                :label="t('session.type')"
+                :label="t('net.type')"
                 :error-messages="errors.type"
                 required
                 variant="outlined"
@@ -55,9 +55,9 @@
             </v-col>
             <v-col cols="12" md="3">
               <v-select
-                v-model="sessionData.mode"
+                v-model="netData.mode"
                 :items="modes"
-                :label="t('session.mode')"
+                :label="t('net.mode')"
                 :error-messages="errors.mode"
                 required
                 variant="outlined"
@@ -65,9 +65,9 @@
             </v-col>
             <v-col cols="12" md="4">
               <v-select
-                v-model="sessionData.frequency"
+                v-model="netData.frequency"
                 :items="frequencies"
-                :label="t('session.frequency')"
+                :label="t('net.frequency')"
                 :error-messages="errors.frequency"
                 :rules="[(v) => !!v || t('validation.required')]"
                 required
@@ -80,8 +80,8 @@
             <v-col cols="0" md="2"></v-col>
             <v-col cols="12" md="5">
               <v-text-field
-                v-model="sessionData.startedAt"
-                :label="t('session.startedAt')"
+                v-model="netData.startedAt"
+                :label="t('net.startedAt')"
                 type="datetime-local"
                 :error-messages="errors.startedAt"
                 variant="outlined"
@@ -90,12 +90,12 @@
             </v-col>
             <v-col cols="12" md="5">
               <v-text-field
-                v-model="sessionData.endedAt"
-                :label="t('session.endedAt')"
+                v-model="netData.endedAt"
+                :label="t('net.endedAt')"
                 type="datetime-local"
                 :error-messages="errors.endedAt"
                 variant="outlined"
-                :disabled="!sessionData.startedAt"
+                :disabled="!netData.startedAt"
               />
             </v-col>
           </v-row>
@@ -104,7 +104,7 @@
             <v-btn
               color="secondary"
               variant="outlined"
-              :to="`/sessions/${route.params.id}/manage`"
+              :to="`/nets/${route.params.id}/manage`"
               class="mx-2"
             >
               {{ t('cancel') }}
@@ -127,7 +127,7 @@ import { Mode } from '~/constants/enums/mode'
 import { RepeaterFrequency, REPEATER_FREQUENCY_LABELS } from '~/constants/enums/repeater-frequency'
 import { Role } from '~/constants/enums/role'
 import { useErrorMessage } from '~/composables/useErrorMessage'
-import { SessionType } from '~/constants/enums/session-type'
+import { NetType } from '~/constants/enums/net-type'
 
 const { t } = useI18n()
 const api = useApi()
@@ -150,11 +150,11 @@ const frequencies = Object.values(RepeaterFrequency).map((freq) => ({
   value: freq,
 }))
 
-const sessionData = ref({
+const netData = ref({
   name: '',
   frequency: RepeaterFrequency.RU754,
   mode: Mode.FM,
-  type: SessionType.Analog,
+  type: NetType.Analog,
   operatorId: null,
   startedAt: null,
   endedAt: null,
@@ -163,9 +163,9 @@ const sessionData = ref({
 const form = ref(null)
 const formValid = ref(false)
 
-const fetchSession = async () => {
+const fetchNet = async () => {
   try {
-    const response = await api.get(`/session/${route.params.id}`)
+    const response = await api.get(`/net/${route.params.id}`)
 
     const formatDateForInput = (dateString) => {
       if (!dateString) return null
@@ -173,7 +173,7 @@ const fetchSession = async () => {
       return date.toISOString().slice(0, 16)
     }
 
-    sessionData.value = {
+    netData.value = {
       ...response,
       startedAt: formatDateForInput(response.startedAt),
       endedAt: formatDateForInput(response.endedAt),
@@ -181,7 +181,7 @@ const fetchSession = async () => {
     }
   } catch (error) {
     errorToast(t(getErrorMessage(error)))
-    console.error('Error fetching session:', error)
+    console.error('Error fetching net:', error)
   }
 }
 
@@ -200,13 +200,13 @@ const fetchOperators = async () => {
 
 onMounted(() => {
   fetchOperators()
-  fetchSession()
+  fetchNet()
 })
 
 const handleStartDateChange = () => {
-  if (!sessionData.value.startedAt) {
-    sessionData.value.startedAt = null
-    sessionData.value.endedAt = null
+  if (!netData.value.startedAt) {
+    netData.value.startedAt = null
+    netData.value.endedAt = null
   }
 }
 
@@ -222,9 +222,9 @@ const handleSubmit = async () => {
     loading.value = true
     errors.value = {}
 
-    await api.put(`/session/${route.params.id}`, sessionData.value)
-    successToast(t('session.updateSuccess'))
-    return navigateTo('/sessions')
+    await api.put(`/net/${route.params.id}`, netData.value)
+    successToast(t('net.updateSuccess'))
+    return navigateTo('/nets')
   } catch (error) {
     errorToast(t(getErrorMessage(error)))
     if (error.response?.data?.errors) {

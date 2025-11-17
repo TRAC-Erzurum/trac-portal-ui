@@ -1,40 +1,40 @@
 <template>
   <v-container :class="{ 'my-8': !isMobile, 'my-2': isMobile }">
     <v-skeleton-loader v-if="loading" type="card" class="mt-4"></v-skeleton-loader>
-    <template v-else-if="session">
+    <template v-else-if="net">
       <v-card class="dashboard-card dashboard-card--primary mb-8">
         <div class="card-title">
           <v-icon size="32" :color="getIconColor(1)" class="mr-4">mdi-calendar-clock</v-icon>
           <div class="title-content">
-            <div class="text-h6">{{ session.name }}</div>
+            <div class="text-h6">{{ net.name }}</div>
           </div>
         </div>
 
         <v-card-text>
-          <div class="session-stats">
+          <div class="net-stats">
             <div class="stats-row">
               <div class="stat-card time-card">
                 <div class="stat-icon">
                   <v-icon size="32" color="primary">mdi-clock-start</v-icon>
                 </div>
                 <div class="stat-content">
-                  <div class="stat-label">{{ t('session.startedAt') }}</div>
-                  <div class="stat-value">{{ formatDate(session.startedAt) || '-' }}</div>
+                  <div class="stat-label">{{ t('net.startedAt') }}</div>
+                  <div class="stat-value">{{ formatDate(net.startedAt) || '-' }}</div>
                 </div>
                 <div class="stat-icon">
                   <v-icon size="32" color="error">mdi-clock-end</v-icon>
                 </div>
                 <div class="stat-content">
-                  <div class="stat-label">{{ t('session.endedAt') }}</div>
-                  <div class="stat-value">{{ formatDate(session.endedAt) || '-' }}</div>
+                  <div class="stat-label">{{ t('net.endedAt') }}</div>
+                  <div class="stat-value">{{ formatDate(net.endedAt) || '-' }}</div>
                 </div>
                 <div class="stat-icon">
                   <v-icon size="32" color="success">mdi-timer-outline</v-icon>
                 </div>
                 <div class="stat-content">
-                  <div class="stat-label">{{ t('session.duration') }}</div>
+                  <div class="stat-label">{{ t('net.duration') }}</div>
                   <div class="stat-value">
-                    {{ formatDuration(session.startedAt, session.endedAt) || '-' }}
+                    {{ formatDuration(net.startedAt, net.endedAt) || '-' }}
                   </div>
                 </div>
               </div>
@@ -46,8 +46,8 @@
                   <v-icon size="32" color="info">mdi-radio</v-icon>
                 </div>
                 <div class="stat-content">
-                  <div class="stat-label">{{ t('session.frequency') }}</div>
-                  <div class="stat-value">{{ REPEATER_FREQUENCY_LABELS[session.frequency] }}</div>
+                  <div class="stat-label">{{ t('net.frequency') }}</div>
+                  <div class="stat-value">{{ REPEATER_FREQUENCY_LABELS[net.frequency] }}</div>
                 </div>
               </div>
 
@@ -56,8 +56,8 @@
                   <v-icon size="32" color="warning">mdi-radio-tower</v-icon>
                 </div>
                 <div class="stat-content">
-                  <div class="stat-label">{{ t('session.mode') }}</div>
-                  <div class="stat-value">{{ t(`mode.${session.mode}`) }}</div>
+                  <div class="stat-label">{{ t('net.mode') }}</div>
+                  <div class="stat-value">{{ t(`mode.${net.mode}`) }}</div>
                 </div>
               </div>
 
@@ -66,8 +66,8 @@
                   <v-icon size="32" color="success">mdi-radio-handheld</v-icon>
                 </div>
                 <div class="stat-content">
-                  <div class="stat-label">{{ t('session.type') }}</div>
-                  <div class="stat-value">{{ t(`sessionType.${session.type}`) }}</div>
+                  <div class="stat-label">{{ t('net.type') }}</div>
+                  <div class="stat-value">{{ t(`netType.${net.type}`) }}</div>
                 </div>
               </div>
             </div>
@@ -78,23 +78,23 @@
                   <v-icon size="32" color="secondary">mdi-account-group</v-icon>
                 </div>
                 <div class="stat-content">
-                  <div class="stat-label">{{ t('session.attendeeCount') }}</div>
-                  <div class="stat-value">{{ session.attendeeCount ?? '-' }}</div>
+                  <div class="stat-label">{{ t('net.attendeeCount') }}</div>
+                  <div class="stat-value">{{ net.attendeeCount ?? '-' }}</div>
                 </div>
               </div>
 
-              <div v-if="session.operator" class="stat-card operator-card">
+              <div v-if="net.operator" class="stat-card operator-card">
                 <div class="stat-icon">
                   <v-icon size="32" color="primary">mdi-account-tie</v-icon>
                 </div>
                 <div class="stat-content">
-                  <div class="stat-label">{{ t('session.operator') }}</div>
+                  <div class="stat-label">{{ t('net.operator') }}</div>
                   <div class="operator-info">
                     <span
                       class="operator-value"
-                      @click="session.operator?.id && navigateToOperator(session.operator.id)"
+                      @click="net.operator?.id && navigateToOperator(net.operator.id)"
                     >
-                      {{ session.operator.callSign }}
+                      {{ net.operator.callSign }}
                       <v-icon size="small" class="ms-1">mdi-open-in-new</v-icon>
                     </span>
                     <v-btn
@@ -107,7 +107,7 @@
                       :class="['change-operator-btn', { 'icon-only': isMobile }]"
                     >
                       <v-icon size="small">mdi-account-switch</v-icon>
-                      <span class="btn-text">{{ t('session.changeOperator') }}</span>
+                      <span class="btn-text">{{ t('net.changeOperator') }}</span>
                     </v-btn>
                   </div>
                 </div>
@@ -115,56 +115,56 @@
             </div>
           </div>
 
-          <div v-if="canManageSession" class="management-actions">
+          <div v-if="canManageNet" class="management-actions">
             <div class="management-buttons">
               <v-btn
-                v-if="!session.startedAt"
+                v-if="!net.startedAt"
                 color="success"
                 size="large"
                 :loading="actionLoading"
-                @click="startSession"
+                @click="startNet"
                 class="management-button start-button"
                 elevation="1"
                 rounded
               >
                 <v-icon size="24" class="mr-2">mdi-play-circle-outline</v-icon>
-                {{ t('session.start') }}
+                {{ t('net.start') }}
               </v-btn>
 
               <v-btn
-                v-if="session.startedAt && !session.endedAt"
+                v-if="net.startedAt && !net.endedAt"
                 color="error"
                 size="large"
                 :loading="actionLoading"
-                @click="handleEndSession"
+                @click="handleEndNet"
                 class="management-button end-button"
                 elevation="1"
                 rounded
               >
                 <v-icon size="24" class="mr-2">mdi-stop-circle-outline</v-icon>
-                {{ t('session.end') }}
+                {{ t('net.end') }}
               </v-btn>
 
               <v-btn
-                v-if="session.endedAt && isAdmin"
+                v-if="net.endedAt && isAdmin"
                 color="warning"
                 size="large"
                 :loading="actionLoading"
-                @click="handleRestartSession"
+                @click="handleRestartNet"
                 class="management-button restart-button"
                 elevation="1"
                 rounded
               >
                 <v-icon size="24" class="mr-2">mdi-restart</v-icon>
-                {{ t('session.restart') }}
+                {{ t('net.restart') }}
               </v-btn>
               <v-btn
                 color="secondary"
                 size="large"
                 prepend-icon="mdi-pencil"
-                :to="`/sessions/${session.id}/edit`"
+                :to="`/nets/${net.id}/edit`"
               >
-                {{ t('session.edit') }}
+                {{ t('net.edit') }}
               </v-btn>
             </div>
           </div>
@@ -177,7 +177,7 @@
             <v-card-title class="d-flex align-center justify-space-between py-4 px-6">
               <div class="d-flex align-center">
                 <v-icon icon="mdi-account-group" size="24" class="mr-2" />
-                {{ t('session.attendees') }}
+                {{ t('net.attendees') }}
                 <v-btn
                   class="ml-4"
                   icon="mdi-refresh"
@@ -193,7 +193,7 @@
                   color="secondary"
                   variant="tonal"
                   prepend-icon="mdi-printer"
-                  :to="`/sessions/${session.id}/report`"
+                  :to="`/nets/${net.id}/report`"
                   :disabled="attendees?.length === 0"
                   target="_blank"
                   class="ml-2"
@@ -208,7 +208,7 @@
                 <NewAttendeeModal
                   v-if="canAddAttendee"
                   v-model="showNewAttendeeModal"
-                  :session-id="session?.id"
+                  :net-id="net?.id"
                   :existing-call-signs="attendees?.map((a) => a.callSign)"
                   :attendees="attendees"
                   @add-attendee="addAttendee"
@@ -268,7 +268,7 @@
                         :ref="(el) => (cellRefs[`name-${item.raw.id}`] = el)"
                       >
                         <template v-if="canEdit(item.raw)">
-                          <v-tooltip :text="t('session.editAttendeeName')" location="top">
+                          <v-tooltip :text="t('net.editAttendeeName')" location="top">
                             <template v-slot:activator="{ props }">
                               <v-icon
                                 size="small"
@@ -302,7 +302,7 @@
                         :ref="(el) => (cellRefs[`qth-${item.raw.id}`] = el)"
                       >
                         <template v-if="canEdit(item.raw)">
-                          <v-tooltip :text="t('session.editAttendeeQTH')" location="top">
+                          <v-tooltip :text="t('net.editAttendeeQTH')" location="top">
                             <template v-slot:activator="{ props }">
                               <v-icon
                                 size="small"
@@ -339,7 +339,7 @@
                         :ref="(el) => (cellRefs[`readability-${item.raw.id}`] = el)"
                       >
                         <template v-if="canEdit(item.raw)">
-                          <v-tooltip :text="t('session.editAttendeeReadability')" location="top">
+                          <v-tooltip :text="t('net.editAttendeeReadability')" location="top">
                             <template v-slot:activator="{ props }">
                               <v-icon
                                 size="small"
@@ -378,7 +378,7 @@
                         :ref="(el) => (cellRefs[`signalStrength-${item.raw.id}`] = el)"
                       >
                         <template v-if="canEdit(item.raw)">
-                          <v-tooltip :text="t('session.editAttendeeSignalStrength')" location="top">
+                          <v-tooltip :text="t('net.editAttendeeSignalStrength')" location="top">
                             <template v-slot:activator="{ props }">
                               <v-icon
                                 size="small"
@@ -444,17 +444,17 @@
     <v-dialog v-model="showEndConfirm" max-width="500">
       <v-card>
         <v-card-title class="text-h5 pa-4">
-          {{ t('session.endConfirmTitle') }}
+          {{ t('net.endConfirmTitle') }}
         </v-card-title>
         <v-card-text class="pa-4">
-          {{ t('session.endConfirmText') }}
+          {{ t('net.endConfirmText') }}
         </v-card-text>
         <v-card-actions class="pa-4">
           <v-spacer />
           <v-btn color="grey" variant="text" @click="showEndConfirm = false">
             {{ t('cancel') }}
           </v-btn>
-          <v-btn color="error" @click="confirmEndSession">
+          <v-btn color="error" @click="confirmEndNet">
             {{ t('confirm') }}
           </v-btn>
         </v-card-actions>
@@ -464,7 +464,7 @@
     <v-dialog v-model="showOperatorDialog" max-width="500">
       <v-card>
         <v-card-title class="text-h5 pa-4">
-          {{ t('session.changeOperatorTitle') }}
+          {{ t('net.changeOperatorTitle') }}
         </v-card-title>
         <v-card-text class="pa-4">
           <v-text-field
@@ -530,17 +530,17 @@
     <v-dialog v-model="showRestartConfirm" max-width="500">
       <v-card>
         <v-card-title class="text-h5 pa-4">
-          {{ t('session.restartConfirmTitle') }}
+          {{ t('net.restartConfirmTitle') }}
         </v-card-title>
         <v-card-text class="pa-4">
-          {{ t('session.restartConfirmText') }}
+          {{ t('net.restartConfirmText') }}
         </v-card-text>
         <v-card-actions class="pa-4">
           <v-spacer />
           <v-btn color="grey" variant="text" @click="showRestartConfirm = false">
             {{ t('cancel') }}
           </v-btn>
-          <v-btn color="warning" @click="confirmRestartSession">
+          <v-btn color="warning" @click="confirmRestartNet">
             {{ t('confirm') }}
           </v-btn>
         </v-card-actions>
@@ -584,7 +584,7 @@ const { getIconColor } = useCardStyles()
 const { getErrorMessage } = useErrorMessage()
 const { shouldShowTooltip } = useTruncate()
 
-const session = ref(null)
+const net = ref(null)
 const attendees = ref([])
 const loading = ref(true)
 const loadingAttendees = ref(true)
@@ -617,7 +617,7 @@ const attendeeHeaders = ref([
     width: '120px',
   },
   {
-    title: t('session.operator'),
+    title: t('net.operator'),
     key: 'name',
     align: 'start',
   },
@@ -653,13 +653,13 @@ const attendeeHeaders = ref([
   },
 ])
 
-const canManageSession = computed(() => {
+const canManageNet = computed(() => {
   const currentUser = $auth.user.value
   if (!currentUser) return false
 
   if (currentUser.role === Role.ADMIN || currentUser.role === Role.SUPER_ADMIN) return true
 
-  return session.value && currentUser.id === session.value.operator?.user?.id
+  return net.value && currentUser.id === net.value.operator?.user?.id
 })
 
 const isAdmin = computed(() => $auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN)
@@ -670,8 +670,8 @@ const canAddAttendee = computed(() => {
 
   if (currentUser.role === Role.ADMIN || currentUser.role === Role.SUPER_ADMIN) return true
 
-  if (session.value?.operator?.user?.id === currentUser.id) {
-    return session.value.startedAt && !session.value.endedAt
+  if (net.value?.operator?.user?.id === currentUser.id) {
+    return net.value.startedAt && !net.value.endedAt
   }
 
   return false
@@ -693,13 +693,13 @@ const tableItems = computed(() => {
 const editDrawerTitle = computed(() => {
   switch (editType.value) {
     case 'name':
-      return t('session.editAttendeeName')
+      return t('net.editAttendeeName')
     case 'qth':
-      return t('session.editAttendeeQTH')
+      return t('net.editAttendeeQTH')
     case 'readability':
-      return t('session.editAttendeeReadability')
+      return t('net.editAttendeeReadability')
     case 'signalStrength':
-      return t('session.editAttendeeSignalStrength')
+      return t('net.editAttendeeSignalStrength')
     default:
       return t('common.edit')
   }
@@ -783,15 +783,15 @@ const debouncedSearchOperatorsForChange = debounce(
 
 const addAttendee = async (attendee) => {
   try {
-    const response = await api.post(`/session/${session.value.id}/attendee`, attendee)
+    const response = await api.post(`/net/${net.value.id}/attendee`, attendee)
 
     attendees.value = [response, ...attendees.value]
 
-    if (session.value) {
-      session.value.attendeeCount = (session.value.attendeeCount || 0) + 1
+    if (net.value) {
+      net.value.attendeeCount = (net.value.attendeeCount || 0) + 1
     }
 
-    successToast(t('session.attendeeAdded'))
+    successToast(t('net.attendeeAdded'))
   } catch (error) {
     console.error('Error adding attendee:', error)
     errorToast(getErrorMessage(error))
@@ -803,9 +803,9 @@ const deleteAttendee = async (item) => {
 
   try {
     item.loading = true
-    await api.delete(`/session/${session.value.id}/attendee/${item.raw.id}`)
+    await api.delete(`/net/${net.value.id}/attendee/${item.raw.id}`)
 
-    successToast(t('session.attendeeDeleted'))
+    successToast(t('net.attendeeDeleted'))
     await fetchAttendees()
   } catch (error) {
     console.error('Error deleting attendee:', error)
@@ -834,80 +834,80 @@ const navigateToOperator = async (operatorId) => {
   }
 }
 
-const startSession = async () => {
-  if (!canManageSession.value) return
+const startNet = async () => {
+  if (!canManageNet.value) return
 
   try {
     actionLoading.value = true
-    await api.patch(`/session/${session.value.id}/start`)
-    successToast(t('session.startSuccess'))
-    await fetchSession()
+    await api.patch(`/net/${net.value.id}/start`)
+    successToast(t('net.startSuccess'))
+    await fetchNet()
   } catch (error) {
-    console.error('Error starting session:', error)
-    errorToast(t('session.startError'))
+    console.error('Error starting net:', error)
+    errorToast(t('net.startError'))
   } finally {
     actionLoading.value = false
   }
 }
 
-const handleEndSession = () => {
-  if (!canManageSession.value) return
+const handleEndNet = () => {
+  if (!canManageNet.value) return
 
   showEndConfirm.value = true
 }
 
-const confirmEndSession = () => {
+const confirmEndNet = () => {
   showEndConfirm.value = false
-  endSession()
+  endNet()
 }
 
-const endSession = async () => {
-  if (!canManageSession.value) return
+const endNet = async () => {
+  if (!canManageNet.value) return
 
   try {
     actionLoading.value = true
-    await api.patch(`/session/${session.value.id}/end`)
-    successToast(t('session.endSuccess'))
-    await fetchSession()
+    await api.patch(`/net/${net.value.id}/end`)
+    successToast(t('net.endSuccess'))
+    await fetchNet()
   } catch (error) {
-    console.error('Error ending session:', error)
-    errorToast(t('session.endError'))
+    console.error('Error ending net:', error)
+    errorToast(t('net.endError'))
   } finally {
     actionLoading.value = false
   }
 }
 
-const fetchSession = async () => {
+const fetchNet = async () => {
   try {
     loading.value = true
-    const data = await api.get(`/session/${route.params.id}`)
+    const data = await api.get(`/net/${route.params.id}`)
 
     if (!data) {
-      errorToast(t('session.notFound'))
-      router.push('/sessions')
+      errorToast(t('net.notFound'))
+      router.push('/nets')
       return
     }
 
-    session.value = data
+    net.value = data
   } catch (error) {
-    console.error('Error fetching session:', error)
-    errorToast(t('session.fetchError'))
-    router.push('/sessions')
+    console.error('Error fetching net:', error)
+    errorToast(t('net.fetchError'))
+    router.push('/nets')
   } finally {
     loading.value = false
   }
 }
 
 const fetchAttendees = async () => {
-  if (!session.value?.id) return
+  if (!net.value?.id) return
 
   try {
     loadingAttendees.value = true
-    const data = await api.get(`/session/${route.params.id}/attendee?sort=DESC`)
+    const data = await api.get(`/net/${route.params.id}/attendee?sort=DESC`)
     attendees.value = data || []
   } catch (error) {
     console.error('Error fetching attendees:', error)
-    errorToast(t('session.attendeesFetchError'))
+    errorToast(t('net.attendeesFetchError'))
   } finally {
     loadingAttendees.value = false
   }
@@ -960,9 +960,9 @@ const handleEditSave = async (data) => {
         break
     }
 
-    await api.patch(`/session/${session.value.id}/attendee/${editItem.value.id}`, payload)
+    await api.patch(`/net/${net.value.id}/attendee/${editItem.value.id}`, payload)
     await fetchAttendees()
-    successToast(t('session.attendeeUpdated'))
+    successToast(t('net.attendeeUpdated'))
     showEditDrawer.value = false
   } catch (error) {
     errorToast(getErrorMessage(error))
@@ -972,10 +972,10 @@ const handleEditSave = async (data) => {
 }
 
 const canEdit = (attendee) => {
-  if (!session.value || !attendee) return false
+  if (!net.value || !attendee) return false
   if ($auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN) return true
-  if (session.value.endedAt) return false
-  return session.value.operator?.user?.id === $auth.user.value?.id
+  if (net.value.endedAt) return false
+  return net.value.operator?.user?.id === $auth.user.value?.id
 }
 
 const cancelOperatorChange = () => {
@@ -990,34 +990,34 @@ const confirmOperatorChange = async () => {
 
   try {
     actionLoading.value = true
-    await api.patch(`/session/${session.value.id}/operator`, {
+    await api.patch(`/net/${net.value.id}/operator`, {
       operatorId: selectedNewOperator.value.id,
     })
-    successToast(t('session.operatorChanged'))
-    await fetchSession()
+    successToast(t('net.operatorChanged'))
+    await fetchNet()
     cancelOperatorChange()
   } catch (error) {
     console.error('Error changing operator:', error)
-    errorToast(t('session.operatorChangeError'))
+    errorToast(t('net.operatorChangeError'))
   } finally {
     actionLoading.value = false
   }
 }
 
-const handleRestartSession = () => {
+const handleRestartNet = () => {
   showRestartConfirm.value = true
 }
 
-const confirmRestartSession = async () => {
+const confirmRestartNet = async () => {
   try {
     actionLoading.value = true
-    await api.patch(`/session/${session.value.id}/restart`)
-    successToast(t('session.restartSuccess'))
-    await fetchSession()
+    await api.patch(`/net/${net.value.id}/restart`)
+    successToast(t('net.restartSuccess'))
+    await fetchNet()
     showRestartConfirm.value = false
   } catch (error) {
-    console.error('Error restarting session:', error)
-    errorToast(t('session.restartError'))
+    console.error('Error restarting net:', error)
+    errorToast(t('net.restartError'))
   } finally {
     actionLoading.value = false
   }
@@ -1060,16 +1060,16 @@ onMounted(async () => {
   window.removeEventListener('resize', checkMobile)
 
   if ($auth.user.value?.role !== Role.ADMIN && $auth.user.value?.role !== Role.SUPER_ADMIN) {
-    await fetchSession()
+    await fetchNet()
 
-    if (!canManageSession.value) {
+    if (!canManageNet.value) {
       errorToast(t('error.forbidden'))
-      router.push('/sessions')
+      router.push('/nets')
       return
     }
   }
 
-  await fetchSession()
+  await fetchNet()
   await fetchAttendees()
 })
 

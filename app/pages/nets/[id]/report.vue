@@ -1,7 +1,7 @@
 <template>
   <div class="report-container" ref="reportContainer">
-    <div class="session-title">
-      {{ session?.name }}
+    <div class="net-title">
+      {{ net?.name }}
     </div>
 
     <div class="tables-container" ref="tablesContainer">
@@ -49,14 +49,14 @@
                 <td colspan="4" style="text-align: right">
                   <strong>Çevrim Operatörü:</strong>
                 </td>
-                <td>{{ session?.operator?.callSign }}&nbsp;{{ session?.operator?.fullName }}</td>
+                <td>{{ net?.operator?.callSign }}&nbsp;{{ net?.operator?.fullName }}</td>
               </tr>
               <tr>
                 <td colspan="4" style="text-align: right">
                   <strong>Tarih:</strong>
                 </td>
                 <td>
-                  {{ getSessionDateDetails(session) }}
+                  {{ getNetDateDetails(net) }}
                 </td>
               </tr>
             </tfoot>
@@ -115,14 +115,14 @@ const api = useApi()
 const { formatDate, formatTime } = useFormatDate()
 const tablesContainer = ref<HTMLElement | null>(null)
 const reportContainer = ref<HTMLElement | null>(null)
-const session = ref<any>(null)
+const net = ref<any>(null)
 const attendees = ref<any[]>([])
 const loading = ref(true)
 
 const fetchAttendees = async () => {
   try {
-    console.debug('[Report] Fetching attendees for session:', route.params.id)
-    const data = await api.get(`/session/${route.params.id}/attendee?sort=ASC`)
+    console.debug('[Report] Fetching attendees for net:', route.params.id)
+    const data = await api.get(`/net/${route.params.id}/attendee?sort=ASC`)
     console.debug('[Report] Attendees data:', data)
 
     attendees.value = data || []
@@ -135,37 +135,37 @@ const formatQth = (attendee: any) => {
   return [attendee.district, attendee.city, attendee.country].filter(Boolean).join(', ') || '-'
 }
 
-const getSessionDateDetails = (session: any) => {
-  if (!session || (!session.startedAt && !session.endedAt)) {
+const getNetDateDetails = (net: any) => {
+  if (!net || (!net.startedAt && !net.endedAt)) {
     return ''
   }
 
-  if (!session.endedAt) {
-    return formatDate(session.startedAt)
+  if (!net.endedAt) {
+    return formatDate(net.startedAt)
   }
 
-  if (session.startedAt.split('T')[0] === session.endedAt.split('T')[0]) {
-    return `${formatDate(session.startedAt)} - ${formatTime(session.endedAt)}`
+  if (net.startedAt.split('T')[0] === net.endedAt.split('T')[0]) {
+    return `${formatDate(net.startedAt)} - ${formatTime(net.endedAt)}`
   }
 
-  return `${formatDate(session.startedAt)} - ${formatDate(session.endedAt)}`
+  return `${formatDate(net.startedAt)} - ${formatDate(net.endedAt)}`
 }
 
 onMounted(async () => {
   if (!route.params.id) {
-    console.error('[Report] No sessionId found in route params')
-    errorToast(t('session.noId'))
+    console.error('[Report] No netId found in route params')
+    errorToast(t('net.noId'))
     return
   }
 
   try {
-    console.debug('[Report] Fetching session details:', route.params.id)
-    const response = await api.get(`/session/${route.params.id}`)
-    console.debug('[Report] Session data:', response)
-    session.value = response
+    console.debug('[Report] Fetching net details:', route.params.id)
+    const response = await api.get(`/net/${route.params.id}`)
+    console.debug('[Report] Net data:', response)
+    net.value = response
     await fetchAttendees()
   } catch (error) {
-    console.error('[Report] Error fetching session:', error)
+    console.error('[Report] Error fetching net:', error)
   } finally {
     loading.value = false
   }
@@ -182,7 +182,7 @@ const exportToImage = async () => {
   const canvas = await html2canvas(element)
   const link = document.createElement('a')
   link.href = canvas.toDataURL('image/png')
-  link.download = `${session.value.name}.png`
+  link.download = `${net.value.name}.png`
   link.click()
 }
 
@@ -236,7 +236,7 @@ const exportToCsv = async () => {
       .replace(/[/.]/g, '-')
       .replace(':', '-')
 
-    const fileName = `${session.value.name.replace(/[/\\?%*:|"<>]/g, '-')}_${date}.csv`
+    const fileName = `${net.value.name.replace(/[/\\?%*:|"<>]/g, '-')}_${date}.csv`
 
     const blob = new Blob(['\ufeff' + csvContent.join('\n')], {
       type: 'text/csv;charset=utf-8;',
@@ -253,7 +253,7 @@ const exportToCsv = async () => {
     URL.revokeObjectURL(url)
   } catch (error) {
     console.error('Error exporting attendees:', error)
-    errorToast(t('session.exportError'))
+    errorToast(t('net.exportError'))
   }
 }
 
@@ -273,7 +273,7 @@ definePageMeta({
   flex-direction: column;
 }
 
-.session-title {
+.net-title {
   text-align: center;
   font-weight: bold;
   font-size: 1.5em;
@@ -349,7 +349,7 @@ definePageMeta({
   font-size: 1.2em;
 }
 
-.session-info {
+.net-info {
   text-align: right;
   margin-top: auto;
 }

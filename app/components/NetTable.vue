@@ -1,73 +1,73 @@
 <template>
-  <div class="session-grid">
+  <div class="net-grid">
     <v-row class="grid-padding">
-      <v-col v-for="session in sessions" :key="session.id" cols="12" sm="6" md="4" lg="3">
+      <v-col v-for="net in nets" :key="net.id" cols="12" sm="6" md="4" lg="3">
         <v-card
-          class="session-card"
+          class="net-card"
           :class="{
-            'bg-not-started': !session.startedAt,
-            'bg-in-progress': session.startedAt && !session.endedAt,
+            'bg-not-started': !net.startedAt,
+            'bg-in-progress': net.startedAt && !net.endedAt,
           }"
         >
-          <div class="session-content">
-            <div class="session-header">
-              <div class="session-name">{{ session.name }}</div>
-              <div class="session-meta">
-                <div class="session-operator">
+          <div class="net-content">
+            <div class="net-header">
+              <div class="net-name">{{ net.name }}</div>
+              <div class="net-meta">
+                <div class="net-operator">
                   <a
                     class="operator-link"
-                    @click.stop="navigateToOperator(session.operator)"
+                    @click.stop="navigateToOperator(net.operator)"
                     :title="t('operator.viewProfile')"
                   >
-                    {{ session.operator.callSign }}
+                    {{ net.operator.callSign }}
                   </a>
                 </div>
-                <div class="session-status">
-                  <v-icon v-if="session.startedAt && !session.endedAt" size="small" color="success"
+                <div class="net-status">
+                  <v-icon v-if="net.startedAt && !net.endedAt" size="small" color="success"
                     >mdi-circle</v-icon
                   >
-                  <v-icon v-else-if="session.endedAt" size="small" color="grey">mdi-circle</v-icon>
+                  <v-icon v-else-if="net.endedAt" size="small" color="grey">mdi-circle</v-icon>
                   <v-icon v-else size="small" color="grey-lighten-1">mdi-circle</v-icon>
                 </div>
               </div>
             </div>
 
-            <div class="session-info">
+            <div class="net-info">
               <div class="info-item">
                 <v-icon size="small" color="primary">mdi-account-group</v-icon>
-                <span class="label">{{ t('session.attendeeCount') }}:</span>
-                <span class="value">{{ session.attendeeCount }}</span>
+                <span class="label">{{ t('net.attendeeCount') }}:</span>
+                <span class="value">{{ net.attendeeCount }}</span>
               </div>
               <div class="info-item">
                 <v-icon size="small" color="info">mdi-radio-tower</v-icon>
-                <span class="label">{{ t('session.frequency') }}:</span>
-                <span class="value">{{ REPEATER_FREQUENCY_LABELS[session.frequency] }}</span>
+                <span class="label">{{ t('net.frequency') }}:</span>
+                <span class="value">{{ REPEATER_FREQUENCY_LABELS[net.frequency] }}</span>
               </div>
-              <div v-if="session.startedAt" class="info-item">
+              <div v-if="net.startedAt" class="info-item">
                 <v-icon size="small" color="success">mdi-play</v-icon>
-                <span class="value">{{ formatSessionDates(session) }}</span>
+                <span class="value">{{ formatNetDates(net) }}</span>
               </div>
             </div>
 
-            <div class="session-actions">
-              <v-tooltip :text="t('session.manage')" location="top">
+            <div class="net-actions">
+              <v-tooltip :text="t('net.manage')" location="top">
                 <template v-slot:activator="{ props }">
                   <v-btn
-                    v-if="canManageSession(session)"
+                    v-if="canManageNet(net)"
                     v-bind="props"
                     color="primary"
                     size="small"
                     variant="text"
-                    @click.stop="navigateToManage(session)"
+                    @click.stop="navigateToManage(net)"
                   >
                     <v-icon>mdi-cog</v-icon>
-                    <span class="d-none d-sm-inline ms-1">{{ t('session.manage') }}</span>
+                    <span class="d-none d-sm-inline ms-1">{{ t('net.manage') }}</span>
                   </v-btn>
                 </template>
               </v-tooltip>
 
               <v-tooltip
-                :text="session.attendeeCount ? t('common.report') : t('session.noAttendees')"
+                :text="net.attendeeCount ? t('common.report') : t('net.noAttendees')"
                 location="top"
               >
                 <template v-slot:activator="{ props }">
@@ -77,8 +77,8 @@
                     color="secondary"
                     size="small"
                     variant="text"
-                    :disabled="!session.attendeeCount"
-                    @click.stop="navigateToReport(session)"
+                    :disabled="!net.attendeeCount"
+                    @click.stop="navigateToReport(net)"
                   >
                     <v-icon>mdi-file-document-outline</v-icon>
                     <span class="d-none d-sm-inline ms-1">{{ t('common.report') }}</span>
@@ -86,25 +86,25 @@
                 </template>
               </v-tooltip>
 
-              <template v-if="isAdmin || isSessionOperator(session)">
-                <v-tooltip v-if="!session.startedAt" :text="t('session.start')" location="top">
+              <template v-if="isAdmin || isNetOperator(net)">
+                <v-tooltip v-if="!net.startedAt" :text="t('net.start')" location="top">
                   <template v-slot:activator="{ props }">
                     <v-btn
                       v-bind="props"
                       color="success"
                       size="small"
                       variant="text"
-                      @click.stop="$emit('start-session', session)"
+                      @click.stop="$emit('start-net', net)"
                     >
                       <v-icon>mdi-play</v-icon>
-                      <span class="d-none d-sm-inline ms-1">{{ t('session.start') }}</span>
+                      <span class="d-none d-sm-inline ms-1">{{ t('net.start') }}</span>
                     </v-btn>
                   </template>
                 </v-tooltip>
 
                 <v-tooltip
-                  v-if="session.startedAt && !session.endedAt"
-                  :text="t('session.end')"
+                  v-if="net.startedAt && !net.endedAt"
+                  :text="t('net.end')"
                   location="top"
                 >
                   <template v-slot:activator="{ props }">
@@ -113,17 +113,17 @@
                       color="error"
                       size="small"
                       variant="text"
-                      @click.stop="$emit('end-session', session)"
+                      @click.stop="$emit('end-net', net)"
                     >
                       <v-icon>mdi-stop</v-icon>
-                      <span class="d-none d-sm-inline ms-1">{{ t('session.end') }}</span>
+                      <span class="d-none d-sm-inline ms-1">{{ t('net.end') }}</span>
                     </v-btn>
                   </template>
                 </v-tooltip>
 
                 <v-tooltip
-                  v-if="isAdmin && session.startedAt && session.endedAt"
-                  :text="t('session.restart')"
+                  v-if="isAdmin && net.startedAt && net.endedAt"
+                  :text="t('net.restart')"
                   location="top"
                 >
                   <template v-slot:activator="{ props }">
@@ -132,10 +132,10 @@
                       color="warning"
                       size="small"
                       variant="text"
-                      @click.stop="$emit('restart-session', session)"
+                      @click.stop="$emit('restart-net', net)"
                     >
                       <v-icon>mdi-restart</v-icon>
-                      <span class="d-none d-sm-inline ms-1">{{ t('session.restart') }}</span>
+                      <span class="d-none d-sm-inline ms-1">{{ t('net.restart') }}</span>
                     </v-btn>
                   </template>
                 </v-tooltip>
@@ -160,7 +160,7 @@ const { formatDate } = useFormatDate()
 const { $auth } = useNuxtApp()
 
 const props = defineProps({
-  sessions: {
+  nets: {
     type: Array,
     required: true,
   },
@@ -174,20 +174,20 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['start-session', 'end-session', 'restart-session'])
+const emit = defineEmits(['start-net', 'end-net', 'restart-net'])
 
 const isAdmin = computed(() => $auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN)
 
-const isSessionOperator = (session) => {
-  return $auth.user.value?.id === session.operator?.user?.id
+const isNetOperator = (net) => {
+  return $auth.user.value?.id === net.operator?.user?.id
 }
 
-const canManageSession = (session) => {
-  return isAdmin.value || isSessionOperator(session)
+const canManageNet = (net) => {
+  return isAdmin.value || isNetOperator(net)
 }
 
-const navigateToManage = (session) => {
-  navigateTo(`/sessions/${session.id}/manage`)
+const navigateToManage = (net) => {
+  navigateTo(`/nets/${net.id}/manage`)
 }
 
 const navigateToOperator = (operator) => {
@@ -199,19 +199,19 @@ const canViewReport = computed(() => {
   return $auth.user.value?.role !== Role.GUEST
 })
 
-const navigateToReport = (session) => {
-  window.open(`/sessions/${session.id}/report`, '_blank')
+const navigateToReport = (net) => {
+  window.open(`/nets/${net.id}/report`, '_blank')
 }
 
-const formatSessionDates = (session) => {
-  if (!session.startedAt) return ''
+const formatNetDates = (net) => {
+  if (!net.startedAt) return ''
 
-  const startDate = new Date(session.startedAt)
+  const startDate = new Date(net.startedAt)
   const startFormatted = formatDate(startDate, 'DD.MM.YY HH:mm')
 
-  if (!session.endedAt) return startFormatted
+  if (!net.endedAt) return startFormatted
 
-  const endDate = new Date(session.endedAt)
+  const endDate = new Date(net.endedAt)
 
   // Eğer başlangıç ve bitiş aynı gün ise
   if (startDate.toDateString() === endDate.toDateString()) {
@@ -226,12 +226,12 @@ const formatSessionDates = (session) => {
 </script>
 
 <style lang="scss" scoped>
-.session-grid {
+.net-grid {
   .grid-padding {
     padding: 8px;
   }
 
-  .session-card {
+  .net-card {
     height: 100%;
     transition: all 0.2s ease;
     border-radius: 8px;
@@ -253,22 +253,22 @@ const formatSessionDates = (session) => {
     }
   }
 
-  .session-content {
+  .net-content {
     padding: 12px;
     display: flex;
     flex-direction: column;
     gap: 12px;
   }
 
-  .session-header {
-    .session-name {
+  .net-header {
+    .net-name {
       font-size: 1rem;
       font-weight: 500;
       color: rgb(var(--v-theme-on-surface));
       margin-bottom: 4px;
     }
 
-    .session-meta {
+    .net-meta {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -287,7 +287,7 @@ const formatSessionDates = (session) => {
     }
   }
 
-  .session-info {
+  .net-info {
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -318,7 +318,7 @@ const formatSessionDates = (session) => {
     }
   }
 
-  .session-actions {
+  .net-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 4px;
@@ -344,27 +344,27 @@ const formatSessionDates = (session) => {
 }
 
 @media (max-width: 600px) {
-  .session-grid {
+  .net-grid {
     .grid-padding {
       padding: 4px;
     }
 
-    .session-card {
+    .net-card {
       max-width: 100%;
       margin: 0;
 
-      .session-content {
+      .net-content {
         padding: 8px;
         gap: 8px;
       }
 
-      .session-header {
-        .session-name {
+      .net-header {
+        .net-name {
           font-size: 0.875rem;
         }
       }
 
-      .session-info {
+      .net-info {
         .info-item {
           font-size: 0.75rem;
           padding: 2px 6px;
@@ -376,7 +376,7 @@ const formatSessionDates = (session) => {
         }
       }
 
-      .session-actions {
+      .net-actions {
         .v-btn {
           min-width: 28px;
           height: 28px;

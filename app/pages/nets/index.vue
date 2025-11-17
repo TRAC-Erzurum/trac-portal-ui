@@ -9,7 +9,7 @@
                 <v-icon size="32" :color="getIconColor(0)" class="mr-4">mdi-radio</v-icon>
                 <div class="title-content">
                   <div class="text-h6">Tüm Çevrimler</div>
-                  <div class="text-caption">{{ sessions.length }} çevrim listeleniyor</div>
+                  <div class="text-caption">{{ nets.length }} çevrim listeleniyor</div>
                 </div>
               </div>
               <v-btn
@@ -18,9 +18,9 @@
                 size="small"
                 variant="tonal"
                 color="secondary"
-                to="/sessions/create"
+                to="/nets/create"
               >
-                {{ t('session.create') }}
+                {{ t('net.create') }}
               </v-btn>
             </div>
           </div>
@@ -31,7 +31,7 @@
                 <div class="d-flex justify-space-around align-center pa-4 rounded bg-surface">
                   <div class="text-center">
                     <div class="text-h4 font-weight-bold text-primary mb-1">
-                      {{ stats.totalSessions }}
+                      {{ stats.totalNets }}
                     </div>
                     <div class="text-caption">Toplam Çevrim</div>
                   </div>
@@ -57,25 +57,25 @@
               <v-card-title class="d-flex align-center py-4 px-6 justify-space-between">
                 <div class="d-flex align-center">
                   <v-icon icon="mdi-calendar-clock" size="24" class="mr-2" />
-                  {{ $t('Sessions') }}
+                  {{ $t('Nets') }}
                   <v-btn
                     class="ml-4"
                     icon="mdi-refresh"
                     size="small"
                     variant="flat"
                     :loading="loading"
-                    @click="fetchSessions"
+                    @click="fetchNets"
                   />
                 </div>
               </v-card-title>
 
-              <SessionCardView
-                :sessions="sessions"
+              <NetCardView
+                :nets="nets"
                 :loading="loading"
-                @start-session="startSession"
-                @end-session="endSession"
-                @restart-session="restartSession"
-                @delete-session="deleteSession"
+                @start-net="startNet"
+                @end-net="endNet"
+                @restart-net="restartNet"
+                @delete-net="deleteNet"
               />
             </v-card>
           </v-card-text>
@@ -92,7 +92,7 @@ import { useI18n } from 'vue-i18n'
 import { Role } from '~/constants/enums/role'
 import { useCardStyles } from '~/composables/useCardStyles'
 import { useErrorMessage } from '~/composables/useErrorMessage'
-import SessionCardView from '~/components/SessionCardView.vue'
+import NetCardView from '~/components/NetCardView.vue'
 
 const { t } = useI18n()
 const api = useApi()
@@ -103,34 +103,34 @@ const { getIconColor } = useCardStyles()
 const { getErrorMessage } = useErrorMessage()
 
 const loading = ref(true)
-const sessions = ref([])
+const nets = ref([])
 
 const headers = ref([
-  { title: t('session.name'), key: 'name' },
-  { title: t('session.frequency'), key: 'frequency' },
-  { title: t('session.mode'), key: 'mode' },
-  { title: t('session.startedAt'), key: 'startedAt' },
-  { title: t('session.endedAt'), key: 'endedAt' },
-  { title: t('session.duration'), key: 'duration' },
-  { title: t('session.attendeeCount'), key: 'attendeeCount' },
-  { title: t('session.operator'), key: 'operator' },
+  { title: t('net.name'), key: 'name' },
+  { title: t('net.frequency'), key: 'frequency' },
+  { title: t('net.mode'), key: 'mode' },
+  { title: t('net.startedAt'), key: 'startedAt' },
+  { title: t('net.endedAt'), key: 'endedAt' },
+  { title: t('net.duration'), key: 'duration' },
+  { title: t('net.attendeeCount'), key: 'attendeeCount' },
+  { title: t('net.operator'), key: 'operator' },
 ])
 
 const stats = ref({
-  totalSessions: 0,
+  totalNets: 0,
   totalAttendees: 0,
   averageAttendees: 0,
 })
 
-const fetchSessions = async () => {
+const fetchNets = async () => {
   try {
     loading.value = true
-    const response = await api.get('/session')
-    sessions.value = response
+    const response = await api.get('/net')
+    nets.value = response
   } catch (error) {
-    errorToast(t('session.fetchError', { error: error.message }))
-    console.error('Error fetching sessions:', error)
-    sessions.value = []
+    errorToast(t('net.fetchError', { error: error.message }))
+    console.error('Error fetching nets:', error)
+    nets.value = []
   } finally {
     loading.value = false
   }
@@ -138,73 +138,73 @@ const fetchSessions = async () => {
 
 const fetchStats = async () => {
   try {
-    const response = await api.get('/dashboard/session-stats')
+    const response = await api.get('/dashboard/net-stats')
     stats.value = {
-      totalSessions: response.totalSessions || 0,
+      totalNets: response.totalNets || 0,
       totalAttendees: response.totalAttendees || 0,
       averageAttendees: response.averageAttendees
         ? Number(response.averageAttendees).toFixed(1)
         : 0,
     }
   } catch (error) {
-    console.error('Error fetching session stats:', error)
+    console.error('Error fetching net stats:', error)
   }
 }
 
-const startSession = async (session) => {
+const startNet = async (net) => {
   try {
     loading.value = true
-    await api.patch(`/session/${session.id}/start`)
-    successToast(t('session.startSuccess'))
-    await fetchSessions()
+    await api.patch(`/net/${net.id}/start`)
+    successToast(t('net.startSuccess'))
+    await fetchNets()
   } catch (error) {
-    errorToast(t('session.startError'))
+    errorToast(t('net.startError'))
   } finally {
     loading.value = false
   }
 }
 
-const endSession = async (session) => {
+const endNet = async (net) => {
   try {
     loading.value = true
-    await api.patch(`/session/${session.id}/end`)
-    successToast(t('session.endSuccess'))
-    await fetchSessions()
+    await api.patch(`/net/${net.id}/end`)
+    successToast(t('net.endSuccess'))
+    await fetchNets()
   } catch (error) {
-    errorToast(t('session.endError'))
+    errorToast(t('net.endError'))
   } finally {
     loading.value = false
   }
 }
 
-const restartSession = async (session) => {
+const restartNet = async (net) => {
   try {
     loading.value = true
-    await api.patch(`/session/${session.id}/restart`)
-    successToast(t('session.restartSuccess'))
-    await fetchSessions()
+    await api.patch(`/net/${net.id}/restart`)
+    successToast(t('net.restartSuccess'))
+    await fetchNets()
   } catch (error) {
-    errorToast(t('session.restartError'))
+    errorToast(t('net.restartError'))
   } finally {
     loading.value = false
   }
 }
 
-const deleteSession = async (session) => {
-  if (session.attendeeCount > 0) {
-    errorToast(t('session.deleteAttendeeCount'))
+const deleteNet = async (net) => {
+  if (net.attendeeCount > 0) {
+    errorToast(t('net.deleteAttendeeCount'))
     return
   }
 
-  if (!confirm(t('session.deleteConfirm'))) {
+  if (!confirm(t('net.deleteConfirm'))) {
     return
   }
 
   try {
     loading.value = true
-    await api.delete(`/session/${session.id}`)
-    successToast(t('session.deleteSuccess'))
-    await fetchSessions()
+    await api.delete(`/net/${net.id}`)
+    successToast(t('net.deleteSuccess'))
+    await fetchNets()
   } catch (error) {
     errorToast(t(getErrorMessage(error)))
   } finally {
@@ -213,7 +213,7 @@ const deleteSession = async (session) => {
 }
 
 onMounted(() => {
-  Promise.all([fetchSessions(), fetchStats()])
+  Promise.all([fetchNets(), fetchStats()])
 })
 
 definePageMeta({

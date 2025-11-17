@@ -3,7 +3,7 @@
     <v-card class="custom-card">
       <v-card-title class="d-flex align-center py-4 px-6">
         <v-icon icon="mdi-calendar-plus" size="24" class="mr-2" />
-        {{ $t('session.create') }}
+        {{ $t('net.create') }}
       </v-card-title>
 
       <v-card-text>
@@ -12,8 +12,8 @@
             <v-col cols="0" md="2"></v-col>
             <v-col cols="12" md="5">
               <v-text-field
-                v-model="sessionData.name"
-                :label="t('session.name')"
+                v-model="netData.name"
+                :label="t('net.name')"
                 :error-messages="errors.name"
                 :rules="[(v) => !!v || t('validation.required')]"
                 required
@@ -22,9 +22,9 @@
             </v-col>
             <v-col cols="12" md="5">
               <v-select
-                v-model="sessionData.operatorId"
+                v-model="netData.operatorId"
                 :items="operators"
-                :label="t('session.operator')"
+                :label="t('net.operator')"
                 :error-messages="errors.operatorId"
                 :rules="[(v) => !!v || t('validation.required')]"
                 :item-title="formatOperatorDisplayName"
@@ -40,14 +40,14 @@
             <v-col cols="0" md="2"></v-col>
             <v-col cols="12" md="3">
               <v-select
-                v-model="sessionData.type"
+                v-model="netData.type"
                 :items="
-                  Object.values(SessionType).map((type) => ({
-                    title: t(`sessionType.${type}`),
+                  Object.values(NetType).map((type) => ({
+                    title: t(`netType.${type}`),
                     value: type,
                   }))
                 "
-                :label="t('session.type')"
+                :label="t('net.type')"
                 :error-messages="errors.type"
                 required
                 variant="outlined"
@@ -55,9 +55,9 @@
             </v-col>
             <v-col cols="12" md="3">
               <v-select
-                v-model="sessionData.mode"
+                v-model="netData.mode"
                 :items="modes"
-                :label="t('session.mode')"
+                :label="t('net.mode')"
                 :error-messages="errors.mode"
                 required
                 variant="outlined"
@@ -65,9 +65,9 @@
             </v-col>
             <v-col cols="12" md="4">
               <v-select
-                v-model="sessionData.frequency"
+                v-model="netData.frequency"
                 :items="frequencies"
-                :label="t('session.frequency')"
+                :label="t('net.frequency')"
                 :error-messages="errors.frequency"
                 :rules="[(v) => !!v || t('validation.required')]"
                 required
@@ -77,7 +77,7 @@
           </v-row>
 
           <div class="d-flex justify-end gap-2 mt-4">
-            <v-btn color="secondary" variant="outlined" :to="'/sessions'" class="mr-2">
+            <v-btn color="secondary" variant="outlined" :to="'/nets'" class="mr-2">
               {{ t('cancel') }}
             </v-btn>
             <v-btn color="primary" type="submit" :loading="loading">
@@ -98,7 +98,7 @@ import { Mode } from '~/constants/enums/mode'
 import { RepeaterFrequency, REPEATER_FREQUENCY_LABELS } from '~/constants/enums/repeater-frequency'
 import { Role } from '~/constants/enums/role'
 import { useErrorMessage } from '~/composables/useErrorMessage'
-import { SessionType } from '~/constants/enums/session-type'
+import { NetType } from '~/constants/enums/net-type'
 
 const { t } = useI18n()
 const api = useApi()
@@ -120,8 +120,8 @@ const frequencies = Object.values(RepeaterFrequency).map((freq) => ({
   value: freq,
 }))
 
-const sessionData = ref({
-  name: t('session.namePlaceholder', {
+const netData = ref({
+  name: t('net.namePlaceholder', {
     today: new Date().toLocaleDateString('tr-TR', {
       day: 'numeric',
       month: 'long',
@@ -131,7 +131,7 @@ const sessionData = ref({
   }),
   frequency: RepeaterFrequency.RU754,
   mode: Mode.FM,
-  type: SessionType.Analog,
+  type: NetType.Analog,
   operatorId: null,
 })
 
@@ -167,9 +167,9 @@ const handleSubmit = async () => {
     loading.value = true
     errors.value = {}
 
-    await api.post('/session', sessionData.value)
-    successToast(t('session.createSuccess'))
-    return navigateTo('/sessions')
+    await api.post('/net', netData.value)
+    successToast(t('net.createSuccess'))
+    return navigateTo('/nets')
   } catch (error) {
     errorToast(t(getErrorMessage(error)))
     if (error.response?.data?.errors) {

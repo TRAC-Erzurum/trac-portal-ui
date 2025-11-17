@@ -47,7 +47,7 @@
             </div>
 
             <v-card-text>
-              <div class="session-stats">
+              <div class="net-stats">
                 <div class="stats-row">
                   <div class="compact-stats">
                     <div class="compact-stat">
@@ -56,7 +56,7 @@
                       </div>
                       <div class="compact-stat-value">{{ personalStats[0]?.value }}</div>
                       <div class="compact-stat-label">
-                        {{ $t('pages.dashboard.stats.attendedSessions') }}
+                        {{ $t('pages.dashboard.stats.attendedNets') }}
                       </div>
                     </div>
 
@@ -66,7 +66,7 @@
                       </div>
                       <div class="compact-stat-value">{{ personalStats[1]?.value }}</div>
                       <div class="compact-stat-label">
-                        {{ $t('pages.dashboard.stats.managedSessions') }}
+                        {{ $t('pages.dashboard.stats.managedNets') }}
                       </div>
                     </div>
 
@@ -92,15 +92,15 @@
                         <v-icon v-if="$vuetify.display.smAndDown" size="20" color="info"
                           >mdi-calendar</v-icon
                         >
-                        {{ $t('pages.dashboard.stats.lastAttendedSession') }}
+                        {{ $t('pages.dashboard.stats.lastAttendedNet') }}
                       </div>
                       <div
                         class="stat-value clickable"
-                        @click="navigateToSession(personalStats[2]?.sessionId)"
+                        @click="navigateToNet(personalStats[2]?.netId)"
                         v-tooltip="personalStats[2]?.value"
                       >
-                        {{ truncateSessionName(personalStats[2]?.value) }}
-                        <v-icon v-if="personalStats[2]?.sessionId" size="small" class="ml-1"
+                        {{ truncateNetName(personalStats[2]?.value) }}
+                        <v-icon v-if="personalStats[2]?.netId" size="small" class="ml-1"
                           >mdi-open-in-new</v-icon
                         >
                       </div>
@@ -142,20 +142,20 @@
               <div class="d-flex align-center">
                 <v-icon size="32" color="primary" class="mr-4">mdi-clock-outline</v-icon>
                 <div>
-                  <div class="text-h6">{{ $t('pages.dashboard.recentSessions') }}</div>
+                  <div class="text-h6">{{ $t('pages.dashboard.recentNets') }}</div>
                   <div class="text-caption text-medium-emphasis">
-                    {{ $t('pages.dashboard.recentSessionsDescription') }}
+                    {{ $t('pages.dashboard.recentNetsDescription') }}
                   </div>
                 </div>
               </div>
               <v-spacer></v-spacer>
-              <v-tooltip :text="$t('session.create')" v-if="$auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN">
+              <v-tooltip :text="$t('net.create')" v-if="$auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN">
                 <template v-slot:activator="{ props }">
                   <v-btn
                     v-bind="props"
                     variant="tonal"
                     color="primary"
-                    :to="'/sessions/create'"
+                    :to="'/nets/create'"
                     :icon="$vuetify.display.smAndDown"
                     class="mr-2 hidden-sm-and-up"
                   >
@@ -164,11 +164,11 @@
                   <v-btn
                     variant="tonal"
                     color="primary"
-                    :to="'/sessions/create'"
+                    :to="'/nets/create'"
                     prepend-icon="mdi-plus"
                     class="mr-2 hidden-xs"
                   >
-                    {{ t('session.create') }}
+                    {{ t('net.create') }}
                   </v-btn>
                 </template>
               </v-tooltip>
@@ -178,7 +178,7 @@
                     v-bind="props"
                     variant="tonal"
                     color="primary"
-                    :to="'/sessions'"
+                    :to="'/nets'"
                     :icon="$vuetify.display.smAndDown"
                     class="hidden-sm-and-up"
                   >
@@ -187,7 +187,7 @@
                   <v-btn
                     variant="tonal"
                     color="primary"
-                    :to="'/sessions'"
+                    :to="'/nets'"
                     prepend-icon="mdi-arrow-right"
                     class="hidden-xs"
                   >
@@ -196,24 +196,24 @@
                 </template>
               </v-tooltip>
             </v-card-title>
-            <v-card-text v-if="recentSessions.length">
-              <SessionCardView
-                :sessions="recentSessions"
-                :loading="loadingSession"
+            <v-card-text v-if="recentNets.length">
+              <NetCardView
+                :nets="recentNets"
+                :loading="loadingNet"
                 :hide-pagination="true"
-                @start-session="startSession"
-                @end-session="endSession"
-                @restart-session="restartSession"
+                @start-net="startNet"
+                @end-net="endNet"
+                @restart-net="restartNet"
               />
             </v-card-text>
             <v-card-text v-else class="text-center pa-4">
               <v-icon size="48" color="grey">mdi-calendar-blank</v-icon>
-              <div class="text-body-1 mt-2">{{ $t('session.noSessions') }}</div>
+              <div class="text-body-1 mt-2">{{ $t('net.noNets') }}</div>
             </v-card-text>
           </v-card>
         </v-col>
 
-        <v-col cols="12" md="6" v-for="stat in sessionStats" :key="stat.title">
+        <v-col cols="12" md="6" v-for="stat in netStats" :key="stat.title">
           <v-card class="dashboard-card dashboard-card--secondary h-100">
             <div class="card-title">
               <v-icon
@@ -231,7 +231,7 @@
                   :class="$vuetify.display.mdAndUp ? 'text-subtitle-2' : 'text-caption'"
                   class="text-medium-emphasis"
                 >
-                  {{ t('pages.dashboard.stats.sessionDescription') }}
+                  {{ t('pages.dashboard.stats.netDescription') }}
                 </div>
               </div>
             </div>
@@ -240,10 +240,10 @@
               <v-list>
                 <v-list-item
                   v-for="(item, index) in stat.data"
-                  :key="item.sessionId"
+                  :key="item.netId"
                   :class="$vuetify.display.mdAndUp ? 'mb-2' : 'mb-1 py-1'"
                   density="compact"
-                  @click="item.sessionId && navigateToSession(item.sessionId)"
+                  @click="item.netId && navigateToNet(item.netId)"
                 >
                   <template v-slot:prepend>
                     <v-avatar
@@ -258,11 +258,11 @@
                     :class="[
                       $vuetify.display.mdAndUp ? 'text-subtitle-1' : 'text-body-2',
                       'font-weight-medium',
-                      { 'cursor-pointer': item.sessionId },
+                      { 'cursor-pointer': item.netId },
                     ]"
                   >
-                    {{ item.sessionName }}
-                    <v-icon v-if="item.sessionId" size="small" class="ms-1">mdi-open-in-new</v-icon>
+                    {{ item.netName }}
+                    <v-icon v-if="item.netId" size="small" class="ms-1">mdi-open-in-new</v-icon>
                   </v-list-item-title>
 
                   <v-list-item-subtitle
@@ -303,7 +303,7 @@
               <v-list>
                 <v-list-item
                   v-for="(item, index) in stat.data"
-                  :key="item.userId || item.sessionId"
+                  :key="item.userId || item.netId"
                   :class="$vuetify.display.mdAndUp ? 'mb-2' : 'mb-1 py-1'"
                   density="compact"
                   @click="item.userId && navigateToUserProfile(item.userId)"
@@ -324,7 +324,7 @@
                       { 'cursor-pointer': item.userId },
                     ]"
                   >
-                    {{ item.callSign || item.sessionName }}
+                    {{ item.callSign || item.netName }}
                     <v-icon v-if="item.userId" size="small" class="ms-1">mdi-open-in-new</v-icon>
                   </v-list-item-title>
 
@@ -421,7 +421,7 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import { Role } from '~/constants/enums/role'
-import SessionCardView from '~/components/SessionCardView.vue'
+import NetCardView from '~/components/NetCardView.vue'
 
 const { $auth } = useNuxtApp()
 const api = useApi()
@@ -430,44 +430,44 @@ const { errorToast, successToast } = useToast()
 const { getImageUrl } = useImageUrl()
 
 const loading = ref(true)
-const loadingSession = ref(false)
+const loadingNet = ref(false)
 const personalStats = ref([])
-const recentSessions = ref([])
+const recentNets = ref([])
 const topStats = ref([])
 
 const fetchDashboardData = async () => {
   try {
     loading.value = true
-    const [personalStatsData, recentSessionsData, topStatsData] = await Promise.all([
+    const [personalStatsData, recentNetsData, topStatsData] = await Promise.all([
       api.get('/dashboard/personal-stats'),
-      api.get('/dashboard/recent-sessions'),
+      api.get('/dashboard/recent-nets'),
       api.get('/dashboard/top-stats'),
     ])
 
     personalStats.value = [
       {
-        label: 'pages.dashboard.stats.attendedSessions',
-        value: personalStatsData.attendedSessions,
+        label: 'pages.dashboard.stats.attendedNets',
+        value: personalStatsData.attendedNets,
         icon: 'mdi-account-group',
         color: 'primary',
       },
       {
-        label: 'pages.dashboard.stats.managedSessions',
-        value: personalStatsData.managedSessions,
+        label: 'pages.dashboard.stats.managedNets',
+        value: personalStatsData.managedNets,
         icon: 'mdi-account-tie',
         color: 'success',
       },
       {
-        label: 'pages.dashboard.stats.lastAttendedSession',
-        value: personalStatsData.lastAttendedSession?.name || '-',
-        sessionId: personalStatsData.lastAttendedSession?.id,
+        label: 'pages.dashboard.stats.lastAttendedNet',
+        value: personalStatsData.lastAttendedNet?.name || '-',
+        netId: personalStatsData.lastAttendedNet?.id,
         icon: 'mdi-calendar',
         color: 'info',
       },
       {
-        label: 'pages.dashboard.stats.lastManagedSession',
-        value: personalStatsData.lastManagedSession?.name || '-',
-        sessionId: personalStatsData.lastManagedSession?.id,
+        label: 'pages.dashboard.stats.lastManagedNet',
+        value: personalStatsData.lastManagedNet?.name || '-',
+        netId: personalStatsData.lastManagedNet?.id,
         icon: 'mdi-calendar-check',
         color: 'warning',
       },
@@ -491,7 +491,7 @@ const fetchDashboardData = async () => {
       },
     ]
 
-    recentSessions.value = recentSessionsData
+    recentNets.value = recentNetsData
 
     topStats.value = topStatsData
   } catch (error) {
@@ -501,7 +501,7 @@ const fetchDashboardData = async () => {
   }
 }
 
-const truncateSessionName = (name, maxLength = 30) => {
+const truncateNetName = (name, maxLength = 30) => {
   if (!name) return '-'
   return name.length > maxLength ? `${name.substring(0, maxLength)}...` : name
 }
@@ -510,7 +510,7 @@ const navigateToUserProfile = (userId) => {
   return navigateTo(`/users/${userId}/profile`)
 }
 
-const navigateToSession = (sessionId, event) => {
+const navigateToNet = (netId, event) => {
   if (event && event.target.closest('.clickable-cell')) {
     return
   }
@@ -520,7 +520,7 @@ const navigateToSession = (sessionId, event) => {
     return
   }
 
-  return navigateTo(`/sessions/${sessionId}/report`)
+  return navigateTo(`/nets/${netId}/report`)
 }
 
 const getIconColor = (index) => {
@@ -532,51 +532,51 @@ const operatorStats = computed(() => {
   return topStats.value.filter((stat) => stat.type === 'operator' && stat.data.length > 0)
 })
 
-const sessionStats = computed(() => {
-  return topStats.value.filter((stat) => stat.type === 'session' && stat.data.length > 0)
+const netStats = computed(() => {
+  return topStats.value.filter((stat) => stat.type === 'net' && stat.data.length > 0)
 })
 
 const hasPersonalStats = computed(() => {
   return personalStats.value?.some((stat) => stat?.value !== undefined && stat?.value !== null)
 })
 
-const startSession = async (session) => {
+const startNet = async (net) => {
   try {
-    loadingSession.value = true
-    await api.patch(`/session/${session.id}/start`)
-    successToast(t('session.startSuccess'))
-    recentSessions.value.find((s) => s.id === session.id).startedAt = new Date()
+    loadingNet.value = true
+    await api.patch(`/net/${net.id}/start`)
+    successToast(t('net.startSuccess'))
+    recentNets.value.find((n) => n.id === net.id).startedAt = new Date()
   } catch (error) {
-    errorToast(t('session.startError'))
+    errorToast(t('net.startError'))
   } finally {
-    loadingSession.value = false
+    loadingNet.value = false
   }
 }
 
-const endSession = async (session) => {
+const endNet = async (net) => {
   try {
-    loadingSession.value = true
-    await api.patch(`/session/${session.id}/end`)
-    successToast(t('session.endSuccess'))
-    recentSessions.value.find((s) => s.id === session.id).endedAt = new Date()
+    loadingNet.value = true
+    await api.patch(`/net/${net.id}/end`)
+    successToast(t('net.endSuccess'))
+    recentNets.value.find((n) => n.id === net.id).endedAt = new Date()
   } catch (error) {
-    errorToast(t('session.endError'))
+    errorToast(t('net.endError'))
   } finally {
-    loadingSession.value = false
+    loadingNet.value = false
   }
 }
 
-const restartSession = async (session) => {
+const restartNet = async (net) => {
   try {
-    loadingSession.value = true
-    await api.patch(`/session/${session.id}/restart`)
-    successToast(t('session.restartSuccess'))
-    recentSessions.value.find((s) => s.id === session.id).startedAt = new Date()
-    recentSessions.value.find((s) => s.id === session.id).endedAt = null
+    loadingNet.value = true
+    await api.patch(`/net/${net.id}/restart`)
+    successToast(t('net.restartSuccess'))
+    recentNets.value.find((n) => n.id === net.id).startedAt = new Date()
+    recentNets.value.find((n) => n.id === net.id).endedAt = null
   } catch (error) {
-    errorToast(t('session.restartError'))
+    errorToast(t('net.restartError'))
   } finally {
-    loadingSession.value = false
+    loadingNet.value = false
   }
 }
 
@@ -722,7 +722,7 @@ definePageMeta({
   }
 }
 
-.session-stats {
+.net-stats {
   display: flex;
   flex-direction: column;
   gap: 1rem;
