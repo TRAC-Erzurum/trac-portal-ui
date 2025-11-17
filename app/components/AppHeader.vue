@@ -50,13 +50,13 @@
               </v-btn>
               <v-btn
                 v-if="$auth.user.value?.callSign"
-                :to="'/sessions'"
+                :to="'/nets'"
                 variant="text"
                 class="nav-button"
                 :ripple="false"
               >
                 <v-icon icon="mdi-book-open-variant" size="20" class="mr-2" />
-                <span class="nav-text">{{ $t('nav.sessions') }}</span>
+                <span class="nav-text">{{ $t('nav.nets') }}</span>
               </v-btn>
 
               <div class="profile-section">
@@ -147,11 +147,11 @@
             <div
               v-if="$auth.user.value?.callSign"
               class="nav-item"
-              :class="{ active: route.path.startsWith('/sessions') }"
-              @click="navigateAndClose('/sessions')"
+              :class="{ active: route.path.startsWith('/nets') }"
+              @click="navigateAndClose('/nets')"
             >
               <v-icon size="20">mdi-book-open-variant</v-icon>
-              <span>{{ $t('nav.sessions') }}</span>
+              <span>{{ $t('nav.nets') }}</span>
             </div>
           </div>
 

@@ -9,7 +9,7 @@
       </div>
 
       <v-card-text>
-        <div class="session-stats">
+        <div class="net-stats">
           <div class="stats-row justify-center">
             <div class="avatar-section">
               <v-avatar size="150" class="profile-avatar mb-4">

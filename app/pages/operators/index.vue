@@ -222,7 +222,7 @@
                   color="error"
                   variant="text"
                   @click="confirmDelete(item)"
-                  :disabled="item.sessionCount > 0"
+                  :disabled="item.netCount > 0"
                 />
               </template>
             </v-data-table-server>

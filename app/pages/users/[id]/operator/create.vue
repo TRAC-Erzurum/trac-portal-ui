@@ -9,7 +9,7 @@
       </div>
 
       <v-card-text>
-        <div class="session-stats">
+        <div class="net-stats">
           <div class="stats-row">
             <div class="stat-card form-card">
               <v-form v-model="form.valid" @submit.prevent="handleSubmit" class="w-100">
@@ -245,7 +245,7 @@ definePageMeta({
 </script>
 
 <style lang="scss" scoped>
-.session-stats {
+.net-stats {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;

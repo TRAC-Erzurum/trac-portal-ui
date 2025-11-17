@@ -12,7 +12,7 @@
       <v-text-field
         readonly
         variant="outlined"
-        :placeholder="t('session.addAttendee')"
+        :placeholder="t('net.addAttendee')"
         class="search-trigger"
         v-bind="props"
         hide-details
@@ -113,7 +113,7 @@
                             }}
                           </div>
                           <span class="operator-status">
-                            ({{ t('operator.alreadyInSession') }})
+                            ({{ t('operator.alreadyInNet') }})
                           </span>
                           <v-icon class="operator-action" color="disabled"
                             >mdi-chevron-right</v-icon
@@ -215,7 +215,7 @@
                 <div class="form-actions">
                   <v-btn variant="tonal" color="primary" class="back-button" @click="resetForm">
                     <v-icon start>mdi-magnify</v-icon>
-                    {{ t('session.backToSearch') }}
+                    {{ t('net.backToSearch') }}
                   </v-btn>
                   <v-btn
                     color="primary"
@@ -225,7 +225,7 @@
                     @click="handleAddAttendee"
                   >
                     <v-icon start>mdi-plus</v-icon>
-                    {{ t('session.addAttendee') }}
+                    {{ t('net.addAttendee') }}
                   </v-btn>
                 </div>
               </div>
@@ -234,7 +234,7 @@
             <div class="existing-attendees">
               <div class="list-header">
                 <v-icon size="small" color="primary" class="mr-2">mdi-account-group</v-icon>
-                {{ t('session.existingAttendees') }}
+                {{ t('net.existingAttendees') }}
               </div>
               <div class="list-content">
                 <div
@@ -246,7 +246,7 @@
                   <span class="attendee-callsign">{{ attendee.callSign }}</span>
                 </div>
                 <div v-if="!attendeesWithOrder.length" class="no-attendees">
-                  {{ t('session.noAttendees') }}
+                  {{ t('net.noAttendees') }}
                 </div>
               </div>
             </div>
@@ -276,7 +276,7 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
-  sessionId: {
+  netId: {
     type: String,
     required: true,
   },
