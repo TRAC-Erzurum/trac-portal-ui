@@ -151,11 +151,11 @@ onMounted(async () => {
 })
 
 const allowEdit = () => {
-  return $auth.user.value?.role === Role.ADMIN || $auth.user.value?.id === route.params.id
+  return ($auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN) || $auth.user.value?.id === route.params.id
 }
 
 const getSubmitUrl = () => {
-  if ($auth.user.value?.role === Role.ADMIN && $auth.user.value?.id !== route.params.id) {
+  if (($auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN) && $auth.user.value?.id !== route.params.id) {
     return `/user/${route.params.id}/operator`
   }
   return `/user/operator`

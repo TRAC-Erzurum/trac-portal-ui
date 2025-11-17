@@ -8,7 +8,7 @@
         </div>
         <v-spacer />
         <v-btn
-          v-if="$auth.user.value?.role === Role.ADMIN"
+          v-if="$auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN"
           prepend-icon="mdi-file-import"
           size="small"
           variant="tonal"
@@ -195,7 +195,15 @@
                 </v-tooltip>
               </template>
 
-              <template v-slot:item.actions="{ item }" v-if="$auth.user.value?.role === Role.ADMIN">
+              <template v-slot:item.createdBy="{ item }" v-if="$auth.user.value?.role === Role.SUPER_ADMIN">
+                <span class="text-caption">{{ item.createdBy || '-' }}</span>
+              </template>
+
+              <template v-slot:item.updatedBy="{ item }" v-if="$auth.user.value?.role === Role.SUPER_ADMIN">
+                <span class="text-caption">{{ item.updatedBy?.length ? item.updatedBy.join(', ') : '-' }}</span>
+              </template>
+
+              <template v-slot:item.actions="{ item }" v-if="$auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN">
                 <v-select
                   v-if="item.user"
                   v-model="item.user.role"
@@ -350,13 +358,24 @@ const editItem = ref(null)
 const editLoading = ref(false)
 
 // Table headers
-const headers = ref([
-  { title: t('operator.callSign'), key: 'callSign', sortable: true },
-  { title: t('operator.qth'), key: 'qth', sortable: true },
-  { title: t('operator.gridSquare'), key: 'gridSquare', sortable: true },
-  { title: t('operator.fullName'), key: 'fullName', sortable: true },
-  { title: t('operator.createdAt'), key: 'createdAt', sortable: true },
-])
+const headers = computed(() => {
+  const baseHeaders = [
+    { title: t('operator.callSign'), key: 'callSign', sortable: true },
+    { title: t('operator.qth'), key: 'qth', sortable: true },
+    { title: t('operator.gridSquare'), key: 'gridSquare', sortable: true },
+    { title: t('operator.fullName'), key: 'fullName', sortable: true },
+    { title: t('operator.createdAt'), key: 'createdAt', sortable: true },
+  ]
+  
+  if ($auth.user.value?.role === Role.SUPER_ADMIN) {
+    baseHeaders.push(
+      { title: t('common.createdBy'), key: 'createdBy', sortable: false },
+      { title: t('common.updatedBy'), key: 'updatedBy', sortable: false }
+    )
+  }
+  
+  return baseHeaders
+})
 
 // Import fields mapping
 const mappableFields = [
@@ -367,11 +386,13 @@ const mappableFields = [
   { key: 'fullName', required: false },
 ]
 
-// Role options
-const roles = Object.values(Role).map((role) => ({
-  title: t(`roles.${role}`),
-  value: role,
-}))
+// Role options (exclude SUPER_ADMIN as it cannot be assigned)
+const roles = Object.values(Role)
+  .filter((role) => role !== Role.SUPER_ADMIN)
+  .map((role) => ({
+    title: t(`roles.${role}`),
+    value: role,
+  }))
 
 // Computed properties
 const isCallSignMapped = computed(() => {
@@ -518,7 +539,7 @@ const formatQTH = (operator) => {
 }
 
 const canEdit = (operator) => {
-  return $auth.user.value?.role === Role.ADMIN && !operator.user
+  return ($auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN) && !operator.user
 }
 
 const navigateToUserProfile = (userId) => {
@@ -682,7 +703,7 @@ const handleEditSave = async (data) => {
 
 // Lifecycle
 onMounted(() => {
-  if ($auth.user.value?.role === Role.ADMIN) {
+  if ($auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN) {
     headers.value.push({ title: t('common.actions'), key: 'actions', sortable: false })
   }
   loadOperators()
@@ -691,7 +712,7 @@ onMounted(() => {
 // Page meta
 definePageMeta({
   requiresAuth: true,
-  roles: [Role.ADMIN, Role.MEMBER, Role.VOLUNTEER],
+  roles: [Role.SUPER_ADMIN, Role.ADMIN, Role.MEMBER, Role.VOLUNTEER],
 })
 </script>
 

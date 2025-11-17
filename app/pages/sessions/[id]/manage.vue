@@ -657,18 +657,18 @@ const canManageSession = computed(() => {
   const currentUser = $auth.user.value
   if (!currentUser) return false
 
-  if (currentUser.role === Role.ADMIN) return true
+  if (currentUser.role === Role.ADMIN || currentUser.role === Role.SUPER_ADMIN) return true
 
   return session.value && currentUser.id === session.value.operator?.user?.id
 })
 
-const isAdmin = computed(() => $auth.user.value?.role === Role.ADMIN)
+const isAdmin = computed(() => $auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN)
 
 const canAddAttendee = computed(() => {
   const currentUser = $auth.user.value
   if (!currentUser) return false
 
-  if (currentUser.role === Role.ADMIN) return true
+  if (currentUser.role === Role.ADMIN || currentUser.role === Role.SUPER_ADMIN) return true
 
   if (session.value?.operator?.user?.id === currentUser.id) {
     return session.value.startedAt && !session.value.endedAt
@@ -973,7 +973,7 @@ const handleEditSave = async (data) => {
 
 const canEdit = (attendee) => {
   if (!session.value || !attendee) return false
-  if ($auth.user.value?.role === Role.ADMIN) return true
+  if ($auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN) return true
   if (session.value.endedAt) return false
   return session.value.operator?.user?.id === $auth.user.value?.id
 }
@@ -1059,7 +1059,7 @@ onMounted(async () => {
   window.addEventListener('resize', checkMobile)
   window.removeEventListener('resize', checkMobile)
 
-  if ($auth.user.value?.role !== Role.ADMIN) {
+  if ($auth.user.value?.role !== Role.ADMIN && $auth.user.value?.role !== Role.SUPER_ADMIN) {
     await fetchSession()
 
     if (!canManageSession.value) {

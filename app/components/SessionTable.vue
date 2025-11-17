@@ -176,7 +176,7 @@ const props = defineProps({
 
 const emit = defineEmits(['start-session', 'end-session', 'restart-session'])
 
-const isAdmin = computed(() => $auth.user.value?.role === Role.ADMIN)
+const isAdmin = computed(() => $auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN)
 
 const isSessionOperator = (session) => {
   return $auth.user.value?.id === session.operator?.user?.id
