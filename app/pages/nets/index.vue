@@ -57,7 +57,7 @@
               <v-card-title class="d-flex align-center py-4 px-6 justify-space-between">
                 <div class="d-flex align-center">
                   <v-icon icon="mdi-calendar-clock" size="24" class="mr-2" />
-                  {{ $t('Nets') }}
+                  {{ $t('nav.nets') }}
                   <v-btn
                     class="ml-4"
                     icon="mdi-refresh"

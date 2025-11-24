@@ -452,10 +452,10 @@
         <v-card-actions class="pa-4">
           <v-spacer />
           <v-btn color="grey" variant="text" @click="showEndConfirm = false">
-            {{ t('cancel') }}
+            {{ t('common.cancel') }}
           </v-btn>
           <v-btn color="error" @click="confirmEndNet">
-            {{ t('confirm') }}
+            {{ t('common.confirm') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -518,10 +518,10 @@
         <v-card-actions class="pa-4">
           <v-spacer />
           <v-btn color="grey" variant="text" @click="cancelOperatorChange">
-            {{ t('cancel') }}
+            {{ t('common.cancel') }}
           </v-btn>
           <v-btn color="primary" :disabled="!selectedNewOperator" @click="confirmOperatorChange">
-            {{ t('confirm') }}
+            {{ t('common.confirm') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -538,10 +538,10 @@
         <v-card-actions class="pa-4">
           <v-spacer />
           <v-btn color="grey" variant="text" @click="showRestartConfirm = false">
-            {{ t('cancel') }}
+            {{ t('common.cancel') }}
           </v-btn>
           <v-btn color="warning" @click="confirmRestartNet">
-            {{ t('confirm') }}
+            {{ t('common.confirm') }}
           </v-btn>
         </v-card-actions>
       </v-card>
@@ -712,7 +712,7 @@ const editFields = computed(() => {
         {
           type: 'text',
           key: 'name',
-          label: t('fullName'),
+          label: t('auth.fullName'),
         },
       ]
     case 'qth':

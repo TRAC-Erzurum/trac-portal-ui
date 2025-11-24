@@ -107,10 +107,10 @@
               :to="`/nets/${route.params.id}/manage`"
               class="mx-2"
             >
-              {{ t('cancel') }}
+              {{ t('common.cancel') }}
             </v-btn>
             <v-btn color="primary" type="submit" :loading="loading">
-              {{ t('save') }}
+              {{ t('common.save') }}
             </v-btn>
           </div>
         </v-form>
