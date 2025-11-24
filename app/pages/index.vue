@@ -200,10 +200,10 @@
               <NetCardView
                 :nets="recentNets"
                 :loading="loadingNet"
-                :hide-pagination="true"
                 @start-net="startNet"
                 @end-net="endNet"
                 @restart-net="restartNet"
+                @delete-net="deleteNet"
               />
             </v-card-text>
             <v-card-text v-else class="text-center pa-4">
@@ -422,12 +422,14 @@
 import { useI18n } from 'vue-i18n'
 import { Role } from '~/constants/enums/role'
 import NetCardView from '~/components/NetCardView.vue'
+import { useErrorMessage } from '~/composables/useErrorMessage'
 
 const { $auth } = useNuxtApp()
 const api = useApi()
 const { t } = useI18n()
 const { errorToast, successToast } = useToast()
 const { getImageUrl } = useImageUrl()
+const { getErrorMessage } = useErrorMessage()
 
 const loading = ref(true)
 const loadingNet = ref(false)
@@ -575,6 +577,28 @@ const restartNet = async (net) => {
     recentNets.value.find((n) => n.id === net.id).endedAt = null
   } catch (error) {
     errorToast(t('net.restartError'))
+  } finally {
+    loadingNet.value = false
+  }
+}
+
+const deleteNet = async (net) => {
+  if (net.attendeeCount > 0) {
+    errorToast(t('net.deleteAttendeeCount'))
+    return
+  }
+
+  if (!confirm(t('net.deleteConfirm'))) {
+    return
+  }
+
+  try {
+    loadingNet.value = true
+    await api.delete(`/net/${net.id}`)
+    successToast(t('net.deleteSuccess'))
+    await fetchDashboardData()
+  } catch (error) {
+    errorToast(getErrorMessage(error))
   } finally {
     loadingNet.value = false
   }

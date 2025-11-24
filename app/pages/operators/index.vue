@@ -16,7 +16,7 @@
           @click="triggerFileInput"
           :loading="importing"
         >
-          {{ t('import') }}
+          {{ t('common.import') }}
         </v-btn>
         <input
           type="file"
@@ -196,11 +196,45 @@
               </template>
 
               <template v-slot:item.createdBy="{ item }" v-if="$auth.user.value?.role === Role.SUPER_ADMIN">
-                <span class="text-caption">{{ item.createdBy || '-' }}</span>
+                <v-tooltip v-if="item.createdBy" :text="`${t('common.createdBy')}: ${item.createdBy}`">
+                  <template v-slot:activator="{ props }">
+                    <v-icon
+                      v-bind="props"
+                      size="small"
+                      color="secondary"
+                      class="cursor-pointer"
+                    >
+                      mdi-account-plus
+                    </v-icon>
+                  </template>
+                </v-tooltip>
+                <span v-else class="text-caption">-</span>
               </template>
 
               <template v-slot:item.updatedBy="{ item }" v-if="$auth.user.value?.role === Role.SUPER_ADMIN">
-                <span class="text-caption">{{ item.updatedBy?.length ? item.updatedBy.join(', ') : '-' }}</span>
+                <v-tooltip v-if="item.updatedBy?.length">
+                  <template v-slot:activator="{ props }">
+                    <v-icon
+                      v-bind="props"
+                      size="small"
+                      color="secondary"
+                      class="cursor-pointer"
+                    >
+                      mdi-account-edit
+                    </v-icon>
+                  </template>
+                  <div class="updated-by-tooltip">
+                    <div class="tooltip-title">{{ t('common.updatedBy') }}:</div>
+                    <div
+                      v-for="(email, index) in item.updatedBy"
+                      :key="index"
+                      class="tooltip-item"
+                    >
+                      {{ email }}
+                    </div>
+                  </div>
+                </v-tooltip>
+                <span v-else class="text-caption">-</span>
               </template>
 
               <template v-slot:item.actions="{ item }" v-if="$auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN">
@@ -263,7 +297,7 @@
               <v-card-actions>
                 <v-spacer></v-spacer>
                 <v-btn @click="showImportDialog = false" variant="elevated" color="accent">
-                  {{ t('cancel') }}
+                  {{ t('common.cancel') }}
                 </v-btn>
                 <v-btn
                   color="primary"
@@ -271,7 +305,7 @@
                   :disabled="!isCallSignMapped"
                   variant="elevated"
                 >
-                  {{ t('continue') }}
+                  {{ t('common.continue') }}
                 </v-btn>
               </v-card-actions>
             </v-card>
@@ -285,10 +319,10 @@
               <v-card-actions>
                 <v-spacer></v-spacer>
                 <v-btn @click="showDeleteDialog = false" variant="text">
-                  {{ t('cancel') }}
+                  {{ t('common.cancel') }}
                 </v-btn>
                 <v-btn color="error" variant="elevated" :loading="deleting" @click="deleteOperator">
-                  {{ t('delete') }}
+                  {{ t('common.delete') }}
                 </v-btn>
               </v-card-actions>
             </v-card>
@@ -731,5 +765,21 @@ definePageMeta({
 
 .bg-inactive-row {
   background-color: rgba(0, 0, 0, 0.02);
+}
+
+.updated-by-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .tooltip-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .tooltip-item {
+    padding-left: 8px;
+    line-height: 1.5;
+  }
 }
 </style>

@@ -216,7 +216,7 @@ const exportToCsv = async () => {
     csvContent.unshift(
       [
         t('operator.callSign'),
-        t('fullName'),
+        t('auth.fullName'),
         t('qth.country'),
         t('qth.city'),
         t('qth.district'),

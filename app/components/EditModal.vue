@@ -12,7 +12,7 @@
         <div class="form-header">
           <div class="form-title">{{ title }}</div>
           <div class="header-actions">
-            <v-tooltip location="bottom" text="Kapat">
+            <v-tooltip location="bottom" :text="t('common.close')">
               <template v-slot:activator="{ props }">
                 <v-btn
                   icon
@@ -67,7 +67,7 @@
 
         <div class="form-actions">
           <v-btn color="primary" variant="flat" @click="handleSave" :loading="loading">
-            {{ t('save') }}
+            {{ t('common.save') }}
           </v-btn>
         </div>
       </div>

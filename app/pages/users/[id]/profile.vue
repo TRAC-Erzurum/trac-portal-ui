@@ -26,7 +26,7 @@
                   <div class="info-row">
                     <div class="info-header">
                       <v-icon size="20" color="primary">mdi-email</v-icon>
-                      <span class="info-label">{{ t('email') }}</span>
+                      <span class="info-label">{{ t('auth.email') }}</span>
                     </div>
                     <div class="info-value">{{ user.email }}</div>
                   </div>
@@ -221,7 +221,7 @@
                   <v-icon size="32" color="primary">mdi-account</v-icon>
                 </div>
                 <div class="stat-content">
-                  <div class="stat-label">{{ t('fullName') }}</div>
+                  <div class="stat-label">{{ t('auth.fullName') }}</div>
                   <div class="stat-value">{{ user.fullName || '-' }}</div>
                 </div>
               </div>

@@ -78,10 +78,10 @@
 
           <div class="d-flex justify-end gap-2 mt-4">
             <v-btn color="secondary" variant="outlined" :to="'/nets'" class="mr-2">
-              {{ t('cancel') }}
+              {{ t('common.cancel') }}
             </v-btn>
             <v-btn color="primary" type="submit" :loading="loading">
-              {{ t('save') }}
+              {{ t('common.save') }}
             </v-btn>
           </div>
         </v-form>

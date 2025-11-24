@@ -76,12 +76,42 @@
               <template v-if="isSuperAdmin && (net.createdBy || net.updatedBy?.length)">
                 <v-divider class="my-2"></v-divider>
                 <div v-if="net.createdBy" class="info-row">
-                  <v-icon size="small" color="secondary" class="me-2">mdi-account-plus</v-icon>
-                  <span class="text-caption">{{ t('common.createdBy') }}: {{ net.createdBy }}</span>
+                  <v-tooltip :text="`${t('common.createdBy')}: ${net.createdBy}`">
+                    <template v-slot:activator="{ props }">
+                      <v-icon
+                        v-bind="props"
+                        size="small"
+                        color="secondary"
+                        class="me-2 cursor-pointer"
+                      >
+                        mdi-account-plus
+                      </v-icon>
+                    </template>
+                  </v-tooltip>
                 </div>
                 <div v-if="net.updatedBy && net.updatedBy.length > 0" class="info-row">
-                  <v-icon size="small" color="secondary" class="me-2">mdi-account-edit</v-icon>
-                  <span class="text-caption">{{ t('common.updatedBy') }}: {{ net.updatedBy.join(', ') }}</span>
+                  <v-tooltip>
+                    <template v-slot:activator="{ props }">
+                      <v-icon
+                        v-bind="props"
+                        size="small"
+                        color="secondary"
+                        class="me-2 cursor-pointer"
+                      >
+                        mdi-account-edit
+                      </v-icon>
+                    </template>
+                    <div class="updated-by-tooltip">
+                      <div class="tooltip-title">{{ t('common.updatedBy') }}:</div>
+                      <div
+                        v-for="(email, index) in net.updatedBy"
+                        :key="index"
+                        class="tooltip-item"
+                      >
+                        {{ email }}
+                      </div>
+                    </div>
+                  </v-tooltip>
                 </div>
               </template>
             </div>
@@ -297,6 +327,22 @@ const navigateToReport = (net) => {
 .operator-link {
   &:hover {
     text-decoration: underline !important;
+  }
+}
+
+.updated-by-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .tooltip-title {
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .tooltip-item {
+    padding-left: 8px;
+    line-height: 1.5;
   }
 }
 </style>
