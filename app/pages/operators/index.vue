@@ -238,26 +238,40 @@
               </template>
 
               <template v-slot:item.actions="{ item }" v-if="$auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN">
-                <v-select
-                  v-if="item.user"
-                  v-model="item.user.role"
-                  :items="roles"
-                  :loading="roleUpdateLoading[item.user.id]"
-                  density="comfortable"
-                  variant="outlined"
-                  hide-details
-                  class="custom-select"
-                  @update:model-value="updateUserRole(item.user)"
-                />
-                <v-btn
-                  v-else
-                  icon="mdi-delete"
-                  size="small"
-                  color="error"
-                  variant="text"
-                  @click="confirmDelete(item)"
-                  :disabled="item.netCount > 0"
-                />
+                <div class="d-flex align-center ga-2">
+                  <v-select
+                    v-if="item.user"
+                    v-model="item.user.role"
+                    :items="roles"
+                    :loading="roleUpdateLoading[item.user.id]"
+                    density="comfortable"
+                    variant="outlined"
+                    hide-details
+                    class="custom-select"
+                    @update:model-value="updateUserRole(item.user)"
+                  />
+                  <v-tooltip v-if="item.user && canResetPassword(item.user)" :text="t('auth.resetPassword')" location="top">
+                    <template v-slot:activator="{ props }">
+                      <v-btn
+                        v-bind="props"
+                        icon="mdi-key-variant"
+                        size="small"
+                        color="warning"
+                        variant="text"
+                        @click="openResetPasswordDialog(item.user)"
+                      />
+                    </template>
+                  </v-tooltip>
+                  <v-btn
+                    v-if="!item.user"
+                    icon="mdi-delete"
+                    size="small"
+                    color="error"
+                    variant="text"
+                    @click="confirmDelete(item)"
+                    :disabled="item.netCount > 0"
+                  />
+                </div>
               </template>
             </v-data-table-server>
           </v-card>
@@ -340,6 +354,14 @@
       :loading="editLoading"
       @save="handleEditSave"
     />
+
+    <!-- Reset Password Dialog -->
+    <reset-password-dialog
+      v-model="showResetPasswordDialog"
+      :title="t('auth.resetPasswordFor', { name: resetPasswordUser?.fullName || resetPasswordUser?.email || '' })"
+      :loading="resetPasswordLoading"
+      @save="handleResetPassword"
+    />
   </v-container>
 </template>
 
@@ -351,6 +373,7 @@ import { Role } from '~/constants/enums/role'
 import { useCardStyles } from '~/composables/useCardStyles'
 import { useErrorMessage } from '~/composables/useErrorMessage'
 import EditModal from '~/components/EditModal.vue'
+import ResetPasswordDialog from '~/components/ResetPasswordDialog.vue'
 
 const { t } = useI18n()
 const api = useApi()
@@ -390,6 +413,11 @@ const showEditModal = ref(false)
 const editType = ref(null)
 const editItem = ref(null)
 const editLoading = ref(false)
+
+// Reset password functionality
+const showResetPasswordDialog = ref(false)
+const resetPasswordUser = ref(null)
+const resetPasswordLoading = ref(false)
 
 // Table headers
 const headers = computed(() => {
@@ -580,6 +608,16 @@ const canEdit = (operator) => {
   return ($auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN) && !operator.user
 }
 
+const canResetPassword = (targetUser) => {
+  if (!targetUser) return false
+  const currentRole = $auth.user.value?.role
+  if (currentRole === Role.SUPER_ADMIN) return true
+  if (currentRole === Role.ADMIN) {
+    return ![Role.SUPER_ADMIN, Role.ADMIN].includes(targetUser.role)
+  }
+  return false
+}
+
 const navigateToUserProfile = (userId) => {
   return navigateTo(`/users/${userId}/profile`)
 }
@@ -736,6 +774,29 @@ const handleEditSave = async (data) => {
     errorToast(getErrorMessage(error))
   } finally {
     editLoading.value = false
+  }
+}
+
+// Reset password functionality
+const openResetPasswordDialog = (user) => {
+  resetPasswordUser.value = user
+  showResetPasswordDialog.value = true
+}
+
+const handleResetPassword = async (newPassword) => {
+  if (!resetPasswordUser.value) return
+
+  try {
+    resetPasswordLoading.value = true
+    await api.post(`/user/${resetPasswordUser.value.id}/reset-password`, {
+      newPassword,
+    })
+    successToast(t('auth.passwordResetSuccess'))
+    showResetPasswordDialog.value = false
+  } catch (error) {
+    errorToast(getErrorMessage(error))
+  } finally {
+    resetPasswordLoading.value = false
   }
 }
 

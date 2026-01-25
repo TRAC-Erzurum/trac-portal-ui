@@ -41,7 +41,10 @@
     "currentPassword": "Mevcut Parola",
     "newPassword": "Yeni Parola",
     "confirmPassword": "Parola Doğrula",
-    "passwordChanged": "Parola başarıyla değiştirildi"
+    "passwordChanged": "Parola başarıyla değiştirildi",
+    "resetPassword": "Parola Sıfırla",
+    "passwordResetSuccess": "Parola başarıyla sıfırlandı",
+    "resetPasswordFor": "{name} için parola sıfırla"
   },
   "theme": {
     "light": "Aydınlık",
@@ -332,7 +335,8 @@
     "Invalid file type": "Geçersiz dosya türü",
     "File too large": "Dosya boyutu çok büyük",
     "Upload failed": "Dosya yükleme başarısız",
-    "alreadyExists": "Bu kayıt zaten mevcut. Farklı bir isimle deneyiniz."
+    "alreadyExists": "Bu kayıt zaten mevcut. Farklı bir isimle deneyiniz.",
+    "cannotResetHigherRolePassword": "Bu kullanıcının parolasını sıfırlama yetkiniz yok"
   },
   "$vuetify": {
     "input": {
