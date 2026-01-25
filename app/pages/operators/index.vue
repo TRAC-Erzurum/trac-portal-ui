@@ -407,6 +407,10 @@ const headers = computed(() => {
       { title: t('common.updatedBy'), key: 'updatedBy', sortable: false }
     )
   }
+
+  if ($auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN) {
+    baseHeaders.push({ title: t('common.actions'), key: 'actions', sortable: false })
+  }
   
   return baseHeaders
 })
@@ -737,9 +741,6 @@ const handleEditSave = async (data) => {
 
 // Lifecycle
 onMounted(() => {
-  if ($auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN) {
-    headers.value.push({ title: t('common.actions'), key: 'actions', sortable: false })
-  }
   loadOperators()
 })
 
