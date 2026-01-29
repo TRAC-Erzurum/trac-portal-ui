@@ -98,7 +98,7 @@
                       <v-icon size="small" class="ms-1">mdi-open-in-new</v-icon>
                     </span>
                     <v-btn
-                      v-if="isAdmin"
+                      v-if="canChangeOperator"
                       color="primary"
                       variant="text"
                       size="small"
@@ -116,6 +116,15 @@
           </div>
 
           <div v-if="canManageNet" class="management-actions">
+            <div v-if="!net.startedAt" class="start-options mb-4">
+              <v-checkbox
+                v-model="addOperatorAsAttendee"
+                :label="t('net.addOperatorAsAttendee')"
+                hide-details
+                density="compact"
+                color="primary"
+              />
+            </div>
             <div class="management-buttons">
               <v-btn
                 v-if="!net.startedAt"
@@ -603,6 +612,7 @@ const editItem = ref(null)
 const editLoading = ref(false)
 const cellRefs = ref({})
 const showNewAttendeeModal = ref(false)
+const addOperatorAsAttendee = ref(true)
 const attendeeHeaders = ref([
   {
     title: '#',
@@ -663,6 +673,14 @@ const canManageNet = computed(() => {
 })
 
 const isAdmin = computed(() => $auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN)
+const isSuperAdmin = computed(() => $auth.user.value?.role === Role.SUPER_ADMIN)
+
+const canChangeOperator = computed(() => {
+  if (!net.value?.startedAt) {
+    return isAdmin.value
+  }
+  return isSuperAdmin.value
+})
 
 const canAddAttendee = computed(() => {
   const currentUser = $auth.user.value
@@ -839,9 +857,12 @@ const startNet = async () => {
 
   try {
     actionLoading.value = true
-    await api.patch(`/net/${net.value.id}/start`)
+    await api.patch(`/net/${net.value.id}/start`, {
+      addOperatorAsAttendee: addOperatorAsAttendee.value,
+    })
     successToast(t('net.startSuccess'))
     await fetchNet()
+    await fetchAttendees()
   } catch (error) {
     console.error('Error starting net:', error)
     errorToast(t('net.startError'))
