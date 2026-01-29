@@ -13,7 +13,7 @@
                 </div>
               </div>
               <v-btn
-                v-if="$auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN"
+                v-if="$auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN || $auth.user.value?.role === Role.MEMBER"
                 prepend-icon="mdi-plus"
                 size="small"
                 variant="tonal"

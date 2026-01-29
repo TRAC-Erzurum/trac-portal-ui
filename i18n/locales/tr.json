@@ -41,7 +41,10 @@
     "currentPassword": "Mevcut Parola",
     "newPassword": "Yeni Parola",
     "confirmPassword": "Parola Doğrula",
-    "passwordChanged": "Parola başarıyla değiştirildi"
+    "passwordChanged": "Parola başarıyla değiştirildi",
+    "resetPassword": "Parola Sıfırla",
+    "passwordResetSuccess": "Parola başarıyla sıfırlandı",
+    "resetPasswordFor": "{name} için parola sıfırla"
   },
   "theme": {
     "light": "Aydınlık",
@@ -140,6 +143,7 @@
     "title": "Operatör Bilgileri",
     "callSign": "Çağrı İşareti",
     "qth": "Konum (QTH)",
+    "qthAndLocator": "Konum / Locator",
     "gridSquare": "Locator",
     "callSignRequired": "Çağrı işareti zorunludur",
     "callSignWarning": "Çağrı işareti kaydedildikten sonra değiştirilemez. Lütfen dikkatli olun.",
@@ -192,6 +196,7 @@
     "operatorExists": "Bu operatör zaten mevcut",
     "alreadyInNet": "Bu operatör zaten çevrimde mevcut",
     "noGridSquare": "Locator bilgisi girilmemiş",
+    "findGridSquare": "Locator Tespit Et",
     "noFullName": "Profile Git",
     "searchError": "Operatör aranırken bir hata oluştu",
     "country": "Ülke",
@@ -262,7 +267,8 @@
     "deleteAttendeeCount": "Çevrimde katılımcı bulunduğu için silinemez",
     "deleteConfirm": "Bu çevrimi silmek istediğinizden emin misiniz?",
     "deleteSuccess": "Çevrim başarıyla silindi",
-    "delete": "Çevrimi Sil"
+    "delete": "Çevrimi Sil",
+    "addOperatorAsAttendee": "Operatörü ilk katılımcı olarak ekle"
   },
   "mode": {
     "FM": "FM",
@@ -332,7 +338,10 @@
     "Invalid file type": "Geçersiz dosya türü",
     "File too large": "Dosya boyutu çok büyük",
     "Upload failed": "Dosya yükleme başarısız",
-    "alreadyExists": "Bu kayıt zaten mevcut. Farklı bir isimle deneyiniz."
+    "alreadyExists": "Bu kayıt zaten mevcut. Farklı bir isimle deneyiniz.",
+    "cannotResetHigherRolePassword": "Bu kullanıcının parolasını sıfırlama yetkiniz yok",
+    "operatorChangeNotAllowed": "Çevrim başladıktan sonra operatör sadece süper admin tarafından değiştirilebilir",
+    "superAdminRoleCannotBeChanged": "Süper yönetici rolü değiştirilemez"
   },
   "$vuetify": {
     "input": {

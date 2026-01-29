@@ -388,8 +388,8 @@ const handleNewOperator = () => {
     prefix: null,
     suffix: null,
     builtCallSign: callSign,
-    readability: null,
-    signalStrength: null,
+    readability: 5,
+    signalStrength: 9,
   }
 }
 
@@ -419,8 +419,8 @@ const handleSelectOperator = (operator) => {
       city: operator.city || '',
       district: operator.district || '',
     },
-    readability: null,
-    signalStrength: null,
+    readability: 5,
+    signalStrength: 9,
   }
 }
 

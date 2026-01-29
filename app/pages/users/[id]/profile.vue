@@ -54,8 +54,8 @@
                 </div>
               </div>
 
-              <v-divider v-if="isOwnProfile" vertical class="d-none d-md-block" />
-              <v-divider v-if="isOwnProfile" class="d-md-none my-6" />
+              <v-divider v-if="isOwnProfile || canResetPassword" vertical class="d-none d-md-block" />
+              <v-divider v-if="isOwnProfile || canResetPassword" class="d-md-none my-6" />
 
               <div v-if="isOwnProfile" class="password-section">
                 <div class="password-header">
@@ -109,6 +109,52 @@
                     block
                   >
                     {{ user.password ? t('auth.changePassword') : t('auth.setPassword') }}
+                  </v-btn>
+                </v-form>
+              </div>
+
+              <div v-else-if="canResetPassword" class="password-section">
+                <div class="password-header">
+                  <v-icon size="20" color="primary" class="mr-2">mdi-key-variant</v-icon>
+                  <span class="text-subtitle-1 font-weight-medium">
+                    {{ t('auth.resetPassword') }}
+                  </span>
+                </div>
+
+                <v-form
+                  ref="resetPasswordFormRef"
+                  v-model="resetPasswordForm.valid"
+                  @submit.prevent="handleResetPassword"
+                  class="password-form"
+                >
+                  <v-text-field
+                    v-model="resetPasswordForm.newPassword"
+                    :label="t('auth.newPassword')"
+                    type="password"
+                    :rules="[passwordRules.required, passwordRules.password]"
+                    variant="outlined"
+                    density="comfortable"
+                    hide-details="auto"
+                    class="mb-3"
+                  ></v-text-field>
+                  <v-text-field
+                    v-model="resetPasswordForm.confirmPassword"
+                    :label="t('auth.confirmPassword')"
+                    type="password"
+                    :rules="[passwordRules.required, resetPasswordRules.passwordMatch]"
+                    variant="outlined"
+                    density="comfortable"
+                    hide-details="auto"
+                    class="mb-4"
+                  ></v-text-field>
+                  <v-btn
+                    type="submit"
+                    color="primary"
+                    :loading="resetPasswordForm.loading"
+                    :disabled="!resetPasswordForm.valid"
+                    block
+                  >
+                    {{ t('auth.resetPassword') }}
                   </v-btn>
                 </v-form>
               </div>
@@ -255,6 +301,7 @@ const { getErrorMessage } = useErrorMessage()
 const { errorToast, successToast } = useToast()
 const user = ref(null)
 const loading = ref(true)
+const resetPasswordFormRef = ref(null)
 const { getImageUrl } = useImageUrl()
 
 const allowEdit = computed(() => {
@@ -265,16 +312,36 @@ const isOwnProfile = computed(() => {
   return $auth.user.value?.id === route.params.id
 })
 
+const canResetPassword = computed(() => {
+  if (!user.value || isOwnProfile.value) return false
+  const currentRole = $auth.user.value?.role
+  const targetRole = user.value.role
+  if (currentRole === Role.SUPER_ADMIN && targetRole !== Role.SUPER_ADMIN) return true
+  if (currentRole === Role.ADMIN && targetRole !== Role.SUPER_ADMIN && targetRole !== Role.ADMIN) return true
+  return false
+})
+
 const passwordRules = {
   required: (v) => !!v || t('validation.required'),
   password: (v) => (v && v.length >= 4) || t('auth.passwordTooShort'),
   passwordMatch: (v) => v === passwordForm.value.newPassword || t('auth.passwordsDoNotMatch'),
 }
 
+const resetPasswordRules = {
+  passwordMatch: (v) => v === resetPasswordForm.value.newPassword || t('auth.passwordsDoNotMatch'),
+}
+
 const passwordForm = ref({
   valid: false,
   loading: false,
   currentPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+})
+
+const resetPasswordForm = ref({
+  valid: false,
+  loading: false,
   newPassword: '',
   confirmPassword: '',
 })
@@ -352,6 +419,23 @@ const handlePasswordSubmit = async () => {
     errorToast(getErrorMessage(error))
   } finally {
     passwordForm.value.loading = false
+  }
+}
+
+const handleResetPassword = async () => {
+  try {
+    resetPasswordForm.value.loading = true
+    await api.post(`/user/${route.params.id}/reset-password`, {
+      newPassword: resetPasswordForm.value.newPassword,
+    })
+    successToast(t('auth.passwordResetSuccess'))
+    resetPasswordForm.value.newPassword = ''
+    resetPasswordForm.value.confirmPassword = ''
+    resetPasswordFormRef.value?.reset()
+  } catch (error) {
+    errorToast(getErrorMessage(error))
+  } finally {
+    resetPasswordForm.value.loading = false
   }
 }
 

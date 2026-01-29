@@ -81,85 +81,73 @@
               </template>
 
               <template v-slot:item.qth="{ item }">
-                <v-tooltip :text="formatQTH(item)" location="top">
-                  <template v-slot:activator="{ props }">
-                    <div class="text-truncate d-flex align-center" v-bind="props">
-                      <template v-if="canEdit(item)">
-                        <v-tooltip :text="t('operator.editQTH')" location="top">
-                          <template v-slot:activator="{ props }">
-                            <v-icon
-                              size="small"
-                              class="mr-2 clickable-cell"
-                              v-bind="props"
-                              @click="editQTH(item)"
-                            >
-                              mdi-pencil
-                            </v-icon>
-                          </template>
-                        </v-tooltip>
-                      </template>
-                      {{ formatQTH(item) }}
-                    </div>
-                  </template>
-                </v-tooltip>
-              </template>
-
-              <template v-slot:item.gridSquare="{ item }">
-                <div class="d-flex align-center">
-                  <template v-if="canEdit(item)">
-                    <v-tooltip :text="t('operator.editGridSquare')" location="top">
-                      <template v-slot:activator="{ props }">
-                        <v-icon
-                          size="small"
-                          class="mr-2 clickable-cell"
-                          v-bind="props"
-                          @click="editGridSquare(item)"
-                        >
-                          mdi-pencil
-                        </v-icon>
-                      </template>
-                    </v-tooltip>
-                  </template>
-                  <template v-if="item.gridSquare">
-                    <a
-                      :href="`https://k7fry.com/grid/?qth=${item.gridSquare}`"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="d-flex align-center"
-                    >
-                      {{ item.gridSquare }}
-                      <v-icon size="small" class="ml-2">mdi-open-in-new</v-icon>
-                    </a>
-                  </template>
-                  <template v-else>
-                    <a
-                      href="https://k7fry.com/grid"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="d-flex align-center"
-                    >
-                      {{ t('common.find') }}
-                      <v-icon size="small" class="ml-2">mdi-open-in-new</v-icon>
-                    </a>
-                  </template>
+                <div class="d-flex flex-column">
+                  <div class="d-flex align-center">
+                    <template v-if="canEdit(item)">
+                      <v-tooltip :text="t('operator.editQTH')" location="top">
+                        <template v-slot:activator="{ props }">
+                          <v-icon
+                            size="x-small"
+                            class="mr-1 clickable-cell"
+                            v-bind="props"
+                            @click="editQTH(item)"
+                          >
+                            mdi-pencil
+                          </v-icon>
+                        </template>
+                      </v-tooltip>
+                    </template>
+                    <span class="text-truncate">{{ formatQTH(item) }}</span>
+                  </div>
+                  <div class="d-flex align-center text-caption">
+                    <template v-if="canEdit(item)">
+                      <v-tooltip :text="t('operator.editGridSquare')" location="top">
+                        <template v-slot:activator="{ props }">
+                          <v-icon
+                            size="x-small"
+                            class="mr-1 clickable-cell"
+                            v-bind="props"
+                            @click="editGridSquare(item)"
+                          >
+                            mdi-pencil
+                          </v-icon>
+                        </template>
+                      </v-tooltip>
+                    </template>
+                    <template v-if="item.gridSquare">
+                      <a
+                        :href="`https://k7fry.com/grid/?qth=${item.gridSquare}`"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="d-flex align-center"
+                      >
+                        {{ item.gridSquare }}
+                        <v-icon size="x-small" class="ml-1">mdi-open-in-new</v-icon>
+                      </a>
+                    </template>
+                    <template v-else>
+                      <a
+                        href="https://k7fry.com/grid"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="d-flex align-center text-grey"
+                      >
+                        {{ t('operator.findGridSquare') }}
+                        <v-icon size="x-small" class="ml-1">mdi-open-in-new</v-icon>
+                      </a>
+                    </template>
+                  </div>
                 </div>
               </template>
 
               <template v-slot:item.fullName="{ item }">
                 <v-tooltip v-if="item.user" :text="item.user.fullName" location="top">
                   <template v-slot:activator="{ props }">
-                    <div
-                      class="text-truncate d-flex align-center"
-                      v-bind="props"
-                      @click="navigateToUserProfile(item.user.id)"
-                    >
-                      <div class="d-flex flex-column">
-                        <span class="font-weight-medium">
-                          {{ item.user.fullName || t('operator.noFullName') }}
-                          <v-icon size="small">mdi-open-in-new</v-icon>
-                        </span>
-                        <span class="text-caption">{{ item.user.email }}</span>
-                      </div>
+                    <div class="d-flex flex-column" v-bind="props">
+                      <span class="font-weight-medium text-truncate">
+                        {{ item.user.fullName || '-' }}
+                      </span>
+                      <span class="text-caption text-truncate">{{ item.user.email }}</span>
                     </div>
                   </template>
                 </v-tooltip>
@@ -195,69 +183,87 @@
                 </v-tooltip>
               </template>
 
-              <template v-slot:item.createdBy="{ item }" v-if="$auth.user.value?.role === Role.SUPER_ADMIN">
-                <v-tooltip v-if="item.createdBy" :text="`${t('common.createdBy')}: ${item.createdBy}`">
-                  <template v-slot:activator="{ props }">
-                    <v-icon
-                      v-bind="props"
+              <template v-slot:item.actions="{ item }">
+                <div class="d-flex align-center ga-2">
+                  <template v-if="isAdmin">
+                    <v-chip
+                      v-if="item.user && item.user.role === Role.SUPER_ADMIN"
+                      color="primary"
+                      variant="elevated"
                       size="small"
-                      color="secondary"
-                      class="cursor-pointer"
                     >
-                      mdi-account-plus
-                    </v-icon>
+                      {{ t('roles.super_admin') }}
+                    </v-chip>
+                    <v-select
+                      v-else-if="item.user"
+                      v-model="item.user.role"
+                      :items="roles"
+                      :loading="roleUpdateLoading[item.user.id]"
+                      density="comfortable"
+                      variant="outlined"
+                      hide-details
+                      class="custom-select"
+                      @update:model-value="updateUserRole(item.user)"
+                    />
                   </template>
-                </v-tooltip>
-                <span v-else class="text-caption">-</span>
-              </template>
-
-              <template v-slot:item.updatedBy="{ item }" v-if="$auth.user.value?.role === Role.SUPER_ADMIN">
-                <v-tooltip v-if="item.updatedBy?.length">
-                  <template v-slot:activator="{ props }">
-                    <v-icon
-                      v-bind="props"
-                      size="small"
-                      color="secondary"
-                      class="cursor-pointer"
-                    >
-                      mdi-account-edit
-                    </v-icon>
+                  <v-tooltip v-if="item.user" :text="t('operator.viewProfile')" location="top">
+                    <template v-slot:activator="{ props }">
+                      <v-btn
+                        v-bind="props"
+                        icon="mdi-account"
+                        size="small"
+                        color="primary"
+                        variant="text"
+                        @click="navigateToUserProfile(item.user.id)"
+                      />
+                    </template>
+                  </v-tooltip>
+                  <v-btn
+                    v-if="isAdmin && !item.user"
+                    icon="mdi-delete"
+                    size="small"
+                    color="error"
+                    variant="text"
+                    @click="confirmDelete(item)"
+                    :disabled="item.netCount > 0"
+                  />
+                  <template v-if="$auth.user.value?.role === Role.SUPER_ADMIN">
+                    <v-tooltip v-if="item.createdBy" :text="`${t('common.createdBy')}: ${item.createdBy}`" location="top">
+                      <template v-slot:activator="{ props }">
+                        <v-icon
+                          v-bind="props"
+                          size="small"
+                          color="secondary"
+                          class="cursor-pointer"
+                        >
+                          mdi-account-plus
+                        </v-icon>
+                      </template>
+                    </v-tooltip>
+                    <v-tooltip v-if="item.updatedBy?.length" location="top">
+                      <template v-slot:activator="{ props }">
+                        <v-icon
+                          v-bind="props"
+                          size="small"
+                          color="secondary"
+                          class="cursor-pointer"
+                        >
+                          mdi-account-edit
+                        </v-icon>
+                      </template>
+                      <div class="updated-by-tooltip">
+                        <div class="tooltip-title">{{ t('common.updatedBy') }}:</div>
+                        <div
+                          v-for="(email, index) in item.updatedBy"
+                          :key="index"
+                          class="tooltip-item"
+                        >
+                          {{ email }}
+                        </div>
+                      </div>
+                    </v-tooltip>
                   </template>
-                  <div class="updated-by-tooltip">
-                    <div class="tooltip-title">{{ t('common.updatedBy') }}:</div>
-                    <div
-                      v-for="(email, index) in item.updatedBy"
-                      :key="index"
-                      class="tooltip-item"
-                    >
-                      {{ email }}
-                    </div>
-                  </div>
-                </v-tooltip>
-                <span v-else class="text-caption">-</span>
-              </template>
-
-              <template v-slot:item.actions="{ item }" v-if="$auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN">
-                <v-select
-                  v-if="item.user"
-                  v-model="item.user.role"
-                  :items="roles"
-                  :loading="roleUpdateLoading[item.user.id]"
-                  density="comfortable"
-                  variant="outlined"
-                  hide-details
-                  class="custom-select"
-                  @update:model-value="updateUserRole(item.user)"
-                />
-                <v-btn
-                  v-else
-                  icon="mdi-delete"
-                  size="small"
-                  color="error"
-                  variant="text"
-                  @click="confirmDelete(item)"
-                  :disabled="item.netCount > 0"
-                />
+                </div>
               </template>
             </v-data-table-server>
           </v-card>
@@ -340,6 +346,7 @@
       :loading="editLoading"
       @save="handleEditSave"
     />
+
   </v-container>
 </template>
 
@@ -393,22 +400,17 @@ const editLoading = ref(false)
 
 // Table headers
 const headers = computed(() => {
-  const baseHeaders = [
-    { title: t('operator.callSign'), key: 'callSign', sortable: true },
-    { title: t('operator.qth'), key: 'qth', sortable: true },
-    { title: t('operator.gridSquare'), key: 'gridSquare', sortable: true },
-    { title: t('operator.fullName'), key: 'fullName', sortable: true },
-    { title: t('operator.createdAt'), key: 'createdAt', sortable: true },
+  return [
+    { title: t('operator.callSign'), key: 'callSign', sortable: false, width: '100px' },
+    { title: t('operator.qthAndLocator'), key: 'qth', sortable: false },
+    { title: t('operator.fullName'), key: 'fullName', sortable: false, maxWidth: '200px' },
+    { title: t('operator.createdAt'), key: 'createdAt', sortable: false, width: '180px' },
+    { title: t('common.actions'), key: 'actions', sortable: false, width: '180px' },
   ]
-  
-  if ($auth.user.value?.role === Role.SUPER_ADMIN) {
-    baseHeaders.push(
-      { title: t('common.createdBy'), key: 'createdBy', sortable: false },
-      { title: t('common.updatedBy'), key: 'updatedBy', sortable: false }
-    )
-  }
-  
-  return baseHeaders
+})
+
+const isAdmin = computed(() => {
+  return $auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN
 })
 
 // Import fields mapping
@@ -737,9 +739,6 @@ const handleEditSave = async (data) => {
 
 // Lifecycle
 onMounted(() => {
-  if ($auth.user.value?.role === Role.ADMIN || $auth.user.value?.role === Role.SUPER_ADMIN) {
-    headers.value.push({ title: t('common.actions'), key: 'actions', sortable: false })
-  }
   loadOperators()
 })
 
@@ -756,7 +755,8 @@ definePageMeta({
 }
 
 .custom-select {
-  min-width: 120px;
+  min-width: 110px;
+  max-width: 140px;
 }
 
 .bg-error-lighten-4 {
@@ -781,5 +781,21 @@ definePageMeta({
     padding-left: 8px;
     line-height: 1.5;
   }
+}
+
+:deep(.v-data-table) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+:deep(.v-data-table td) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:deep(.v-data-table td:last-child) {
+  white-space: nowrap;
+  overflow: visible;
 }
 </style>
