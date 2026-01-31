@@ -1,0 +1,140 @@
+{
+  "error": {
+    "invalidCredentials": "Çağrı işareti veya parola hatalı",
+    "userNotFound": "Kullanıcı bulunamadı",
+    "userAlreadyExists": "Bu kullanıcı zaten kayıtlı",
+    "userAlreadyHasPassword": "Kullanıcının zaten parolası var",
+    "operatorAlreadyExists": "Bu çağrı işareti zaten kayıtlı",
+    "alreadyExists": "Bu kayıt zaten mevcut",
+    "unauthorized": "Oturum açmanız gerekiyor",
+    "forbidden": "Bu işlem için yetkiniz yok",
+    "serverError": "Sunucu hatası oluştu",
+    "networkError": "Bağlantı hatası",
+    "captchaRequired": "CAPTCHA doğrulaması gerekli",
+    "captchaFailed": "CAPTCHA doğrulaması başarısız",
+    "captchaNotConfigured": "CAPTCHA yapılandırılmamış",
+    "cannotResetHigherRolePassword": "Üst rol kullanıcısının parolası sıfırlanamaz",
+    "operatorChangeNotAllowed": "Operatör değişikliğine izin verilmiyor",
+    "pleaseWaitForCaptcha": "Lütfen doğrulamayı bekleyin"
+  },
+  "auth": {
+    "login": "Giriş Yap",
+    "loginSubtitle": "Hesabınıza giriş yapın",
+    "loggingIn": "Giriş yapılıyor...",
+    "loginSuccess": "Giriş başarılı",
+    "loginFailed": "Giriş başarısız",
+    "register": "Kayıt Ol",
+    "registerSubtitle": "Topluluğa katılmak için hesap oluşturun",
+    "registering": "Kayıt yapılıyor...",
+    "registerSuccess": "Hesabınız başarıyla oluşturuldu",
+    "logout": "Çıkış Yap",
+    "logoutSuccess": "Çıkış yapıldı",
+    "forgotPassword": "Parolamı unuttum",
+    "forgotPasswordTitle": "Şifre Sıfırlama",
+    "forgotPasswordSubtitle": "Çağrı işaretinizi girin, talebiniz yöneticilere iletilecektir.",
+    "sendingRequest": "Gönderiliyor...",
+    "sendRequest": "Talep Gönder",
+    "passwordResetRequestSent": "Talebiniz alındı. En kısa sürede sizinle iletişime geçilecektir.",
+    "backToLogin": "Giriş sayfasına dön",
+    "noAccount": "Hesabınız yok mu?",
+    "hasAccount": "Zaten hesabınız var mı?",
+    "loginWithGoogle": "Google ile giriş yap",
+    "registerWithGoogle": "Google ile kayıt ol",
+    "or": "veya",
+    "privacyConsent": "Giriş yaparak {link}'ni kabul etmiş olursunuz.",
+    "privacyConsentRegister": "Google ile devam ederek {link}'ni kabul etmiş olursunuz.",
+    "privacyConsentCheckbox": "{link}'ni okudum ve kabul ediyorum.",
+    "privacyLink": "KVKK Aydınlatma Metni"
+  },
+  "form": {
+    "callSign": "Çağrı İşareti",
+    "email": "E-posta",
+    "emailPlaceholder": "ornek@email.com",
+    "password": "Parola",
+    "passwordConfirm": "Parola Tekrar",
+    "fullName": "Ad Soyad",
+    "city": "İl",
+    "cityPlaceholder": "İl seçin",
+    "district": "İlçe",
+    "country": "Türkiye",
+    "required": "*"
+  },
+  "brand": {
+    "portalTitle": "Radyo Amatörünün Portalı",
+    "portalTitleAlt": "Amatör Radyocu Portalı",
+    "tracFull": "Türkiye Radyo Amatörleri Cemiyeti",
+    "tracFullUpper": "TÜRKİYE RADYO AMATÖRLERİ CEMİYETİ",
+    "erzurumBranch": "Erzurum Şubesi",
+    "erzurumBranchUpper": "ERZURUM ŞUBESİ",
+    "tracPortal": "TRAC Portal",
+    "developedBy": "TRAC Erzurum Şubesi YM9KE destekleriyle gönüllü radyo amatörleri tarafından geliştirildi."
+  },
+  "landing": {
+    "heroDescription": "Türkiye'nin dört bir yanından radyo amatörleri burada buluşuyor. Aktivitelerinizi kaydedin, istatistiklerinizi görün, topluluğun bir parçası olun.",
+    "stats": {
+      "operators": "Kayıtlı operatör",
+      "activities": "Kayıtlı aktivite",
+      "participations": "Toplam katılım",
+      "cities": "Aktif şehir"
+    },
+    "features": {
+      "title": "Özellikler",
+      "activityTracking": "Aktivite Takibi",
+      "activityTrackingDesc": "Katıldığınız aktiviteleri kaydedin, sinyal raporlarınızı saklayın.",
+      "statistics": "Detaylı İstatistikler",
+      "statisticsDesc": "Kendi performansınızı ve topluluk genelindeki istatistikleri görüntüleyin.",
+      "operatorDirectory": "Operatör Rehberi",
+      "operatorDirectoryDesc": "Türkiye genelindeki operatörleri keşfedin, QTH bilgilerini görün.",
+      "leaderboards": "Sıralama Tabloları",
+      "leaderboardsDesc": "En aktif operatörleri, şehirleri ve bölgeleri takip edin.",
+      "reporting": "Raporlama",
+      "reportingDesc": "Verilerinizi PDF, CSV veya PNG olarak dışa aktarın. Yakında sertifika desteği.",
+      "mobile": "Mobil Uyumlu",
+      "mobileDesc": "Her cihazdan erişin, sahada bile kullanın."
+    },
+    "cta": {
+      "title": "Topluluğa katılın",
+      "description": "Ücretsiz hesap oluşturun, aktivitelerinizi kaydedin ve Türkiye'deki radyo amatörleri topluluğuyla tanışın."
+    },
+    "footer": {
+      "platform": "Platform",
+      "links": "Bağlantılar"
+    }
+  },
+  "privacy": {
+    "title": "KVKK ve GDPR Aydınlatma Metni",
+    "placeholder": "Bu sayfa KVKK aydınlatma metni içerecektir."
+  },
+  "notFound": {
+    "title": "Sayfa Bulunamadı",
+    "description": "Aradığınız sayfa mevcut değil.",
+    "backHome": "Ana Sayfaya Dön"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "totalNets": "Toplam Çevrim",
+    "myNets": "Katıldığım Çevrimler",
+    "activeOperators": "Aktif Operatörler"
+  },
+  "common": {
+    "loading": "Yükleniyor...",
+    "save": "Kaydet",
+    "cancel": "İptal",
+    "delete": "Sil",
+    "edit": "Düzenle",
+    "confirm": "Onayla",
+    "back": "Geri",
+    "next": "İleri",
+    "submit": "Gönder"
+  },
+  "theme": {
+    "dark": "Karanlık",
+    "light": "Aydınlık",
+    "system": "Sistem"
+  },
+  "locale": {
+    "system": "Sistem",
+    "tr": "Türkçe",
+    "en": "English"
+  }
+}

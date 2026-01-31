@@ -1,0 +1,140 @@
+{
+  "error": {
+    "invalidCredentials": "Invalid call sign or password",
+    "userNotFound": "User not found",
+    "userAlreadyExists": "This user already exists",
+    "userAlreadyHasPassword": "User already has a password",
+    "operatorAlreadyExists": "This call sign is already registered",
+    "alreadyExists": "This record already exists",
+    "unauthorized": "Please log in",
+    "forbidden": "You don't have permission for this action",
+    "serverError": "Server error occurred",
+    "networkError": "Connection error",
+    "captchaRequired": "CAPTCHA verification required",
+    "captchaFailed": "CAPTCHA verification failed",
+    "captchaNotConfigured": "CAPTCHA is not configured",
+    "cannotResetHigherRolePassword": "Cannot reset password for higher role user",
+    "operatorChangeNotAllowed": "Operator change is not allowed",
+    "pleaseWaitForCaptcha": "Please wait for verification"
+  },
+  "auth": {
+    "login": "Login",
+    "loginSubtitle": "Sign in to your account",
+    "loggingIn": "Logging in...",
+    "loginSuccess": "Login successful",
+    "loginFailed": "Login failed",
+    "register": "Register",
+    "registerSubtitle": "Create an account to join the community",
+    "registering": "Registering...",
+    "registerSuccess": "Your account has been created",
+    "logout": "Logout",
+    "logoutSuccess": "Logged out",
+    "forgotPassword": "Forgot password",
+    "forgotPasswordTitle": "Password Reset",
+    "forgotPasswordSubtitle": "Enter your call sign and your request will be sent to administrators.",
+    "sendingRequest": "Sending...",
+    "sendRequest": "Send Request",
+    "passwordResetRequestSent": "Your request has been received. We will contact you shortly.",
+    "backToLogin": "Back to login",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "loginWithGoogle": "Login with Google",
+    "registerWithGoogle": "Register with Google",
+    "or": "or",
+    "privacyConsent": "By logging in, you agree to the {link}.",
+    "privacyConsentRegister": "By continuing with Google, you agree to the {link}.",
+    "privacyConsentCheckbox": "I have read and accept the {link}.",
+    "privacyLink": "Privacy Policy"
+  },
+  "form": {
+    "callSign": "Call Sign",
+    "email": "Email",
+    "emailPlaceholder": "example@email.com",
+    "password": "Password",
+    "passwordConfirm": "Confirm Password",
+    "fullName": "Full Name",
+    "city": "City",
+    "cityPlaceholder": "Select city",
+    "district": "District",
+    "country": "Turkey",
+    "required": "*"
+  },
+  "brand": {
+    "portalTitle": "Amateur Radio Portal",
+    "portalTitleAlt": "Amateur Radio Portal",
+    "tracFull": "Turkish Radio Amateurs Association",
+    "tracFullUpper": "TURKISH RADIO AMATEURS ASSOCIATION",
+    "erzurumBranch": "Erzurum Branch",
+    "erzurumBranchUpper": "ERZURUM BRANCH",
+    "tracPortal": "TRAC Portal",
+    "developedBy": "Developed by volunteer radio amateurs with the support of TRAC Erzurum Branch YM9KE."
+  },
+  "landing": {
+    "heroDescription": "Radio amateurs from all over Turkey meet here. Record your activities, view your statistics, become part of the community.",
+    "stats": {
+      "operators": "Registered operators",
+      "activities": "Recorded activities",
+      "participations": "Total participations",
+      "cities": "Active cities"
+    },
+    "features": {
+      "title": "Features",
+      "activityTracking": "Activity Tracking",
+      "activityTrackingDesc": "Record your activities, store your signal reports.",
+      "statistics": "Detailed Statistics",
+      "statisticsDesc": "View your own performance and community-wide statistics.",
+      "operatorDirectory": "Operator Directory",
+      "operatorDirectoryDesc": "Discover operators across Turkey, view QTH information.",
+      "leaderboards": "Leaderboards",
+      "leaderboardsDesc": "Track the most active operators, cities and regions.",
+      "reporting": "Reporting",
+      "reportingDesc": "Export your data as PDF, CSV or PNG. Certificate support coming soon.",
+      "mobile": "Mobile Friendly",
+      "mobileDesc": "Access from any device, even use it in the field."
+    },
+    "cta": {
+      "title": "Join the community",
+      "description": "Create a free account, record your activities and meet the radio amateur community in Turkey."
+    },
+    "footer": {
+      "platform": "Platform",
+      "links": "Links"
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy (KVKK & GDPR)",
+    "placeholder": "This page will contain the privacy policy."
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "description": "The page you are looking for does not exist.",
+    "backHome": "Back to Home"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "totalNets": "Total Nets",
+    "myNets": "My Nets",
+    "activeOperators": "Active Operators"
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit"
+  },
+  "theme": {
+    "dark": "Dark",
+    "light": "Light",
+    "system": "System"
+  },
+  "locale": {
+    "system": "System",
+    "tr": "Türkçe",
+    "en": "English"
+  }
+}
