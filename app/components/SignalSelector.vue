@@ -1,5 +1,5 @@
 <template>
-  <div class="signal-selector">
+  <div class="signal-selector" :class="{ compact }">
     <div class="selector-field">
       <label class="selector-label">{{ label }}</label>
       <div class="selector-content">
@@ -53,6 +53,10 @@ const props = defineProps({
       { max: 8, level: 4 },
       { max: Infinity, level: 5 },
     ],
+  },
+  compact: {
+    type: Boolean,
+    default: false,
   },
 })
 
@@ -194,6 +198,33 @@ watch(
 
   .boxes {
     gap: 3px;
+  }
+}
+
+.signal-selector.compact {
+  .selector-field {
+    padding: 8px 12px;
+    min-height: 40px;
+
+    &:focus-within {
+      padding: 7px 11px;
+    }
+  }
+
+  .selector-label {
+    top: -8px;
+    font-size: 0.75rem;
+  }
+
+  .box {
+    flex: 0 0 22px;
+    width: 22px;
+    height: 22px;
+    font-size: 0.75rem;
+  }
+
+  .boxes {
+    gap: 2px;
   }
 }
 </style>
