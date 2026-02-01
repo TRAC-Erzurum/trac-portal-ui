@@ -41,9 +41,11 @@
     "loginWithGoogle": "Login with Google",
     "registerWithGoogle": "Register with Google",
     "or": "or",
-    "privacyConsent": "By logging in, you agree to the {link}.",
-    "privacyConsentRegister": "By continuing with Google, you agree to the {link}.",
-    "privacyConsentCheckbox": "I have read and accept the {link}.",
+    "privacyConsentPrefix": "By logging in, you agree to the",
+    "privacyConsentSuffix": "",
+    "privacyConsentRegisterPrefix": "By continuing with Google, you agree to the",
+    "privacyConsentCheckboxPrefix": "I have read and accept the",
+    "privacyConsentCheckboxSuffix": "",
     "privacyLink": "Privacy Policy"
   },
   "form": {
@@ -61,13 +63,11 @@
   },
   "brand": {
     "portalTitle": "Amateur Radio Portal",
-    "portalTitleAlt": "Amateur Radio Portal",
     "tracFull": "Turkish Radio Amateurs Association",
     "tracFullUpper": "TURKISH RADIO AMATEURS ASSOCIATION",
     "erzurumBranch": "Erzurum Branch",
     "erzurumBranchUpper": "ERZURUM BRANCH",
-    "tracPortal": "TRAC Portal",
-    "developedBy": "Developed by volunteer radio amateurs with the support of TRAC Erzurum Branch YM9KE."
+    "developedBy": "Developed by volunteer radio amateurs with the support of TRAC Erzurum Branch \"YM9KE\"."
   },
   "landing": {
     "heroDescription": "Radio amateurs from all over Turkey meet here. Record your activities, view your statistics, become part of the community.",
@@ -125,7 +125,14 @@
     "confirm": "Confirm",
     "back": "Back",
     "next": "Next",
-    "submit": "Submit"
+    "submit": "Submit",
+    "comingSoon": "Coming soon..."
+  },
+  "settings": {
+    "appearance": "Appearance",
+    "appearanceDesc": "Configure theme and language preferences",
+    "theme": "Theme",
+    "language": "Language"
   },
   "theme": {
     "dark": "Dark",
@@ -136,5 +143,12 @@
     "system": "System",
     "tr": "Türkçe",
     "en": "English"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "nets": "Nets",
+    "operators": "Operators",
+    "settings": "Settings",
+    "collapse": "Collapse"
   }
 }

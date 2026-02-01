@@ -35,6 +35,24 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
+      path: '/nets',
+      name: 'nets',
+      component: () => import('@/pages/nets/NetsPage.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/operators',
+      name: 'operators',
+      component: () => import('@/pages/operators/OperatorsPage.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('@/pages/settings/SettingsPage.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/privacy',
       name: 'privacy',
       component: () => import('@/pages/PrivacyPage.vue'),

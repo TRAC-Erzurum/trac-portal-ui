@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Globe } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useLocaleStore, type LocaleMode } from '@/stores/locale'
 
 const { t } = useI18n()
 const localeStore = useLocaleStore()
 
-const locales: { value: LocaleMode; icon: string }[] = [
-  { value: 'system', icon: '🌐' },
-  { value: 'tr', icon: '🇹🇷' },
-  { value: 'en', icon: '🇬🇧' },
+const locales: { value: LocaleMode; label: string; isSystem?: boolean }[] = [
+  { value: 'system', label: 'A', isSystem: true },
+  { value: 'tr', label: 'TR' },
+  { value: 'en', label: 'EN' },
 ]
 
 function cycleLocale() {
@@ -28,6 +29,7 @@ const currentLabel = computed(() => t(`locale.${localeStore.mode}`))
 
 <template>
   <Button variant="ghost" size="icon" @click="cycleLocale" :title="currentLabel">
-    <span class="text-lg">{{ currentLocale?.icon }}</span>
+    <Globe v-if="currentLocale?.isSystem" class="h-4 w-4" />
+    <span v-else class="text-xs font-semibold">{{ currentLocale?.label }}</span>
   </Button>
 </template>

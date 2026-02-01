@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
+import ThemeToggle from '@/components/layout/ThemeToggle.vue'
+import LangToggle from '@/components/layout/LangToggle.vue'
 
 const { t } = useI18n()
 </script>
@@ -143,7 +145,7 @@ const { t } = useI18n()
           <div>
             <div class="flex items-center gap-3 mb-4">
               <img src="/logo-s.svg" alt="TRAC" class="h-8 w-auto" />
-              <span class="font-semibold">{{ t('brand.tracPortal') }}</span>
+              <span class="font-semibold">{{ t('brand.erzurumBranch') }}</span>
             </div>
             <p class="text-sm text-muted-foreground max-w-sm">
               {{ t('brand.developedBy') }}
@@ -169,8 +171,12 @@ const { t } = useI18n()
         </div>
         
         <div class="border-t border-border/40 mt-8 pt-6 flex justify-between items-center text-sm text-muted-foreground">
-          <p>© {{ new Date().getFullYear() }} {{ t('brand.tracPortal') }}</p>
-          <p>73</p>
+          <p>© {{ new Date().getFullYear() }} {{ t('brand.erzurumBranch') }}</p>
+          <div class="flex items-center gap-1">
+            <ThemeToggle />
+            <LangToggle />
+            <span class="ml-2">73</span>
+          </div>
         </div>
       </div>
     </footer>

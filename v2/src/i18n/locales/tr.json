@@ -41,10 +41,12 @@
     "loginWithGoogle": "Google ile giriş yap",
     "registerWithGoogle": "Google ile kayıt ol",
     "or": "veya",
-    "privacyConsent": "Giriş yaparak {link}'ni kabul etmiş olursunuz.",
-    "privacyConsentRegister": "Google ile devam ederek {link}'ni kabul etmiş olursunuz.",
-    "privacyConsentCheckbox": "{link}'ni okudum ve kabul ediyorum.",
-    "privacyLink": "KVKK Aydınlatma Metni"
+    "privacyConsentPrefix": "Giriş yaparak",
+    "privacyConsentSuffix": "kabul etmiş olursunuz.",
+    "privacyConsentRegisterPrefix": "Google ile devam ederek",
+    "privacyConsentCheckboxPrefix": "",
+    "privacyConsentCheckboxSuffix": "okudum ve kabul ediyorum.",
+    "privacyLink": "KVKK Aydınlatma Metni'ni"
   },
   "form": {
     "callSign": "Çağrı İşareti",
@@ -61,13 +63,11 @@
   },
   "brand": {
     "portalTitle": "Radyo Amatörünün Portalı",
-    "portalTitleAlt": "Amatör Radyocu Portalı",
     "tracFull": "Türkiye Radyo Amatörleri Cemiyeti",
     "tracFullUpper": "TÜRKİYE RADYO AMATÖRLERİ CEMİYETİ",
     "erzurumBranch": "Erzurum Şubesi",
     "erzurumBranchUpper": "ERZURUM ŞUBESİ",
-    "tracPortal": "TRAC Portal",
-    "developedBy": "TRAC Erzurum Şubesi YM9KE destekleriyle gönüllü radyo amatörleri tarafından geliştirildi."
+    "developedBy": "TRAC Erzurum Şubesi \"YM9KE\" destekleriyle gönüllü radyo amatörleri tarafından geliştirildi."
   },
   "landing": {
     "heroDescription": "Türkiye'nin dört bir yanından radyo amatörleri burada buluşuyor. Aktivitelerinizi kaydedin, istatistiklerinizi görün, topluluğun bir parçası olun.",
@@ -125,7 +125,14 @@
     "confirm": "Onayla",
     "back": "Geri",
     "next": "İleri",
-    "submit": "Gönder"
+    "submit": "Gönder",
+    "comingSoon": "Yakında..."
+  },
+  "settings": {
+    "appearance": "Görünüm",
+    "appearanceDesc": "Tema ve dil tercihlerinizi ayarlayın",
+    "theme": "Tema",
+    "language": "Dil"
   },
   "theme": {
     "dark": "Karanlık",
@@ -136,5 +143,12 @@
     "system": "Sistem",
     "tr": "Türkçe",
     "en": "English"
+  },
+  "nav": {
+    "dashboard": "Ana Sayfa",
+    "nets": "Çevrimler",
+    "operators": "Operatörler",
+    "settings": "Ayarlar",
+    "collapse": "Daralt"
   }
 }
