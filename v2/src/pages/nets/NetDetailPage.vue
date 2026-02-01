@@ -85,7 +85,6 @@ interface SelectedEntry {
 
 const selectedEntry = ref<SelectedEntry | null>(null)
 
-const searchInputRef = ref<InstanceType<typeof Input> | null>(null)
 const searchContainerRef = ref<HTMLDivElement | null>(null)
 const entryPanelRef = ref<HTMLDivElement | null>(null)
 const editingAttendee = ref<Attendee | null>(null)
@@ -93,10 +92,14 @@ const isEditSheetOpen = ref(false)
 const isEditNetSheetOpen = ref(false)
 const addOperatorAsAttendee = ref(true)
 
+interface CityData {
+  name: string
+  districts: { name: string }[]
+}
+const citiesData = ref<CityData[]>([])
 const cities = ref<string[]>([])
 const districts = ref<string[]>([])
 const isLoadingCities = ref(false)
-const isLoadingDistricts = ref(false)
 
 const canManageNet = computed(() => {
   if (!auth.user || !net.value) return false
@@ -214,11 +217,12 @@ const searchOperators = debounce(async (query: string) => {
 }, 300)
 
 const fetchCities = async () => {
-  if (cities.value.length > 0) return
+  if (citiesData.value.length > 0) return
   isLoadingCities.value = true
   try {
-    const data = await api.get<{ cities: { name: string }[] }>('/qth/countries/Türkiye/cities')
-    cities.value = data.cities.map(c => c.name).sort((a, b) => a.localeCompare(b, 'tr'))
+    const data = await api.get<CityData[]>('/qth/countries/Türkiye/cities')
+    citiesData.value = data
+    cities.value = data.map(c => c.name).sort((a, b) => a.localeCompare(b, 'tr'))
   } catch (error) {
     console.error('Failed to fetch cities:', error)
   } finally {
@@ -226,19 +230,16 @@ const fetchCities = async () => {
   }
 }
 
-const fetchDistricts = async (city: string) => {
+const fetchDistricts = (city: string) => {
   if (!city) {
     districts.value = []
     return
   }
-  isLoadingDistricts.value = true
-  try {
-    const data = await api.get<{ districts: string[] }>(`/qth/countries/Türkiye/cities/${encodeURIComponent(city)}/districts`)
-    districts.value = data.districts.sort((a, b) => a.localeCompare(b, 'tr'))
-  } catch (error) {
-    console.error('Failed to fetch districts:', error)
-  } finally {
-    isLoadingDistricts.value = false
+  const cityData = citiesData.value.find(c => c.name === city)
+  if (cityData) {
+    districts.value = cityData.districts.map(d => d.name).sort((a, b) => a.localeCompare(b, 'tr'))
+  } else {
+    districts.value = []
   }
 }
 
@@ -269,15 +270,17 @@ watch(() => selectedEntry.value?.city, (city, oldCity) => {
   }
 })
 
+const lastSearchQuery = ref('')
+
 const selectOperatorFromSuggestion = async (op: Operator) => {
   showSuggestions.value = false
-  suggestions.value = []
+  lastSearchQuery.value = searchQuery.value
   searchQuery.value = ''
   
   await fetchCities()
   if (op.city) {
     skipDistrictReset = true
-    await fetchDistricts(op.city)
+    fetchDistricts(op.city)
   }
   
   selectedEntry.value = {
@@ -292,13 +295,16 @@ const selectOperatorFromSuggestion = async (op: Operator) => {
   }
   
   nextTick(() => {
-    entryPanelRef.value?.querySelector('select')?.focus()
+    const citySelect = entryPanelRef.value?.querySelector('[data-city-select] button')
+    if (citySelect instanceof HTMLElement) {
+      citySelect.focus()
+    }
   })
 }
 
 const createNewEntry = async () => {
   showSuggestions.value = false
-  suggestions.value = []
+  lastSearchQuery.value = searchQuery.value
   const callSign = searchQuery.value.toUpperCase()
   searchQuery.value = ''
   
@@ -314,15 +320,28 @@ const createNewEntry = async () => {
     readability: '5',
     signalStrength: '9'
   }
+  
+  nextTick(() => {
+    const nameInput = entryPanelRef.value?.querySelector('[data-name-input] input')
+    if (nameInput instanceof HTMLElement) {
+      nameInput.focus()
+    }
+  })
+}
+
+const focusSearchInput = () => {
+  setTimeout(() => {
+    const input = searchContainerRef.value?.querySelector('input')
+    input?.focus()
+  }, 50)
 }
 
 const clearEntry = () => {
   selectedEntry.value = null
   districts.value = []
-  nextTick(() => {
-    const inputEl = searchInputRef.value?.$el?.querySelector('input') || searchInputRef.value
-    inputEl?.focus()
-  })
+  searchQuery.value = lastSearchQuery.value
+  showSuggestions.value = lastSearchQuery.value.length >= 2
+  focusSearchInput()
 }
 
 const handleSearchKeyDown = (e: KeyboardEvent) => {
@@ -364,6 +383,8 @@ const handleSearchKeyDown = (e: KeyboardEvent) => {
       break
     case 'Escape':
       e.preventDefault()
+      searchQuery.value = ''
+      suggestions.value = []
       showSuggestions.value = false
       break
   }
@@ -404,9 +425,17 @@ const submitEntry = async () => {
       operatorId: entry.operatorId
     })
     
-    clearEntry()
+    selectedEntry.value = null
+    districts.value = []
+    searchQuery.value = ''
+    lastSearchQuery.value = ''
+    suggestions.value = []
+    showSuggestions.value = false
+    
     await fetchAttendees()
     if (net.value) net.value.attendeeCount = attendees.value.length
+    
+    focusSearchInput()
   } catch (error: any) {
     if (error?.message?.includes('already exists')) {
       toast.error(t('netDetail.attendeeExists'))
@@ -487,11 +516,6 @@ const deleteAttendee = async (attendee: Attendee) => {
 
 const getAttendeeNumber = (index: number) => {
   return attendees.value.length - index
-}
-
-const formatQth = (attendee: Attendee) => {
-  const parts = [attendee.city, attendee.district].filter(Boolean)
-  return parts.join(', ') || '-'
 }
 
 onMounted(() => {
@@ -577,20 +601,21 @@ onUnmounted(() => {
             
             <Button
               v-if="netStatus === 'pending'"
+              variant="outline"
               @click="startNet"
               class="gap-2"
             >
-              <Play class="h-4 w-4" />
+              <Play class="h-4 w-4" fill="currentColor" />
               {{ t('netDetail.start') }}
             </Button>
             
             <Button
               v-else-if="netStatus === 'active'"
-              variant="destructive"
+              variant="outline"
               @click="endNet"
               class="gap-2"
             >
-              <Square class="h-4 w-4" />
+              <Square class="h-4 w-4" fill="currentColor" />
               {{ t('netDetail.end') }}
             </Button>
             
@@ -724,7 +749,7 @@ onUnmounted(() => {
                   </div>
                 </div>
               </div>
-              <Button variant="ghost" size="icon" class="h-8 w-8" @click="clearEntry">
+              <Button variant="ghost" size="icon" class="h-8 w-8" @click="clearEntry" :title="'ESC'">
                 <X class="h-4 w-4" />
               </Button>
             </div>
@@ -733,25 +758,28 @@ onUnmounted(() => {
               <div>
                 <label class="text-xs font-medium text-muted-foreground mb-1 block">{{ t('form.callSign') }}</label>
                 <Input
-                  v-model="selectedEntry.callSign"
-                  class="uppercase"
+                  :model-value="selectedEntry.callSign"
+                  class="uppercase bg-muted/50"
+                  readonly
+                  disabled
                 />
               </div>
-              <div>
+              <div data-name-input>
                 <label class="text-xs font-medium text-muted-foreground mb-1 block">{{ t('form.fullName') }}</label>
                 <Input
                   v-model="selectedEntry.name"
-                  :placeholder="t('form.fullNamePlaceholder')"
                 />
               </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div data-city-select>
                 <label class="text-xs font-medium text-muted-foreground mb-1 block">{{ t('form.city') }}</label>
                 <Select v-model="selectedEntry.city" :disabled="isLoadingCities">
                   <SelectTrigger class="w-full">
-                    <SelectValue :placeholder="isLoadingCities ? t('common.loading') : t('form.cityPlaceholder')" />
+                    <SelectValue :placeholder="isLoadingCities ? t('common.loading') : t('form.cityPlaceholder')">
+                      {{ selectedEntry.city || (isLoadingCities ? t('common.loading') : t('form.cityPlaceholder')) }}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem v-for="city in cities" :key="city" :value="city">
@@ -762,9 +790,11 @@ onUnmounted(() => {
               </div>
               <div>
                 <label class="text-xs font-medium text-muted-foreground mb-1 block">{{ t('form.district') }}</label>
-                <Select v-model="selectedEntry.district" :disabled="!selectedEntry.city || isLoadingDistricts">
+                <Select v-model="selectedEntry.district" :disabled="!selectedEntry.city">
                   <SelectTrigger class="w-full">
-                    <SelectValue :placeholder="selectedEntry.city ? (isLoadingDistricts ? t('common.loading') : t('form.district')) : '-'" />
+                    <SelectValue :placeholder="selectedEntry.city ? t('form.districtPlaceholder') : '-'">
+                      {{ selectedEntry.district || (selectedEntry.city ? t('form.districtPlaceholder') : '-') }}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem v-for="district in districts" :key="district" :value="district">
@@ -773,38 +803,36 @@ onUnmounted(() => {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <label class="text-xs font-medium text-muted-foreground mb-1 block">{{ t('operators.readability') }}</label>
+                <Select v-model="selectedEntry.readability">
+                  <SelectTrigger class="w-full">
+                    <SelectValue>{{ selectedEntry.readability }}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="r in 5" :key="r" :value="String(r)">{{ r }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label class="text-xs font-medium text-muted-foreground mb-1 block">{{ t('operators.signal') }}</label>
+                <Select v-model="selectedEntry.signalStrength">
+                  <SelectTrigger class="w-full">
+                    <SelectValue>{{ selectedEntry.signalStrength }}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="s in 9" :key="s" :value="String(s)">{{ s }}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div class="flex items-center justify-between pt-2">
-              <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2">
-                  <label class="text-xs font-medium text-muted-foreground">R</label>
-                  <Select v-model="selectedEntry.readability">
-                    <SelectTrigger class="w-14 h-9">
-                      <SelectValue>{{ selectedEntry.readability }}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="r in 5" :key="r" :value="String(r)">{{ r }}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div class="flex items-center gap-2">
-                  <label class="text-xs font-medium text-muted-foreground">S</label>
-                  <Select v-model="selectedEntry.signalStrength">
-                    <SelectTrigger class="w-14 h-9">
-                      <SelectValue>{{ selectedEntry.signalStrength }}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem v-for="s in 9" :key="s" :value="String(s)">{{ s }}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              
+            <div class="flex justify-end pt-2">
               <Button
+                variant="outline"
                 @click="submitEntry"
                 :disabled="!selectedEntry.callSign || isSubmitting"
-                class="gap-1"
+                class="gap-2"
               >
                 <Plus class="h-4 w-4" />
                 {{ t('netDetail.addAttendee') }}
@@ -844,19 +872,24 @@ onUnmounted(() => {
             :key="attendee.id"
             class="group flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all"
           >
-            <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
+            <div class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-600 dark:text-zinc-300 flex-shrink-0">
               {{ getAttendeeNumber(index) }}
             </div>
 
-            <div class="flex-1 min-w-0 grid grid-cols-1 sm:grid-cols-4 gap-1 sm:gap-4">
-              <div class="font-semibold truncate">{{ attendee.callSign }}</div>
-              <div class="text-sm text-muted-foreground truncate">{{ attendee.name || '-' }}</div>
-              <div class="text-sm text-muted-foreground truncate flex items-center gap-1">
-                <MapPin class="h-3 w-3 flex-shrink-0" />
-                {{ formatQth(attendee) }}
+            <div class="flex-1 min-w-0">
+              <div class="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
+                <span class="font-semibold">{{ attendee.callSign }}</span>
+                <span v-if="attendee.name" class="text-sm text-muted-foreground">{{ attendee.name }}</span>
               </div>
-              <div class="text-sm font-mono">
-                R{{ attendee.readability || '-' }} S{{ attendee.signalStrength || '-' }}
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-0.5 text-sm text-muted-foreground">
+                <span v-if="attendee.city || attendee.district" class="flex items-center gap-1">
+                  <MapPin class="h-3 w-3 flex-shrink-0" />
+                  {{ [attendee.city, attendee.district].filter(Boolean).join(', ') }}
+                </span>
+                <span>
+                  {{ t('operators.readability') }}: {{ attendee.readability }}, 
+                  {{ t('operators.signal') }}: {{ attendee.signalStrength }}
+                </span>
               </div>
             </div>
 

@@ -273,7 +273,7 @@ async function handleSubmit() {
           <Button type="button" variant="outline" @click="emit('update:open', false)">
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" :disabled="isLoading || !isValid">
+          <Button type="submit" variant="outline" :disabled="isLoading || !isValid">
             {{ isLoading ? t('common.loading') : t('nets.create') }}
           </Button>
         </div>

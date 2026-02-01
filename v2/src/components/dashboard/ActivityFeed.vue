@@ -1,8 +1,6 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-import { Radio, UserPlus, Settings, ChevronRight } from 'lucide-vue-next'
+import { Radio, UserPlus, Settings, Activity as ActivityIcon } from 'lucide-vue-next'
 
 interface Activity {
   id: string
@@ -18,14 +16,21 @@ interface Activity {
 interface Props {
   activities: Activity[]
   isLoading?: boolean
+  hasMore?: boolean
+  isLoadingMore?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isLoading: false,
+  hasMore: false,
+  isLoadingMore: false,
 })
 
+const emit = defineEmits<{
+  loadMore: []
+}>()
+
 const { t } = useI18n()
-const router = useRouter()
 
 const formatTime = (dateString: string) => {
   const date = new Date(dateString)
@@ -54,11 +59,11 @@ const getActivityText = (activity: Activity) => {
 
   switch (type) {
     case 'net.started':
-      return t('dashboard.activityNetStarted', { name: netName })
+      return t('dashboard.activityNetStarted', { actor: actorCallSign, name: netName })
     case 'net.ended':
-      return t('dashboard.activityNetEnded', { name: netName })
+      return t('dashboard.activityNetEnded', { actor: actorCallSign, name: netName })
     case 'net.created':
-      return t('dashboard.activityNetCreated', { name: netName })
+      return t('dashboard.activityNetCreated', { actor: actorCallSign, name: netName })
     case 'attendee.added':
       return t('dashboard.activityAttendeeAdded', { callSign: targetCallSign, net: netName })
     default:
@@ -66,16 +71,12 @@ const getActivityText = (activity: Activity) => {
   }
 }
 
-const handleClick = (activity: Activity) => {
-  if (activity.entityType === 'net' && activity.entityId) {
-    router.push(`/nets/${activity.entityId}`)
-  }
-}
 </script>
 
 <template>
   <section>
-    <h3 class="text-sm font-medium text-muted-foreground mb-4">
+    <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+      <ActivityIcon class="h-4 w-4" />
       {{ t('dashboard.recentActivity') }}
     </h3>
     
@@ -91,22 +92,40 @@ const handleClick = (activity: Activity) => {
       {{ t('dashboard.noActivity') }}
     </div>
     
-    <div v-else class="space-y-1">
-      <button
-        v-for="activity in activities"
-        :key="activity.id"
-        @click="handleClick(activity)"
-        class="w-full flex items-center gap-3 py-2 px-1 -mx-1 rounded-md hover:bg-muted/50 transition-colors text-left group"
+    <template v-else>
+      <div 
+        class="space-y-2"
+        :class="activities.length > 3 ? 'max-h-[180px] overflow-y-auto pr-2' : ''"
       >
-        <span class="h-1.5 w-1.5 rounded-full bg-muted-foreground flex-shrink-0" />
-        <component 
-          :is="getActivityIcon(activity.type)" 
-          class="h-4 w-4 text-muted-foreground flex-shrink-0" 
-        />
-        <span class="flex-1 text-sm truncate">{{ getActivityText(activity) }}</span>
-        <span class="text-xs text-muted-foreground flex-shrink-0">{{ formatTime(activity.createdAt) }}</span>
-        <ChevronRight class="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+        <div
+          v-for="activity in activities"
+          :key="activity.id"
+          class="flex items-start gap-3"
+        >
+          <component 
+            :is="getActivityIcon(activity.type)" 
+            class="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" 
+          />
+          <div class="flex-1 min-w-0">
+            <p class="text-sm leading-snug">{{ getActivityText(activity) }}</p>
+            <p class="text-xs text-muted-foreground mt-0.5">{{ formatTime(activity.createdAt) }}</p>
+          </div>
+        </div>
+        
+        <div v-if="isLoadingMore" class="flex items-center gap-3 py-2">
+          <div class="h-4 w-4 bg-muted animate-pulse rounded" />
+          <div class="h-4 flex-1 bg-muted animate-pulse rounded" />
+        </div>
+      </div>
+      
+      <button
+        v-if="hasMore"
+        class="text-xs text-muted-foreground hover:text-foreground mt-3 transition-colors"
+        :disabled="isLoadingMore"
+        @click="emit('loadMore')"
+      >
+        {{ isLoadingMore ? t('common.loading') : t('dashboard.loadMore') }}
       </button>
-    </div>
+    </template>
   </section>
 </template>

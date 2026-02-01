@@ -43,7 +43,7 @@ const logoLoaded = ref(false)
       ]"
     >
       <div class="p-6 lg:p-8">
-        <header class="flex items-center justify-between mb-4 lg:mb-6">
+        <header class="flex items-center justify-between mb-3 lg:mb-4">
           <h1 v-if="title" class="text-2xl lg:text-3xl font-bold">{{ title }}</h1>
           <slot v-else name="title" />
           <div class="flex items-center gap-1">

@@ -60,7 +60,7 @@ async function handleLogout() {
 <template>
   <DropdownMenu>
     <DropdownMenuTrigger class="focus:outline-none">
-      <div class="h-8 w-8 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center cursor-pointer overflow-hidden">
+      <div class="h-8 w-8 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center cursor-pointer overflow-hidden ring-2 ring-zinc-300 dark:ring-zinc-600">
         <img v-if="avatarUrl" :src="avatarUrl" class="h-full w-full object-cover" />
         <span v-else>{{ avatarText.slice(0, 2) }}</span>
       </div>

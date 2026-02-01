@@ -200,7 +200,7 @@ onMounted(() => {
   <AppLayout :title="t('nav.nets')">
     <div class="space-y-4">
       <div class="flex flex-wrap items-center gap-2">
-        <div class="relative w-full sm:w-auto sm:flex-1 sm:max-w-xs">
+        <div class="relative w-full sm:flex-1 sm:max-w-xs">
           <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             v-model="search"
@@ -210,7 +210,7 @@ onMounted(() => {
         </div>
 
         <Select v-model="statusFilter">
-          <SelectTrigger class="w-[120px]">
+          <SelectTrigger class="flex-1 sm:flex-none sm:w-[120px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -222,7 +222,7 @@ onMounted(() => {
         </Select>
 
         <Select v-model="dateFilter">
-          <SelectTrigger class="w-[120px]">
+          <SelectTrigger class="flex-1 sm:flex-none sm:w-[140px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -233,8 +233,8 @@ onMounted(() => {
           </SelectContent>
         </Select>
 
-        <Button v-if="canCreate" @click="showCreateSheet = true" class="hidden lg:flex ml-auto">
-          <Plus class="h-4 w-4 mr-2" />
+        <Button v-if="canCreate" variant="outline" @click="showCreateSheet = true" class="hidden lg:flex ml-auto gap-2">
+          <Plus class="h-4 w-4" />
           {{ t('nets.createNet') }}
         </Button>
       </div>
@@ -324,9 +324,10 @@ onMounted(() => {
 
     <Button
       v-if="canCreate"
+      variant="outline"
       @click="showCreateSheet = true"
       size="icon"
-      class="lg:hidden fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40"
+      class="lg:hidden fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40 bg-background"
     >
       <Plus class="h-6 w-6" />
     </Button>

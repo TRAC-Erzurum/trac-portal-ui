@@ -46,9 +46,12 @@
 
 | Page | Route | Status | Notes |
 |------|-------|--------|-------|
-| Dashboard | `/dashboard` | DONE | StatusBar, ActivityFeed, NetsModule, CommunityModule |
+| Dashboard | `/dashboard` | DONE | ActivityFeed, NetsModule, PersonalStats, CommunityModule |
 | Net List | `/nets` | DONE | Responsive grid, filters, search, create via Sheet |
-| Net Detail | `/nets/:id` | WIP | View, attendee management, edit via Sheet |
+| Net Detail | `/nets/:id` | DONE | View, attendee management, edit via Sheet |
+| Net Report | `/nets/:id/report` | TODO | Attendee list table, export to PDF/PNG/CSV |
+| Users (Admin) | `/users` | TODO | User list, admin only |
+| User Profile (Admin) | `/users/:id` | TODO | View/edit any user, reset password |
 | Operators | `/operators` | DONE | Search, 3-column grid, pagination |
 | Operator Profile | `/operators/:id` | DONE | Profile, stats, recent nets, admin edit |
 | Account | `/account` | DONE | Personal info, operator info, password (renamed from Profile) |
@@ -99,15 +102,19 @@
 
 ### Phase 4: Dashboard - COMPLETE
 
-* \[x] StatusBar (call sign + active nets indicator)
-* \[x] ActivityFeed (timeline with events)
-* \[x] NetsModule (active nets, recent completed, personal stats)
-* \[x] CommunityModule (last 3 months stats, leaderboards)
+* \[x] ActivityFeed (timeline with events, load more pagination)
+* \[x] NetsModule (active/pending/completed nets with priority display)
+* \[x] PersonalStatsModule (attended, managed, streak - personal labels)
+* \[x] CommunityModule (last 3 months stats, leaderboards with dividers)
 * \[x] Activity system (backend EventEmitter + Activity entity)
-* \[x] Dashboard v2 API endpoints
+* \[x] Dashboard v2 API endpoints (with offset support)
 * \[x] Consistent card-based grid design for all lists/stats
 * \[x] Clickable leaderboards (operators → profile, nets → detail)
 * \[x] Totals link to list pages (participants → operators, nets → nets)
+* \[x] Desktop layout: 6 nets + activities side-by-side, stats below
+* \[x] Mobile layout: 3 nets, activities with load more, stats
+* \[x] Consistent dividers/separators between all sections
+* \[x] Activity pagination (3 items, load more button)
 
 ### Phase 5: Nets Module - IN PROGRESS
 
@@ -118,11 +125,11 @@
 * \[x] Attendee management panel (search, add, edit, delete)
 * \[x] Unified attendee entry flow (existing + new operators)
 * \[x] QTH editing for attendees
-* \[x] Dashboard: pending nets display
-* \[x] Dashboard: max 3 nets with priority (active > pending > completed)
+* \[x] Dashboard: pending nets display (max 6 desktop, max 3 mobile)
 * \[x] Consistent status indicators (green pulse=active, yellow=pending, gray=completed)
-* \[ ] Attendee panel UX refinements (ongoing)
-* \[ ] Keyboard shortcuts for fast attendee entry
+* \[x] Keyboard navigation (arrows, enter, escape, tab)
+* \[x] Focus management (search input focused after operations)
+* \[ ] Net report page (attendee list table, export to PDF/PNG/CSV)
 
 ### Phase 6: Operators Module - COMPLETE
 
@@ -134,14 +141,21 @@
 * \[x] Guest restriction (toast + redirect)
 * \[x] Profile → Account rename (`/profile` → `/account`)
 
-### Phase 7: Polish
+### Phase 7: Admin Features
+
+* \[ ] User list page (admin only)
+* \[ ] User profile page (view any user, admin only)
+* \[ ] Reset password for users (admin can reset non-admin passwords)
+* \[ ] Profile picture upload (drag & drop, compression)
+
+### Phase 8: Polish
 
 * \[ ] Error boundaries
 * \[ ] Skeleton loaders
 * \[ ] Accessibility audit
 * \[ ] Performance optimization
 
-### Phase 8: Migration
+### Phase 9: Migration
 
 * \[ ] Final testing
 * \[ ] Remove legacy `app/` folder
@@ -274,6 +288,30 @@ These are potential future enhancements beyond the core modernization:
   * `getPendingNets()` service method
 * i18n keys added for nets module
 * Multiple bug fixes in attendee management
+
+### 2026-02-01 (Session 2)
+
+* Dashboard major redesign:
+  * Desktop: 6 nets (2 rows) + activities side-by-side
+  * Mobile: 3 nets + activities with load more
+  * PersonalStatsModule separated from NetsModule
+  * Consistent dividers between all sections (horizontal + vertical)
+  * Leaderboard columns with vertical dividers
+* ActivityFeed improvements:
+  * Initial load: 3 items
+  * Load more button (small, text style)
+  * Fixed height container with internal scroll (after 3+ items)
+  * Backend: offset parameter support added
+* i18n updates:
+  * "İstatistiklerim" (not "İstatistiklerin")
+  * "Katıldığım Çevrim", "Yönettiğim Çevrim", "Ardışık Katılım"
+  * "My Stats", "Nets Attended", "Nets Managed", "Streak"
+  * Status labels: "Planlandı"/"Scheduled", "Tamamlandı"/"Completed"
+* UI polish:
+  * All buttons converted to outline variant
+  * Theme/language toggles use Lucide icons (not emojis)
+  * Profile photo border adapts to theme
+  * Full width layouts on desktop
 
 ### 2026-02-01
 

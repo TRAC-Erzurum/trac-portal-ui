@@ -178,10 +178,10 @@ const handleSubmit = async () => {
             <label class="text-sm font-medium mb-1.5 block">{{ t('operators.readability') }}</label>
             <Select v-model="form.readability">
               <SelectTrigger class="w-full">
-                <SelectValue>R{{ form.readability }}</SelectValue>
+                <SelectValue>{{ form.readability }}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem v-for="r in 5" :key="r" :value="r">R{{ r }}</SelectItem>
+                <SelectItem v-for="r in 5" :key="r" :value="r">{{ r }}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -189,10 +189,10 @@ const handleSubmit = async () => {
             <label class="text-sm font-medium mb-1.5 block">{{ t('operators.signal') }}</label>
             <Select v-model="form.signalStrength">
               <SelectTrigger class="w-full">
-                <SelectValue>S{{ form.signalStrength }}</SelectValue>
+                <SelectValue>{{ form.signalStrength }}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem v-for="s in 9" :key="s" :value="s">S{{ s }}</SelectItem>
+                <SelectItem v-for="s in 9" :key="s" :value="s">{{ s }}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -202,7 +202,7 @@ const handleSubmit = async () => {
           <Button type="button" variant="outline" @click="emit('update:open', false)">
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" :disabled="isSubmitting">
+          <Button type="submit" variant="outline" :disabled="isSubmitting">
             {{ t('common.save') }}
           </Button>
         </div>

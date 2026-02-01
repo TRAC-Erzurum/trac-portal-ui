@@ -2,17 +2,11 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import StatusBar from '@/components/dashboard/StatusBar.vue'
 import ActivityFeed from '@/components/dashboard/ActivityFeed.vue'
 import NetsModule from '@/components/dashboard/NetsModule.vue'
+import PersonalStatsModule from '@/components/dashboard/PersonalStatsModule.vue'
 import CommunityModule from '@/components/dashboard/CommunityModule.vue'
-import { Separator } from '@/components/ui/separator'
 import { api } from '@/lib/api'
-
-interface StatusResponse {
-  activeNetsCount: number
-  hasActiveNets: boolean
-}
 
 interface ActiveNet {
   id: string
@@ -81,37 +75,47 @@ interface Activity {
 
 const { t } = useI18n()
 
-const isLoadingStatus = ref(true)
 const isLoadingActivity = ref(true)
+const isLoadingMoreActivity = ref(false)
 const isLoadingNets = ref(true)
 const isLoadingCommunity = ref(true)
 
-const status = ref<StatusResponse | null>(null)
 const activities = ref<Activity[]>([])
+const activityPage = ref(1)
+const hasMoreActivity = ref(true)
 const activeNets = ref<ActiveNet[]>([])
 const pendingNets = ref<PendingNet[]>([])
 const recentNets = ref<ActiveNet[]>([])
 const personalStats = ref<PersonalStats | null>(null)
 const communityStats = ref<CommunityStats | null>(null)
 
-const fetchStatus = async () => {
-  try {
-    status.value = await api.get<StatusResponse>('/v2/dashboard/status')
-  } catch (error) {
-    console.error('Failed to fetch status:', error)
-  } finally {
-    isLoadingStatus.value = false
+const fetchActivity = async (append = false) => {
+  if (append) {
+    isLoadingMoreActivity.value = true
   }
-}
-
-const fetchActivity = async () => {
   try {
-    activities.value = await api.get<Activity[]>('/v2/dashboard/activity?limit=5')
+    const limit = 3
+    const offset = append ? activities.value.length : 0
+    const data = await api.get<Activity[]>(`/v2/dashboard/activity?limit=${limit}&offset=${offset}`)
+    
+    if (append) {
+      activities.value = [...activities.value, ...data]
+    } else {
+      activities.value = data
+    }
+    
+    hasMoreActivity.value = data.length === limit
   } catch (error) {
     console.error('Failed to fetch activity:', error)
   } finally {
     isLoadingActivity.value = false
+    isLoadingMoreActivity.value = false
   }
+}
+
+const loadMoreActivity = () => {
+  activityPage.value++
+  fetchActivity(true)
 }
 
 const fetchNets = async () => {
@@ -119,7 +123,7 @@ const fetchNets = async () => {
     const [active, pending, recent, personal] = await Promise.all([
       api.get<ActiveNet[]>('/v2/dashboard/nets/active'),
       api.get<PendingNet[]>('/v2/dashboard/nets/pending'),
-      api.get<ActiveNet[]>('/v2/dashboard/nets/recent'),
+      api.get<ActiveNet[]>('/v2/dashboard/nets/recent?limit=6'),
       api.get<PersonalStats>('/v2/dashboard/nets/personal'),
     ])
     activeNets.value = active
@@ -144,7 +148,6 @@ const fetchCommunity = async () => {
 }
 
 onMounted(() => {
-  fetchStatus()
   fetchActivity()
   fetchNets()
   fetchCommunity()
@@ -153,30 +156,75 @@ onMounted(() => {
 
 <template>
   <AppLayout :title="t('nav.dashboard')">
-    <div class="space-y-6">
-      <StatusBar 
-        :active-nets-count="status?.activeNetsCount || 0" 
-        :is-loading="isLoadingStatus" 
+    <div class="hidden xl:flex items-stretch gap-6">
+      <div class="flex-1">
+        <NetsModule
+          :active-nets="activeNets"
+          :pending-nets="pendingNets"
+          :recent-nets="recentNets"
+          :is-loading="isLoadingNets"
+          :max-nets="6"
+        />
+      </div>
+
+      <div class="w-px bg-zinc-200 dark:bg-zinc-800" />
+
+      <div class="w-80 shrink-0">
+        <ActivityFeed 
+          :activities="activities" 
+          :is-loading="isLoadingActivity"
+          :has-more="hasMoreActivity"
+          :is-loading-more="isLoadingMoreActivity"
+          @load-more="loadMoreActivity"
+        />
+      </div>
+    </div>
+
+    <div class="hidden xl:block h-px bg-zinc-200 dark:bg-zinc-800 my-6" />
+
+    <div class="hidden xl:block">
+      <PersonalStatsModule
+        :stats="personalStats"
+        :is-loading="isLoadingNets"
       />
+    </div>
 
-      <Separator />
+    <div class="hidden xl:block h-px bg-zinc-200 dark:bg-zinc-800 my-6" />
 
-      <ActivityFeed 
-        :activities="activities" 
-        :is-loading="isLoadingActivity" 
+    <div class="hidden xl:block">
+      <CommunityModule
+        :stats="communityStats"
+        :is-loading="isLoadingCommunity"
       />
+    </div>
 
-      <Separator />
-
+    <div class="xl:hidden">
       <NetsModule
         :active-nets="activeNets"
         :pending-nets="pendingNets"
         :recent-nets="recentNets"
-        :personal-stats="personalStats"
+        :is-loading="isLoadingNets"
+        :max-nets="3"
+      />
+
+      <div class="h-px bg-zinc-200 dark:bg-zinc-800 my-6" />
+
+      <ActivityFeed 
+        :activities="activities" 
+        :is-loading="isLoadingActivity"
+        :has-more="hasMoreActivity"
+        :is-loading-more="isLoadingMoreActivity"
+        @load-more="loadMoreActivity"
+      />
+
+      <div class="h-px bg-zinc-200 dark:bg-zinc-800 my-6" />
+
+      <PersonalStatsModule
+        :stats="personalStats"
         :is-loading="isLoadingNets"
       />
 
-      <Separator />
+      <div class="h-px bg-zinc-200 dark:bg-zinc-800 my-6" />
 
       <CommunityModule
         :stats="communityStats"

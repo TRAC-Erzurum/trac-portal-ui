@@ -2,8 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Radio, ChevronRight, Clock, Users, TrendingUp } from 'lucide-vue-next'
-import { Separator } from '@/components/ui/separator'
+import { Radio, Clock, Users } from 'lucide-vue-next'
 
 interface ActiveNet {
   id: string
@@ -14,14 +13,6 @@ interface ActiveNet {
   attendeeCount: number
   startedAt: string
   durationMinutes: number
-}
-
-interface PersonalStats {
-  attendedNets: number
-  managedNets: number
-  streak: number
-  averageReadability: number
-  averageSignal: number
 }
 
 interface PendingNet {
@@ -47,24 +38,24 @@ interface Props {
   activeNets: ActiveNet[]
   pendingNets: PendingNet[]
   recentNets: ActiveNet[]
-  personalStats: PersonalStats | null
   isLoading?: boolean
+  maxNets?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isLoading: false,
+  maxNets: 3,
 })
 
 const { t } = useI18n()
 const router = useRouter()
 
-const MAX_DISPLAY = 3
-
 const displayNets = computed<DisplayNet[]>(() => {
   const result: DisplayNet[] = []
+  const max = props.maxNets
   
   for (const net of props.activeNets) {
-    if (result.length >= MAX_DISPLAY) break
+    if (result.length >= max) break
     result.push({
       id: net.id,
       name: net.name,
@@ -78,7 +69,7 @@ const displayNets = computed<DisplayNet[]>(() => {
   }
   
   for (const net of props.pendingNets) {
-    if (result.length >= MAX_DISPLAY) break
+    if (result.length >= max) break
     result.push({
       id: net.id,
       name: net.name,
@@ -90,7 +81,7 @@ const displayNets = computed<DisplayNet[]>(() => {
   }
   
   for (const net of props.recentNets) {
-    if (result.length >= MAX_DISPLAY) break
+    if (result.length >= max) break
     result.push({
       id: net.id,
       name: net.name,
@@ -113,21 +104,8 @@ const formatDuration = (minutes: number) => {
   return mins > 0 ? `${hours}s ${mins}dk` : `${hours}s`
 }
 
-const hasPersonalStats = computed(() => {
-  if (!props.personalStats) return false
-  return (
-    props.personalStats.attendedNets > 0 ||
-    props.personalStats.managedNets > 0 ||
-    props.personalStats.streak > 0
-  )
-})
-
 const goToNet = (netId: string) => {
   router.push(`/nets/${netId}`)
-}
-
-const goToAllNets = () => {
-  router.push('/nets')
 }
 
 const getNetClasses = (status: 'active' | 'pending' | 'completed') => {
@@ -155,19 +133,10 @@ const getStatusLabel = (status: 'active' | 'pending' | 'completed') => {
 
 <template>
   <section>
-    <div class="flex items-center justify-between mb-4">
-      <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2">
-        <Radio class="h-4 w-4" />
-        {{ t('dashboard.nets') }}
-      </h3>
-      <button 
-        @click="goToAllNets"
-        class="text-xs text-primary hover:underline flex items-center gap-1"
-      >
-        {{ t('dashboard.viewAll') }}
-        <ChevronRight class="h-3 w-3" />
-      </button>
-    </div>
+    <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+      <Radio class="h-4 w-4" />
+      {{ t('dashboard.nets') }}
+    </h3>
 
     <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-3">
       <div v-for="i in 3" :key="i" class="p-4 rounded-lg border border-border/50 space-y-2">
@@ -182,7 +151,7 @@ const getStatusLabel = (status: 'active' | 'pending' | 'completed') => {
           v-for="net in displayNets"
           :key="net.id"
           @click="goToNet(net.id)"
-          class="w-full text-left p-4 rounded-lg border transition-all group"
+          class="w-full text-left p-4 rounded-lg border transition-all"
           :class="getNetClasses(net.status)"
         >
           <div class="flex items-start gap-3">
@@ -228,7 +197,6 @@ const getStatusLabel = (status: 'active' | 'pending' | 'completed') => {
                 </template>
               </div>
             </div>
-            <ChevronRight class="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-0.5" />
           </div>
         </button>
       </div>
@@ -236,40 +204,6 @@ const getStatusLabel = (status: 'active' | 'pending' | 'completed') => {
       <div v-else class="py-8 text-center">
         <p class="text-muted-foreground">{{ t('dashboard.noNets') }}</p>
       </div>
-
-      <template v-if="hasPersonalStats">
-        <Separator class="my-6" />
-
-        <div>
-          <p class="text-xs font-medium text-muted-foreground mb-4 flex items-center gap-1.5">
-            <TrendingUp class="h-3 w-3" />
-            {{ t('dashboard.yourStats') }}
-          </p>
-          <div class="grid grid-cols-3 gap-3">
-            <div class="p-4 rounded-lg border border-border/50 text-center">
-              <div class="flex items-center justify-center gap-1 text-2xl font-bold">
-                <Users class="h-5 w-5 text-muted-foreground" />
-                {{ personalStats!.attendedNets }}
-              </div>
-              <p class="text-xs text-muted-foreground mt-1">{{ t('dashboard.attended') }}</p>
-            </div>
-            <div class="p-4 rounded-lg border border-border/50 text-center">
-              <div class="flex items-center justify-center gap-1 text-2xl font-bold">
-                <Radio class="h-5 w-5 text-muted-foreground" />
-                {{ personalStats!.managedNets }}
-              </div>
-              <p class="text-xs text-muted-foreground mt-1">{{ t('dashboard.managed') }}</p>
-            </div>
-            <div class="p-4 rounded-lg border border-border/50 text-center">
-              <div class="flex items-center justify-center gap-1 text-2xl font-bold">
-                <TrendingUp class="h-5 w-5 text-muted-foreground" />
-                {{ personalStats!.streak }}
-              </div>
-              <p class="text-xs text-muted-foreground mt-1">{{ t('dashboard.streak') }}</p>
-            </div>
-          </div>
-        </div>
-      </template>
     </template>
   </section>
 </template>

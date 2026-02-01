@@ -108,7 +108,7 @@ async function handleSubmit() {
           <Button type="button" variant="outline" @click="emit('update:open', false)">
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" :disabled="!canSubmit || isLoading">
+          <Button type="submit" variant="outline" :disabled="!canSubmit || isLoading">
             {{ isLoading ? t('common.loading') : t('profile.changePassword') }}
           </Button>
         </div>
