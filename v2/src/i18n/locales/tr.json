@@ -15,7 +15,8 @@
     "captchaNotConfigured": "CAPTCHA yapılandırılmamış",
     "cannotResetHigherRolePassword": "Üst rol kullanıcısının parolası sıfırlanamaz",
     "operatorChangeNotAllowed": "Operatör değişikliğine izin verilmiyor",
-    "pleaseWaitForCaptcha": "Lütfen doğrulamayı bekleyin"
+    "pleaseWaitForCaptcha": "Lütfen doğrulamayı bekleyin",
+    "guestRestriction": "Değerli misafirimiz, bu özelliğe erişim için yöneticilerle iletişime geçin"
   },
   "auth": {
     "login": "Giriş Yap",
@@ -55,6 +56,7 @@
     "password": "Parola",
     "passwordConfirm": "Parola Tekrar",
     "fullName": "Ad Soyad",
+    "fullNamePlaceholder": "Adınızı ve soyadınızı girin",
     "city": "İl",
     "cityPlaceholder": "İl seçin",
     "district": "İlçe",
@@ -111,10 +113,51 @@
     "backHome": "Ana Sayfaya Dön"
   },
   "dashboard": {
-    "title": "Dashboard",
-    "totalNets": "Toplam Çevrim",
-    "myNets": "Katıldığım Çevrimler",
-    "activeOperators": "Aktif Operatörler"
+    "title": "Ana Sayfa",
+    "activeNets": "aktif çevrim",
+    "nets": "Çevrimler",
+    "viewAll": "Tümünü gör",
+    "active": "Aktif",
+    "recentCompleted": "Son Tamamlananlar",
+    "noNets": "Henüz çevrim yok",
+    "yourStats": "İstatistiklerin",
+    "attended": "Katılım",
+    "managed": "Yönetim",
+    "streak": "Seri",
+    "recentActivity": "Son Aktiviteler",
+    "noActivity": "Henüz aktivite yok",
+    "community": "Topluluk",
+    "last3Months": "Son 3 Ay",
+    "netsLabel": "çevrim",
+    "participantsLabel": "katılımcı",
+    "topParticipants": "En Çok Katılan",
+    "topNetManagers": "En Çok Yöneten",
+    "topNets": "En Popüler Çevrimler",
+    "totalParticipants": "toplam katılımcı",
+    "totalNets": "tamamlanan çevrim",
+    "months": {
+      "january": "Ocak",
+      "february": "Şubat",
+      "march": "Mart",
+      "april": "Nisan",
+      "may": "Mayıs",
+      "june": "Haziran",
+      "july": "Temmuz",
+      "august": "Ağustos",
+      "september": "Eylül",
+      "october": "Ekim",
+      "november": "Kasım",
+      "december": "Aralık"
+    },
+    "timeNow": "şimdi",
+    "timeMinutes": "{count} dk önce",
+    "timeHours": "{count} sa önce",
+    "timeYesterday": "dün",
+    "timeDays": "{count} gün önce",
+    "activityNetStarted": "{name} çevrimi başladı",
+    "activityNetEnded": "{name} çevrimi sona erdi",
+    "activityNetCreated": "{name} çevrimi oluşturuldu",
+    "activityAttendeeAdded": "{callSign} {net} çevrimine katıldı"
   },
   "common": {
     "loading": "Yükleniyor...",
@@ -167,7 +210,7 @@
     "dashboard": "Ana Sayfa",
     "nets": "Çevrimler",
     "operators": "Operatörler",
-    "profile": "Profil",
+    "account": "Hesabım",
     "collapse": "Daralt"
   },
   "roles": {
@@ -176,5 +219,23 @@
     "moderator": "Moderatör",
     "user": "Kullanıcı",
     "guest": "Misafir"
+  },
+  "operators": {
+    "searchPlaceholder": "Çağrı işareti, isim veya şehir ara...",
+    "totalCount": "{count} operatör",
+    "noResults": "Sonuç bulunamadı",
+    "loadMore": "Daha fazla yükle",
+    "profile": "Profil",
+    "statistics": "İstatistikler",
+    "attended": "Katılım",
+    "managed": "Yönetim",
+    "streak": "Seri",
+    "readability": "Okunabilirlik",
+    "signal": "Sinyal",
+    "recentNets": "Son Çevrimler",
+    "noNets": "Henüz çevrim kaydı yok",
+    "attendedLabel": "Katıldı",
+    "managedLabel": "Yönetti",
+    "editOperator": "Operatör Bilgilerini Düzenle"
   }
 }

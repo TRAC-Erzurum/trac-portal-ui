@@ -1,0 +1,225 @@
+<script setup lang="ts">
+import { useI18n } from 'vue-i18n'
+import { Trophy, Users, Radio, TrendingUp, ChevronRight } from 'lucide-vue-next'
+import { useRouter } from 'vue-router'
+import { Separator } from '@/components/ui/separator'
+
+interface LeaderboardEntry {
+  rank: number
+  callSign: string
+  operatorId?: string
+  netId?: string
+  value: number
+  label: string
+}
+
+interface MonthlyStats {
+  month: string
+  year: number
+  monthIndex: number
+  netsCount: number
+  totalAttendees: number
+  uniqueParticipants: number
+}
+
+interface CommunityStats {
+  totalUniqueParticipants: number
+  totalCompletedNets: number
+  monthlyStats: MonthlyStats[]
+  topParticipants: LeaderboardEntry[]
+  topNetManagers: LeaderboardEntry[]
+  topNets: LeaderboardEntry[]
+}
+
+interface Props {
+  stats: CommunityStats | null
+  isLoading?: boolean
+}
+
+const props = withDefaults(defineProps<Props>(), {
+  isLoading: false,
+})
+
+const { t } = useI18n()
+const router = useRouter()
+
+const getRankClass = (rank: number) => {
+  switch (rank) {
+    case 1:
+      return 'text-amber-500'
+    case 2:
+      return 'text-zinc-400'
+    case 3:
+      return 'text-amber-700'
+    default:
+      return 'text-muted-foreground'
+  }
+}
+
+const getMonthName = (month: string) => {
+  return t(`dashboard.months.${month}`)
+}
+
+const goToOperator = (operatorId?: string) => {
+  if (operatorId) {
+    router.push(`/operators/${operatorId}`)
+  }
+}
+
+const goToNet = (netId?: string) => {
+  if (netId) {
+    router.push(`/nets/${netId}`)
+  }
+}
+
+const goToOperators = () => {
+  router.push('/operators')
+}
+
+const goToNets = () => {
+  router.push('/nets')
+}
+</script>
+
+<template>
+  <section>
+    <div class="flex items-center gap-2 mb-6">
+      <Trophy class="h-4 w-4 text-muted-foreground" />
+      <h3 class="text-sm font-medium text-muted-foreground">
+        {{ t('dashboard.community') }}
+      </h3>
+    </div>
+
+    <div v-if="isLoading" class="grid grid-cols-3 gap-3">
+      <div v-for="i in 3" :key="i" class="p-4 rounded-lg border border-border/50 space-y-2">
+        <div class="h-4 w-16 bg-muted animate-pulse rounded" />
+        <div class="h-8 w-12 bg-muted animate-pulse rounded" />
+        <div class="h-4 w-20 bg-muted animate-pulse rounded" />
+      </div>
+    </div>
+
+    <template v-else-if="stats">
+      <div v-if="stats.monthlyStats.length > 0" class="mb-6">
+        <p class="text-xs font-medium text-muted-foreground mb-3 flex items-center gap-1.5">
+          <TrendingUp class="h-3 w-3" />
+          {{ t('dashboard.last3Months') }}
+        </p>
+        <div class="grid grid-cols-3 gap-3">
+          <div 
+            v-for="month in stats.monthlyStats" 
+            :key="`${month.year}-${month.monthIndex}`"
+            class="p-4 rounded-lg border border-border/50 text-center"
+          >
+            <p class="text-xs text-muted-foreground mb-1">{{ getMonthName(month.month) }}</p>
+            <p class="text-2xl font-bold">{{ month.netsCount }}</p>
+            <p class="text-xs text-muted-foreground">{{ t('dashboard.netsLabel') }}</p>
+            <p class="text-sm text-muted-foreground mt-1">
+              {{ month.uniqueParticipants }} {{ t('dashboard.participantsLabel') }}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <Separator class="my-6" />
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <div>
+          <p class="text-xs font-medium text-muted-foreground mb-3">
+            {{ t('dashboard.topParticipants') }}
+          </p>
+          <div class="space-y-1">
+            <button
+              v-for="entry in stats.topParticipants"
+              :key="entry.rank"
+              @click="goToOperator(entry.operatorId)"
+              class="w-full flex items-center gap-2 text-sm p-2 -mx-2 rounded-lg hover:bg-muted/30 transition-colors group"
+            >
+              <span 
+                class="w-5 font-bold" 
+                :class="getRankClass(entry.rank)"
+              >
+                {{ entry.rank }}.
+              </span>
+              <span class="flex-1 truncate font-medium text-left">{{ entry.callSign }}</span>
+              <span class="text-muted-foreground text-xs">{{ entry.value }}</span>
+              <ChevronRight class="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-medium text-muted-foreground mb-3">
+            {{ t('dashboard.topNetManagers') }}
+          </p>
+          <div class="space-y-1">
+            <button
+              v-for="entry in stats.topNetManagers"
+              :key="entry.rank"
+              @click="goToOperator(entry.operatorId)"
+              class="w-full flex items-center gap-2 text-sm p-2 -mx-2 rounded-lg hover:bg-muted/30 transition-colors group"
+            >
+              <span 
+                class="w-5 font-bold" 
+                :class="getRankClass(entry.rank)"
+              >
+                {{ entry.rank }}.
+              </span>
+              <span class="flex-1 truncate font-medium text-left">{{ entry.callSign }}</span>
+              <span class="text-muted-foreground text-xs">{{ entry.value }}</span>
+              <ChevronRight class="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-medium text-muted-foreground mb-3">
+            {{ t('dashboard.topNets') }}
+          </p>
+          <div class="space-y-1">
+            <button
+              v-for="entry in stats.topNets"
+              :key="entry.rank"
+              @click="goToNet(entry.netId)"
+              class="w-full flex items-center gap-2 text-sm p-2 -mx-2 rounded-lg hover:bg-muted/30 transition-colors group"
+            >
+              <span 
+                class="w-5 font-bold" 
+                :class="getRankClass(entry.rank)"
+              >
+                {{ entry.rank }}.
+              </span>
+              <span class="flex-1 truncate text-left">{{ entry.callSign }}</span>
+              <span class="text-muted-foreground text-xs">{{ entry.value }}</span>
+              <ChevronRight class="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <Separator class="my-6" />
+
+      <div class="grid grid-cols-2 gap-3">
+        <button
+          @click="goToOperators"
+          class="p-4 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all text-center group"
+        >
+          <div class="flex items-center justify-center gap-1.5 text-2xl font-bold">
+            <Users class="h-5 w-5 text-muted-foreground" />
+            {{ stats.totalUniqueParticipants }}
+          </div>
+          <p class="text-xs text-muted-foreground mt-1 group-hover:text-foreground transition-colors">{{ t('dashboard.totalParticipants') }}</p>
+        </button>
+        <button
+          @click="goToNets"
+          class="p-4 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all text-center group"
+        >
+          <div class="flex items-center justify-center gap-1.5 text-2xl font-bold">
+            <Radio class="h-5 w-5 text-muted-foreground" />
+            {{ stats.totalCompletedNets }}
+          </div>
+          <p class="text-xs text-muted-foreground mt-1 group-hover:text-foreground transition-colors">{{ t('dashboard.totalNets') }}</p>
+        </button>
+      </div>
+    </template>
+  </section>
+</template>

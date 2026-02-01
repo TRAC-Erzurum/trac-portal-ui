@@ -15,7 +15,8 @@
     "captchaNotConfigured": "CAPTCHA is not configured",
     "cannotResetHigherRolePassword": "Cannot reset password for higher role user",
     "operatorChangeNotAllowed": "Operator change is not allowed",
-    "pleaseWaitForCaptcha": "Please wait for verification"
+    "pleaseWaitForCaptcha": "Please wait for verification",
+    "guestRestriction": "Dear guest, please contact administrators to access this feature"
   },
   "auth": {
     "login": "Login",
@@ -55,6 +56,7 @@
     "password": "Password",
     "passwordConfirm": "Confirm Password",
     "fullName": "Full Name",
+    "fullNamePlaceholder": "Enter your full name",
     "city": "City",
     "cityPlaceholder": "Select city",
     "district": "District",
@@ -112,9 +114,50 @@
   },
   "dashboard": {
     "title": "Dashboard",
-    "totalNets": "Total Nets",
-    "myNets": "My Nets",
-    "activeOperators": "Active Operators"
+    "activeNets": "active nets",
+    "nets": "Nets",
+    "viewAll": "View all",
+    "active": "Active",
+    "recentCompleted": "Recent Completed",
+    "noNets": "No nets yet",
+    "yourStats": "Your Stats",
+    "attended": "Attended",
+    "managed": "Managed",
+    "streak": "Streak",
+    "recentActivity": "Recent Activity",
+    "noActivity": "No activity yet",
+    "community": "Community",
+    "last3Months": "Last 3 Months",
+    "netsLabel": "nets",
+    "participantsLabel": "participants",
+    "topParticipants": "Top Participants",
+    "topNetManagers": "Top Net Managers",
+    "topNets": "Top Nets",
+    "totalParticipants": "total participants",
+    "totalNets": "completed nets",
+    "months": {
+      "january": "Jan",
+      "february": "Feb",
+      "march": "Mar",
+      "april": "Apr",
+      "may": "May",
+      "june": "Jun",
+      "july": "Jul",
+      "august": "Aug",
+      "september": "Sep",
+      "october": "Oct",
+      "november": "Nov",
+      "december": "Dec"
+    },
+    "timeNow": "now",
+    "timeMinutes": "{count}m ago",
+    "timeHours": "{count}h ago",
+    "timeYesterday": "yesterday",
+    "timeDays": "{count}d ago",
+    "activityNetStarted": "{name} net started",
+    "activityNetEnded": "{name} net ended",
+    "activityNetCreated": "{name} net created",
+    "activityAttendeeAdded": "{callSign} joined {net}"
   },
   "common": {
     "loading": "Loading...",
@@ -167,7 +210,7 @@
     "dashboard": "Dashboard",
     "nets": "Nets",
     "operators": "Operators",
-    "profile": "Profile",
+    "account": "My Account",
     "collapse": "Collapse"
   },
   "roles": {
@@ -176,5 +219,23 @@
     "moderator": "Moderator",
     "user": "User",
     "guest": "Guest"
+  },
+  "operators": {
+    "searchPlaceholder": "Search call sign, name or city...",
+    "totalCount": "{count} operators",
+    "noResults": "No results found",
+    "loadMore": "Load more",
+    "profile": "Profile",
+    "statistics": "Statistics",
+    "attended": "Attended",
+    "managed": "Managed",
+    "streak": "Streak",
+    "readability": "Readability",
+    "signal": "Signal",
+    "recentNets": "Recent Nets",
+    "noNets": "No net records yet",
+    "attendedLabel": "Attended",
+    "managedLabel": "Managed",
+    "editOperator": "Edit Operator Info"
   }
 }

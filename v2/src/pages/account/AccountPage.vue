@@ -151,7 +151,7 @@ onMounted(fetchProfile)
 </script>
 
 <template>
-  <AppLayout :title="t('nav.profile')">
+  <AppLayout :title="t('nav.account')">
     <div class="max-w-2xl mx-auto">
       <template v-if="isLoading">
         <div class="animate-pulse space-y-8">

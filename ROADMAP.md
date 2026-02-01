@@ -46,11 +46,12 @@
 
 | Page | Route | Status | Notes |
 |------|-------|--------|-------|
-| Dashboard | `/dashboard` | PARTIAL | Layout done, needs real data |
+| Dashboard | `/dashboard` | DONE | StatusBar, ActivityFeed, NetsModule, CommunityModule |
 | Net List | `/nets` | TODO | DataTable, filters, create via Sheet |
 | Net Detail | `/nets/:id` | TODO | Combined view/manage/report, edit via Sheet |
-| Operators | `/operators` | TODO | Search, list |
-| Profile | `/profile` | DONE | Account, operator, password, preferences |
+| Operators | `/operators` | DONE | Search, 3-column grid, pagination |
+| Operator Profile | `/operators/:id` | DONE | Profile, stats, recent nets, admin edit |
+| Account | `/account` | DONE | Personal info, operator info, password (renamed from Profile) |
 
 ### Static Pages
 
@@ -96,12 +97,17 @@
 * \[x] Profile page (account info, operator info, password change, preferences)
 * \[x] AuthLayout component (shared layout for login/register/forgot-password)
 
-### Phase 4: Dashboard
+### Phase 4: Dashboard - COMPLETE
 
-* \[ ] Stats cards
-* \[ ] Recent nets widget
-* \[ ] Quick actions
-* \[ ] Empty/loading states
+* \[x] StatusBar (call sign + active nets indicator)
+* \[x] ActivityFeed (timeline with events)
+* \[x] NetsModule (active nets, recent completed, personal stats)
+* \[x] CommunityModule (last 3 months stats, leaderboards)
+* \[x] Activity system (backend EventEmitter + Activity entity)
+* \[x] Dashboard v2 API endpoints
+* \[x] Consistent card-based grid design for all lists/stats
+* \[x] Clickable leaderboards (operators → profile, nets → detail)
+* \[x] Totals link to list pages (participants → operators, nets → nets)
 
 ### Phase 5: Nets Module
 
@@ -111,11 +117,15 @@
 * \[ ] Net create/edit Sheet
 * \[ ] Attendee management panel
 
-### Phase 6: Operators Module
+### Phase 6: Operators Module - COMPLETE
 
-* \[ ] Operator list with search
-* \[ ] Operator detail page
-* \[ ] Profile edit (in Settings)
+* \[x] Operator list with search (responsive 1/2/3 column grid)
+* \[x] Operator detail page (profile, stats, recent nets)
+* \[x] Admin edit operator (EditOperatorAdminSheet)
+* \[x] Backend: `/operator/:id/stats` endpoint
+* \[x] Backend: `/operator/:id/recent-nets` endpoint
+* \[x] Guest restriction (toast + redirect)
+* \[x] Profile → Account rename (`/profile` → `/account`)
 
 ### Phase 7: Polish
 
@@ -130,6 +140,18 @@
 * \[ ] Remove legacy `app/` folder
 * \[ ] Update build/deploy scripts
 * \[ ] DNS/routing switch
+
+***
+
+## Future Features (Planned)
+
+These are potential future enhancements beyond the core modernization:
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| QTH Locator | Map-based locator visualization for operators | Idea |
+| Inventory Management | Operators can list/manage their radio equipment | Idea |
+| Forum/Discussion | Community knowledge sharing area | Idea |
 
 ***
 
@@ -176,7 +198,67 @@
 
 ***
 
+## Design System
+
+### Core Principles
+
+| Principle | Description |
+|-----------|-------------|
+| Flat Design | No heavy cards, use subtle borders and separators |
+| Consistency | Same design language across all pages |
+| Mobile-first | Responsive grids (1 col mobile, 2-3 cols desktop) |
+| Full Width | Utilize entire screen width, no cramped layouts |
+
+### Component Patterns
+
+| Pattern | Usage |
+|---------|-------|
+| Card Grid | Lists use `border border-border/50` with hover effects |
+| Page Size | Always divisible by grid columns (e.g., 24 for 2/3 col) |
+| Edit Forms | Sheet/Drawer, pre-filled with current data |
+| Navigation | Breadcrumb for drill-down pages |
+| Stats | Card grid with centered content, icons + numbers |
+
+### Color Usage
+
+| Element | Color |
+|---------|-------|
+| Primary Accent | TRAC Blue (#0c0563) - sparingly |
+| Background | Zinc neutral grays |
+| Borders | `border-border/50` (subtle) |
+| Hover | `hover:border-border hover:bg-muted/30` |
+| Active State | Green accent for active nets |
+
+***
+
+## Known Issues
+
+| Issue | Severity | Notes |
+|-------|----------|-------|
+| District name mismatch | Minor | Some DB records have Turkish chars (Palandöken) vs API (Palandoken) |
+| City trailing spaces | Minor | Some DB records have trailing spaces, fixed with `.trim()` in UI |
+
+***
+
 ## Changelog
+
+### 2026-02-01
+
+* Phase 6 (Operators Module) completed:
+  * Operator list page with search, responsive grid (1/2/3 cols)
+  * Operator profile page with stats, recent nets, breadcrumb
+  * Admin edit operator via Sheet
+  * Backend endpoints for stats and recent nets
+* Phase 4 (Dashboard) enhancements:
+  * Consistent card-based design across all modules
+  * Leaderboards now clickable (navigate to profile/net detail)
+  * Total stats link to corresponding list pages
+  * Backend returns `operatorId` and `netId` for leaderboard entries
+* Guest user restrictions with toast message
+* Profile renamed to Account (`/profile` → `/account`)
+* Navigation updated (Sidebar, BottomNav, UserMenu)
+* i18n keys added for operators module
+* Design language unified: all lists use card grid with subtle borders
 
 ### 2026-01-31
 

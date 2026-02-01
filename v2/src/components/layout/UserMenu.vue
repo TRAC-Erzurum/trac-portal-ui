@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { toast } from 'vue-sonner'
 import { UserCircle, LogOut } from 'lucide-vue-next'
 import {
   DropdownMenu,
@@ -42,6 +43,14 @@ const avatarUrl = computed(() => {
   return `${baseUrl}${picture}`
 })
 
+function handleAccountClick() {
+  if (authStore.isGuest) {
+    toast.error(t('error.guestRestriction'))
+    return
+  }
+  router.push('/account')
+}
+
 async function handleLogout() {
   await authStore.logout()
   router.push('/')
@@ -66,9 +75,9 @@ async function handleLogout() {
         </div>
       </DropdownMenuLabel>
       <DropdownMenuSeparator />
-      <DropdownMenuItem @click="router.push('/profile')" class="cursor-pointer">
+      <DropdownMenuItem @click="handleAccountClick" class="cursor-pointer">
         <UserCircle class="mr-2 h-4 w-4" />
-        {{ t('nav.profile') }}
+        {{ t('nav.account') }}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem @click="handleLogout" class="cursor-pointer text-destructive focus:text-destructive">

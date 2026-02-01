@@ -1,5 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore, type UserRole } from '@/stores/auth'
+import { toast } from 'vue-sonner'
+import { i18n } from '@/i18n'
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean
+    guestOnly?: boolean
+    minRole?: UserRole
+  }
+}
 
 const router = createRouter({
   history: createWebHistory(),
@@ -38,19 +48,25 @@ const router = createRouter({
       path: '/nets',
       name: 'nets',
       component: () => import('@/pages/nets/NetsPage.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, minRole: 'volunteer' }
     },
     {
       path: '/operators',
       name: 'operators',
       component: () => import('@/pages/operators/OperatorsPage.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, minRole: 'volunteer' }
     },
     {
-      path: '/profile',
+      path: '/operators/:id',
       name: 'profile',
-      component: () => import('@/pages/profile/ProfilePage.vue'),
-      meta: { requiresAuth: true }
+      component: () => import('@/pages/operators/ProfilePage.vue'),
+      meta: { requiresAuth: true, minRole: 'volunteer' }
+    },
+    {
+      path: '/account',
+      name: 'account',
+      component: () => import('@/pages/account/AccountPage.vue'),
+      meta: { requiresAuth: true, minRole: 'volunteer' }
     },
     {
       path: '/privacy',
@@ -68,6 +84,7 @@ const router = createRouter({
 
 router.beforeEach(async (to) => {
   const authStore = useAuthStore()
+  const t = i18n.global.t
 
   if (!authStore.isInitialized) {
     await authStore.initialize()
@@ -79,6 +96,13 @@ router.beforeEach(async (to) => {
 
   if (to.meta.guestOnly && authStore.isAuthenticated) {
     return { name: 'dashboard' }
+  }
+
+  if (to.meta.minRole && authStore.isAuthenticated) {
+    if (!authStore.hasRole(to.meta.minRole)) {
+      toast.error(t('error.guestRestriction'))
+      return { name: 'dashboard' }
+    }
   }
 })
 
