@@ -13,6 +13,12 @@ declare module 'vue-router' {
 
 const router = createRouter({
   history: createWebHistory(),
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition
+    }
+    return { top: 0 }
+  },
   routes: [
     {
       path: '/',
@@ -48,6 +54,12 @@ const router = createRouter({
       path: '/nets',
       name: 'nets',
       component: () => import('@/pages/nets/NetsPage.vue'),
+      meta: { requiresAuth: true, minRole: 'volunteer' }
+    },
+    {
+      path: '/nets/:id',
+      name: 'net-detail',
+      component: () => import('@/pages/nets/NetDetailPage.vue'),
       meta: { requiresAuth: true, minRole: 'volunteer' }
     },
     {

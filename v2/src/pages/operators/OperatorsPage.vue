@@ -38,7 +38,7 @@ const isLoading = ref(true)
 const isLoadingMore = ref(false)
 const search = ref('')
 const page = ref(1)
-const pageSize = 24
+const pageSize = 12
 const hasMore = ref(true)
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
@@ -135,7 +135,7 @@ onMounted(() => {
       <Separator />
 
       <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-        <div v-for="i in 9" :key="i" class="p-4 rounded-lg border border-border/50 space-y-2">
+        <div v-for="i in 6" :key="i" class="p-4 rounded-lg border border-border/50 space-y-2">
           <div class="h-5 w-24 bg-muted animate-pulse rounded" />
           <div class="h-4 w-40 bg-muted animate-pulse rounded" />
         </div>

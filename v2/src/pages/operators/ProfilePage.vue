@@ -173,20 +173,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppLayout :title="t('operators.profile')">
+  <AppLayout :title="t('operators.profile')" :breadcrumb-label="formattedCallSign || '...'">
     <div class="space-y-6">
-      <nav class="flex items-center gap-1 text-sm text-muted-foreground">
-        <router-link to="/dashboard" class="hover:text-foreground transition-colors">
-          {{ t('nav.dashboard') }}
-        </router-link>
-        <ChevronRight class="h-4 w-4" />
-        <router-link to="/operators" class="hover:text-foreground transition-colors">
-          {{ t('nav.operators') }}
-        </router-link>
-        <ChevronRight class="h-4 w-4" />
-        <span class="text-foreground">{{ formattedCallSign || '...' }}</span>
-      </nav>
-
       <template v-if="isLoading">
         <div class="space-y-4">
           <div class="h-20 w-20 mx-auto bg-muted animate-pulse rounded-full" />

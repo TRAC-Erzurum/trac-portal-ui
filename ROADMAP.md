@@ -47,8 +47,8 @@
 | Page | Route | Status | Notes |
 |------|-------|--------|-------|
 | Dashboard | `/dashboard` | DONE | StatusBar, ActivityFeed, NetsModule, CommunityModule |
-| Net List | `/nets` | TODO | DataTable, filters, create via Sheet |
-| Net Detail | `/nets/:id` | TODO | Combined view/manage/report, edit via Sheet |
+| Net List | `/nets` | DONE | Responsive grid, filters, search, create via Sheet |
+| Net Detail | `/nets/:id` | WIP | View, attendee management, edit via Sheet |
 | Operators | `/operators` | DONE | Search, 3-column grid, pagination |
 | Operator Profile | `/operators/:id` | DONE | Profile, stats, recent nets, admin edit |
 | Account | `/account` | DONE | Personal info, operator info, password (renamed from Profile) |
@@ -109,13 +109,20 @@
 * \[x] Clickable leaderboards (operators → profile, nets → detail)
 * \[x] Totals link to list pages (participants → operators, nets → nets)
 
-### Phase 5: Nets Module
+### Phase 5: Nets Module - IN PROGRESS
 
-* \[ ] Net list with DataTable
-* \[ ] Filters and search
-* \[ ] Net detail page with tabs
-* \[ ] Net create/edit Sheet
-* \[ ] Attendee management panel
+* \[x] Net list page (responsive grid, search, status/date filters)
+* \[x] Net create Sheet (searchable operator select)
+* \[x] Net detail page (header, status, actions)
+* \[x] Net edit Sheet (for pending nets)
+* \[x] Attendee management panel (search, add, edit, delete)
+* \[x] Unified attendee entry flow (existing + new operators)
+* \[x] QTH editing for attendees
+* \[x] Dashboard: pending nets display
+* \[x] Dashboard: max 3 nets with priority (active > pending > completed)
+* \[x] Consistent status indicators (green pulse=active, yellow=pending, gray=completed)
+* \[ ] Attendee panel UX refinements (ongoing)
+* \[ ] Keyboard shortcuts for fast attendee entry
 
 ### Phase 6: Operators Module - COMPLETE
 
@@ -241,6 +248,32 @@ These are potential future enhancements beyond the core modernization:
 ***
 
 ## Changelog
+
+### 2026-01-31 (Session 2)
+
+* Phase 5 (Nets Module) major progress:
+  * Net list page with responsive grid, search, status/date filters
+  * Net detail page with status header and action buttons
+  * CreateNetSheet with searchable operator selection (debounced, role-filtered)
+  * EditNetSheet for pending nets
+  * Attendee management panel completely refactored:
+    * Unified flow for existing and new operators
+    * QTH (city/district) always editable
+    * Same panel design for both flows
+    * Click outside to close dropdown
+    * Keyboard navigation (arrows, enter, escape)
+  * EditAttendeeSheet with proper padding
+* Dashboard enhancements:
+  * Pending nets endpoint and display
+  * Priority-based display (active > pending > completed, max 3)
+  * Consistent card heights across all net types
+  * Status indicator consistency (green pulse, yellow static, gray)
+  * StatusBar active indicator changed from blue to green
+* Backend:
+  * `/v2/dashboard/nets/pending` endpoint
+  * `getPendingNets()` service method
+* i18n keys added for nets module
+* Multiple bug fixes in attendee management
 
 ### 2026-02-01
 

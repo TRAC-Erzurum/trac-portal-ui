@@ -25,6 +25,14 @@ interface ActiveNet {
   durationMinutes: number
 }
 
+interface PendingNet {
+  id: string
+  name: string
+  frequency: string
+  mode: string
+  operatorCallSign: string
+}
+
 interface PersonalStats {
   attendedNets: number
   managedNets: number
@@ -81,6 +89,7 @@ const isLoadingCommunity = ref(true)
 const status = ref<StatusResponse | null>(null)
 const activities = ref<Activity[]>([])
 const activeNets = ref<ActiveNet[]>([])
+const pendingNets = ref<PendingNet[]>([])
 const recentNets = ref<ActiveNet[]>([])
 const personalStats = ref<PersonalStats | null>(null)
 const communityStats = ref<CommunityStats | null>(null)
@@ -107,12 +116,14 @@ const fetchActivity = async () => {
 
 const fetchNets = async () => {
   try {
-    const [active, recent, personal] = await Promise.all([
+    const [active, pending, recent, personal] = await Promise.all([
       api.get<ActiveNet[]>('/v2/dashboard/nets/active'),
+      api.get<PendingNet[]>('/v2/dashboard/nets/pending'),
       api.get<ActiveNet[]>('/v2/dashboard/nets/recent'),
       api.get<PersonalStats>('/v2/dashboard/nets/personal'),
     ])
     activeNets.value = active
+    pendingNets.value = pending
     recentNets.value = recent
     personalStats.value = personal
   } catch (error) {
@@ -159,6 +170,7 @@ onMounted(() => {
 
       <NetsModule
         :active-nets="activeNets"
+        :pending-nets="pendingNets"
         :recent-nets="recentNets"
         :personal-stats="personalStats"
         :is-loading="isLoadingNets"

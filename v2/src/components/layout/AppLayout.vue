@@ -5,9 +5,17 @@ import BottomNav from './BottomNav.vue'
 import UserMenu from './UserMenu.vue'
 import ThemeToggle from './ThemeToggle.vue'
 import LangToggle from './LangToggle.vue'
+import Breadcrumb from './Breadcrumb.vue'
+
+interface BreadcrumbItem {
+  label: string
+  to?: string
+}
 
 defineProps<{
   title?: string
+  breadcrumbLabel?: string
+  breadcrumbItems?: BreadcrumbItem[]
 }>()
 
 const sidebarCollapsed = ref(false)
@@ -35,7 +43,7 @@ const logoLoaded = ref(false)
       ]"
     >
       <div class="p-6 lg:p-8">
-        <header class="flex items-center justify-between mb-6 lg:mb-8">
+        <header class="flex items-center justify-between mb-4 lg:mb-6">
           <h1 v-if="title" class="text-2xl lg:text-3xl font-bold">{{ title }}</h1>
           <slot v-else name="title" />
           <div class="flex items-center gap-1">
@@ -46,6 +54,8 @@ const logoLoaded = ref(false)
             </div>
           </div>
         </header>
+
+        <Breadcrumb :items="breadcrumbItems" :current-label="breadcrumbLabel" />
         
         <slot />
       </div>
