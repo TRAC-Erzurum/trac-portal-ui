@@ -46,11 +46,11 @@
 
 | Page | Route | Status | Notes |
 |------|-------|--------|-------|
-| Dashboard | `/dashboard` | TODO | Bento grid, stats, recent nets |
+| Dashboard | `/dashboard` | PARTIAL | Layout done, needs real data |
 | Net List | `/nets` | TODO | DataTable, filters, create via Sheet |
 | Net Detail | `/nets/:id` | TODO | Combined view/manage/report, edit via Sheet |
 | Operators | `/operators` | TODO | Search, list |
-| Settings | `/settings` | TODO | Profile, account, preferences |
+| Profile | `/profile` | DONE | Account, operator, password, preferences |
 
 ### Static Pages
 
@@ -84,17 +84,17 @@
 * \[x] Route guards
 * \[x] API client with cookie auth
 
-### Phase 3: App Layout
+### Phase 3: App Layout - COMPLETE
 
-* \[ ] Sidebar component (desktop)
-* \[ ] Bottom navigation (mobile)
-* \[ ] Page header component
+* \[x] Sidebar component (desktop, collapsible)
+* \[x] Bottom navigation (mobile)
+* \[x] Page header component with UserMenu
 * \[x] Theme store (system/dark/light, localStorage)
 * \[x] Locale store (system/tr/en, localStorage)
-* \[x] ThemeToggle component
-* \[x] LangToggle component
-* \[ ] User menu
-* \[ ] Settings page (theme/locale selection UI)
+* \[x] ThemeToggle + LangToggle components
+* \[x] UserMenu dropdown (avatar, profile link, logout)
+* \[x] Profile page (account info, operator info, password change, preferences)
+* \[x] AuthLayout component (shared layout for login/register/forgot-password)
 
 ### Phase 4: Dashboard
 
@@ -111,12 +111,11 @@
 * \[ ] Net create/edit Sheet
 * \[ ] Attendee management panel
 
-### Phase 6: Operators & Settings
+### Phase 6: Operators Module
 
-* \[ ] Operator list
-* \[ ] Settings page
-* \[ ] Profile management
-* \[ ] Operator create/edit
+* \[ ] Operator list with search
+* \[ ] Operator detail page
+* \[ ] Profile edit (in Settings)
 
 ### Phase 7: Polish
 
@@ -160,16 +159,16 @@
 * Default: system, fallback: Turkish
 * `translateError()` helper for API errors
 * Backend errors return i18n keys
-* `LangToggle` component ready
-* **TODO**: Language selection UI in settings
+* `LangToggle` component in header and settings
+* Language selection UI in Settings page
 
 ### Theme System - DONE
 
 * Theme store: system/dark/light modes
 * Saved to localStorage (`trac-theme`)
 * Default: system, fallback: dark
-* `ThemeToggle` component ready
-* **TODO**: Theme selection UI in settings
+* `ThemeToggle` component in header and settings
+* Theme selection UI in Settings page
 
 ### Google Login
 
@@ -190,3 +189,12 @@
 * Theme/Locale stores with persistence
 * Landing page, 404 page, Privacy page created
 * Login/Logout functionality working
+* Phase 3 completed:
+  * Sidebar (collapsible, desktop)
+  * Bottom navigation (mobile)
+  * PageHeader component with UserMenu
+  * UserMenu dropdown (avatar, profile link, logout)
+  * AuthLayout for auth pages (login/register/forgot-password)
+  * Profile page (account, operator, password change, preferences)
+  * Settings page removed (merged into Profile)
+  * shadcn avatar + dropdown-menu components added

@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Home, Radio, Users, Settings, PanelLeftClose, PanelLeft, LogOut } from 'lucide-vue-next'
+import { Home, Radio, Users, PanelLeftClose, PanelLeft } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{
   collapsed: boolean
@@ -16,14 +15,11 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const route = useRoute()
-const router = useRouter()
-const authStore = useAuthStore()
 
 const navItems = computed(() => [
   { icon: Home, label: t('nav.dashboard'), route: '/dashboard' },
   { icon: Radio, label: t('nav.nets'), route: '/nets' },
   { icon: Users, label: t('nav.operators'), route: '/operators' },
-  { icon: Settings, label: t('nav.settings'), route: '/settings' },
 ])
 
 function isActive(path: string) {
@@ -32,11 +28,6 @@ function isActive(path: string) {
 
 function toggleCollapse() {
   emit('update:collapsed', !props.collapsed)
-}
-
-async function handleLogout() {
-  await authStore.logout()
-  router.push('/')
 }
 </script>
 
@@ -92,22 +83,8 @@ async function handleLogout() {
       </router-link>
     </nav>
 
-    <div class="p-2 border-t border-sidebar-border space-y-1">
-      <button
-        @click="handleLogout"
-        :class="[
-          'flex items-center gap-3 rounded-md transition-colors w-full',
-          collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2',
-          'text-sidebar-foreground hover:bg-sidebar-accent/50'
-        ]"
-        :title="collapsed ? t('auth.logout') : undefined"
-      >
-        <LogOut class="h-5 w-5 flex-shrink-0" />
-        <span v-if="!collapsed" class="truncate">{{ t('auth.logout') }}</span>
-      </button>
-
+    <div v-if="collapsed" class="p-2 border-t border-sidebar-border">
       <Button
-        v-if="collapsed"
         variant="ghost"
         size="icon"
         @click="toggleCollapse"

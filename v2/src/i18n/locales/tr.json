@@ -129,10 +129,29 @@
     "comingSoon": "Yakında..."
   },
   "settings": {
-    "appearance": "Görünüm",
-    "appearanceDesc": "Tema ve dil tercihlerinizi ayarlayın",
     "theme": "Tema",
     "language": "Dil"
+  },
+  "profile": {
+    "operator": "Operatör Bilgileri",
+    "qth": "QTH",
+    "locator": "Locator",
+    "security": "Güvenlik",
+    "securityDesc": "Şifrenizi değiştirin veya hesap güvenlik ayarlarınızı yönetin",
+    "changePassword": "Şifre Değiştir",
+    "changePasswordDesc": "Hesabınızın güvenliği için şifrenizi değiştirin",
+    "currentPassword": "Mevcut Şifre",
+    "currentPasswordHint": "Google ile giriş yaptıysanız boş bırakabilirsiniz",
+    "newPassword": "Yeni Şifre",
+    "passwordChanged": "Şifreniz başarıyla değiştirildi",
+    "editPersonal": "Kişisel Bilgiler",
+    "editPersonalDesc": "Ad soyad bilgilerinizi güncelleyin",
+    "editOperator": "Operatör Bilgileri",
+    "editOperatorDesc": "QTH ve locator bilgilerinizi güncelleyin",
+    "profileUpdated": "Profil güncellendi",
+    "avatarUpdated": "Profil fotoğrafı güncellendi",
+    "invalidFileType": "Geçersiz dosya türü. JPG, PNG veya WebP yükleyin.",
+    "fileTooLarge": "Dosya çok büyük. Maksimum 5MB yüklenebilir."
   },
   "theme": {
     "dark": "Karanlık",
@@ -148,7 +167,14 @@
     "dashboard": "Ana Sayfa",
     "nets": "Çevrimler",
     "operators": "Operatörler",
-    "settings": "Ayarlar",
+    "profile": "Profil",
     "collapse": "Daralt"
+  },
+  "roles": {
+    "super_admin": "Süper Admin",
+    "admin": "Yönetici",
+    "moderator": "Moderatör",
+    "user": "Kullanıcı",
+    "guest": "Misafir"
   }
 }

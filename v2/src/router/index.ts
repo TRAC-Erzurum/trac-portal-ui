@@ -8,7 +8,7 @@ const router = createRouter({
       path: '/',
       name: 'landing',
       component: () => import('@/pages/LandingPage.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: false, guestOnly: true }
     },
     {
       path: '/login',
@@ -47,9 +47,9 @@ const router = createRouter({
       meta: { requiresAuth: true }
     },
     {
-      path: '/settings',
-      name: 'settings',
-      component: () => import('@/pages/settings/SettingsPage.vue'),
+      path: '/profile',
+      name: 'profile',
+      component: () => import('@/pages/profile/ProfilePage.vue'),
       meta: { requiresAuth: true }
     },
     {

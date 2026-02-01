@@ -1,0 +1,101 @@
+---
+description: UI design patterns and component guidelines for trac-portal-ui
+globs: ["v2/src/**/*.vue"]
+---
+
+# Design Patterns
+
+## Layout Principles
+
+### No Cards - Flat Design
+- **DO NOT** use Card components for content sections
+- Use subtle `<Separator />` components to divide sections
+- Content flows naturally without box boundaries
+- Creates a cleaner, more modern appearance
+
+### Content Centering
+- Use `max-w-2xl mx-auto` for form pages and profile-like content
+- Use `max-w-3xl mx-auto` for wider content pages
+
+### Section Structure
+```vue
+<section>
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2">
+      <Icon class="h-4 w-4" />
+      {{ title }}
+    </h3>
+    <Button variant="ghost" size="icon" @click="handleAction">
+      <Pencil class="h-4 w-4" />
+    </Button>
+  </div>
+  <!-- Section content -->
+</section>
+
+<Separator class="my-8" />
+```
+
+## Button Consistency
+
+### Edit/Action Buttons in Sections
+- Use `variant="ghost" size="icon"` for section edit buttons
+- Position on the right side of section headers
+- Use Pencil icon for edit actions
+
+### Form Submit Buttons
+- Primary action: `<Button type="submit">{{ label }}</Button>`
+- Secondary action: `<Button variant="outline">{{ label }}</Button>`
+- Position: `<div class="flex justify-end gap-3">`
+
+## Form Design
+
+### Sheet-based Editing
+- Use Sheet components for edit forms, not inline editing
+- Separate sheets for different data domains (personal, operator, security)
+- Sheet max-width: `sm:max-w-md`
+- Sheet padding: `px-6`
+
+### Form Layout
+```vue
+<form @submit.prevent="handleSubmit" class="mt-8 space-y-6">
+  <div class="space-y-2">
+    <Label for="fieldId">{{ label }}</Label>
+    <Input id="fieldId" v-model="value" />
+    <p class="text-xs text-muted-foreground">{{ hint }}</p>
+  </div>
+  
+  <div class="flex justify-end gap-3 pt-4">
+    <Button type="button" variant="outline">Cancel</Button>
+    <Button type="submit">Save</Button>
+  </div>
+</form>
+```
+
+## Auth Pages (Login, Register, etc.)
+
+### Split Layout
+- Left side: Branding (desktop only, `lg:flex lg:w-1/2`)
+- Right side: Form content
+- Use `AuthLayout` component for consistency
+
+### Form Container
+- Centered content: `flex items-center justify-center`
+- Max width for form: `max-w-sm w-full`
+- No cards around forms - flat design
+
+## Loading States
+
+### Skeleton Loading
+```vue
+<div class="animate-pulse space-y-4">
+  <div class="h-8 w-32 bg-muted rounded" />
+  <div class="h-4 w-48 bg-muted rounded" />
+</div>
+```
+
+## Typography in Sections
+
+- Section title: `text-sm font-medium text-muted-foreground`
+- Field label: `text-xs text-muted-foreground`
+- Field value: `font-medium`
+- Descriptions: `text-sm text-muted-foreground`

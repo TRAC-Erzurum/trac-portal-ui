@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Home, Radio, Users, Settings } from 'lucide-vue-next'
+import { Home, Radio, Users } from 'lucide-vue-next'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -11,7 +11,6 @@ const navItems = computed(() => [
   { icon: Home, label: t('nav.dashboard'), route: '/dashboard' },
   { icon: Radio, label: t('nav.nets'), route: '/nets' },
   { icon: Users, label: t('nav.operators'), route: '/operators' },
-  { icon: Settings, label: t('nav.settings'), route: '/settings' },
 ])
 
 function isActive(path: string) {

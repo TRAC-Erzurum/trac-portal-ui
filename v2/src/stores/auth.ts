@@ -9,6 +9,7 @@ export interface User {
   fullName?: string
   role: string
   picture?: string
+  createdAt?: string
 }
 
 interface AuthCheckResponse {

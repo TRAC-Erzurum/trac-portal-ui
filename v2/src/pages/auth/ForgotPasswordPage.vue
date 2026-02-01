@@ -6,7 +6,6 @@ import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import AuthLayout from '@/components/layout/AuthLayout.vue'
 import Captcha from '@/components/Captcha.vue'
 import { api, type ApiError } from '@/lib/api'
@@ -43,44 +42,43 @@ async function handleSubmit() {
 
 <template>
   <AuthLayout>
-    <Card class="w-full max-w-md">
-      <CardHeader class="text-center">
+    <div class="w-full max-w-sm">
+      <div class="text-center mb-8">
         <router-link to="/">
-          <img src="/logo-s.svg" alt="TRAC" class="lg:hidden h-12 w-auto mx-auto mb-4" />
+          <img src="/logo-s.svg" alt="TRAC" class="lg:hidden h-12 w-auto mx-auto mb-6" />
         </router-link>
-        <CardTitle class="text-2xl">{{ t('auth.forgotPasswordTitle') }}</CardTitle>
-        <CardDescription class="hidden sm:block">
+        <h1 class="text-2xl font-bold">{{ t('auth.forgotPasswordTitle') }}</h1>
+        <p class="text-muted-foreground mt-1 hidden sm:block">
           {{ t('auth.forgotPasswordSubtitle') }}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form @submit.prevent="handleSubmit" class="space-y-4">
-          <div class="space-y-2">
-            <Label for="callSign">{{ t('form.callSign') }}</Label>
-            <Input
-              id="callSign"
-              v-model="callSign"
-              type="text"
-              placeholder="TA9XXX"
-              required
-              class="uppercase"
-              @input="callSign = callSign.toUpperCase()"
-            />
-          </div>
+        </p>
+      </div>
 
-          <Captcha ref="captchaRef" v-model="captchaToken" />
+      <form @submit.prevent="handleSubmit" class="space-y-4">
+        <div class="space-y-2">
+          <Label for="callSign">{{ t('form.callSign') }}</Label>
+          <Input
+            id="callSign"
+            v-model="callSign"
+            type="text"
+            placeholder="TA9XXX"
+            required
+            class="uppercase"
+            @input="callSign = callSign.toUpperCase()"
+          />
+        </div>
 
-          <Button type="submit" class="w-full" :disabled="isLoading || !callSign.trim() || (captchaRef?.isEnabled && !captchaToken)">
-            {{ isLoading ? t('auth.sendingRequest') : t('auth.sendRequest') }}
-          </Button>
+        <Captcha ref="captchaRef" v-model="captchaToken" />
 
-          <div class="text-center text-sm text-muted-foreground">
-            <RouterLink to="/login" class="text-primary hover:underline">
-              {{ t('auth.backToLogin') }}
-            </RouterLink>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+        <Button type="submit" class="w-full" :disabled="isLoading || !callSign.trim() || (captchaRef?.isEnabled && !captchaToken)">
+          {{ isLoading ? t('auth.sendingRequest') : t('auth.sendRequest') }}
+        </Button>
+
+        <div class="text-center text-sm text-muted-foreground">
+          <RouterLink to="/login" class="text-primary hover:underline">
+            {{ t('auth.backToLogin') }}
+          </RouterLink>
+        </div>
+      </form>
+    </div>
   </AuthLayout>
 </template>

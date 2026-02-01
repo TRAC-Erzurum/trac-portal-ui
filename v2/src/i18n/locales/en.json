@@ -129,10 +129,29 @@
     "comingSoon": "Coming soon..."
   },
   "settings": {
-    "appearance": "Appearance",
-    "appearanceDesc": "Configure theme and language preferences",
     "theme": "Theme",
     "language": "Language"
+  },
+  "profile": {
+    "operator": "Operator Info",
+    "qth": "QTH",
+    "locator": "Locator",
+    "security": "Security",
+    "securityDesc": "Change your password or manage account security settings",
+    "changePassword": "Change Password",
+    "changePasswordDesc": "Change your password to keep your account secure",
+    "currentPassword": "Current Password",
+    "currentPasswordHint": "Leave empty if you signed in with Google",
+    "newPassword": "New Password",
+    "passwordChanged": "Your password has been changed successfully",
+    "editPersonal": "Personal Information",
+    "editPersonalDesc": "Update your name",
+    "editOperator": "Operator Information",
+    "editOperatorDesc": "Update your QTH and locator",
+    "profileUpdated": "Profile updated",
+    "avatarUpdated": "Profile picture updated",
+    "invalidFileType": "Invalid file type. Please upload JPG, PNG or WebP.",
+    "fileTooLarge": "File too large. Maximum size is 5MB."
   },
   "theme": {
     "dark": "Dark",
@@ -148,7 +167,14 @@
     "dashboard": "Dashboard",
     "nets": "Nets",
     "operators": "Operators",
-    "settings": "Settings",
+    "profile": "Profile",
     "collapse": "Collapse"
+  },
+  "roles": {
+    "super_admin": "Super Admin",
+    "admin": "Admin",
+    "moderator": "Moderator",
+    "user": "User",
+    "guest": "Guest"
   }
 }

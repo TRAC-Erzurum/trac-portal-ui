@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import ThemeToggle from './ThemeToggle.vue'
 import LangToggle from './LangToggle.vue'
 
 const { t } = useI18n()
+const logoLoaded = ref(false)
 </script>
 
 <template>
@@ -26,12 +28,21 @@ const { t } = useI18n()
       </div>
     </div>
 
-    <div class="w-full lg:w-1/2 flex flex-col overflow-y-auto">
-      <div class="lg:hidden flex items-center justify-end p-4 gap-1 flex-shrink-0">
+    <div class="w-full lg:w-1/2 flex flex-col overflow-y-auto relative">
+      <img
+        v-show="logoLoaded"
+        src="/logo-s.svg"
+        alt=""
+        aria-hidden="true"
+        @load="logoLoaded = true"
+        @error="logoLoaded = false"
+        class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60%] max-w-[400px] object-contain opacity-[0.03] pointer-events-none select-none"
+      />
+      <div class="lg:hidden flex items-center justify-end p-4 gap-1 flex-shrink-0 relative z-10">
         <ThemeToggle />
         <LangToggle />
       </div>
-      <div class="flex-1 flex items-center justify-center p-6 md:p-8">
+      <div class="flex-1 flex items-center justify-center p-6 md:p-8 relative z-10">
         <slot />
       </div>
     </div>
