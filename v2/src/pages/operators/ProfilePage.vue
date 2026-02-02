@@ -3,13 +3,18 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { ChevronRight, MapPin, ExternalLink, Radio, Users, TrendingUp, Signal, Ear, Pencil } from 'lucide-vue-next'
+import { ChevronRight, MapPin, ExternalLink, Radio, Users, TrendingUp, Signal, Ear, Pencil, Shield, Key, Calendar } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import EditOperatorAdminSheet from '@/components/operators/EditOperatorAdminSheet.vue'
+import ResetPasswordSheet from '@/components/admin/ResetPasswordSheet.vue'
 import { useAuthStore } from '@/stores/auth'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { api } from '@/lib/api'
+import { formatCallSign, formatDateLong, formatNetDate } from '@/lib/formatters'
+import { getRoleBadgeClass, type UserRole } from '@/lib/ui-helpers'
 
 interface Operator {
   id: string
@@ -25,6 +30,9 @@ interface Operator {
     id: string
     fullName?: string
     email?: string
+    role?: UserRole
+    createdAt?: string
+    picture?: string
   }
 }
 
@@ -57,21 +65,43 @@ const isLoadingStats = ref(true)
 const isLoadingNets = ref(true)
 const isLoadingMoreNets = ref(false)
 const showEditSheet = ref(false)
+const showResetPasswordSheet = ref(false)
 const netsPage = ref(1)
 const netsPageSize = 12
 const hasMoreNets = ref(true)
+const isUpdatingRole = ref(false)
+
+const availableRoles: UserRole[] = ['guest', 'volunteer', 'member', 'admin']
 
 const operatorId = computed(() => route.params.id as string)
 
 const canEdit = computed(() => authStore.isAdmin || authStore.isSuperAdmin)
 
+const hasUserAccount = computed(() => !!operator.value?.user?.id)
+
+const canChangeRole = computed(() => {
+  if (!hasUserAccount.value || !operator.value?.user?.role) return false
+  const targetRole = operator.value.user.role
+  if (authStore.isSuperAdmin) return targetRole !== 'super_admin'
+  if (authStore.isAdmin) return !['admin', 'super_admin'].includes(targetRole)
+  return false
+})
+
+const canResetPassword = computed(() => {
+  if (!hasUserAccount.value || !operator.value?.user?.role) return false
+  const targetRole = operator.value.user.role
+  if (authStore.isSuperAdmin) return targetRole !== 'super_admin'
+  if (authStore.isAdmin) return !['admin', 'super_admin'].includes(targetRole)
+  return false
+})
+
+const formatMemberSince = computed(() => {
+  return formatDateLong(operator.value?.user?.createdAt)
+})
+
 const formattedCallSign = computed(() => {
   if (!operator.value) return ''
-  const { prefix, callSign, suffix } = operator.value
-  if (prefix && suffix) return `${prefix}/${callSign}/${suffix}`
-  if (prefix) return `${prefix}/${callSign}`
-  if (suffix) return `${callSign}/${suffix}`
-  return callSign
+  return formatCallSign(operator.value)
 })
 
 const displayName = computed(() => {
@@ -144,14 +174,6 @@ const loadMoreNets = () => {
   fetchRecentNets(true)
 }
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  return date.toLocaleDateString(undefined, { 
-    year: 'numeric', 
-    month: 'short', 
-    day: 'numeric' 
-  })
-}
 
 const goToNet = (netId: string) => {
   router.push(`/nets/${netId}`)
@@ -165,6 +187,23 @@ const handleOperatorUpdated = () => {
   fetchOperator()
 }
 
+const handleRoleChange = async (value: unknown) => {
+  const newRole = value as string
+  if (!operator.value?.user?.id || !newRole) return
+  
+  isUpdatingRole.value = true
+  try {
+    await api.patch(`/user/${operator.value.user.id}/role`, { role: newRole })
+    toast.success(t('admin.roleUpdated'))
+    fetchOperator()
+  } catch (error) {
+    console.error('Failed to update role:', error)
+    toast.error(t('error.serverError'))
+  } finally {
+    isUpdatingRole.value = false
+  }
+}
+
 onMounted(() => {
   fetchOperator()
   fetchStats()
@@ -176,56 +215,73 @@ onMounted(() => {
   <AppLayout :title="t('operators.profile')" :breadcrumb-label="formattedCallSign || '...'">
     <div class="space-y-6">
       <template v-if="isLoading">
-        <div class="space-y-4">
-          <div class="h-20 w-20 mx-auto bg-muted animate-pulse rounded-full" />
-          <div class="h-8 w-32 mx-auto bg-muted animate-pulse rounded" />
-          <div class="h-6 w-48 mx-auto bg-muted animate-pulse rounded" />
+        <div class="animate-pulse flex flex-col sm:flex-row gap-6">
+          <div class="h-24 w-24 rounded-full bg-muted flex-shrink-0 self-center sm:self-start" />
+          <div class="flex-1 space-y-3">
+            <div class="h-7 w-32 bg-muted rounded mx-auto sm:mx-0" />
+            <div class="h-5 w-48 bg-muted rounded mx-auto sm:mx-0" />
+            <div class="h-4 w-40 bg-muted rounded mx-auto sm:mx-0" />
+          </div>
         </div>
       </template>
 
       <template v-else-if="operator">
-        <div class="text-center space-y-3">
-          <div class="relative inline-block">
-            <div class="h-20 w-20 rounded-full bg-primary text-primary-foreground text-2xl font-bold flex items-center justify-center">
-              {{ operator.callSign.slice(0, 2) }}
+        <div class="flex flex-col sm:flex-row gap-6">
+          <UserAvatar :picture="operator.user?.picture" class="h-24 w-24 flex-shrink-0 self-center sm:self-start" />
+
+          <div class="flex-1">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
+                <h1 class="text-2xl font-bold">{{ formattedCallSign }}</h1>
+                <p v-if="displayName" class="text-lg text-muted-foreground">{{ displayName }}</p>
+              </div>
+              <Button 
+                v-if="canEdit" 
+                variant="outline" 
+                size="sm" 
+                @click="handleEditClick"
+                class="flex-shrink-0"
+              >
+                <Pencil class="h-4 w-4 mr-2" />
+                {{ t('common.edit') }}
+              </Button>
             </div>
-            <Button 
-              v-if="canEdit" 
-              variant="outline" 
-              size="icon" 
-              @click="handleEditClick"
-              class="absolute -right-2 -bottom-1 h-8 w-8 rounded-full shadow-md"
-            >
-              <Pencil class="h-3.5 w-3.5" />
-            </Button>
-          </div>
-          <div>
-            <h1 class="text-2xl font-bold">{{ formattedCallSign }}</h1>
-            <p v-if="displayName" class="text-lg text-muted-foreground">{{ displayName }}</p>
-          </div>
-          
-          <div class="flex items-center justify-center gap-2 text-sm text-muted-foreground flex-wrap">
-            <template v-if="qthParts.length > 0">
-              <MapPin class="h-4 w-4" />
-              <span>{{ qthParts.join(' • ') }}</span>
-            </template>
-            <a
-              v-if="locatorLink"
-              :href="locatorLink"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="inline-flex items-center gap-1 text-primary hover:underline"
-            >
-              {{ operator.gridSquare }}
-              <ExternalLink class="h-3 w-3" />
-            </a>
+
+            <div class="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
+              <div v-if="hasUserAccount" class="flex items-center gap-1.5">
+                <Shield class="h-4 w-4" />
+                <span 
+                  class="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                  :class="getRoleBadgeClass(operator.user?.role)"
+                >{{ t(`admin.roles.${operator.user?.role}`) }}</span>
+              </div>
+              <div v-if="hasUserAccount" class="flex items-center gap-1.5">
+                <Calendar class="h-4 w-4" />
+                <span>{{ formatMemberSince }}</span>
+              </div>
+              <div v-if="qthParts.length > 0" class="flex items-center gap-1.5">
+                <MapPin class="h-4 w-4" />
+                <span>{{ qthParts.join(' • ') }}</span>
+              </div>
+              <a
+                v-if="locatorLink"
+                :href="locatorLink"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex items-center gap-1 text-primary hover:underline"
+              >
+                {{ operator.gridSquare }}
+                <ExternalLink class="h-3 w-3" />
+              </a>
+            </div>
           </div>
         </div>
 
-        <Separator />
+        <Separator class="my-8" />
 
         <section>
-          <h3 class="text-sm font-medium text-muted-foreground mb-4">
+          <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+            <TrendingUp class="h-4 w-4" />
             {{ t('operators.statistics') }}
           </h3>
           
@@ -275,7 +331,56 @@ onMounted(() => {
           </div>
         </section>
 
-        <Separator />
+        <template v-if="hasUserAccount && canEdit">
+          <Separator class="my-8" />
+
+          <section>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                <Key class="h-4 w-4" />
+                {{ t('admin.accountInfo') }}
+              </h3>
+              <Button 
+                v-if="canResetPassword" 
+                variant="outline" 
+                size="sm" 
+                @click="showResetPasswordSheet = true"
+              >
+                <Key class="h-4 w-4 mr-2" />
+                {{ t('admin.resetPassword') }}
+              </Button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
+              <div>
+                <p class="text-xs text-muted-foreground mb-0.5">{{ t('admin.email') }}</p>
+                <p class="font-medium truncate">{{ operator.user?.email }}</p>
+              </div>
+
+              <div>
+                <p class="text-xs text-muted-foreground mb-0.5">{{ t('admin.role') }}</p>
+                <Select 
+                  v-if="canChangeRole"
+                  :model-value="operator.user?.role" 
+                  @update:model-value="handleRoleChange"
+                  :disabled="isUpdatingRole"
+                >
+                  <SelectTrigger class="w-full h-8 mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem v-for="role in availableRoles" :key="role" :value="role">
+                      {{ t(`admin.roles.${role}`) }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p v-else class="font-medium">{{ t(`admin.roles.${operator.user?.role}`) }}</p>
+              </div>
+            </div>
+          </section>
+        </template>
+
+        <Separator class="my-8" />
 
         <section>
           <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
@@ -313,7 +418,7 @@ onMounted(() => {
               />
               <div class="flex-1 min-w-0">
                 <p class="font-medium truncate">{{ net.name }}</p>
-                <p class="text-xs text-muted-foreground">{{ formatDate(net.date) }}</p>
+                <p class="text-xs text-muted-foreground">{{ formatNetDate(net.date) }}</p>
               </div>
               <ChevronRight class="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
             </button>
@@ -337,6 +442,13 @@ onMounted(() => {
         v-model:open="showEditSheet"
         :operator="operator"
         @updated="handleOperatorUpdated"
+      />
+
+      <ResetPasswordSheet
+        v-if="operator?.user?.id"
+        v-model:open="showResetPasswordSheet"
+        :user-id="operator.user.id"
+        :call-sign="formattedCallSign"
       />
     </div>
   </AppLayout>

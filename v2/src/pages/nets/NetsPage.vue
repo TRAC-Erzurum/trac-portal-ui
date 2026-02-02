@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-import { Search, ChevronRight, Users, Plus, CheckCircle2 } from 'lucide-vue-next'
+import { Search, Plus } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -15,9 +14,9 @@ import {
 } from '@/components/ui/select'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CreateNetSheet from '@/components/nets/CreateNetSheet.vue'
+import { NetCard, NetCardSkeleton } from '@/components/shared'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
-import { getFrequencyShort } from '@/constants/net'
 
 interface Net {
   id: string
@@ -38,7 +37,6 @@ type NetStatus = 'all' | 'active' | 'pending' | 'completed'
 type DateFilter = 'all' | 'week' | 'month' | '3months'
 
 const { t } = useI18n()
-const router = useRouter()
 const authStore = useAuthStore()
 
 const nets = ref<Net[]>([])
@@ -118,42 +116,10 @@ const loadMore = () => {
   fetchNets(true)
 }
 
-const goToNet = (id: string) => {
-  router.push(`/nets/${id}`)
-}
-
 const getNetStatus = (net: Net): 'active' | 'pending' | 'completed' => {
   if (net.endedAt) return 'completed'
   if (net.startedAt) return 'active'
   return 'pending'
-}
-
-const formatDuration = (net: Net) => {
-  if (!net.startedAt) return null
-  
-  const start = new Date(net.startedAt)
-  const end = net.endedAt ? new Date(net.endedAt) : new Date()
-  const diffMs = end.getTime() - start.getTime()
-  const diffMins = Math.round(diffMs / 60000)
-  
-  if (diffMins < 60) {
-    return `${diffMins} ${t('nets.minutes')}`
-  }
-  
-  const hours = Math.floor(diffMins / 60)
-  const mins = diffMins % 60
-  return `${hours} ${t('nets.hours')} ${mins} ${t('nets.minutes')}`
-}
-
-const formatDate = (dateStr: string | null) => {
-  if (!dateStr) return ''
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('tr-TR', { 
-    day: 'numeric', 
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
 }
 
 const handleNetCreated = () => {
@@ -219,11 +185,7 @@ onMounted(() => {
       <Separator />
 
       <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-        <div v-for="i in 6" :key="i" class="p-4 rounded-lg border border-border/50 space-y-3">
-          <div class="h-5 w-48 bg-muted animate-pulse rounded" />
-          <div class="h-4 w-32 bg-muted animate-pulse rounded" />
-          <div class="h-4 w-24 bg-muted animate-pulse rounded" />
-        </div>
+        <NetCardSkeleton v-for="i in 6" :key="i" />
       </div>
 
       <div v-else-if="nets.length === 0" class="py-8 text-center">
@@ -231,56 +193,19 @@ onMounted(() => {
       </div>
 
       <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-        <button
+        <NetCard
           v-for="net in nets"
           :key="net.id"
-          @click="goToNet(net.id)"
-          class="w-full text-left p-4 rounded-lg border transition-all group"
-          :class="{
-            'border-green-500/30 bg-green-500/5 hover:bg-green-500/10': getNetStatus(net) === 'active',
-            'border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10': getNetStatus(net) === 'pending',
-            'border-border/50 hover:border-border hover:bg-muted/30': getNetStatus(net) === 'completed',
-            'opacity-75': getNetStatus(net) === 'completed'
-          }"
-        >
-          <div class="flex items-start gap-3">
-            <div class="mt-0.5">
-              <span v-if="getNetStatus(net) === 'active'" class="relative flex h-3 w-3">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-              </span>
-              <span v-else-if="getNetStatus(net) === 'pending'" class="relative flex h-3 w-3">
-                <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-              </span>
-              <CheckCircle2 
-                v-else 
-                class="h-3 w-3 text-muted-foreground" 
-              />
-            </div>
-            <div class="flex-1 min-w-0">
-              <h3 class="font-semibold truncate">{{ net.name }}</h3>
-              <p class="text-sm text-muted-foreground mt-1">
-                {{ net.operator.callSign }} · {{ getFrequencyShort(net.frequency) }} · {{ net.mode.toUpperCase() }}
-              </p>
-              <div class="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
-                <span class="flex items-center gap-1">
-                  <Users class="h-3.5 w-3.5" />
-                  {{ net.attendeeCount }} {{ t('nets.attendees') }}
-                </span>
-                <span v-if="getNetStatus(net) === 'active' && formatDuration(net)">
-                  · {{ formatDuration(net) }}
-                </span>
-                <span v-else-if="getNetStatus(net) === 'completed' && net.endedAt">
-                  · {{ formatDate(net.endedAt) }}
-                </span>
-                <span v-else-if="getNetStatus(net) === 'pending'">
-                  · {{ t('nets.notStarted') }}
-                </span>
-              </div>
-            </div>
-            <ChevronRight class="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1" />
-          </div>
-        </button>
+          :id="net.id"
+          :name="net.name"
+          :operator-call-sign="net.operator.callSign"
+          :frequency="net.frequency"
+          :mode="net.mode"
+          :status="getNetStatus(net)"
+          :attendee-count="net.attendeeCount"
+          :started-at="net.startedAt"
+          :ended-at="net.endedAt"
+        />
       </div>
 
       <div v-if="hasMore && !isLoading" class="pt-4 pb-16 lg:pb-0">

@@ -40,7 +40,7 @@ function handleCallSignInput() {
 const isFormValid = computed(() => {
   const baseValid = email.value.trim() !== '' && 
          callSign.value.trim() !== '' && 
-         password.value.length >= 4 &&
+         password.value.length >= 6 &&
          passwordConfirm.value === password.value &&
          privacyAccepted.value === true
   

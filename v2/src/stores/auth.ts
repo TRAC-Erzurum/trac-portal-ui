@@ -54,6 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref<User | null>(null)
   const isInitialized = ref(false)
   const error = ref<string | null>(null)
+  const isTemporaryPassword = ref(false)
 
   const isAuthenticated = computed(() => !!user.value)
   const isGuest = computed(() => user.value?.role === 'guest')
@@ -68,11 +69,17 @@ export const useAuthStore = defineStore('auth', () => {
     return userLevel >= requiredLevel
   }
 
-  async function login(identifier: string, password: string, captchaToken?: string) {
+  interface LoginResponse {
+    isTemporaryPassword?: boolean
+  }
+
+  async function login(identifier: string, password: string, captchaToken?: string): Promise<LoginResponse> {
     error.value = null
     try {
-      await api.post('/auth/login', { identifier, password, captchaToken })
+      const response = await api.post<LoginResponse>('/auth/login', { identifier, password, captchaToken })
+      isTemporaryPassword.value = response.isTemporaryPassword || false
       await checkAuth()
+      return response
     } catch (e) {
       const err = e as ApiError
       error.value = err.message
@@ -98,6 +105,7 @@ export const useAuthStore = defineStore('auth', () => {
     } catch {
     } finally {
       user.value = null
+      isTemporaryPassword.value = false
     }
   }
 
@@ -107,7 +115,12 @@ export const useAuthStore = defineStore('auth', () => {
       user.value = response.user
     } catch {
       user.value = null
+      isTemporaryPassword.value = false
     }
+  }
+
+  function clearTemporaryPassword() {
+    isTemporaryPassword.value = false
   }
 
   async function initialize() {
@@ -124,11 +137,13 @@ export const useAuthStore = defineStore('auth', () => {
     isAdmin,
     isSuperAdmin,
     isInitialized,
+    isTemporaryPassword,
     hasRole,
     login,
     register,
     logout,
     checkAuth,
-    initialize
+    initialize,
+    clearTemporaryPassword
   }
 })

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
@@ -12,6 +12,7 @@ import { api, type ApiError } from '@/lib/api'
 import { translateError } from '@/i18n'
 
 const { t } = useI18n()
+const router = useRouter()
 
 const callSign = ref('')
 const captchaToken = ref('')
@@ -30,7 +31,7 @@ async function handleSubmit() {
       captchaToken: captchaToken.value || undefined
     })
     toast.success(t('auth.passwordResetRequestSent'))
-    callSign.value = ''
+    router.push('/login')
   } catch (e) {
     const error = e as ApiError
     toast.error(translateError(error.message))

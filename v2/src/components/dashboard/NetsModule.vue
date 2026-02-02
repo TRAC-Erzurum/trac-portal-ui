@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-import { Radio, Clock, Users } from 'lucide-vue-next'
+import { Radio } from 'lucide-vue-next'
+import { NetCard, NetCardSkeleton } from '@/components/shared'
 
 interface ActiveNet {
   id: string
@@ -48,7 +48,6 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const { t } = useI18n()
-const router = useRouter()
 
 const displayNets = computed<DisplayNet[]>(() => {
   const result: DisplayNet[] = []
@@ -97,38 +96,6 @@ const displayNets = computed<DisplayNet[]>(() => {
   return result
 })
 
-const formatDuration = (minutes: number) => {
-  if (minutes < 60) return `${minutes} dk`
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  return mins > 0 ? `${hours}s ${mins}dk` : `${hours}s`
-}
-
-const goToNet = (netId: string) => {
-  router.push(`/nets/${netId}`)
-}
-
-const getNetClasses = (status: 'active' | 'pending' | 'completed') => {
-  switch (status) {
-    case 'active':
-      return 'border-green-500/30 bg-green-500/5 hover:bg-green-500/10'
-    case 'pending':
-      return 'border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10'
-    case 'completed':
-      return 'border-border/50 hover:border-border hover:bg-muted/30'
-  }
-}
-
-const getStatusLabel = (status: 'active' | 'pending' | 'completed') => {
-  switch (status) {
-    case 'active':
-      return t('dashboard.active')
-    case 'pending':
-      return t('dashboard.pending')
-    case 'completed':
-      return t('dashboard.completed')
-  }
-}
 </script>
 
 <template>
@@ -139,66 +106,25 @@ const getStatusLabel = (status: 'active' | 'pending' | 'completed') => {
     </h3>
 
     <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-      <div v-for="i in 3" :key="i" class="p-4 rounded-lg border border-border/50 space-y-2">
-        <div class="h-5 w-48 bg-muted animate-pulse rounded" />
-        <div class="h-4 w-32 bg-muted animate-pulse rounded" />
-      </div>
+      <NetCardSkeleton v-for="i in 3" :key="i" compact />
     </div>
 
     <template v-else>
       <div v-if="displayNets.length > 0" class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <button
+        <NetCard
           v-for="net in displayNets"
           :key="net.id"
-          @click="goToNet(net.id)"
-          class="w-full text-left p-4 rounded-lg border transition-all"
-          :class="getNetClasses(net.status)"
-        >
-          <div class="flex items-start gap-3">
-            <div class="mt-1 flex-shrink-0">
-              <span v-if="net.status === 'active'" class="relative flex h-2.5 w-2.5">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
-              </span>
-              <span v-else-if="net.status === 'pending'" class="relative flex h-2.5 w-2.5">
-                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
-              </span>
-              <span v-else class="relative flex h-2.5 w-2.5">
-                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-muted-foreground/50"></span>
-              </span>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex items-start justify-between gap-2">
-                <p class="font-medium truncate">{{ net.name }}</p>
-                <span 
-                  class="text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0"
-                  :class="{
-                    'bg-green-500/20 text-green-700 dark:text-green-400': net.status === 'active',
-                    'bg-blue-500/20 text-blue-700 dark:text-blue-400': net.status === 'pending',
-                    'bg-muted text-muted-foreground': net.status === 'completed'
-                  }"
-                >
-                  {{ getStatusLabel(net.status) }}
-                </span>
-              </div>
-              <p class="text-sm text-muted-foreground mt-0.5">
-                {{ net.operatorCallSign }} · {{ net.frequency }} {{ net.mode }}
-              </p>
-              <div class="flex items-center gap-3 mt-2 text-xs text-muted-foreground min-h-[1rem]">
-                <template v-if="net.status !== 'pending'">
-                  <span v-if="net.attendeeCount !== undefined" class="flex items-center gap-1">
-                    <Users class="h-3 w-3" />
-                    {{ net.attendeeCount }}
-                  </span>
-                  <span v-if="net.durationMinutes !== undefined" class="flex items-center gap-1">
-                    <Clock class="h-3 w-3" />
-                    {{ formatDuration(net.durationMinutes) }}
-                  </span>
-                </template>
-              </div>
-            </div>
-          </div>
-        </button>
+          :id="net.id"
+          :name="net.name"
+          :operator-call-sign="net.operatorCallSign"
+          :frequency="net.frequency"
+          :mode="net.mode"
+          :status="net.status"
+          :attendee-count="net.attendeeCount"
+          :duration-minutes="net.durationMinutes"
+          compact
+          show-status-badge
+        />
       </div>
 
       <div v-else class="py-8 text-center">

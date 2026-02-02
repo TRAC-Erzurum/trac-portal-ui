@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
-import { Search, ChevronRight, Radio, Users } from 'lucide-vue-next'
+import { Search } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import { OperatorCard, OperatorCardSkeleton } from '@/components/shared'
 import { api } from '@/lib/api'
+import { type UserRole } from '@/lib/ui-helpers'
 
 interface Operator {
   id: string
@@ -22,6 +23,8 @@ interface Operator {
   managedCount: number
   user?: {
     fullName?: string
+    role?: UserRole
+    picture?: string
   }
 }
 
@@ -31,9 +34,9 @@ interface OperatorsResponse {
 }
 
 const { t } = useI18n()
-const router = useRouter()
 
 type MembershipFilter = 'all' | 'registered' | 'unregistered'
+type RoleFilter = 'all' | 'super_admin' | 'admin' | 'member' | 'volunteer' | 'guest'
 
 const operators = ref<Operator[]>([])
 const total = ref(0)
@@ -41,6 +44,7 @@ const isLoading = ref(true)
 const isLoadingMore = ref(false)
 const search = ref('')
 const membershipFilter = ref<MembershipFilter>('all')
+const roleFilter = ref<RoleFilter>('all')
 const page = ref(1)
 const pageSize = 12
 const hasMore = ref(true)
@@ -60,6 +64,7 @@ const fetchOperators = async (append = false) => {
     params.set('pageSize', String(pageSize))
     if (search.value) params.set('search', search.value)
     if (membershipFilter.value !== 'all') params.set('membership', membershipFilter.value)
+    if (roleFilter.value !== 'all') params.set('role', roleFilter.value)
 
     const response = await api.get<OperatorsResponse>(`/operator?${params.toString()}`)
     
@@ -94,29 +99,6 @@ const loadMore = () => {
   fetchOperators(true)
 }
 
-const goToOperator = (id: string) => {
-  router.push(`/operators/${id}`)
-}
-
-const formatCallSign = (op: Operator) => {
-  if (op.prefix) {
-    return `${op.prefix}/${op.callSign}`
-  }
-  if (op.suffix) {
-    return `${op.callSign}/${op.suffix}`
-  }
-  return op.callSign
-}
-
-const getDisplayName = (op: Operator) => {
-  return op.user?.fullName || op.fullName || ''
-}
-
-const getQth = (op: Operator) => {
-  const parts = [op.district, op.city].filter(Boolean)
-  return parts.join(', ')
-}
-
 const handleFilterChange = () => {
   page.value = 1
   fetchOperators()
@@ -124,6 +106,7 @@ const handleFilterChange = () => {
 
 watch(search, handleSearch)
 watch(membershipFilter, handleFilterChange)
+watch(roleFilter, handleFilterChange)
 
 onMounted(() => {
   fetchOperators()
@@ -153,6 +136,20 @@ onMounted(() => {
             <SelectItem value="unregistered">{{ t('operators.membershipUnregistered') }}</SelectItem>
           </SelectContent>
         </Select>
+
+        <Select v-model="roleFilter">
+          <SelectTrigger class="flex-1 sm:flex-none sm:w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{{ t('operators.roleAll') }}</SelectItem>
+            <SelectItem value="super_admin">{{ t('admin.roles.super_admin') }}</SelectItem>
+            <SelectItem value="admin">{{ t('admin.roles.admin') }}</SelectItem>
+            <SelectItem value="member">{{ t('admin.roles.member') }}</SelectItem>
+            <SelectItem value="volunteer">{{ t('admin.roles.volunteer') }}</SelectItem>
+            <SelectItem value="guest">{{ t('admin.roles.guest') }}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <p v-if="!isLoading" class="text-sm text-muted-foreground">
@@ -162,10 +159,7 @@ onMounted(() => {
       <Separator />
 
       <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-        <div v-for="i in 6" :key="i" class="p-4 rounded-lg border border-border/50 space-y-2">
-          <div class="h-5 w-24 bg-muted animate-pulse rounded" />
-          <div class="h-4 w-40 bg-muted animate-pulse rounded" />
-        </div>
+        <OperatorCardSkeleton v-for="i in 6" :key="i" />
       </div>
 
       <div v-else-if="operators.length === 0" class="py-8 text-center">
@@ -173,35 +167,22 @@ onMounted(() => {
       </div>
 
       <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-        <button
+        <OperatorCard
           v-for="op in operators"
           :key="op.id"
-          @click="goToOperator(op.id)"
-          class="w-full text-left p-4 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all group flex items-center gap-3"
-        >
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2">
-              <span class="font-semibold">{{ formatCallSign(op) }}</span>
-              <span v-if="op.attendedCount > 0 || op.managedCount > 0" class="flex items-center gap-2 text-xs text-muted-foreground">
-                <span v-if="op.attendedCount > 0" class="flex items-center gap-0.5">
-                  <Users class="h-3 w-3" />
-                  {{ op.attendedCount }}
-                </span>
-                <span v-if="op.managedCount > 0" class="flex items-center gap-0.5">
-                  <Radio class="h-3 w-3" />
-                  {{ op.managedCount }}
-                </span>
-              </span>
-            </div>
-            <p class="text-sm text-muted-foreground truncate">
-              <template v-if="getDisplayName(op)">{{ getDisplayName(op) }}</template>
-              <template v-if="getDisplayName(op) && getQth(op)"> • </template>
-              <template v-if="getQth(op)">{{ getQth(op) }}</template>
-              <template v-if="!getDisplayName(op) && !getQth(op)">—</template>
-            </p>
-          </div>
-          <ChevronRight class="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-        </button>
+          :id="op.id"
+          :call-sign="op.callSign"
+          :prefix="op.prefix"
+          :suffix="op.suffix"
+          :full-name="op.fullName"
+          :city="op.city"
+          :district="op.district"
+          :attended-count="op.attendedCount"
+          :managed-count="op.managedCount"
+          :user-full-name="op.user?.fullName"
+          :user-role="op.user?.role"
+          :user-picture="op.user?.picture"
+        />
       </div>
 
       <div v-if="hasMore && !isLoading" class="pt-4">

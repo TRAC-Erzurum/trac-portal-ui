@@ -5,6 +5,7 @@ import { Search, Plus, Check, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { api } from '@/lib/api'
 import { debounce } from '@/lib/utils'
 
@@ -19,6 +20,7 @@ interface Operator {
   district?: string
   user?: {
     fullName?: string
+    picture?: string | null
   }
 }
 
@@ -36,6 +38,7 @@ interface SelectedEntry {
   isNew: boolean
   readability: string
   signalStrength: string
+  picture?: string | null
 }
 
 interface CityData {
@@ -163,7 +166,8 @@ const selectOperatorFromSuggestion = (op: Operator) => {
     operatorId: op.id,
     isNew: false,
     readability: '5',
-    signalStrength: '9'
+    signalStrength: '9',
+    picture: op.user?.picture || null
   }
   showSuggestions.value = false
   
@@ -182,7 +186,8 @@ const createNewEntry = () => {
     operatorId: null,
     isNew: true,
     readability: '5',
-    signalStrength: '9'
+    signalStrength: '9',
+    picture: null
   }
   showSuggestions.value = false
   
@@ -385,12 +390,7 @@ onUnmounted(() => {
     >
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
-          <div 
-            class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm"
-            :class="selectedEntry.isNew ? 'bg-green-500/20 text-green-600' : 'bg-primary/20 text-primary'"
-          >
-            {{ selectedEntry.callSign.slice(0, 2) }}
-          </div>
+          <UserAvatar :picture="selectedEntry.picture" class="h-10 w-10" />
           <div>
             <div class="font-semibold">{{ selectedEntry.callSign }}</div>
             <div v-if="!selectedEntry.isNew && selectedEntry.name" class="text-sm text-muted-foreground">

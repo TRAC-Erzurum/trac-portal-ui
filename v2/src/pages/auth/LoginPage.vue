@@ -32,10 +32,15 @@ async function handleSubmit() {
   
   isLoading.value = true
   try {
-    await authStore.login(callSign.value, password.value, captchaToken.value || undefined)
-    toast.success(t('auth.loginSuccess'))
-    const redirect = route.query.redirect as string
-    router.push(redirect || '/dashboard')
+    const response = await authStore.login(callSign.value, password.value, captchaToken.value || undefined)
+    
+    if (response.isTemporaryPassword) {
+      router.push('/change-password')
+    } else {
+      toast.success(t('auth.loginSuccess'))
+      const redirect = route.query.redirect as string
+      router.push(redirect || '/dashboard')
+    }
   } catch (e) {
     const error = e as ApiError
     toast.error(translateError(error.message))

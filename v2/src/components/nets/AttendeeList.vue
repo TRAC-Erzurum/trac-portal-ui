@@ -2,6 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { Users, MapPin, Edit2, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 interface Attendee {
   id: string
@@ -12,6 +13,7 @@ interface Attendee {
   readability?: number
   signalStrength?: number
   createdAt: string
+  picture?: string | null
 }
 
 interface Props {
@@ -51,8 +53,11 @@ const getAttendeeNumber = (index: number, total: number) => {
       :key="attendee.id"
       class="group flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all"
     >
-      <div class="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-600 dark:text-zinc-300 flex-shrink-0">
-        {{ getAttendeeNumber(index, attendees.length) }}
+      <div class="relative flex-shrink-0">
+        <UserAvatar :picture="attendee.picture" class="h-8 w-8" />
+        <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-600 dark:text-zinc-300 ring-2 ring-background">
+          {{ getAttendeeNumber(index, attendees.length) }}
+        </span>
       </div>
 
       <div class="flex-1 min-w-0">

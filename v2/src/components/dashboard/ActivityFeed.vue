@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { Radio, UserPlus, Settings, Activity as ActivityIcon } from 'lucide-vue-next'
+import { Radio, UserPlus, Activity as ActivityIcon } from 'lucide-vue-next'
 
 interface Activity {
   id: string
@@ -20,7 +20,7 @@ interface Props {
   isLoadingMore?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
+withDefaults(defineProps<Props>(), {
   isLoading: false,
   hasMore: false,
   isLoadingMore: false,
@@ -50,7 +50,7 @@ const formatTime = (dateString: string) => {
 const getActivityIcon = (type: string) => {
   if (type.startsWith('net.')) return Radio
   if (type.startsWith('attendee.')) return UserPlus
-  return Settings
+  return Radio
 }
 
 const getActivityText = (activity: Activity) => {
@@ -58,12 +58,12 @@ const getActivityText = (activity: Activity) => {
   const netName = metadata?.netName as string || ''
 
   switch (type) {
+    case 'net.created':
+      return t('dashboard.activityNetCreated', { actor: actorCallSign, name: netName })
     case 'net.started':
       return t('dashboard.activityNetStarted', { actor: actorCallSign, name: netName })
     case 'net.ended':
       return t('dashboard.activityNetEnded', { actor: actorCallSign, name: netName })
-    case 'net.created':
-      return t('dashboard.activityNetCreated', { actor: actorCallSign, name: netName })
     case 'attendee.added':
       return t('dashboard.activityAttendeeAdded', { callSign: targetCallSign, net: netName })
     default:

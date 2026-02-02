@@ -49,11 +49,9 @@
 | Dashboard | `/dashboard` | DONE | ActivityFeed, NetsModule, PersonalStats, CommunityModule |
 | Net List | `/nets` | DONE | Responsive grid, filters, search, create via Sheet |
 | Net Detail | `/nets/:id` | DONE | View, attendee management, edit via Sheet |
-| Net Report | `/nets/:id/report` | TODO | Attendee list table, export to PDF/PNG/CSV |
-| Users (Admin) | `/users` | TODO | User list, admin only |
-| User Profile (Admin) | `/users/:id` | TODO | View/edit any user, reset password |
-| Operators | `/operators` | DONE | Search, 3-column grid, pagination |
-| Operator Profile | `/operators/:id` | DONE | Profile, stats, recent nets, admin edit |
+| Net Report | `/nets/:id/report` | DONE | Attendee list table, export to PDF/PNG/CSV |
+| Operators | `/operators` | DONE | Search, 3-column grid, pagination, membership filter |
+| Operator Profile | `/operators/:id` | DONE | Profile, stats, recent nets, admin edit, account info (admin) |
 | Account | `/account` | DONE | Personal info, operator info, password (renamed from Profile) |
 
 ### Static Pages
@@ -116,20 +114,21 @@
 * \[x] Consistent dividers/separators between all sections
 * \[x] Activity pagination (3 items, load more button)
 
-### Phase 5: Nets Module - IN PROGRESS
+### Phase 5: Nets Module - COMPLETE
 
 * \[x] Net list page (responsive grid, search, status/date filters)
-* \[x] Net create Sheet (searchable operator select)
+* \[x] Net create Sheet (searchable operator select, sorted by managed count)
 * \[x] Net detail page (header, status, actions)
 * \[x] Net edit Sheet (for pending nets)
 * \[x] Attendee management panel (search, add, edit, delete)
 * \[x] Unified attendee entry flow (existing + new operators)
 * \[x] QTH editing for attendees
 * \[x] Dashboard: pending nets display (max 6 desktop, max 3 mobile)
-* \[x] Consistent status indicators (green pulse=active, yellow=pending, gray=completed)
+* \[x] Consistent status indicators (green pulse=active, blue=pending, gray=completed)
 * \[x] Keyboard navigation (arrows, enter, escape, tab)
 * \[x] Focus management (search input focused after operations)
-* \[ ] Net report page (attendee list table, export to PDF/PNG/CSV)
+* \[x] Net report page (attendee list table, export to PDF/PNG/CSV)
+* \[x] Backend pagination/sorting for net list (status priority + createdAt DESC)
 
 ### Phase 6: Operators Module - COMPLETE
 
@@ -140,13 +139,17 @@
 * \[x] Backend: `/operator/:id/recent-nets` endpoint
 * \[x] Guest restriction (toast + redirect)
 * \[x] Profile → Account rename (`/profile` → `/account`)
+* \[x] Membership filter (registered/unregistered)
+* \[x] Sorting: registered users first, then callSign alphabetically
+* \[x] Operator search with sortBy parameter (managed/attended/default)
 
-### Phase 7: Admin Features
+### Phase 7: Admin Features - DONE
 
-* \[ ] User list page (admin only)
-* \[ ] User profile page (view any user, admin only)
-* \[ ] Reset password for users (admin can reset non-admin passwords)
-* \[ ] Profile picture upload (drag & drop, compression)
+* \[x] Admin account section in operator profile (email, role, member since)
+* \[x] Role change for users (admin can change lower roles)
+* \[x] Password reset for users (admin can reset lower role passwords)
+* \[x] Profile picture upload (Account page)
+* \[x] Password reset requests management (dashboard alert + sheet)
 
 ### Phase 8: Polish
 
@@ -185,7 +188,11 @@ These are potential future enhancements beyond the core modernization:
 * Links to operator if call sign exists in database
 * Duplicate pending requests prevented (silent skip)
 * Logging for unknown call signs and duplicate requests
-* **TODO**: Admin feature to process requests
+* Admin dashboard alert + sheet for processing requests
+* `GET /auth/password-reset-requests` - List pending requests (admin only)
+* `GET /auth/password-reset-requests/count` - Pending count (admin only)
+* `POST /auth/password-reset-requests/:id/approve` - Approve and generate password
+* `POST /auth/password-reset-requests/:id/reject` - Reject request
 
 ### Cloudflare Turnstile CAPTCHA - DONE
 
@@ -249,6 +256,8 @@ These are potential future enhancements beyond the core modernization:
 | Borders | `border-border/50` (subtle) |
 | Hover | `hover:border-border hover:bg-muted/30` |
 | Active State | Green accent for active nets |
+| Pending State | Blue accent for scheduled nets |
+| Completed State | Muted/gray for completed nets |
 
 ***
 
@@ -262,6 +271,20 @@ These are potential future enhancements beyond the core modernization:
 ***
 
 ## Changelog
+
+### 2026-01-31 (Session 5)
+
+* Phase 7 (Admin Features) completed:
+  * Password reset requests management for admins
+  * Dashboard alert badge showing pending request count
+  * Sheet UI for reviewing, approving, and rejecting requests
+  * Temporary password system with forced password change on first login
+  * Permanent dialog showing generated password with copy functionality
+  * User entity extended with `isTemporaryPassword` flag
+  * Login response includes `isTemporaryPassword` status
+  * Mandatory password change dialog on login when using temporary password
+  * Backend endpoints for list, count, approve, reject operations
+  * Created Dialog UI components (shadcn-vue style)
 
 ### 2026-01-31 (Session 2)
 
@@ -288,6 +311,38 @@ These are potential future enhancements beyond the core modernization:
   * `getPendingNets()` service method
 * i18n keys added for nets module
 * Multiple bug fixes in attendee management
+
+### 2026-02-01 (Session 4)
+
+* Code organization refactoring:
+  * Created `lib/formatters.ts` - date, callSign formatting
+  * Created `lib/ui-helpers.ts` - getRoleBadgeClass, UserRole type
+  * Created `composables/useAvatarUrl.ts` - avatar URL helper
+  * Created `components/shared/` - NetCard, OperatorCard, skeletons
+  * Removed duplicate code from 7+ files
+* UI consistency improvements:
+  * Role badges now colored consistently across all pages
+  * Edit buttons: icon + text (not icon-only)
+  * AccountPage & ProfilePage layouts aligned
+  * Report opens in new tab
+* Cursor rules consolidated to `.cursor/rules/` (project root)
+
+### 2026-02-01 (Session 3)
+
+* Phase 5 (Nets Module) completed:
+  * Net report page with attendee table and export (CSV/PDF/PNG)
+  * Direct export from Net Detail page (no need to open report)
+  * Backend pagination/sorting for net list
+  * Pending status color changed from yellow to blue
+* Phase 6 (Operators Module) enhancements:
+  * Membership filter added (All/Registered/Unregistered)
+  * Sorting: registered users first, then callSign alphabetically
+  * Operator search with sortBy parameter:
+    * `managed` - for net operator dropdown (sorted by managed count)
+    * `attended` - for attendee search (sorted by attendance count)
+* i18n updates:
+  * Membership labels: "Kayıtlı/Registered", "Kayıtsız/Unregistered"
+  * Status consistency: "Tamamlandı" (not "Tamamlanan")
 
 ### 2026-02-01 (Session 2)
 

@@ -2,12 +2,14 @@
 import { useI18n } from 'vue-i18n'
 import { Users, Radio, TrendingUp, ChevronRight } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
+import { UserAvatar } from '@/components/ui/user-avatar'
 
 interface LeaderboardEntry {
   rank: number
   callSign: string
   operatorId?: string
   netId?: string
+  picture?: string | null
   value: number
   label: string
 }
@@ -82,6 +84,7 @@ const goToOperators = () => {
 const goToNets = () => {
   router.push('/nets')
 }
+
 </script>
 
 <template>
@@ -133,11 +136,12 @@ const goToNets = () => {
                 class="w-full flex items-center gap-2 text-sm p-2 -mx-2 rounded-lg hover:bg-muted/30 transition-colors group"
               >
                 <span 
-                  class="w-5 font-bold" 
+                  class="w-5 font-bold flex-shrink-0" 
                   :class="getRankClass(entry.rank)"
                 >
                   {{ entry.rank }}.
                 </span>
+                <UserAvatar :picture="entry.picture" class="h-6 w-6 flex-shrink-0" />
                 <span class="flex-1 truncate font-medium text-left">{{ entry.callSign }}</span>
                 <span class="text-muted-foreground text-xs">{{ entry.value }}</span>
                 <ChevronRight class="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -160,11 +164,12 @@ const goToNets = () => {
                 class="w-full flex items-center gap-2 text-sm p-2 -mx-2 rounded-lg hover:bg-muted/30 transition-colors group"
               >
                 <span 
-                  class="w-5 font-bold" 
+                  class="w-5 font-bold flex-shrink-0" 
                   :class="getRankClass(entry.rank)"
                 >
                   {{ entry.rank }}.
                 </span>
+                <UserAvatar :picture="entry.picture" class="h-6 w-6 flex-shrink-0" />
                 <span class="flex-1 truncate font-medium text-left">{{ entry.callSign }}</span>
                 <span class="text-muted-foreground text-xs">{{ entry.value }}</span>
                 <ChevronRight class="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />

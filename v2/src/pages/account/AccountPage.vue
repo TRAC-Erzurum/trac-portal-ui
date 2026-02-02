@@ -2,9 +2,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Shield, Calendar, MapPin, Pencil, Camera, Key, ExternalLink, User, Radio } from 'lucide-vue-next'
+import { Shield, Calendar, MapPin, Pencil, Camera, Key, ExternalLink, User, Radio, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { Separator } from '@/components/ui/separator'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import EditPersonalSheet from '@/components/profile/EditPersonalSheet.vue'
@@ -13,6 +13,8 @@ import ChangePasswordSheet from '@/components/profile/ChangePasswordSheet.vue'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
+import { formatDateSimple, formatCallSign } from '@/lib/formatters'
+import { getRoleBadgeClass } from '@/lib/ui-helpers'
 
 interface Operator {
   callSign: string
@@ -46,18 +48,10 @@ const showEditPersonal = ref(false)
 const showEditOperator = ref(false)
 const showChangePassword = ref(false)
 
-const avatarUrl = computed(() => {
-  if (!profile.value?.picture) return null
-  if (profile.value.picture.startsWith('http')) return profile.value.picture
-  const baseUrl = import.meta.env.VITE_API_URL.replace(/\/api$/, '')
-  return `${baseUrl}${profile.value.picture}`
-})
-
 const formattedCallSign = computed(() => {
   const op = profile.value?.operator
   if (!op) return '-'
-  const parts = [op.prefix, op.callSign, op.suffix].filter(Boolean)
-  return parts.join('/')
+  return formatCallSign(op)
 })
 
 const qth = computed(() => {
@@ -73,8 +67,7 @@ const gridSquareUrl = computed(() => {
 })
 
 const memberSince = computed(() => {
-  if (!profile.value?.createdAt) return '-'
-  return new Date(profile.value.createdAt).toLocaleDateString()
+  return formatDateSimple(profile.value?.createdAt)
 })
 
 const roleLabel = computed(() => {
@@ -142,6 +135,23 @@ async function handleAvatarChange(event: Event) {
   }
 }
 
+async function deleteAvatar() {
+  if (!profile.value?.picture) return
+  
+  isUploadingAvatar.value = true
+  try {
+    await api.delete('/user/picture')
+    await fetchProfile()
+    await authStore.checkAuth()
+    toast.success(t('profile.avatarDeleted'))
+  } catch (e) {
+    const error = e as ApiError
+    toast.error(translateError(error.message))
+  } finally {
+    isUploadingAvatar.value = false
+  }
+}
+
 async function handleProfileUpdated() {
   await fetchProfile()
   await authStore.checkAuth()
@@ -152,7 +162,7 @@ onMounted(fetchProfile)
 
 <template>
   <AppLayout :title="t('nav.account')">
-    <div class="max-w-2xl mx-auto">
+    <div class="space-y-6">
       <template v-if="isLoading">
         <div class="animate-pulse space-y-8">
           <div class="flex gap-6">
@@ -174,20 +184,30 @@ onMounted(fetchProfile)
       <template v-else-if="profile">
         <div class="flex flex-col sm:flex-row gap-6">
           <div class="relative group flex-shrink-0 self-center sm:self-start">
-            <Avatar class="h-24 w-24">
-              <AvatarImage v-if="avatarUrl" :src="avatarUrl" />
-              <AvatarFallback class="bg-primary text-primary-foreground text-lg font-bold">
-                {{ profile.operator?.callSign || '?' }}
-              </AvatarFallback>
-            </Avatar>
-            <button
-              @click="triggerFileInput"
-              :disabled="isUploadingAvatar"
-              class="absolute inset-0 flex items-center justify-center bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-wait"
+            <UserAvatar :picture="profile.picture" class="h-24 w-24" />
+            <div
+              class="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              :class="{ 'opacity-100': isUploadingAvatar }"
             >
-              <Camera v-if="!isUploadingAvatar" class="h-5 w-5 text-white" />
-              <div v-else class="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            </button>
+              <div v-if="isUploadingAvatar" class="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <template v-else>
+                <button
+                  @click="triggerFileInput"
+                  class="p-1.5 rounded-full hover:bg-white/20 transition-colors"
+                  :title="t('profile.changeAvatar')"
+                >
+                  <Camera class="h-4 w-4 text-white" />
+                </button>
+                <button
+                  v-if="profile.picture"
+                  @click="deleteAvatar"
+                  class="p-1.5 rounded-full hover:bg-red-500/50 transition-colors"
+                  :title="t('profile.deleteAvatar')"
+                >
+                  <Trash2 class="h-4 w-4 text-white" />
+                </button>
+              </template>
+            </div>
             <input
               ref="fileInputRef"
               type="file"
@@ -197,22 +217,26 @@ onMounted(fetchProfile)
             />
           </div>
 
-          <div class="flex-1 text-center sm:text-left">
-            <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-              <div>
+          <div class="flex-1">
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex-1 min-w-0">
                 <h2 class="text-2xl font-bold">{{ formattedCallSign }}</h2>
                 <p v-if="profile.fullName" class="text-lg text-muted-foreground">{{ profile.fullName }}</p>
                 <p class="text-sm text-muted-foreground">{{ profile.email }}</p>
               </div>
-              <Button variant="ghost" size="icon" @click="showEditPersonal = true" class="self-center sm:self-start">
-                <Pencil class="h-4 w-4" />
+              <Button variant="outline" size="sm" @click="showEditPersonal = true" class="flex-shrink-0">
+                <Pencil class="h-4 w-4 mr-2" />
+                {{ t('common.edit') }}
               </Button>
             </div>
 
             <div class="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
               <div class="flex items-center gap-1.5">
                 <Shield class="h-4 w-4" />
-                <span>{{ roleLabel }}</span>
+                <span 
+                  class="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                  :class="getRoleBadgeClass(profile.role)"
+                >{{ roleLabel }}</span>
               </div>
               <div class="flex items-center gap-1.5">
                 <Calendar class="h-4 w-4" />
@@ -234,8 +258,9 @@ onMounted(fetchProfile)
               <Radio class="h-4 w-4" />
               {{ t('profile.operator') }}
             </h3>
-            <Button variant="ghost" size="icon" @click="showEditOperator = true">
-              <Pencil class="h-4 w-4" />
+            <Button variant="outline" size="sm" @click="showEditOperator = true">
+              <Pencil class="h-4 w-4 mr-2" />
+              {{ t('common.edit') }}
             </Button>
           </div>
 
@@ -275,8 +300,9 @@ onMounted(fetchProfile)
               <Key class="h-4 w-4" />
               {{ t('profile.security') }}
             </h3>
-            <Button variant="ghost" size="icon" @click="showChangePassword = true">
-              <Pencil class="h-4 w-4" />
+            <Button variant="outline" size="sm" @click="showChangePassword = true">
+              <Pencil class="h-4 w-4 mr-2" />
+              {{ t('common.edit') }}
             </Button>
           </div>
           <p class="text-sm text-muted-foreground">{{ t('profile.securityDesc') }}</p>

@@ -25,7 +25,7 @@ const confirmPassword = ref('')
 const isLoading = ref(false)
 
 const canSubmit = computed(() => {
-  return newPassword.value.length >= 4 && newPassword.value === confirmPassword.value
+  return newPassword.value.length >= 6 && newPassword.value === confirmPassword.value
 })
 
 function resetForm() {

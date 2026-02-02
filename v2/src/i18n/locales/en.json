@@ -47,7 +47,14 @@
     "privacyConsentRegisterPrefix": "By continuing with Google, you agree to the",
     "privacyConsentCheckboxPrefix": "I have read and accept the",
     "privacyConsentCheckboxSuffix": "",
-    "privacyLink": "Privacy Policy"
+    "privacyLink": "Privacy Policy",
+    "mustChangePassword": "Password Change Required",
+    "mustChangePasswordDescription": "Please set a new password to secure your account.",
+    "temporaryPasswordNotice": "You logged in with a temporary password. You must set a new password to continue.",
+    "temporaryPassword": "Temporary Password",
+    "temporaryPasswordPlaceholder": "The temporary password given to you",
+    "changePassword": "Change Password",
+    "passwordChanged": "Your password has been changed successfully"
   },
   "form": {
     "callSign": "Call Sign",
@@ -162,19 +169,15 @@
     "activityNetStarted": "{actor} started {name}",
     "activityNetEnded": "{actor} ended {name}",
     "activityNetCreated": "{actor} created {name}",
-    "activityAttendeeAdded": "{callSign} joined {net}"
-  },
-  "common": {
-    "loading": "Loading...",
-    "save": "Save",
-    "cancel": "Cancel",
-    "delete": "Delete",
-    "edit": "Edit",
-    "confirm": "Confirm",
-    "back": "Back",
-    "next": "Next",
-    "submit": "Submit",
-    "comingSoon": "Coming soon..."
+    "activityNetUpdated": "{actor} updated {name}",
+    "activityNetDeleted": "{actor} deleted {name}",
+    "activityAttendeeAdded": "{callSign} joined {net}",
+    "activityAttendeeUpdated": "{callSign}'s info updated in {net}",
+    "activityAttendeeRemoved": "{callSign} removed from {net}",
+    "activityOperatorCreated": "Operator {callSign} created",
+    "activityOperatorUpdated": "Operator {callSign} updated",
+    "activityUserUpdated": "{callSign} updated account info",
+    "activityAvatarChanged": "{callSign} changed profile picture"
   },
   "settings": {
     "theme": "Theme",
@@ -198,6 +201,9 @@
     "editOperatorDesc": "Update your QTH and locator",
     "profileUpdated": "Profile updated",
     "avatarUpdated": "Profile picture updated",
+    "avatarDeleted": "Profile picture deleted",
+    "changeAvatar": "Change photo",
+    "deleteAvatar": "Delete photo",
     "invalidFileType": "Invalid file type. Please upload JPG, PNG or WebP.",
     "fileTooLarge": "File too large. Maximum size is 5MB."
   },
@@ -247,7 +253,8 @@
     "editOperator": "Edit Operator Info",
     "membershipAll": "All",
     "membershipRegistered": "Registered",
-    "membershipUnregistered": "Unregistered"
+    "membershipUnregistered": "Unregistered",
+    "roleAll": "All Roles"
   },
   "nets": {
     "searchPlaceholder": "Search net name or operator...",
@@ -320,5 +327,56 @@
     "date": "Date",
     "joinTime": "Join Time",
     "exportSuccess": "Export successful"
+  },
+  "admin": {
+    "accountInfo": "Account Info",
+    "email": "Email",
+    "role": "Role",
+    "memberSince": "Member Since",
+    "resetPassword": "Reset Password",
+    "resetPasswordDescription": "Reset password for {callSign}",
+    "newPassword": "New Password",
+    "newPasswordPlaceholder": "At least 6 characters",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Enter password again",
+    "roleUpdated": "Role updated",
+    "passwordReset": "Password reset successful",
+    "passwordTooShort": "Password must be at least 6 characters",
+    "passwordMismatch": "Passwords do not match",
+    "passwordResetRequests": "Password Reset Requests",
+    "passwordResetRequestsDescription": "Manage user password reset requests",
+    "pendingPasswordResetRequests": "{count} password reset request(s) pending",
+    "noPasswordResetRequests": "No pending requests",
+    "approve": "Approve",
+    "reject": "Reject",
+    "passwordResetRejected": "Request rejected",
+    "operatorNotFound": "Operator not registered in system",
+    "temporaryPasswordGenerated": "Temporary Password Generated",
+    "temporaryPasswordDescription": "A temporary password has been generated for {callSign}. The user will be required to change their password on first login.",
+    "temporaryPasswordWarning": "Copy this password now. You will not be able to access it after closing this dialog.",
+    "passwordCopied": "Password copied to clipboard",
+    "passwordCopiedAndClose": "Copied, Close",
+    "roles": {
+      "guest": "Guest",
+      "volunteer": "Volunteer",
+      "member": "Member",
+      "admin": "Admin",
+      "super_admin": "Super Admin"
+    }
+  },
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "submit": "Submit",
+    "comingSoon": "Coming soon...",
+    "minutesAgo": "{count} minute(s) ago",
+    "hoursAgo": "{count} hour(s) ago",
+    "daysAgo": "{count} day(s) ago"
   }
 }

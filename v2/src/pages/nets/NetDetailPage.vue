@@ -13,6 +13,7 @@ import NetHeader from '@/components/nets/NetHeader.vue'
 import AddAttendeePanel from '@/components/nets/AddAttendeePanel.vue'
 import AttendeeList from '@/components/nets/AttendeeList.vue'
 import ExportReportTemplate from '@/components/nets/ExportReportTemplate.vue'
+import { formatDateTime } from '@/lib/formatters'
 
 interface Operator {
   id: string
@@ -30,6 +31,7 @@ interface Attendee {
   readability?: number
   signalStrength?: number
   createdAt: string
+  picture?: string | null
 }
 
 interface Net {
@@ -86,11 +88,31 @@ const fetchNet = async () => {
   }
 }
 
+interface AttendeeResponse {
+  id: string
+  callSign: string
+  name?: string
+  country?: string
+  city?: string
+  district?: string
+  readability?: number
+  signalStrength?: number
+  createdAt: string
+  operator?: {
+    user?: {
+      picture?: string
+    }
+  }
+}
+
 const fetchAttendees = async () => {
   isLoadingAttendees.value = true
   try {
-    const data = await api.get<Attendee[]>(`/net/${route.params.id}/attendee`)
-    attendees.value = data
+    const data = await api.get<AttendeeResponse[]>(`/net/${route.params.id}/attendee`)
+    attendees.value = data.map(a => ({
+      ...a,
+      picture: a.operator?.user?.picture || null
+    }))
   } catch (error) {
     attendees.value = []
   } finally {
@@ -100,7 +122,7 @@ const fetchAttendees = async () => {
 
 const startNet = async (withOperator: boolean) => {
   try {
-    await api.post(`/net/${route.params.id}/start`, {
+    await api.patch(`/net/${route.params.id}/start`, {
       addOperatorAsAttendee: withOperator
     })
     await fetchNet()
@@ -113,7 +135,7 @@ const startNet = async (withOperator: boolean) => {
 
 const endNet = async () => {
   try {
-    await api.post(`/net/${route.params.id}/end`)
+    await api.patch(`/net/${route.params.id}/end`)
     await fetchNet()
     toast.success(t('netDetail.netEnded'))
   } catch (error) {
@@ -123,7 +145,7 @@ const endNet = async () => {
 
 const restartNet = async () => {
   try {
-    await api.post(`/net/${route.params.id}/restart`)
+    await api.patch(`/net/${route.params.id}/restart`)
     await fetchNet()
     toast.success(t('netDetail.netRestarted'))
   } catch (error) {
@@ -170,19 +192,9 @@ const handleAttendeeAdded = async () => {
 }
 
 const viewReport = () => {
-  router.push(`/nets/${route.params.id}/report`)
+  window.open(`/nets/${route.params.id}/report`, '_blank')
 }
 
-const formatDateExport = (dateStr?: string) => {
-  if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleString('tr-TR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
-}
 
 const formatQthExport = (attendee: Attendee) => {
   return [attendee.district, attendee.city].filter(Boolean).join(', ') || '-'
@@ -200,16 +212,16 @@ const getNetDateInfo = () => {
     })
   }
   
-  if (!endedAt) return formatDateExport(startedAt)
+  if (!endedAt) return formatDateTime(startedAt)
   
   const startDate = startedAt.split('T')[0]
   const endDate = endedAt.split('T')[0]
   
   if (startDate === endDate) {
-    return `${formatDateExport(startedAt)} - ${formatTime(endedAt)}`
+    return `${formatDateTime(startedAt)} - ${formatTime(endedAt)}`
   }
   
-  return `${formatDateExport(startedAt)} - ${formatDateExport(endedAt)}`
+  return `${formatDateTime(startedAt)} - ${formatDateTime(endedAt)}`
 }
 
 const exportToCsv = async () => {
@@ -236,7 +248,7 @@ const exportToCsv = async () => {
         formatQthExport(a).replace(/"/g, '""'),
         a.readability || '',
         a.signalStrength || '',
-        formatDateExport(a.createdAt).replace(/"/g, '""')
+        formatDateTime(a.createdAt).replace(/"/g, '""')
       ]
       return fields.map(f => {
         const str = String(f)

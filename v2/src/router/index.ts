@@ -8,6 +8,7 @@ declare module 'vue-router' {
     requiresAuth?: boolean
     guestOnly?: boolean
     minRole?: UserRole
+    forceChangePassword?: boolean
   }
 }
 
@@ -43,6 +44,12 @@ const router = createRouter({
       name: 'forgot-password',
       component: () => import('@/pages/auth/ForgotPasswordPage.vue'),
       meta: { requiresAuth: false, guestOnly: true }
+    },
+    {
+      path: '/change-password',
+      name: 'force-change-password',
+      component: () => import('@/pages/auth/ForceChangePasswordPage.vue'),
+      meta: { requiresAuth: true, forceChangePassword: true }
     },
     {
       path: '/dashboard',
@@ -113,6 +120,16 @@ router.beforeEach(async (to) => {
   }
 
   if (to.meta.guestOnly && authStore.isAuthenticated) {
+    return { name: 'dashboard' }
+  }
+
+  if (authStore.isAuthenticated && authStore.isTemporaryPassword) {
+    if (!to.meta.forceChangePassword) {
+      return { name: 'force-change-password' }
+    }
+  }
+
+  if (to.meta.forceChangePassword && !authStore.isTemporaryPassword) {
     return { name: 'dashboard' }
   }
 

@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Key } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ActivityFeed from '@/components/dashboard/ActivityFeed.vue'
 import NetsModule from '@/components/dashboard/NetsModule.vue'
 import PersonalStatsModule from '@/components/dashboard/PersonalStatsModule.vue'
 import CommunityModule from '@/components/dashboard/CommunityModule.vue'
+import PasswordResetRequestsSheet from '@/components/admin/PasswordResetRequestsSheet.vue'
+import { useAuthStore } from '@/stores/auth'
 import { api } from '@/lib/api'
 
 interface ActiveNet {
@@ -74,8 +78,11 @@ interface Activity {
 }
 
 const { t } = useI18n()
+const authStore = useAuthStore()
 
 const isLoadingActivity = ref(true)
+const passwordResetRequestsCount = ref(0)
+const showPasswordResetRequests = ref(false)
 const isLoadingMoreActivity = ref(false)
 const isLoadingNets = ref(true)
 const isLoadingCommunity = ref(true)
@@ -147,15 +154,40 @@ const fetchCommunity = async () => {
   }
 }
 
+const fetchPasswordResetRequestsCount = async () => {
+  if (!authStore.isAdmin && !authStore.isSuperAdmin) return
+  try {
+    const data = await api.get<{ count: number }>('/auth/password-reset-requests/count')
+    passwordResetRequestsCount.value = data.count
+  } catch (error) {
+    console.error('Failed to fetch password reset requests count:', error)
+  }
+}
+
+const handlePasswordResetRequestsUpdated = () => {
+  fetchPasswordResetRequestsCount()
+}
+
 onMounted(() => {
   fetchActivity()
   fetchNets()
   fetchCommunity()
+  fetchPasswordResetRequestsCount()
 })
 </script>
 
 <template>
   <AppLayout :title="t('nav.dashboard')">
+    <Button
+      v-if="(authStore.isAdmin || authStore.isSuperAdmin) && passwordResetRequestsCount > 0"
+      variant="outline"
+      @click="showPasswordResetRequests = true"
+      class="mb-6 w-full justify-start border-amber-500/50 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400"
+    >
+      <Key class="h-4 w-4 mr-2" />
+      {{ t('admin.pendingPasswordResetRequests', { count: passwordResetRequestsCount }) }}
+    </Button>
+
     <div class="hidden xl:flex items-stretch gap-6">
       <div class="flex-1">
         <NetsModule
@@ -231,5 +263,10 @@ onMounted(() => {
         :is-loading="isLoadingCommunity"
       />
     </div>
+
+    <PasswordResetRequestsSheet
+      v-model:open="showPasswordResetRequests"
+      @updated="handlePasswordResetRequestsUpdated"
+    />
   </AppLayout>
 </template>

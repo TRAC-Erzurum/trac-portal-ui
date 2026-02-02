@@ -6,6 +6,7 @@ import { ArrowLeft, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { api } from '@/lib/api'
 import { toast } from 'vue-sonner'
+import { formatDateTime } from '@/lib/formatters'
 
 interface Operator {
   id: string
@@ -65,14 +66,8 @@ const formatQth = (attendee: Attendee) => {
 }
 
 const formatDate = (dateStr?: string) => {
-  if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleString(locale.value === 'tr' ? 'tr-TR' : 'en-US', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })
+  const loc = locale.value === 'tr' ? 'tr-TR' : 'en-US'
+  return formatDateTime(dateStr, loc)
 }
 
 const formatTime = (dateStr?: string) => {
