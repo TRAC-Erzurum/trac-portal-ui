@@ -25,7 +25,7 @@ export interface Operator {
 }
 
 export interface User {
-  id: number
+  id: string
   email: string
   callSign?: string
   fullName?: string

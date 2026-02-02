@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Avatar } from '@/components/ui/avatar'
-import { getAvatarUrl } from '@/composables'
-
-const DEFAULT_AVATAR = '/default-avatar.png'
+import { getAvatarUrl, DEFAULT_AVATAR } from '@/composables'
 
 const props = defineProps<{
   picture?: string | null

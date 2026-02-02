@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Play, Square, RotateCcw, Users, Radio, Clock, Settings, FileText, Download, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
+import { Play, Square, RotateCcw, Users, Radio, Clock, Settings, Download, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { getFrequencyLabel } from '@/constants/net'
@@ -29,7 +29,7 @@ interface Props {
   canManage: boolean
   isAdmin: boolean
   attendeesCount: number
-  isExporting: boolean
+  isExporting?: boolean
 }
 
 const props = defineProps<Props>()
@@ -39,7 +39,6 @@ const emit = defineEmits<{
   end: []
   restart: []
   edit: []
-  viewReport: []
   exportCsv: []
   exportPdf: []
   exportPng: []
@@ -108,8 +107,8 @@ const formatDuration = (net: Net) => {
       </div>
     </div>
 
-    <div v-if="canManage" class="flex flex-col items-end gap-3">
-      <div v-if="netStatus === 'pending'" class="flex items-center gap-2">
+    <div v-if="canManage || (netStatus !== 'pending' && attendeesCount > 0)" class="flex flex-col items-end gap-3">
+      <div v-if="canManage && netStatus === 'pending'" class="flex items-center gap-2">
         <input 
           id="addOperatorAsAttendee" 
           type="checkbox"
@@ -123,7 +122,7 @@ const formatDuration = (net: Net) => {
       
       <div class="flex items-center gap-2">
         <Button
-          v-if="netStatus === 'pending'"
+          v-if="canManage && netStatus === 'pending'"
           variant="outline"
           @click="emit('edit')"
           class="gap-2"
@@ -133,7 +132,7 @@ const formatDuration = (net: Net) => {
         </Button>
         
         <Button
-          v-if="netStatus === 'pending'"
+          v-if="canManage && netStatus === 'pending'"
           variant="outline"
           @click="emit('start', addOperatorAsAttendee)"
           class="gap-2"
@@ -143,7 +142,7 @@ const formatDuration = (net: Net) => {
         </Button>
         
         <Button
-          v-else-if="netStatus === 'active'"
+          v-if="canManage && netStatus === 'active'"
           variant="outline"
           @click="emit('end')"
           class="gap-2"
@@ -153,7 +152,7 @@ const formatDuration = (net: Net) => {
         </Button>
         
         <Button
-          v-if="netStatus === 'completed' && isAdmin"
+          v-if="canManage && netStatus === 'completed' && isAdmin"
           variant="outline"
           @click="emit('restart')"
           class="gap-2"
@@ -161,37 +160,30 @@ const formatDuration = (net: Net) => {
           <RotateCcw class="h-4 w-4" />
           {{ t('netDetail.restart') }}
         </Button>
+        
+        <DropdownMenu v-if="netStatus !== 'pending' && attendeesCount > 0">
+          <DropdownMenuTrigger as-child>
+            <Button variant="outline" class="gap-2" :disabled="isExporting">
+              <Download class="h-4 w-4" />
+              {{ t('netDetail.export') }}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem @click="emit('exportCsv')" class="gap-2 cursor-pointer">
+              <FileSpreadsheet class="h-4 w-4" />
+              CSV
+            </DropdownMenuItem>
+            <DropdownMenuItem @click="emit('exportPdf')" class="gap-2 cursor-pointer" :disabled="isExporting">
+              <Printer class="h-4 w-4" />
+              PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem @click="emit('exportPng')" class="gap-2 cursor-pointer" :disabled="isExporting">
+              <Image class="h-4 w-4" />
+              PNG
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
-  </div>
-
-  <div v-if="netStatus !== 'pending' && attendeesCount > 0" class="flex items-center gap-2 border-t border-border/50 pt-4">
-    <Button variant="outline" @click="emit('viewReport')" class="gap-2">
-      <FileText class="h-4 w-4" />
-      {{ t('netDetail.viewReport') }}
-    </Button>
-    
-    <DropdownMenu>
-      <DropdownMenuTrigger as-child>
-        <Button variant="outline" class="gap-2">
-          <Download class="h-4 w-4" />
-          {{ t('netDetail.export') }}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
-        <DropdownMenuItem @click="emit('exportCsv')" class="gap-2 cursor-pointer">
-          <FileSpreadsheet class="h-4 w-4" />
-          CSV
-        </DropdownMenuItem>
-        <DropdownMenuItem @click="emit('exportPdf')" class="gap-2 cursor-pointer" :disabled="isExporting">
-          <Printer class="h-4 w-4" />
-          PDF
-        </DropdownMenuItem>
-        <DropdownMenuItem @click="emit('exportPng')" class="gap-2 cursor-pointer" :disabled="isExporting">
-          <Image class="h-4 w-4" />
-          PNG
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
   </div>
 </template>

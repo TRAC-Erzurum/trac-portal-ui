@@ -32,7 +32,7 @@ async function handleSubmit() {
   
   isLoading.value = true
   try {
-    const response = await authStore.login(callSign.value, password.value, captchaToken.value || undefined)
+    const response = await authStore.login(callSign.value.trim(), password.value, captchaToken.value || undefined)
     
     if (response.isTemporaryPassword) {
       router.push('/change-password')

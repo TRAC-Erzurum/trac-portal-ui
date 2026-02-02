@@ -1,6 +1,6 @@
 import { computed, type Ref, type ComputedRef } from 'vue'
 
-const DEFAULT_AVATAR = '/default-avatar.png'
+export const DEFAULT_AVATAR = import.meta.env.BASE_URL + 'default-avatar.png'
 
 export function useAvatarUrl(picture: Ref<string | null | undefined> | ComputedRef<string | null | undefined>): ComputedRef<string> {
   return computed(() => {

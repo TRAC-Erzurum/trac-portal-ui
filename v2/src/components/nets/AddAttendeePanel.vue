@@ -73,22 +73,23 @@ const districts = computed(() => {
 })
 
 const existingCallSigns = computed(() => 
-  new Set(props.attendees.map(a => a.callSign.toUpperCase()))
+  new Set(props.attendees.map(a => (a.callSign || '').trim().toUpperCase()))
 )
 
 const enabledSuggestions = computed(() =>
-  suggestions.value.filter(op => !existingCallSigns.value.has(op.callSign.toUpperCase()))
+  suggestions.value.filter(op => !existingCallSigns.value.has((op.callSign || '').trim().toUpperCase()))
 )
 
 const disabledSuggestions = computed(() =>
-  suggestions.value.filter(op => existingCallSigns.value.has(op.callSign.toUpperCase()))
+  suggestions.value.filter(op => existingCallSigns.value.has((op.callSign || '').trim().toUpperCase()))
 )
 
 const canAddNew = computed(() => {
-  if (searchQuery.value.length < 2) return false
-  const searchUpper = searchQuery.value.toUpperCase()
+  const q = (searchQuery.value || '').trim()
+  if (q.length < 2) return false
+  const searchUpper = q.toUpperCase()
   const existsInSuggestions = suggestions.value.some(
-    op => op.callSign.toUpperCase() === searchUpper
+    op => (op.callSign || '').trim().toUpperCase() === searchUpper
   )
   return !existsInSuggestions
 })
@@ -99,14 +100,15 @@ const formatOperatorCallSign = (op: Operator) => {
 }
 
 const searchOperators = debounce(async (query: string) => {
-  if (query.length < 2) {
+  const q = (query || '').trim()
+  if (q.length < 2) {
     suggestions.value = []
     return
   }
   
   isSearching.value = true
   try {
-    const results = await api.get<Operator[]>(`/operator/search?q=${encodeURIComponent(query)}&sortBy=attended&limit=10`)
+    const results = await api.get<Operator[]>(`/operator/search?q=${encodeURIComponent(q)}&sortBy=attended&limit=10`)
     suggestions.value = results
     selectedIndex.value = 0
   } catch (error) {
@@ -137,8 +139,8 @@ watch(() => selectedEntry.value?.city, (newCity) => {
 
 const selectOperatorFromSuggestion = (op: Operator) => {
   selectedEntry.value = {
-    callSign: op.callSign,
-    name: op.user?.fullName || op.fullName || '',
+    callSign: (op.callSign || '').trim(),
+    name: (op.fullName || op.user?.fullName || '').trim(),
     city: op.city || '',
     district: op.district || '',
     operatorId: op.id,
@@ -157,7 +159,7 @@ const selectOperatorFromSuggestion = (op: Operator) => {
 
 const createNewEntry = () => {
   selectedEntry.value = {
-    callSign: searchQuery.value.toUpperCase(),
+    callSign: searchQuery.value.trim().toUpperCase(),
     name: '',
     city: '',
     district: '',
@@ -195,10 +197,10 @@ const submitEntry = async () => {
   isSubmitting.value = true
   try {
     await api.post(`/net/${props.netId}/attendee`, {
-      callSign: selectedEntry.value.callSign,
-      name: selectedEntry.value.name || undefined,
-      city: selectedEntry.value.city || undefined,
-      district: selectedEntry.value.district || undefined,
+      callSign: selectedEntry.value.callSign.trim(),
+      name: (selectedEntry.value.name || '').trim() || undefined,
+      city: (selectedEntry.value.city || '').trim() || undefined,
+      district: (selectedEntry.value.district || '').trim() || undefined,
       readability: parseInt(selectedEntry.value.readability),
       signalStrength: parseInt(selectedEntry.value.signalStrength),
       operatorId: selectedEntry.value.operatorId || undefined
@@ -315,7 +317,7 @@ onUnmounted(() => {
               <div class="flex-1 min-w-0">
                 <div class="font-semibold">{{ formatOperatorCallSign(op) }}</div>
                 <div class="text-sm text-muted-foreground truncate">
-                  {{ op.user?.fullName || op.fullName || '-' }}
+                  {{ op.fullName || op.user?.fullName || '-' }}
                   <span v-if="op.city"> · {{ op.city }}</span>
                 </div>
               </div>

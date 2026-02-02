@@ -7,13 +7,15 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
 import { toast } from 'vue-sonner'
+import { formatDateTime } from '@/lib/formatters'
+import { getReportExportStyles, REPORT_EXPORT_WIDTH } from '@/lib/reportExportStyles'
 import EditAttendeeSheet from '@/components/nets/EditAttendeeSheet.vue'
 import EditNetSheet from '@/components/nets/EditNetSheet.vue'
+import ExportReportTemplate from '@/components/nets/ExportReportTemplate.vue'
 import NetHeader from '@/components/nets/NetHeader.vue'
 import AddAttendeePanel from '@/components/nets/AddAttendeePanel.vue'
 import AttendeeList from '@/components/nets/AttendeeList.vue'
-import ExportReportTemplate from '@/components/nets/ExportReportTemplate.vue'
-import { formatDateTime } from '@/lib/formatters'
+import html2canvas from 'html2canvas'
 
 interface Operator {
   id: string
@@ -62,8 +64,8 @@ const isEditSheetOpen = ref(false)
 const isEditNetSheetOpen = ref(false)
 
 const exportTemplateRef = ref<InstanceType<typeof ExportReportTemplate> | null>(null)
-const isExporting = ref(false)
 const exportAttendees = ref<Attendee[]>([])
+const isExporting = ref(false)
 
 const netStatus = computed(() => {
   if (!net.value?.startedAt) return 'pending'
@@ -191,115 +193,111 @@ const handleAttendeeAdded = async () => {
   if (net.value) net.value.attendeeCount = attendees.value.length
 }
 
-const viewReport = () => {
-  window.open(`/nets/${route.params.id}/report`, '_blank')
-}
-
-
-const formatQthExport = (attendee: Attendee) => {
-  return [attendee.district, attendee.city].filter(Boolean).join(', ') || '-'
-}
-
 const getNetDateInfo = () => {
   if (!net.value) return ''
   const { startedAt, endedAt } = net.value
   if (!startedAt) return '-'
-  
-  const formatTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleTimeString('tr-TR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
-  
+  const formatTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
   if (!endedAt) return formatDateTime(startedAt)
-  
   const startDate = startedAt.split('T')[0]
   const endDate = endedAt.split('T')[0]
-  
-  if (startDate === endDate) {
-    return `${formatDateTime(startedAt)} - ${formatTime(endedAt)}`
-  }
-  
+  if (startDate === endDate) return `${formatDateTime(startedAt)} - ${formatTime(endedAt)}`
   return `${formatDateTime(startedAt)} - ${formatDateTime(endedAt)}`
+}
+
+const formatReadabilitySignal = (a: Attendee) => {
+  const r = a.readability
+  const s = a.signalStrength
+  if (r == null && s == null) return ''
+  return `${r ?? '-'}/${s ?? '-'}`
 }
 
 const exportToCsv = async () => {
   if (!net.value) return
-  
   try {
-    const sortedAttendees = await api.get<Attendee[]>(`/net/${route.params.id}/attendee?sort=ASC`)
-    
-    const headers = [
-      '#',
-      t('operators.callSign'),
-      t('operators.name'),
-      t('operators.qth'),
-      t('operators.readability'),
-      t('operators.signal'),
-      t('netReport.joinTime')
-    ].join(',')
-    
-    const rows = sortedAttendees.map((a, i) => {
-      const fields = [
-        i + 1,
-        a.callSign || '',
-        (a.name || '').replace(/"/g, '""'),
-        formatQthExport(a).replace(/"/g, '""'),
-        a.readability || '',
-        a.signalStrength || '',
-        formatDateTime(a.createdAt).replace(/"/g, '""')
-      ]
+    const sorted = await api.get<Attendee[]>(`/net/${route.params.id}/attendee?sort=ASC`)
+    const headers = ['#', t('operators.callSign'), t('operators.name'), t('operators.qth'), t('operators.signal'), t('netReport.joinTime')].join(',')
+    const rows = sorted.map((a, i) => {
+      const qth = [a.district, a.city].filter(Boolean).join(', ') || '-'
+      const fields = [i + 1, a.callSign || '', (a.name || '').replace(/"/g, '""'), qth.replace(/"/g, '""'), formatReadabilitySignal(a), formatDateTime(a.createdAt).replace(/"/g, '""')]
       return fields.map(f => {
         const str = String(f)
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-          return `"${str}"`
-        }
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) return `"${str}"`
         return str
       }).join(',')
     })
-    
-    const csvContent = [headers, ...rows].join('\n')
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
+    const blob = new Blob(['\ufeff' + [headers, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' })
     const link = document.createElement('a')
-    link.href = url
+    link.href = URL.createObjectURL(blob)
     link.download = `${net.value.name.replace(/[/\\?%*:|"<>]/g, '-')}.csv`
     link.click()
-    URL.revokeObjectURL(url)
+    URL.revokeObjectURL(link.href)
     toast.success(t('netReport.exportSuccess'))
-  } catch (error) {
+  } catch {
     toast.error(t('error.serverError'))
+  }
+}
+
+const escapeHtml = (s: string) => String(s)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;')
+
+const captureReportCanvas = async (): Promise<HTMLCanvasElement | null> => {
+  const templateEl = exportTemplateRef.value?.templateRef ?? null
+  if (!templateEl || !net.value) return null
+  const origLeft = templateEl.style.left
+  const origTop = templateEl.style.top
+  const origZIndex = templateEl.style.zIndex
+  templateEl.style.left = '0'
+  templateEl.style.top = '0'
+  templateEl.style.zIndex = '-1'
+  try {
+    await nextTick()
+    await new Promise(r => requestAnimationFrame(r))
+    const canvas = await html2canvas(templateEl, {
+      backgroundColor: '#ffffff',
+      onclone (clonedDoc, clonedNode) {
+        const head = clonedDoc.querySelector('head')
+        if (head) {
+          head.querySelectorAll('link[rel="stylesheet"], style').forEach(el => el.remove())
+          const style = clonedDoc.createElement('style')
+          style.textContent = getReportExportStyles(REPORT_EXPORT_WIDTH)
+          head.appendChild(style)
+        }
+        clonedNode.style.width = `${REPORT_EXPORT_WIDTH}px`
+        clonedNode.style.minWidth = `${REPORT_EXPORT_WIDTH}px`
+      }
+    })
+    return canvas
+  } finally {
+    templateEl.style.left = origLeft
+    templateEl.style.top = origTop
+    templateEl.style.zIndex = origZIndex
   }
 }
 
 const exportToPng = async () => {
   if (!net.value || isExporting.value) return
-  
   isExporting.value = true
   try {
-    const sortedAttendees = await api.get<Attendee[]>(`/net/${route.params.id}/attendee?sort=ASC`)
-    exportAttendees.value = sortedAttendees
-    
+    const sorted = await api.get<Attendee[]>(`/net/${route.params.id}/attendee?sort=ASC`)
+    exportAttendees.value = sorted
     await nextTick()
-    
-    const templateEl = exportTemplateRef.value?.templateRef
-    if (!templateEl) {
-      throw new Error('Template ref not found')
+    await new Promise(r => requestAnimationFrame(r))
+    const canvas = await captureReportCanvas()
+    if (canvas) {
+      const link = document.createElement('a')
+      link.href = canvas.toDataURL('image/png')
+      link.download = `${net.value.name.replace(/[/\\?%*:|"<>]/g, '-')}.png`
+      link.click()
+      toast.success(t('netReport.exportSuccess'))
+    } else {
+      toast.error(t('error.serverError'))
     }
-    
-    const html2canvas = (await import('html2canvas')).default
-    const canvas = await html2canvas(templateEl, {
-      backgroundColor: '#ffffff',
-      scale: 2
-    })
-    
-    const link = document.createElement('a')
-    link.href = canvas.toDataURL('image/png')
-    link.download = `${net.value.name.replace(/[/\\?%*:|"<>]/g, '-')}.png`
-    link.click()
-    toast.success(t('netReport.exportSuccess'))
-  } catch (error) {
+  } catch {
     toast.error(t('error.serverError'))
   } finally {
     isExporting.value = false
@@ -307,39 +305,54 @@ const exportToPng = async () => {
 }
 
 const exportToPdf = async () => {
-  if (!net.value || isExporting.value) return
-  
-  isExporting.value = true
+  if (!net.value) return
   try {
-    const sortedAttendees = await api.get<Attendee[]>(`/net/${route.params.id}/attendee?sort=ASC`)
-    exportAttendees.value = sortedAttendees
-    
-    await nextTick()
-    
-    const templateEl = exportTemplateRef.value?.templateRef
-    if (!templateEl) {
-      throw new Error('Template ref not found')
+    const sorted = await api.get<Attendee[]>(`/net/${route.params.id}/attendee?sort=ASC`)
+    const dateInfo = getNetDateInfo()
+    const qth = (a: Attendee) => [a.district, a.city].filter(Boolean).join(', ') || '-'
+    const rs = (a: Attendee) => {
+      const r = a.readability; const s = a.signalStrength
+      if (r == null && s == null) return ''
+      return `${r ?? '-'}/${s ?? '-'}`
     }
-    
-    const html2canvas = (await import('html2canvas')).default
-    const canvas = await html2canvas(templateEl, {
-      backgroundColor: '#ffffff',
-      scale: 2
-    })
-    
-    const imgData = canvas.toDataURL('image/png')
-    const imgWidth = 210
-    const imgHeight = (canvas.height * imgWidth) / canvas.width
-    
-    const { jsPDF } = await import('jspdf')
-    const pdf = new jsPDF('p', 'mm', 'a4')
-    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight)
-    pdf.save(`${net.value.name.replace(/[/\\?%*:|"<>]/g, '-')}.pdf`)
-    toast.success(t('netReport.exportSuccess'))
-  } catch (error) {
+    const rows = sorted.map((a, i) => `
+      <tr>
+        <td style="border:1px solid #d4d4d8;padding:6px 12px">${i + 1}</td>
+        <td style="border:1px solid #d4d4d8;padding:6px 12px;font-weight:600">${escapeHtml(a.callSign)}</td>
+        <td style="border:1px solid #d4d4d8;padding:6px 12px">${escapeHtml(a.name || '-')}</td>
+        <td style="border:1px solid #d4d4d8;padding:6px 12px">${escapeHtml(qth(a))}</td>
+        <td style="border:1px solid #d4d4d8;padding:6px 12px;text-align:center">${escapeHtml(rs(a))}</td>
+        <td style="border:1px solid #d4d4d8;padding:6px 12px">${escapeHtml(formatDateTime(a.createdAt))}</td>
+      </tr>`).join('')
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(net.value.name)}</title>
+<style>body{font-family:'Rajdhani',sans-serif;padding:2rem;color:#000;background:#fff}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{background:#f4f4f5;border:1px solid #d4d4d8;padding:6px 12px;text-align:left;font-weight:600}
+tfoot td{background:#fafafa;border:1px solid #d4d4d8;padding:6px 12px}
+h1{text-align:center;font-size:1.5rem;margin-bottom:2rem}</style></head><body>
+<h1>${escapeHtml(net.value.name)}</h1>
+<table>
+<thead><tr>
+<th>#</th><th>${escapeHtml(t('operators.callSign'))}</th><th>${escapeHtml(t('operators.name'))}</th>
+<th>${escapeHtml(t('operators.qth'))}</th><th>${escapeHtml(t('operators.signal'))}</th><th>${escapeHtml(t('netReport.joinTime'))}</th>
+</tr></thead>
+<tbody>${rows}</tbody>
+<tfoot>
+<tr><td colspan="5" style="text-align:right;font-weight:600">${escapeHtml(t('netReport.totalAttendees'))}:</td><td style="font-weight:600">${sorted.length}</td></tr>
+<tr><td colspan="5" style="text-align:right;font-weight:600">${escapeHtml(t('netReport.operator'))}:</td><td>${escapeHtml(net.value.operator.callSign)}</td></tr>
+<tr><td colspan="5" style="text-align:right;font-weight:600">${escapeHtml(t('netReport.date'))}:</td><td>${escapeHtml(dateInfo)}</td></tr>
+</tfoot>
+</table></body></html>`
+    const win = window.open('', '_blank')
+    if (win) {
+      win.document.write(html)
+      win.document.close()
+      win.focus()
+      win.print()
+      win.close()
+    }
+  } catch {
     toast.error(t('error.serverError'))
-  } finally {
-    isExporting.value = false
   }
 }
 
@@ -367,7 +380,6 @@ onMounted(() => {
         @end="endNet"
         @restart="restartNet"
         @edit="openEditNet"
-        @view-report="viewReport"
         @export-csv="exportToCsv"
         @export-pdf="exportToPdf"
         @export-png="exportToPng"
