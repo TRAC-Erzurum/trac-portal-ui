@@ -169,10 +169,12 @@ const handlePasswordResetRequestsUpdated = () => {
 }
 
 onMounted(() => {
-  fetchActivity()
-  fetchNets()
-  fetchCommunity()
-  fetchPasswordResetRequestsCount()
+  Promise.all([
+    fetchActivity(),
+    fetchNets(),
+    fetchCommunity(),
+    fetchPasswordResetRequestsCount(),
+  ])
 })
 </script>
 

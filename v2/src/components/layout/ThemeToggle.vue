@@ -13,14 +13,17 @@ const themes: ThemeMode[] = ['system', 'dark', 'light']
 function cycleTheme() {
   const currentIndex = themes.indexOf(themeStore.mode)
   const nextIndex = (currentIndex + 1) % themes.length
-  themeStore.setMode(themes[nextIndex])
+  const nextTheme = themes[nextIndex]
+  if (nextTheme) {
+    themeStore.setMode(nextTheme)
+  }
 }
 
 const currentLabel = computed(() => t(`theme.${themeStore.mode}`))
 </script>
 
 <template>
-  <Button variant="ghost" size="icon" @click="cycleTheme" :title="currentLabel">
+  <Button variant="ghost" size="icon" @click="cycleTheme" :title="currentLabel" :aria-label="currentLabel">
     <Monitor v-if="themeStore.mode === 'system'" class="h-4 w-4" />
     <Moon v-else-if="themeStore.mode === 'dark'" class="h-4 w-4" />
     <Sun v-else class="h-4 w-4" />

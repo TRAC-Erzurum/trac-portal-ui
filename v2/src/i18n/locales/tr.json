@@ -7,8 +7,12 @@
     "operatorAlreadyExists": "Bu çağrı işareti zaten kayıtlı",
     "alreadyExists": "Bu kayıt zaten mevcut",
     "unauthorized": "Oturum açmanız gerekiyor",
-    "forbidden": "Bu işlem için yetkiniz yok",
-    "serverError": "Sunucu hatası oluştu",
+    "forbidden": "Erişim Engellendi",
+    "forbiddenDescription": "Bu işlem için yetkiniz bulunmuyor.",
+    "serverError": "Bir Hata Oluştu",
+    "serverErrorDescription": "Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
+    "somethingWentWrong": "Bir şeyler ters gitti",
+    "tryAgainLater": "Lütfen sayfayı yenileyerek tekrar deneyin.",
     "networkError": "Bağlantı hatası",
     "captchaRequired": "CAPTCHA doğrulaması gerekli",
     "captchaFailed": "CAPTCHA doğrulaması başarısız",
@@ -16,7 +20,9 @@
     "cannotResetHigherRolePassword": "Üst rol kullanıcısının parolası sıfırlanamaz",
     "operatorChangeNotAllowed": "Operatör değişikliğine izin verilmiyor",
     "pleaseWaitForCaptcha": "Lütfen doğrulamayı bekleyin",
-    "guestRestriction": "Değerli misafirimiz, bu özelliğe erişim için yöneticilerle iletişime geçin"
+    "guestRestriction": "Değerli misafirimiz, bu özelliğe erişim için yöneticilerle iletişime geçin",
+    "superAdminRoleCannotBeAssigned": "Super admin rolü atanamaz",
+    "superAdminRoleCannotBeChanged": "Super admin rolü değiştirilemez"
   },
   "auth": {
     "login": "Giriş Yap",
@@ -354,6 +360,7 @@
     "temporaryPasswordGenerated": "Geçici Parola Oluşturuldu",
     "temporaryPasswordDescription": "{callSign} için geçici parola oluşturuldu. Kullanıcı ilk girişte parolasını değiştirmek zorunda kalacak.",
     "temporaryPasswordWarning": "Bu parolayı şimdi kopyalayın. Bu pencereyi kapattıktan sonra parolaya tekrar erişemezsiniz.",
+    "copyPassword": "Parolayı Kopyala",
     "passwordCopied": "Parola panoya kopyalandı",
     "passwordCopiedAndClose": "Kopyaladım, Kapat",
     "roles": {
@@ -374,6 +381,8 @@
     "back": "Geri",
     "next": "İleri",
     "submit": "Gönder",
+    "retry": "Tekrar Dene",
+    "goHome": "Ana Sayfaya Dön",
     "comingSoon": "Yakında...",
     "minutesAgo": "{count} dakika önce",
     "hoursAgo": "{count} saat önce",

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { api } from '@/lib/api'
 import { toast } from 'vue-sonner'
+import { useQthData } from '@/composables/useQthData'
 
 interface Attendee {
   id: string
@@ -31,6 +32,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { cities, getDistricts, loadCities } = useQthData()
 
 const isSubmitting = ref(false)
 const form = ref({
@@ -42,39 +44,9 @@ const form = ref({
   signalStrength: 9
 })
 
-const cities = ref<string[]>([])
-const districts = ref<string[]>([])
-const isLoadingCities = ref(false)
-const isLoadingDistricts = ref(false)
 const isInitializing = ref(true)
 
-const fetchCities = async () => {
-  isLoadingCities.value = true
-  try {
-    const data = await api.get<{ cities: { name: string }[] }>('/qth/countries/Türkiye/cities')
-    cities.value = data.cities.map(c => c.name).sort((a, b) => a.localeCompare(b, 'tr'))
-  } catch (error) {
-    console.error('Failed to fetch cities:', error)
-  } finally {
-    isLoadingCities.value = false
-  }
-}
-
-const fetchDistricts = async (city: string) => {
-  if (!city) {
-    districts.value = []
-    return
-  }
-  isLoadingDistricts.value = true
-  try {
-    const data = await api.get<{ districts: string[] }>(`/qth/countries/Türkiye/cities/${encodeURIComponent(city)}/districts`)
-    districts.value = data.districts.sort((a, b) => a.localeCompare(b, 'tr'))
-  } catch (error) {
-    console.error('Failed to fetch districts:', error)
-  } finally {
-    isLoadingDistricts.value = false
-  }
-}
+const districts = computed(() => getDistricts(form.value.city))
 
 watch(() => props.open, async (open) => {
   if (open && props.attendee) {
@@ -88,10 +60,7 @@ watch(() => props.open, async (open) => {
       signalStrength: props.attendee.signalStrength || 9
     }
     
-    await fetchCities()
-    if (form.value.city) {
-      await fetchDistricts(form.value.city)
-    }
+    await loadCities()
     isInitializing.value = false
   }
 })
@@ -100,7 +69,6 @@ watch(() => form.value.city, (city, oldCity) => {
   if (isInitializing.value) return
   if (city !== oldCity) {
     form.value.district = ''
-    fetchDistricts(city)
   }
 })
 

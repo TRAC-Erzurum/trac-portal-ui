@@ -7,7 +7,7 @@ export type UserRole = 'super_admin' | 'admin' | 'member' | 'volunteer' | 'guest
 const ROLE_HIERARCHY: Record<UserRole, number> = {
   super_admin: 5,
   admin: 4,
-  member: 2,
+  member: 3,
   volunteer: 2,
   guest: 1,
 }

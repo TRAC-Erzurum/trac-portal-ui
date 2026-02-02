@@ -9,11 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
-
-interface City {
-  name: string
-  districts: { name: string }[]
-}
+import { useQthData } from '@/composables/useQthData'
 
 interface Profile {
   operator?: {
@@ -33,20 +29,15 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { cities, getDistricts, isLoading: isFetchingCities, loadCities } = useQthData()
 
 const city = ref('')
 const district = ref('')
 const gridSquare = ref('')
 const isLoading = ref(false)
-const isFetchingCities = ref(false)
 const isInitializing = ref(false)
 
-const cities = ref<City[]>([])
-
-const districts = computed(() => {
-  const cityData = cities.value.find(c => c.name === city.value)
-  return cityData?.districts.map(d => d.name) || []
-})
+const districts = computed(() => getDistricts(city.value))
 
 watch(city, () => {
   if (isInitializing.value) return
@@ -55,22 +46,10 @@ watch(city, () => {
   }
 })
 
-async function fetchCities() {
-  if (cities.value.length > 0) return
-  isFetchingCities.value = true
-  try {
-    cities.value = await api.get<City[]>('/qth/countries/Türkiye/cities')
-  } catch {
-    cities.value = []
-  } finally {
-    isFetchingCities.value = false
-  }
-}
-
 watch(() => props.open, async (isOpen) => {
   if (isOpen) {
     isInitializing.value = true
-    await fetchCities()
+    await loadCities()
     try {
       const profile = await api.get<Profile>('/user/profile')
       city.value = profile.operator?.city || ''
@@ -122,8 +101,8 @@ async function handleSubmit() {
               <SelectValue :placeholder="isFetchingCities ? t('common.loading') : t('form.cityPlaceholder')" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem v-for="c in cities" :key="c.name" :value="c.name">
-                {{ c.name }}
+              <SelectItem v-for="c in cities" :key="c" :value="c">
+                {{ c }}
               </SelectItem>
             </SelectContent>
           </Select>

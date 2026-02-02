@@ -27,6 +27,7 @@ const handleError = () => {
   <Avatar :class="props.class">
     <img 
       :src="displayUrl" 
+      alt=""
       class="h-full w-full object-cover"
       @error="handleError"
     />

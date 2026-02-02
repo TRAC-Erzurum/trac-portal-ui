@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { api } from '@/lib/api'
 import { debounce } from '@/lib/utils'
+import { useQthData } from '@/composables/useQthData'
 
 interface Operator {
   id: string
@@ -41,11 +42,6 @@ interface SelectedEntry {
   picture?: string | null
 }
 
-interface CityData {
-  name: string
-  districts: { name: string }[]
-}
-
 interface Props {
   netId: string
   attendees: Attendee[]
@@ -58,6 +54,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { cities, getDistricts, isLoading: isLoadingCities, loadCities } = useQthData()
 
 const searchQuery = ref('')
 const suggestions = ref<Operator[]>([])
@@ -70,15 +67,9 @@ const selectedEntry = ref<SelectedEntry | null>(null)
 const searchContainerRef = ref<HTMLDivElement | null>(null)
 const entryPanelRef = ref<HTMLDivElement | null>(null)
 
-const citiesData = ref<CityData[]>([])
-const isLoadingCities = ref(false)
-
-const cities = computed(() => citiesData.value.map(c => c.name))
-
 const districts = computed(() => {
   if (!selectedEntry.value?.city) return []
-  const cityData = citiesData.value.find(c => c.name === selectedEntry.value!.city)
-  return cityData?.districts.map(d => d.name) || []
+  return getDistricts(selectedEntry.value.city)
 })
 
 const existingCallSigns = computed(() => 
@@ -143,19 +134,6 @@ watch(() => selectedEntry.value?.city, (newCity) => {
   }
 })
 
-const fetchCities = async () => {
-  if (citiesData.value.length > 0) return
-  
-  isLoadingCities.value = true
-  try {
-    const data = await api.get<CityData[]>('/qth/countries/Türkiye/cities')
-    citiesData.value = data
-  } catch (error) {
-    citiesData.value = []
-  } finally {
-    isLoadingCities.value = false
-  }
-}
 
 const selectOperatorFromSuggestion = (op: Operator) => {
   selectedEntry.value = {
@@ -291,7 +269,7 @@ const handleClickOutside = (e: MouseEvent) => {
 }
 
 onMounted(() => {
-  fetchCities()
+  loadCities()
   document.addEventListener('click', handleClickOutside)
   focusSearchInput()
 })
@@ -401,7 +379,7 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
-        <Button variant="ghost" size="icon" class="h-8 w-8" @click="clearEntry" :title="'ESC'">
+        <Button variant="ghost" size="icon" class="h-8 w-8" @click="clearEntry" :title="'ESC'" aria-label="Clear">
           <X class="h-4 w-4" />
         </Button>
       </div>

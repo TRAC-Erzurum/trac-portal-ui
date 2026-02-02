@@ -192,8 +192,12 @@ onMounted(() => {
       </Button>
     </div>
 
-    <div v-if="isLoading" class="flex items-center justify-center min-h-screen">
-      <div class="text-muted-foreground">{{ t('common.loading') }}</div>
+    <div v-if="isLoading" class="p-8 max-w-4xl mx-auto space-y-6">
+      <div class="h-7 w-48 bg-muted rounded animate-pulse mx-auto" />
+      <div class="space-y-2">
+        <div class="h-10 w-full bg-muted rounded animate-pulse" />
+        <div v-for="i in 8" :key="i" class="h-12 w-full bg-muted/50 rounded animate-pulse" />
+      </div>
     </div>
 
     <div v-else-if="net" ref="reportRef" class="p-8 max-w-4xl mx-auto">

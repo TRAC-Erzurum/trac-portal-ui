@@ -10,6 +10,12 @@ import { useLocaleStore } from './stores/locale'
 const app = createApp(App)
 const pinia = createPinia()
 
+app.config.errorHandler = (err, instance, info) => {
+  console.error('Global error:', err)
+  console.error('Component:', instance)
+  console.error('Info:', info)
+}
+
 app.use(pinia)
 app.use(router)
 app.use(i18n)

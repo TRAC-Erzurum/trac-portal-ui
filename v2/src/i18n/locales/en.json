@@ -7,8 +7,12 @@
     "operatorAlreadyExists": "This call sign is already registered",
     "alreadyExists": "This record already exists",
     "unauthorized": "Please log in",
-    "forbidden": "You don't have permission for this action",
-    "serverError": "Server error occurred",
+    "forbidden": "Access Denied",
+    "forbiddenDescription": "You don't have permission to perform this action.",
+    "serverError": "Something Went Wrong",
+    "serverErrorDescription": "An unexpected error occurred. Please try again later.",
+    "somethingWentWrong": "Something went wrong",
+    "tryAgainLater": "Please refresh the page and try again.",
     "networkError": "Connection error",
     "captchaRequired": "CAPTCHA verification required",
     "captchaFailed": "CAPTCHA verification failed",
@@ -16,7 +20,9 @@
     "cannotResetHigherRolePassword": "Cannot reset password for higher role user",
     "operatorChangeNotAllowed": "Operator change is not allowed",
     "pleaseWaitForCaptcha": "Please wait for verification",
-    "guestRestriction": "Dear guest, please contact administrators to access this feature"
+    "guestRestriction": "Dear guest, please contact administrators to access this feature",
+    "superAdminRoleCannotBeAssigned": "Super admin role cannot be assigned",
+    "superAdminRoleCannotBeChanged": "Super admin role cannot be changed"
   },
   "auth": {
     "login": "Login",
@@ -354,6 +360,7 @@
     "temporaryPasswordGenerated": "Temporary Password Generated",
     "temporaryPasswordDescription": "A temporary password has been generated for {callSign}. The user will be required to change their password on first login.",
     "temporaryPasswordWarning": "Copy this password now. You will not be able to access it after closing this dialog.",
+    "copyPassword": "Copy Password",
     "passwordCopied": "Password copied to clipboard",
     "passwordCopiedAndClose": "Copied, Close",
     "roles": {
@@ -374,6 +381,8 @@
     "back": "Back",
     "next": "Next",
     "submit": "Submit",
+    "retry": "Retry",
+    "goHome": "Go to Home",
     "comingSoon": "Coming soon...",
     "minutesAgo": "{count} minute(s) ago",
     "hoursAgo": "{count} hour(s) ago",

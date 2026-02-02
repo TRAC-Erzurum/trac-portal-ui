@@ -344,8 +344,7 @@ const exportToPdf = async () => {
 }
 
 onMounted(() => {
-  fetchNet()
-  fetchAttendees()
+  Promise.all([fetchNet(), fetchAttendees()])
 })
 </script>
 

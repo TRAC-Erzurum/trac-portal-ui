@@ -100,6 +100,18 @@ const router = createRouter({
       meta: { requiresAuth: false }
     },
     {
+      path: '/403',
+      name: 'forbidden',
+      component: () => import('@/pages/ForbiddenPage.vue'),
+      meta: { requiresAuth: false }
+    },
+    {
+      path: '/500',
+      name: 'error',
+      component: () => import('@/pages/ErrorPage.vue'),
+      meta: { requiresAuth: false }
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/pages/NotFoundPage.vue')

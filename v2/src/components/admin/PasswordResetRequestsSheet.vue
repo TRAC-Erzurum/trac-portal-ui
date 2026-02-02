@@ -165,7 +165,7 @@ const formatRelativeTime = (dateStr: string) => {
                 readonly 
                 class="font-mono tracking-wider"
               />
-              <Button variant="outline" size="icon" @click="copyPassword(approved.password)">
+              <Button variant="outline" size="icon" @click="copyPassword(approved.password)" :aria-label="t('admin.copyPassword')">
                 <Copy class="h-4 w-4" />
               </Button>
             </div>

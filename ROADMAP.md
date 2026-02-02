@@ -61,7 +61,8 @@
 | Landing | `/` | DONE | Unauthenticated homepage |
 | Privacy Policy | `/privacy` | DONE | Placeholder, content TODO |
 | Not Found | `/404` | DONE | Minimal |
-| Forbidden | `/403` | TODO | Minimal |
+| Forbidden | `/403` | DONE | Minimal |
+| Server Error | `/500` | DONE | Minimal |
 
 ***
 
@@ -151,12 +152,12 @@
 * \[x] Profile picture upload (Account page)
 * \[x] Password reset requests management (dashboard alert + sheet)
 
-### Phase 8: Polish
+### Phase 8: Polish - DONE
 
-* \[ ] Error boundaries
-* \[ ] Skeleton loaders
-* \[ ] Accessibility audit
-* \[ ] Performance optimization
+* \[x] Error boundaries (global error handler, ErrorBoundary component, 403/500 pages)
+* \[x] Skeleton loaders (Skeleton component, improved loading states)
+* \[x] Accessibility audit (ARIA labels, alt texts, focus management)
+* \[x] Performance optimization (vendor chunk splitting, lazy loading)
 
 ### Phase 9: Migration
 
@@ -271,6 +272,30 @@ These are potential future enhancements beyond the core modernization:
 ***
 
 ## Changelog
+
+### 2026-02-01 (Session 6)
+
+* Phase 8 (Polish) completed:
+  * Error boundaries: Global error handler in main.ts, ErrorBoundary component
+  * Error pages: 403 Forbidden, 500 Server Error pages with retry/home buttons
+  * Skeleton component added to ui library
+  * Improved skeleton loaders for NetReportPage
+  * Accessibility: ARIA labels for icon-only buttons (theme/lang toggles, copy buttons)
+  * Accessibility: alt attributes for images (UserAvatar)
+  * Performance: Vite build config with manual chunks (vue-vendor, ui-vendor)
+* Activity system simplified:
+  * Removed less useful activity types (net.updated, net.deleted, attendee.updated, etc.)
+  * Kept only meaningful activities: net.created, net.started, net.ended, attendee.added
+  * Cleaned up backend services and frontend ActivityFeed
+* Temporary password UX improved:
+  * Removed dialog, created dedicated ForceChangePasswordPage
+  * Router guards enforce password change before accessing any page
+* Default avatar system:
+  * Added default-avatar.png
+  * Created UserAvatar component with error fallback
+  * Applied consistently across all avatar displays
+* Operator list role filter added
+* i18n updates for error pages and accessibility labels
 
 ### 2026-01-31 (Session 5)
 
