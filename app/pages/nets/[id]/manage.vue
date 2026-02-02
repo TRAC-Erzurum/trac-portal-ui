@@ -213,16 +213,14 @@
             </v-card-title>
 
             <v-card-text>
-              <div class="search-container my-6">
-                <NewAttendeeModal
-                  v-if="canAddAttendee"
-                  v-model="showNewAttendeeModal"
-                  :net-id="net?.id"
-                  :existing-call-signs="attendees?.map((a) => a.callSign)"
-                  :attendees="attendees"
-                  @add-attendee="addAttendee"
-                />
-              </div>
+              <AddAttendeePanel
+                v-if="canAddAttendee"
+                :net-id="net?.id"
+                :existing-call-signs="attendees?.map((a) => a.callSign)"
+                :attendees="attendees"
+                class="mb-6"
+                @add-attendee="addAttendee"
+              />
 
               <hr class="my-4" v-if="attendees?.length > 0" />
               <v-data-table
@@ -580,7 +578,7 @@ import { useCardStyles } from '~/composables/useCardStyles'
 import { useErrorMessage } from '~/composables/useErrorMessage'
 import EditModal from '~/components/EditModal.vue'
 import { useTruncate } from '~/composables/useTruncate'
-import NewAttendeeModal from '~/components/NewAttendeeModal.vue'
+import AddAttendeePanel from '~/components/AddAttendeePanel.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -611,7 +609,6 @@ const editType = ref(null)
 const editItem = ref(null)
 const editLoading = ref(false)
 const cellRefs = ref({})
-const showNewAttendeeModal = ref(false)
 const addOperatorAsAttendee = ref(true)
 const attendeeHeaders = ref([
   {

@@ -3,7 +3,7 @@
     <div class="text-subtitle-2 text-medium-emphasis mb-3" v-if="!noLabel">
       {{ t('qth.title') }}
     </div>
-    <v-row>
+    <v-row :dense="dense">
       <v-col cols="12" sm="4">
         <v-autocomplete
           v-model="countryModel"
@@ -11,6 +11,7 @@
           :label="t('qth.country')"
           variant="outlined"
           hide-details
+          :density="dense ? 'compact' : 'default'"
           :filter="customFilter"
           @blur="handleCountryBlur"
           hide-no-data
@@ -24,6 +25,7 @@
           :label="t('qth.city')"
           variant="outlined"
           hide-details
+          :density="dense ? 'compact' : 'default'"
           :filter="customFilter"
           @blur="handleCityBlur"
           hide-no-data
@@ -39,6 +41,7 @@
           :label="t('qth.district')"
           variant="outlined"
           hide-details
+          :density="dense ? 'compact' : 'default'"
           :filter="customFilter"
           @blur="handleDistrictBlur"
           hide-no-data
@@ -66,6 +69,10 @@ const props = defineProps({
     }),
   },
   noLabel: {
+    type: Boolean,
+    default: false,
+  },
+  dense: {
     type: Boolean,
     default: false,
   },
