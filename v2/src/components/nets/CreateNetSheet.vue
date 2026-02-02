@@ -78,7 +78,7 @@ const searchOperators = debounce(async (query: string) => {
   }
   isSearchingOperators.value = true
   try {
-    const response = await api.get<Operator[]>(`/operator/search?q=${encodeURIComponent(query)}`)
+    const response = await api.get<Operator[]>(`/operator/search?q=${encodeURIComponent(query)}&sortBy=managed`)
     operatorSuggestions.value = (response || []).filter(op => {
       const role = op.user?.role
       return role && role !== 'guest'

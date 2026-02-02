@@ -235,13 +235,19 @@
     "attended": "Katılım",
     "managed": "Yönetim",
     "streak": "Seri",
+    "callSign": "Çağrı İşareti",
+    "name": "Ad Soyad",
+    "qth": "QTH",
     "readability": "Okunabilirlik",
     "signal": "Sinyal",
     "recentNets": "Son Çevrimler",
     "noNets": "Henüz çevrim kaydı yok",
     "attendedLabel": "Katıldı",
     "managedLabel": "Yönetti",
-    "editOperator": "Operatör Bilgilerini Düzenle"
+    "editOperator": "Operatör Bilgilerini Düzenle",
+    "membershipAll": "Tümü",
+    "membershipRegistered": "Kayıtlı",
+    "membershipUnregistered": "Kayıtsız"
   },
   "nets": {
     "searchPlaceholder": "Çevrim adı veya operatör ara...",
@@ -264,7 +270,7 @@
     "filterAll": "Tümü",
     "filterActive": "Aktif",
     "filterPending": "Planlandı",
-    "filterCompleted": "Tamamlanan",
+    "filterCompleted": "Tamamlandı",
     "dateAll": "Tüm Tarihler",
     "dateWeek": "Bu Hafta",
     "dateMonth": "Bu Ay",
@@ -302,6 +308,17 @@
     "netRestarted": "Çevrim yeniden başlatıldı",
     "netUpdated": "Çevrim güncellendi",
     "editNet": "Çevrimi Düzenle",
-    "editNetDescription": "Çevrim bilgilerini güncelleyin"
+    "editNetDescription": "Çevrim bilgilerini güncelleyin",
+    "viewReport": "Raporu Görüntüle",
+    "export": "Dışa Aktar"
+  },
+  "netReport": {
+    "title": "Çevrim Raporu",
+    "noAttendees": "Bu çevrimde hiç katılımcı yok!",
+    "totalAttendees": "Toplam Katılımcı",
+    "operator": "Çevrim Operatörü",
+    "date": "Tarih",
+    "joinTime": "Katılım Zamanı",
+    "exportSuccess": "Dışa aktarma başarılı"
   }
 }

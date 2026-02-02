@@ -63,6 +63,12 @@ const router = createRouter({
       meta: { requiresAuth: true, minRole: 'volunteer' }
     },
     {
+      path: '/nets/:id/report',
+      name: 'net-report',
+      component: () => import('@/pages/nets/NetReportPage.vue'),
+      meta: { requiresAuth: true, minRole: 'volunteer' }
+    },
+    {
       path: '/operators',
       name: 'operators',
       component: () => import('@/pages/operators/OperatorsPage.vue'),

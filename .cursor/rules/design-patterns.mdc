@@ -37,14 +37,19 @@ globs: ["v2/src/**/*.vue"]
 
 ## Button Consistency
 
+### All Action Buttons
+- **ALL buttons use `variant="outline"`** - No solid/filled buttons
+- This creates a cohesive, modern, minimal appearance
+- Icons inside buttons should match the action (filled icons for Start/Stop)
+
 ### Edit/Action Buttons in Sections
 - Use `variant="ghost" size="icon"` for section edit buttons
 - Position on the right side of section headers
 - Use Pencil icon for edit actions
 
 ### Form Submit Buttons
-- Primary action: `<Button type="submit">{{ label }}</Button>`
-- Secondary action: `<Button variant="outline">{{ label }}</Button>`
+- Primary action: `<Button type="submit" variant="outline">{{ label }}</Button>`
+- Cancel action: `<Button type="button" variant="outline">{{ label }}</Button>`
 - Position: `<div class="flex justify-end gap-3">`
 
 ## Form Design

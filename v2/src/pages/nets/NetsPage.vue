@@ -48,7 +48,6 @@ const isLoadingMore = ref(false)
 const search = ref('')
 const statusFilter = ref<NetStatus>('all')
 const dateFilter = ref<DateFilter>('all')
-const page = ref(1)
 const pageSize = 12
 const hasMore = ref(true)
 const showCreateSheet = ref(false)
@@ -59,6 +58,13 @@ const canCreate = computed(() => {
   return authStore.hasRole('member')
 })
 
+interface NetResponse {
+  data: Net[]
+  total: number
+  limit: number
+  offset: number
+}
+
 const fetchNets = async (append = false) => {
   if (append) {
     isLoadingMore.value = true
@@ -67,55 +73,26 @@ const fetchNets = async (append = false) => {
   }
 
   try {
-    const response = await api.get<Net[]>('/net')
-    let filtered = response
+    const offset = append ? nets.value.length : 0
+    const params = new URLSearchParams()
+    
+    if (search.value) params.set('search', search.value)
+    if (statusFilter.value !== 'all') params.set('status', statusFilter.value)
+    if (dateFilter.value !== 'all') params.set('dateFilter', dateFilter.value)
+    params.set('limit', String(pageSize))
+    params.set('offset', String(offset))
 
-    if (search.value) {
-      const searchLower = search.value.toLowerCase()
-      filtered = filtered.filter(n => 
-        n.name.toLowerCase().includes(searchLower) ||
-        n.operator.callSign.toLowerCase().includes(searchLower)
-      )
-    }
-
-    if (statusFilter.value !== 'all') {
-      filtered = filtered.filter(n => {
-        if (statusFilter.value === 'active') return n.startedAt && !n.endedAt
-        if (statusFilter.value === 'pending') return !n.startedAt
-        if (statusFilter.value === 'completed') return n.endedAt
-        return true
-      })
-    }
-
-    if (dateFilter.value !== 'all') {
-      const now = new Date()
-      let cutoff: Date
-      if (dateFilter.value === 'week') {
-        cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-      } else if (dateFilter.value === 'month') {
-        cutoff = new Date(now.getFullYear(), now.getMonth(), 1)
-      } else {
-        cutoff = new Date(now.getFullYear(), now.getMonth() - 2, 1)
-      }
-      filtered = filtered.filter(n => {
-        const netDate = n.startedAt ? new Date(n.startedAt) : new Date(n.endedAt || 0)
-        return netDate >= cutoff
-      })
-    }
-
-    total.value = filtered.length
-
-    const startIndex = append ? (page.value - 1) * pageSize : 0
-    const endIndex = page.value * pageSize
-    const paginatedData = filtered.slice(startIndex, endIndex)
+    const response = await api.get<NetResponse>(`/net?${params.toString()}`)
+    
+    total.value = response.total
 
     if (append) {
-      nets.value = [...nets.value, ...paginatedData]
+      nets.value = [...nets.value, ...response.data]
     } else {
-      nets.value = paginatedData
+      nets.value = response.data
     }
 
-    hasMore.value = nets.value.length < filtered.length
+    hasMore.value = nets.value.length < response.total
   } catch (error) {
     console.error('Failed to fetch nets:', error)
   } finally {
@@ -129,18 +106,15 @@ const handleSearch = () => {
     clearTimeout(searchTimeout)
   }
   searchTimeout = setTimeout(() => {
-    page.value = 1
     fetchNets()
   }, 300)
 }
 
 const handleFilterChange = () => {
-  page.value = 1
   fetchNets()
 }
 
 const loadMore = () => {
-  page.value++
   fetchNets(true)
 }
 
@@ -184,7 +158,6 @@ const formatDate = (dateStr: string | null) => {
 
 const handleNetCreated = () => {
   showCreateSheet.value = false
-  page.value = 1
   fetchNets()
 }
 
@@ -265,7 +238,7 @@ onMounted(() => {
           class="w-full text-left p-4 rounded-lg border transition-all group"
           :class="{
             'border-green-500/30 bg-green-500/5 hover:bg-green-500/10': getNetStatus(net) === 'active',
-            'border-yellow-500/30 bg-yellow-500/5 hover:bg-yellow-500/10': getNetStatus(net) === 'pending',
+            'border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10': getNetStatus(net) === 'pending',
             'border-border/50 hover:border-border hover:bg-muted/30': getNetStatus(net) === 'completed',
             'opacity-75': getNetStatus(net) === 'completed'
           }"
@@ -277,7 +250,7 @@ onMounted(() => {
                 <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
               </span>
               <span v-else-if="getNetStatus(net) === 'pending'" class="relative flex h-3 w-3">
-                <span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
               </span>
               <CheckCircle2 
                 v-else 

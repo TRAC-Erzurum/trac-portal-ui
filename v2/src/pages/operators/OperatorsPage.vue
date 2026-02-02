@@ -6,6 +6,7 @@ import { Search, ChevronRight, Radio, Users } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { api } from '@/lib/api'
 
@@ -32,11 +33,14 @@ interface OperatorsResponse {
 const { t } = useI18n()
 const router = useRouter()
 
+type MembershipFilter = 'all' | 'registered' | 'unregistered'
+
 const operators = ref<Operator[]>([])
 const total = ref(0)
 const isLoading = ref(true)
 const isLoadingMore = ref(false)
 const search = ref('')
+const membershipFilter = ref<MembershipFilter>('all')
 const page = ref(1)
 const pageSize = 12
 const hasMore = ref(true)
@@ -51,9 +55,13 @@ const fetchOperators = async (append = false) => {
   }
 
   try {
-    const response = await api.get<OperatorsResponse>(
-      `/operator?pageNumber=${page.value}&pageSize=${pageSize}&search=${encodeURIComponent(search.value)}`
-    )
+    const params = new URLSearchParams()
+    params.set('pageNumber', String(page.value))
+    params.set('pageSize', String(pageSize))
+    if (search.value) params.set('search', search.value)
+    if (membershipFilter.value !== 'all') params.set('membership', membershipFilter.value)
+
+    const response = await api.get<OperatorsResponse>(`/operator?${params.toString()}`)
     
     if (append) {
       operators.value = [...operators.value, ...response.data]
@@ -109,7 +117,13 @@ const getQth = (op: Operator) => {
   return parts.join(', ')
 }
 
+const handleFilterChange = () => {
+  page.value = 1
+  fetchOperators()
+}
+
 watch(search, handleSearch)
+watch(membershipFilter, handleFilterChange)
 
 onMounted(() => {
   fetchOperators()
@@ -119,13 +133,26 @@ onMounted(() => {
 <template>
   <AppLayout :title="t('nav.operators')">
     <div class="space-y-4">
-      <div class="relative max-w-sm">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          v-model="search"
-          :placeholder="t('operators.searchPlaceholder')"
-          class="pl-9"
-        />
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="relative w-full sm:flex-1 sm:max-w-xs">
+          <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            v-model="search"
+            :placeholder="t('operators.searchPlaceholder')"
+            class="pl-9"
+          />
+        </div>
+
+        <Select v-model="membershipFilter">
+          <SelectTrigger class="flex-1 sm:flex-none sm:w-[140px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{{ t('operators.membershipAll') }}</SelectItem>
+            <SelectItem value="registered">{{ t('operators.membershipRegistered') }}</SelectItem>
+            <SelectItem value="unregistered">{{ t('operators.membershipUnregistered') }}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       <p v-if="!isLoading" class="text-sm text-muted-foreground">

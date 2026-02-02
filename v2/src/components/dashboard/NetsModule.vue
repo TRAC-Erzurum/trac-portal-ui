@@ -113,7 +113,7 @@ const getNetClasses = (status: 'active' | 'pending' | 'completed') => {
     case 'active':
       return 'border-green-500/30 bg-green-500/5 hover:bg-green-500/10'
     case 'pending':
-      return 'border-yellow-500/30 bg-yellow-500/5 hover:bg-yellow-500/10'
+      return 'border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10'
     case 'completed':
       return 'border-border/50 hover:border-border hover:bg-muted/30'
   }
@@ -161,7 +161,7 @@ const getStatusLabel = (status: 'active' | 'pending' | 'completed') => {
                 <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-green-500"></span>
               </span>
               <span v-else-if="net.status === 'pending'" class="relative flex h-2.5 w-2.5">
-                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
+                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-500"></span>
               </span>
               <span v-else class="relative flex h-2.5 w-2.5">
                 <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-muted-foreground/50"></span>
@@ -174,7 +174,7 @@ const getStatusLabel = (status: 'active' | 'pending' | 'completed') => {
                   class="text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0"
                   :class="{
                     'bg-green-500/20 text-green-700 dark:text-green-400': net.status === 'active',
-                    'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400': net.status === 'pending',
+                    'bg-blue-500/20 text-blue-700 dark:text-blue-400': net.status === 'pending',
                     'bg-muted text-muted-foreground': net.status === 'completed'
                   }"
                 >

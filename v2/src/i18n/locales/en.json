@@ -235,13 +235,19 @@
     "attended": "Attended",
     "managed": "Managed",
     "streak": "Streak",
+    "callSign": "Call Sign",
+    "name": "Name",
+    "qth": "QTH",
     "readability": "Readability",
     "signal": "Signal",
     "recentNets": "Recent Nets",
     "noNets": "No net records yet",
     "attendedLabel": "Attended",
     "managedLabel": "Managed",
-    "editOperator": "Edit Operator Info"
+    "editOperator": "Edit Operator Info",
+    "membershipAll": "All",
+    "membershipRegistered": "Registered",
+    "membershipUnregistered": "Unregistered"
   },
   "nets": {
     "searchPlaceholder": "Search net name or operator...",
@@ -302,6 +308,17 @@
     "netRestarted": "Net restarted",
     "netUpdated": "Net updated",
     "editNet": "Edit Net",
-    "editNetDescription": "Update net details"
+    "editNetDescription": "Update net details",
+    "viewReport": "View Report",
+    "export": "Export"
+  },
+  "netReport": {
+    "title": "Net Report",
+    "noAttendees": "No attendees in this net!",
+    "totalAttendees": "Total Attendees",
+    "operator": "Net Operator",
+    "date": "Date",
+    "joinTime": "Join Time",
+    "exportSuccess": "Export successful"
   }
 }
