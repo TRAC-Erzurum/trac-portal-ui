@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Users, ChevronRight, CheckCircle2, Radio } from 'lucide-vue-next'
+import { Users, ChevronRight, CheckCircle2 } from 'lucide-vue-next'
 import { getFrequencyShort } from '@/constants/net'
 import { formatDateShort } from '@/lib/formatters'
 
