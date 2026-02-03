@@ -76,10 +76,10 @@ const handleSubmit = async () => {
   isSubmitting.value = true
   try {
     await api.patch(`/net/${props.netId}/attendee/${props.attendee.id}`, {
-      name: form.value.name || null,
-      country: form.value.country || null,
-      city: form.value.city || null,
-      district: form.value.district || null,
+      name: (form.value.name || '').trim() || null,
+      country: (form.value.country || '').trim() || null,
+      city: (form.value.city || '').trim() || null,
+      district: (form.value.district || '').trim() || null,
       readability: form.value.readability,
       signalStrength: form.value.signalStrength
     })

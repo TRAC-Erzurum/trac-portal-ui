@@ -264,14 +264,24 @@ These are potential future enhancements beyond the core modernization:
 
 ## Known Issues
 
-| Issue | Severity | Notes |
-|-------|----------|-------|
-| District name mismatch | Minor | Some DB records have Turkish chars (Palandöken) vs API (Palandoken) |
-| City trailing spaces | Minor | Some DB records have trailing spaces, fixed with `.trim()` in UI |
+*None open.* Previously resolved:
+
+| Issue | Resolution |
+|-------|------------|
+| District name mismatch | DB values are kept as-is (Turkish characters preserved). Migration only trims leading/trailing spaces. No conversion of Turkish chars to ASCII. |
+| City/district trailing spaces | Migration trims all operators and attendees. Backend trims on write (operator, attendee, auth). UI trims on submit. |
+
+**Prevention:** All write paths trim city, district, fullName, country; Turkish characters are never replaced. Migration `1748300000000-normalize-qth-trim-and-canonical` only applies TRIM.
 
 ***
 
 ## Changelog
+
+### 2026-02-02 (Known issues fix)
+
+* Known issues resolved:
+  * **City/district trailing spaces:** Migration `1748300000000-normalize-qth-trim-and-canonical` only trims city, district, fullName, country in operators and attendees. Turkish characters are never converted or replaced.
+  * **Prevention:** Operator service trims fullName, city, district, country on create and update; operator CSV import trims all fields; attendee and auth flows already trimmed. ROADMAP Known Issues section updated.
 
 ### 2026-02-01 (Session 6)
 

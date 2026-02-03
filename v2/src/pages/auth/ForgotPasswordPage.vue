@@ -27,7 +27,7 @@ async function handleSubmit() {
   
   try {
     await api.post('/auth/password-reset-request', {
-      callSign: callSign.value,
+      callSign: callSign.value.trim(),
       captchaToken: captchaToken.value || undefined
     })
     toast.success(t('auth.passwordResetRequestSent'))

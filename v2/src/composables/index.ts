@@ -1,1 +1,1 @@
-export { useAvatarUrl, getAvatarUrl } from './useAvatarUrl'
+export { useAvatarUrl, getAvatarUrl, DEFAULT_AVATAR } from './useAvatarUrl'

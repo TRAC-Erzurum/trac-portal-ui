@@ -56,12 +56,12 @@ async function handleSubmit() {
   isLoading.value = true
   try {
     await authStore.register({
-      email: email.value,
-      callSign: callSign.value,
+      email: email.value.trim(),
+      callSign: callSign.value.trim(),
       password: password.value,
-      fullName: fullName.value || undefined,
-      city: city.value || undefined,
-      district: district.value || undefined,
+      fullName: (fullName.value || '').trim() || undefined,
+      city: (city.value || '').trim() || undefined,
+      district: (district.value || '').trim() || undefined,
       country: t('form.country'),
       captchaToken: captchaToken.value || undefined
     })
