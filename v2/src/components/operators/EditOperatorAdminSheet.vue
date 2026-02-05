@@ -100,7 +100,7 @@ async function handleSubmit() {
         <SheetDescription>{{ operator.callSign }}</SheetDescription>
       </SheetHeader>
 
-      <form @submit.prevent="handleSubmit" class="mt-8 space-y-6">
+      <form @submit.prevent="handleSubmit" class="mt-6 space-y-6">
         <div class="space-y-2">
           <Label for="fullName">{{ t('form.fullName') }}</Label>
           <Input

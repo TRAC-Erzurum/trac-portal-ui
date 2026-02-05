@@ -93,7 +93,7 @@ async function handleSubmit() {
         <SheetDescription>{{ t('profile.editOperatorDesc') }}</SheetDescription>
       </SheetHeader>
 
-      <form @submit.prevent="handleSubmit" class="mt-8 space-y-6">
+      <form @submit.prevent="handleSubmit" class="mt-6 space-y-6">
         <div class="space-y-2">
           <Label for="city">{{ t('form.city') }}</Label>
           <Select v-model="city">

@@ -6,6 +6,7 @@ import UserMenu from './UserMenu.vue'
 import ThemeToggle from './ThemeToggle.vue'
 import LangToggle from './LangToggle.vue'
 import Breadcrumb from './Breadcrumb.vue'
+import HeaderBranchDropdown from './HeaderBranchDropdown.vue'
 
 interface BreadcrumbItem {
   label: string
@@ -46,7 +47,8 @@ const logoLoaded = ref(false)
         <header class="flex items-center justify-between mb-3 lg:mb-4">
           <h1 v-if="title" class="text-2xl lg:text-3xl font-bold">{{ title }}</h1>
           <slot v-else name="title" />
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-2">
+            <HeaderBranchDropdown />
             <ThemeToggle />
             <LangToggle />
             <div class="ml-2">

@@ -35,6 +35,8 @@ const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
     items.push({ label: t('nav.nets'), to: '/nets' })
   } else if (path.startsWith('/operators/')) {
     items.push({ label: t('nav.operators'), to: '/operators' })
+  } else if (path.startsWith('/branches/')) {
+    items.push({ label: t('nav.branches'), to: '/branches' })
   }
 
   return items
@@ -49,6 +51,7 @@ const currentPageLabel = computed(() => {
   
   if (path === '/nets') return t('nav.nets')
   if (path === '/operators') return t('nav.operators')
+  if (path === '/branches') return t('nav.branches')
   if (path === '/account') return t('nav.account')
   
   return null

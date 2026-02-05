@@ -75,7 +75,7 @@ async function handleSubmit() {
         <SheetDescription>{{ t('profile.changePasswordDesc') }}</SheetDescription>
       </SheetHeader>
 
-      <form @submit.prevent="handleSubmit" class="mt-8 space-y-4">
+      <form @submit.prevent="handleSubmit" class="mt-6 space-y-4">
         <div class="space-y-2">
           <Label for="currentPassword">{{ t('profile.currentPassword') }}</Label>
           <PasswordInput

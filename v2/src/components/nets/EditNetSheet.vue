@@ -154,7 +154,7 @@ async function handleSubmit() {
         <SheetDescription>{{ t('netDetail.editNetDescription') }}</SheetDescription>
       </SheetHeader>
 
-      <form @submit.prevent="handleSubmit" class="mt-8 space-y-6">
+      <form @submit.prevent="handleSubmit" class="mt-6 space-y-6">
         <div class="space-y-2">
           <Label for="name">{{ t('nets.netName') }}</Label>
           <Input

@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Home, Radio, Users } from 'lucide-vue-next'
+import { Home, Radio, Users, Building2 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 
 const { t } = useI18n()
@@ -15,6 +15,7 @@ const navItems = computed(() => [
   { icon: Home, label: t('nav.dashboard'), route: '/dashboard', restricted: false },
   { icon: Radio, label: t('nav.nets'), route: '/nets', restricted: true },
   { icon: Users, label: t('nav.operators'), route: '/operators', restricted: true },
+  { icon: Building2, label: t('nav.branches'), route: '/branches', restricted: true },
 ])
 
 function isActive(path: string) {
@@ -26,8 +27,8 @@ function isRestricted(item: { restricted: boolean }) {
 }
 
 function handleNavClick(item: { route: string; restricted: boolean }, event: Event) {
+  event.preventDefault()
   if (isRestricted(item)) {
-    event.preventDefault()
     toast.error(t('error.guestRestriction'))
     return
   }

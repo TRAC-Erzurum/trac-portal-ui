@@ -88,6 +88,18 @@ const router = createRouter({
       meta: { requiresAuth: true, minRole: 'volunteer' }
     },
     {
+      path: '/branches',
+      name: 'branches',
+      component: () => import('@/pages/branches/BranchesPage.vue'),
+      meta: { requiresAuth: true, minRole: 'volunteer' }
+    },
+    {
+      path: '/branches/:id',
+      name: 'branch-detail',
+      component: () => import('@/pages/branches/BranchDetailPage.vue'),
+      meta: { requiresAuth: true, minRole: 'volunteer' }
+    },
+    {
       path: '/privacy',
       name: 'privacy',
       component: () => import('@/pages/PrivacyPage.vue'),
