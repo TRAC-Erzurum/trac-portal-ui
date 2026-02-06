@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { ChevronRight, CheckCircle2, Users } from 'lucide-vue-next'
+import { Building2, CheckCircle2, ChevronRight, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useDateFormat } from '@/composables'
 
@@ -113,11 +113,13 @@ const secondaryInfo = computed(() => {
         <div class="flex items-start justify-between gap-2">
           <div class="flex-1 min-w-0">
             <p :class="compact ? 'font-medium' : 'font-semibold'" class="truncate">{{ name }}</p>
-            <div v-if="showBranch && branchName" class="flex items-center gap-1.5 mt-0.5">
-              <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-700 dark:text-blue-400 inline-flex items-center gap-1">
+            <div v-if="showBranch && branchName" class="flex items-center gap-2 mt-1 min-w-0">
+              <Building2 class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <span class="text-xs text-muted-foreground shrink-0">{{ t('nets.branch') }}:</span>
+              <span class="text-sm font-medium truncate">
                 <template v-if="!branchIsHeadquarters && branchCallSign">
                   <span class="font-mono">{{ branchCallSign }}</span>
-                  <span>·</span>
+                  <span class="text-muted-foreground"> · </span>
                 </template>
                 <span>{{ branchName }}</span>
               </span>

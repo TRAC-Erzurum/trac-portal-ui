@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { Building2, Check, Key, X } from 'lucide-vue-next'
+import { Building2, Check, CheckCircle2, ChevronRight, Key, X } from 'lucide-vue-next'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
 import { useDateFormat } from '@/composables'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
@@ -16,7 +17,7 @@ interface PendingMembership {
   id: string
   userId: string
   branchId: string
-  user?: { id: string; fullName?: string; operator?: { callSign?: string } }
+  user?: { id: string; fullName?: string; operator?: { id?: string; callSign?: string } }
   branch?: { id: string; name: string }
   createdAt: string
 }
@@ -42,6 +43,7 @@ interface AdminPendingResponse {
 }
 
 const { t } = useI18n()
+const router = useRouter()
 const { formatDateSimple } = useDateFormat()
 const isLoading = ref(true)
 const membershipRequests = ref<BranchRequests[]>([])
@@ -50,6 +52,15 @@ const processingMembershipId = ref<string | null>(null)
 const processingPasswordResetId = ref<string | null>(null)
 const rejectReason = ref<Record<string, string>>({})
 const approveRole = ref<Record<string, string>>({})
+
+const showApproveDialog = ref(false)
+const showRejectDialog = ref(false)
+const showApprovePwDialog = ref(false)
+const showRejectPwDialog = ref(false)
+const pendingApprove = ref<{ branchId: string; userId: string; membershipId: string } | null>(null)
+const pendingReject = ref<{ branchId: string; userId: string; membershipId: string } | null>(null)
+const pendingApprovePwId = ref<string | null>(null)
+const pendingRejectPwId = ref<string | null>(null)
 
 async function fetchPending() {
   isLoading.value = true
@@ -65,12 +76,27 @@ async function fetchPending() {
   }
 }
 
-async function approveMembership(branchId: string, userId: string, membershipId: string) {
+function openApproveDialog(branchId: string, userId: string, membershipId: string) {
+  pendingApprove.value = { branchId, userId, membershipId }
+  showApproveDialog.value = true
+}
+
+function openRejectDialog(branchId: string, userId: string, membershipId: string) {
+  pendingReject.value = { branchId, userId, membershipId }
+  showRejectDialog.value = true
+}
+
+async function confirmApproveMembership() {
+  if (!pendingApprove.value) return
+  const { branchId, userId, membershipId } = pendingApprove.value
+  const role = approveRole.value[membershipId]
+  if (!role) return
   processingMembershipId.value = membershipId
+  showApproveDialog.value = false
+  pendingApprove.value = null
   try {
-    const role = approveRole.value[membershipId] || 'member'
     await api.patch(`/branches/${branchId}/members/${userId}/approve`, { role })
-    toast.success(t('admin.roleUpdated') || 'Approved')
+    toast.success(t('admin.roleUpdated'))
     await fetchPending()
   } catch (e) {
     const err = e as ApiError
@@ -80,13 +106,16 @@ async function approveMembership(branchId: string, userId: string, membershipId:
   }
 }
 
-async function rejectMembership(branchId: string, userId: string, membershipId: string) {
+async function confirmRejectMembership() {
+  if (!pendingReject.value) return
+  const { branchId, userId, membershipId } = pendingReject.value
   processingMembershipId.value = membershipId
+  showRejectDialog.value = false
+  const reason = rejectReason.value[membershipId] || undefined
+  pendingReject.value = null
   try {
-    await api.patch(`/branches/${branchId}/members/${userId}/reject`, {
-      rejectionReason: rejectReason.value[membershipId] || undefined,
-    })
-    toast.success(t('admin.reject') + ' OK')
+    await api.patch(`/branches/${branchId}/members/${userId}/reject`, { rejectionReason: reason })
+    toast.success(t('admin.membershipRejected'))
     await fetchPending()
   } catch (e) {
     const err = e as ApiError
@@ -96,7 +125,21 @@ async function rejectMembership(branchId: string, userId: string, membershipId: 
   }
 }
 
-async function approvePasswordReset(requestId: string) {
+function openApprovePwDialog(requestId: string) {
+  pendingApprovePwId.value = requestId
+  showApprovePwDialog.value = true
+}
+
+function openRejectPwDialog(requestId: string) {
+  pendingRejectPwId.value = requestId
+  showRejectPwDialog.value = true
+}
+
+async function confirmApprovePasswordReset() {
+  const requestId = pendingApprovePwId.value
+  if (!requestId) return
+  showApprovePwDialog.value = false
+  pendingApprovePwId.value = null
   processingPasswordResetId.value = requestId
   try {
     await api.post<{ newPassword: string }>(`/auth/password-reset-requests/${requestId}/approve`)
@@ -110,7 +153,11 @@ async function approvePasswordReset(requestId: string) {
   }
 }
 
-async function rejectPasswordReset(requestId: string) {
+async function confirmRejectPasswordReset() {
+  const requestId = pendingRejectPwId.value
+  if (!requestId) return
+  showRejectPwDialog.value = false
+  pendingRejectPwId.value = null
   processingPasswordResetId.value = requestId
   try {
     await api.post(`/auth/password-reset-requests/${requestId}/reject`)
@@ -129,50 +176,128 @@ function getMemberLabel(m: PendingMembership): string {
   return m.user?.fullName || m.userId.slice(0, 8)
 }
 
+function getOperatorProfilePath(m: PendingMembership): string | null {
+  const id = m.user?.operator?.id
+  return id ? `/operators/${id}` : null
+}
+
+function goToOperatorProfile(m: PendingMembership) {
+  const path = getOperatorProfilePath(m)
+  if (path) router.push(path)
+}
+
+const branchesWithMembershipRequests = computed(() =>
+  membershipRequests.value.filter((b) => b.pendingMemberships.length > 0)
+)
+const totalPendingCount = computed(() => {
+  const membership = branchesWithMembershipRequests.value.reduce(
+    (sum, b) => sum + b.pendingMemberships.length,
+    0
+  )
+  return membership + passwordResetRequests.value.length
+})
+const hasAnyRequests = computed(() => totalPendingCount.value > 0)
+const membershipCount = computed(() =>
+  branchesWithMembershipRequests.value.reduce((s, b) => s + b.pendingMemberships.length, 0)
+)
+
+function hasSelectedRole(membershipId: string): boolean {
+  return !!approveRole.value[membershipId]
+}
+
 onMounted(fetchPending)
 </script>
 
 <template>
   <AppLayout :title="t('admin.pendingRequests')">
-    <p class="text-sm text-muted-foreground mb-6">
-      {{ t('admin.pendingRequestsDescription') }}
-    </p>
-
-    <div v-if="isLoading" class="space-y-6">
-      <div class="h-32 bg-muted rounded animate-pulse" />
-      <div class="h-48 bg-muted rounded animate-pulse" />
+    <!-- Loading -->
+    <div v-if="isLoading" class="grid grid-cols-1 gap-8 xl:grid-cols-2">
+      <div class="space-y-4">
+        <div class="h-5 w-40 bg-muted rounded-md animate-pulse" />
+        <div class="h-4 w-full bg-muted rounded-md animate-pulse" />
+        <div class="space-y-2">
+          <div v-for="i in 3" :key="i" class="h-20 rounded-lg border border-border bg-muted/30 animate-pulse" />
+        </div>
+      </div>
+      <div class="space-y-4">
+        <div class="h-5 w-44 bg-muted rounded-md animate-pulse" />
+        <div class="h-4 w-full bg-muted rounded-md animate-pulse" />
+        <div class="space-y-2">
+          <div v-for="i in 2" :key="i" class="h-16 rounded-lg border border-border bg-muted/30 animate-pulse" />
+        </div>
+      </div>
     </div>
 
-    <template v-else>
-      <section v-if="membershipRequests.some((b) => b.pendingMemberships.length > 0)" class="mb-8">
-        <h2 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+    <!-- Empty -->
+    <div v-else-if="!hasAnyRequests" class="py-8">
+      <p class="text-sm text-muted-foreground flex items-center gap-2">
+        <CheckCircle2 class="h-4 w-4 shrink-0" />
+        {{ t('admin.allCaughtUp') }}
+      </p>
+    </div>
+
+    <!-- Content -->
+    <div v-else class="grid grid-cols-1 gap-8 xl:grid-cols-2">
+      <!-- Membership -->
+      <section>
+        <h2 class="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
           <Building2 class="h-4 w-4" />
           {{ t('admin.membershipRequests') }}
+          <span v-if="membershipCount > 0" class="font-normal text-muted-foreground/80">({{ membershipCount }})</span>
         </h2>
-        <div class="space-y-6">
+        <p class="text-xs text-muted-foreground mb-4">
+          {{ t('admin.membershipRequestsDescription') }}
+        </p>
+
+        <div v-if="branchesWithMembershipRequests.length > 0" class="space-y-3">
           <div
-            v-for="branch in membershipRequests.filter((b) => b.pendingMemberships.length > 0)"
+            v-for="branch in branchesWithMembershipRequests"
             :key="branch.branchId"
-            class="border border-border rounded-lg p-4"
+            class="rounded-lg border border-border overflow-hidden"
           >
-            <h3 class="font-medium mb-3">{{ branch.branchName }}</h3>
-            <ul class="space-y-3">
+            <p class="border-b border-border px-3 py-2 text-sm font-medium text-foreground">
+              {{ branch.branchName }}
+            </p>
+            <ul class="divide-y divide-border/50">
               <li
                 v-for="m in branch.pendingMemberships"
                 :key="m.id"
-                class="flex flex-wrap items-center gap-3 py-2 border-b border-border/50 last:border-0"
+                class="px-3 py-3 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,2fr)] gap-x-4 gap-y-2 items-start"
               >
-                <div class="min-w-0 flex-1">
-                  <p class="font-medium">{{ getMemberLabel(m) }}</p>
-                  <p class="text-xs text-muted-foreground">{{ formatDateSimple(m.createdAt) }}</p>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                  <Select
-                    :model-value="approveRole[m.id] || 'member'"
-                    @update:model-value="(v) => (approveRole[m.id] = String(v ?? 'member'))"
+                <!-- Sütun 1 - Satır 1: Operatör etiketi + çağrı işareti + ad + tarih -->
+                <div class="min-w-0 flex flex-col gap-2">
+                  <label class="text-xs text-muted-foreground">{{ t('admin.operator') }}</label>
+                  <div class="min-w-0 text-sm leading-8">
+                    <span class="font-medium font-mono text-foreground">{{ getMemberLabel(m) }}</span>
+                    <template v-if="m.user?.fullName">
+                      <span class="text-muted-foreground mx-1">·</span>
+                      <span class="text-xs text-muted-foreground">{{ m.user.fullName }}</span>
+                    </template>
+                    <span class="text-muted-foreground mx-1">·</span>
+                    <span class="text-xs text-muted-foreground">{{ formatDateSimple(m.createdAt) }}</span>
+                  </div>
+                  <!-- Sütun 1 - Satır 2: Detay butonu -->
+                  <Button
+                    v-if="getOperatorProfilePath(m)"
+                    variant="ghost"
+                    size="sm"
+                    class="h-8 w-full justify-start px-2 text-xs -ml-2"
+                    @click="goToOperatorProfile(m)"
                   >
-                    <SelectTrigger class="w-28 h-8">
-                      <SelectValue :placeholder="t('admin.approveWithRole')" />
+                    <ChevronRight class="h-3.5 w-3.5 mr-1.5" />
+                    {{ t('common.detail') }}
+                  </Button>
+                  <div v-else class="h-8" />
+                </div>
+                <!-- Sütun 2 - Satır 1: Rol + Select, Satır 2: Onayla -->
+                <div class="flex flex-col gap-1.5 min-w-0">
+                  <label class="text-xs text-muted-foreground">{{ t('memberships.role') }}</label>
+                  <Select
+                    :model-value="approveRole[m.id] ?? ''"
+                    @update:model-value="(v) => (approveRole[m.id] = v ? String(v) : '')"
+                  >
+                    <SelectTrigger class="h-8 w-full">
+                      <SelectValue :placeholder="t('admin.selectRole')" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="volunteer">{{ t('roles.volunteer') }}</SelectItem>
@@ -184,26 +309,31 @@ onMounted(fetchPending)
                   <Button
                     variant="outline"
                     size="sm"
-                    :disabled="processingMembershipId === m.id"
-                    class="text-green-600 hover:text-green-700"
-                    @click="approveMembership(branch.branchId, m.userId, m.id)"
+                    class="h-8 w-full justify-start"
+                    :disabled="processingMembershipId === m.id || !hasSelectedRole(m.id)"
+                    @click="openApproveDialog(branch.branchId, m.userId, m.id)"
                   >
-                    <Check class="h-4 w-4 mr-1" />
+                    <Check class="h-4 w-4 mr-2" />
                     {{ t('admin.approve') }}
                   </Button>
+                </div>
+                <!-- Sütun 3 - Satır 1: Red sebebi + Input, Satır 2: Reddet -->
+                <div class="flex flex-col gap-1.5 min-w-0">
+                  <label :for="`reject-reason-${m.id}`" class="text-xs text-muted-foreground">{{ t('memberships.rejectionReason') }}</label>
                   <Input
+                    :id="`reject-reason-${m.id}`"
                     v-model="rejectReason[m.id]"
-                    class="w-40 h-8 text-xs"
-                    :placeholder="t('admin.rejectionReasonOptional')"
+                    class="h-8 w-full text-xs"
+                    :aria-label="t('admin.rejectionReasonOptional')"
                   />
                   <Button
                     variant="outline"
                     size="sm"
+                    class="h-8 w-full justify-start"
                     :disabled="processingMembershipId === m.id"
-                    class="text-red-600 hover:text-red-700"
-                    @click="rejectMembership(branch.branchId, m.userId, m.id)"
+                    @click="openRejectDialog(branch.branchId, m.userId, m.id)"
                   >
-                    <X class="h-4 w-4 mr-1" />
+                    <X class="h-4 w-4 mr-2" />
                     {{ t('admin.reject') }}
                   </Button>
                 </div>
@@ -211,34 +341,31 @@ onMounted(fetchPending)
             </ul>
           </div>
         </div>
+        <p v-else class="py-6 text-sm text-muted-foreground">
+          {{ t('admin.noMembershipRequests') }}
+        </p>
       </section>
 
-      <div
-        v-else
-        class="text-sm text-muted-foreground py-4"
-      >
-        {{ t('admin.noMembershipRequests') }}
-      </div>
-
-      <Separator class="my-8" />
-
+      <!-- Password reset -->
       <section>
-        <h2 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+        <h2 class="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
           <Key class="h-4 w-4" />
           {{ t('admin.passwordResetRequests') }}
+          <span v-if="passwordResetRequests.length > 0" class="font-normal text-muted-foreground/80">({{ passwordResetRequests.length }})</span>
         </h2>
-        <div v-if="passwordResetRequests.length === 0" class="text-sm text-muted-foreground py-4">
-          {{ t('admin.noPasswordResetRequests') }}
-        </div>
-        <ul v-else class="space-y-3">
-          <li
+        <p class="text-xs text-muted-foreground mb-4">
+          {{ t('admin.passwordResetRequestsDescription') }}
+        </p>
+
+        <div v-if="passwordResetRequests.length > 0" class="space-y-2">
+          <div
             v-for="req in passwordResetRequests"
             :key="req.id"
-            class="flex items-center justify-between gap-3 py-2 border-b border-border/50"
+            class="flex flex-col gap-2 rounded-lg border border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
           >
-            <div>
-              <p class="font-medium">{{ req.callSign }}</p>
-              <p v-if="req.operator?.fullName" class="text-xs text-muted-foreground">
+            <div class="min-w-0">
+              <p class="font-medium font-mono text-foreground">{{ req.callSign }}</p>
+              <p v-if="req.operator?.fullName" class="text-xs text-muted-foreground truncate">
                 {{ req.operator.fullName }}
               </p>
             </div>
@@ -247,26 +374,91 @@ onMounted(fetchPending)
                 variant="outline"
                 size="sm"
                 :disabled="processingPasswordResetId === req.id"
-                class="text-green-600 hover:text-green-700"
-                @click="approvePasswordReset(req.id)"
+                @click="openApprovePwDialog(req.id)"
               >
-                <Check class="h-4 w-4 mr-1" />
+                <Check class="h-4 w-4 mr-2" />
                 {{ t('admin.approve') }}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 :disabled="processingPasswordResetId === req.id"
-                class="text-red-600 hover:text-red-700"
-                @click="rejectPasswordReset(req.id)"
+                @click="openRejectPwDialog(req.id)"
               >
-                <X class="h-4 w-4 mr-1" />
+                <X class="h-4 w-4 mr-2" />
                 {{ t('admin.reject') }}
               </Button>
             </div>
-          </li>
-        </ul>
+          </div>
+        </div>
+        <p v-else class="py-6 text-sm text-muted-foreground">
+          {{ t('admin.noPasswordResetRequests') }}
+        </p>
       </section>
-    </template>
+    </div>
+
+    <!-- Membership approve confirm -->
+    <Dialog :open="showApproveDialog" @update:open="showApproveDialog = $event">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{{ t('admin.approveConfirmTitle') }}</DialogTitle>
+          <DialogDescription>{{ t('admin.approveConfirmDescription') }}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="showApproveDialog = false">{{ t('common.cancel') }}</Button>
+          <Button variant="outline" @click="confirmApproveMembership">
+            {{ t('admin.approve') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Membership reject confirm -->
+    <Dialog :open="showRejectDialog" @update:open="showRejectDialog = $event">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{{ t('admin.rejectConfirmTitle') }}</DialogTitle>
+          <DialogDescription>{{ t('admin.rejectConfirmDescription') }}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="showRejectDialog = false">{{ t('common.cancel') }}</Button>
+          <Button variant="outline" @click="confirmRejectMembership">
+            {{ t('admin.reject') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Password reset approve confirm -->
+    <Dialog :open="showApprovePwDialog" @update:open="showApprovePwDialog = $event">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{{ t('admin.approvePasswordResetConfirmTitle') }}</DialogTitle>
+          <DialogDescription>{{ t('admin.approvePasswordResetConfirmDescription') }}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="showApprovePwDialog = false">{{ t('common.cancel') }}</Button>
+          <Button variant="outline" @click="confirmApprovePasswordReset">
+            {{ t('admin.approve') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Password reset reject confirm -->
+    <Dialog :open="showRejectPwDialog" @update:open="showRejectPwDialog = $event">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{{ t('admin.rejectPasswordResetConfirmTitle') }}</DialogTitle>
+          <DialogDescription>{{ t('admin.rejectPasswordResetConfirmDescription') }}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="showRejectPwDialog = false">{{ t('common.cancel') }}</Button>
+          <Button variant="outline" @click="confirmRejectPasswordReset">
+            {{ t('admin.reject') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </AppLayout>
 </template>

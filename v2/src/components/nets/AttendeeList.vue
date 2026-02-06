@@ -104,9 +104,9 @@ onUnmounted(() => {
     <div v-for="i in 5" :key="i" class="h-16 bg-muted/30 rounded-lg animate-pulse" />
   </div>
 
-  <div v-else-if="attendees.length === 0" class="text-center py-12 text-muted-foreground">
-    <Users class="h-12 w-12 mx-auto mb-4 opacity-30" />
-    <p>{{ t('netDetail.noAttendees') }}</p>
+  <div v-else-if="attendees.length === 0" class="text-center py-4 text-muted-foreground">
+    <Users class="h-8 w-8 mx-auto mb-2 opacity-30" />
+    <p class="text-sm">{{ t('netDetail.noAttendees') }}</p>
   </div>
 
   <div

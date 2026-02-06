@@ -73,8 +73,11 @@ class ApiClient {
     })
   }
 
-  delete<T>(endpoint: string) {
-    return this.request<T>(endpoint, { method: 'DELETE' })
+  delete<T>(endpoint: string, data?: unknown) {
+    return this.request<T>(endpoint, {
+      method: 'DELETE',
+      body: data ? JSON.stringify(data) : undefined,
+    })
   }
 }
 

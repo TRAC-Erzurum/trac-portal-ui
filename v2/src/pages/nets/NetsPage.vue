@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Plus } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -18,6 +18,7 @@ import { NetCard, NetCardSkeleton, SearchInput } from '@/components/shared'
 import { usePersistedFilters } from '@/composables'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
+import { useBranchStore } from '@/stores/branch'
 
 interface Net {
   id: string
@@ -48,10 +49,13 @@ interface Branch {
 
 type NetStatus = 'all' | 'active' | 'pending' | 'completed'
 type DateFilter = 'all' | 'week' | 'month' | '3months'
+type BranchFilterValue = 'selected' | 'my-branches' | 'all'
 
 const { t, locale } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
+const branchStore = useBranchStore()
 
 const nets = ref<Net[]>([])
 const total = ref(0)
@@ -60,12 +64,19 @@ const isLoadingMore = ref(false)
 const search = ref('')
 const statusFilter = ref<NetStatus>('all')
 const dateFilter = ref<DateFilter>('all')
-const branchFilter = ref<string>('all')
+const branchFilter = ref<BranchFilterValue>('selected')
 const availableBranches = ref<Branch[]>([])
 const isLoadingBranches = ref(false)
 const pageSize = 12
 const hasMore = ref(true)
 const showCreateSheet = ref(false)
+
+const currentBranchId = computed(() => branchStore.currentBranch?.id ?? authStore.user?.currentBranchId ?? availableBranches.value[0]?.id ?? null)
+
+const currentBranchName = computed(() => {
+  const name = branchStore.currentBranch?.name ?? availableBranches.value.find(b => b.id === currentBranchId.value)?.name
+  return name ?? t('nets.branchFilterSelected')
+})
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -107,11 +118,13 @@ const fetchNets = async (append = false) => {
     if (search.value) params.set('search', search.value)
     if (statusFilter.value !== 'all') params.set('status', statusFilter.value)
     if (dateFilter.value !== 'all') params.set('dateFilter', dateFilter.value)
-    // Only send branchId if a specific branch is selected (not 'all')
-    if (branchFilter.value && branchFilter.value !== 'all') {
-      params.set('branchId', branchFilter.value)
+    if (branchFilter.value === 'all') {
+      params.set('branchFilter', 'all')
+    } else if (branchFilter.value === 'my-branches') {
+      params.set('branchFilter', 'my-branches')
+    } else {
+      if (currentBranchId.value) params.set('branchId', currentBranchId.value)
     }
-    // Note: if branchFilter is 'all', backend will filter by user's branches automatically
     params.set('limit', String(pageSize))
     params.set('offset', String(offset))
 
@@ -164,19 +177,47 @@ const handleNetCreated = () => {
 
 usePersistedFilters('nets', { search, statusFilter, dateFilter, branchFilter })
 
-watch(search, handleSearch)
-watch([statusFilter, dateFilter, branchFilter], handleFilterChange)
+let syncingToUrl = false
+function syncFiltersToUrl() {
+  syncingToUrl = true
+  const q: Record<string, string> = {}
+  if (search.value) q.search = search.value
+  if (statusFilter.value !== 'all') q.status = statusFilter.value
+  if (dateFilter.value !== 'all') q.dateFilter = dateFilter.value
+  q.branchFilter = branchFilter.value
+  if (branchFilter.value === 'selected' && currentBranchId.value) q.branchId = currentBranchId.value
+  router.replace({ path: route.path, query: q })
+}
 
-const NETS_FILTER_STORAGE_KEY = 'trac-filters-nets'
+function applyFiltersFromUrl() {
+  const q = route.query
+  if (typeof q.search === 'string') search.value = q.search
+  if (q.status === 'active' || q.status === 'pending' || q.status === 'completed') statusFilter.value = q.status
+  if (q.dateFilter === 'week' || q.dateFilter === 'month' || q.dateFilter === '3months') dateFilter.value = q.dateFilter
+  if (q.branchFilter === 'selected' || q.branchFilter === 'my-branches' || q.branchFilter === 'all') branchFilter.value = q.branchFilter
+}
+
+watch(search, handleSearch)
+watch([statusFilter, dateFilter, branchFilter], () => {
+  handleFilterChange()
+  syncFiltersToUrl()
+})
+watch(
+  () => route.query,
+  () => {
+    if (syncingToUrl) {
+      syncingToUrl = false
+      return
+    }
+    applyFiltersFromUrl()
+    fetchNets()
+  },
+  { deep: true }
+)
 
 onMounted(async () => {
   await loadBranches()
-  const branchId = route.query.branchId as string
-  if (branchId) {
-    branchFilter.value = branchId
-  } else if (!sessionStorage.getItem(NETS_FILTER_STORAGE_KEY) && availableBranches.value.length > 0 && availableBranches.value[0]) {
-    branchFilter.value = authStore.user?.currentBranchId ?? availableBranches.value[0].id
-  }
+  applyFiltersFromUrl()
   fetchNets()
 })
 </script>
@@ -218,10 +259,9 @@ onMounted(async () => {
                 <SelectValue :placeholder="t('nets.branchFilter')" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="selected">{{ currentBranchName }}</SelectItem>
+                <SelectItem value="my-branches">{{ t('nets.branchFilterMyBranches') }}</SelectItem>
                 <SelectItem value="all">{{ t('nets.branchFilterAll') }}</SelectItem>
-                <SelectItem v-for="branch in availableBranches" :key="branch.id" :value="branch.id">
-                  {{ branch.name }}
-                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -240,8 +280,8 @@ onMounted(async () => {
         <NetCardSkeleton v-for="i in 6" :key="i" />
       </div>
 
-      <div v-else-if="nets.length === 0" class="py-8 text-center">
-        <p class="text-muted-foreground">{{ t('nets.noResults') }}</p>
+      <div v-else-if="nets.length === 0" class="py-4 text-center">
+        <p class="text-sm text-muted-foreground">{{ t('nets.noResults') }}</p>
       </div>
 
       <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-3">
@@ -263,7 +303,7 @@ onMounted(async () => {
       </div>
 
       <div v-if="!isLoading" class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-16 lg:pb-0">
-        <p v-if="!isLoading" class="text-sm text-muted-foreground order-2 lg:order-1">
+        <p v-if="!isLoading && (total > 0 || nets.length > 0)" class="text-sm text-muted-foreground order-2 lg:order-1">
           {{ nets.length }}/{{ total }} {{ t('nets.name') }}
         </p>
         <div v-if="hasMore && !isLoading" class="order-1 lg:order-2 w-full lg:w-auto">
@@ -291,7 +331,7 @@ onMounted(async () => {
 
     <CreateNetSheet 
       v-model:open="showCreateSheet"
-      :default-branch-id="branchFilter !== 'all' ? branchFilter : undefined"
+      :default-branch-id="branchFilter === 'selected' && currentBranchId ? currentBranchId : undefined"
       @created="handleNetCreated"
     />
   </AppLayout>

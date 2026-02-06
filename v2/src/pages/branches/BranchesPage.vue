@@ -166,8 +166,8 @@ onMounted(() => {
         <BranchCardSkeleton v-for="i in 6" :key="i" />
       </div>
 
-      <div v-else-if="branches.length === 0" class="py-8 text-center">
-        <p class="text-muted-foreground">{{ t('branches.noResults') }}</p>
+      <div v-else-if="branches.length === 0" class="py-4 text-center">
+        <p class="text-sm text-muted-foreground">{{ t('branches.noResults') }}</p>
       </div>
 
       <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-3">
@@ -184,8 +184,8 @@ onMounted(() => {
       </div>
 
       <div v-if="!isLoading" class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-16 lg:pb-0">
-        <p v-if="!isLoading" class="text-sm text-muted-foreground order-2 lg:order-1">
-          {{ branches.length }}/{{ total }} {{ t('branches.name') }}
+        <p v-if="!isLoading && (total > 0 || branches.length > 0)" class="text-sm text-muted-foreground order-2 lg:order-1">
+          {{ branches.length }}/{{ total }} {{ t('branches.nameEntity') }}
         </p>
         <div v-if="hasMore && !isLoading" class="order-1 lg:order-2 w-full lg:w-auto">
           <Button

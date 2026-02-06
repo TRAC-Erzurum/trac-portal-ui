@@ -219,22 +219,22 @@ onMounted(() => {
               />
             </div>
             <div class="min-w-0 flex-1 space-y-3">
-              <div class="flex items-start justify-between gap-3">
+              <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
                   <h2 class="text-2xl font-bold">{{ formattedCallSign }}</h2>
                   <p v-if="profile.fullName" class="text-lg text-muted-foreground">{{ profile.fullName }}</p>
                 </div>
                 <Button
                   variant="outline"
-                  size="icon-sm"
-                  :title="t('profile.editNameTooltip')"
-                  class="shrink-0"
+                  size="sm"
+                  class="shrink-0 min-w-[10rem]"
                   @click="showEditPersonal = true"
                 >
-                  <Pencil class="h-4 w-4" />
+                  <Pencil class="h-4 w-4 mr-2" />
+                  {{ t('common.edit') }}
                 </Button>
               </div>
-              <div class="flex items-start justify-between gap-3 text-sm text-muted-foreground">
+              <div class="flex flex-wrap items-start justify-between gap-3 text-sm text-muted-foreground">
                 <div class="flex min-w-0 flex-1 flex-col gap-y-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
                   <span v-if="memberSince" class="flex items-center gap-1.5">
                     <Calendar class="h-4 w-4 shrink-0" />
@@ -251,27 +251,28 @@ onMounted(() => {
                 </div>
                 <Button
                   variant="outline"
-                  size="icon-sm"
-                  :title="t('profile.changePassword')"
-                  class="shrink-0"
+                  size="sm"
+                  class="shrink-0 min-w-[10rem] text-foreground"
                   @click="showChangePassword = true"
                 >
-                  <Key class="h-4 w-4" />
+                  <Key class="h-4 w-4 mr-2" />
+                  {{ t('profile.changePassword') }}
                 </Button>
               </div>
             </div>
           </div>
 
           <div class="min-w-0 space-y-3">
-            <div class="flex items-center justify-end gap-2">
+            <div class="flex flex-wrap items-center justify-end gap-2">
               <p class="text-xs text-muted-foreground mr-auto">{{ t('profile.qth') }}</p>
               <Button
                 variant="outline"
-                size="icon-sm"
-                :title="t('profile.editQthTooltip')"
+                size="sm"
+                class="min-w-[10rem]"
                 @click="showEditOperator = true"
               >
-                <Pencil class="h-4 w-4" />
+                <Pencil class="h-4 w-4 mr-2" />
+                {{ t('common.edit') }}
               </Button>
             </div>
             <p class="font-medium">{{ qth || '-' }}</p>

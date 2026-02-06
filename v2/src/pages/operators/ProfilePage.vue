@@ -310,7 +310,7 @@ onMounted(async () => {
               <UserAvatar :picture="operator.user?.picture" class="h-24 w-24" />
             </div>
             <div class="min-w-0 flex-1 space-y-3">
-              <div class="flex items-start justify-between gap-3">
+              <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
                   <h1 class="text-2xl font-bold">{{ formattedCallSign }}</h1>
                   <p class="text-lg text-muted-foreground">{{ displayName }}</p>
@@ -318,15 +318,15 @@ onMounted(async () => {
                 <Button
                   v-if="canEdit"
                   variant="outline"
-                  size="icon-sm"
-                  :title="t('profile.editNameTooltip')"
-                  class="shrink-0"
+                  size="sm"
+                  class="shrink-0 min-w-[10rem]"
                   @click="handleEditClick"
                 >
-                  <Pencil class="h-4 w-4" />
+                  <Pencil class="h-4 w-4 mr-2" />
+                  {{ t('common.edit') }}
                 </Button>
               </div>
-              <div class="flex items-start justify-between gap-3 text-sm text-muted-foreground">
+              <div class="flex flex-wrap items-start justify-between gap-3 text-sm text-muted-foreground">
                 <div class="flex min-w-0 flex-1 flex-col gap-y-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
                   <span v-if="hasUserAccount && formatMemberSince" class="flex items-center gap-1.5">
                     <Calendar class="h-4 w-4 shrink-0" />
@@ -340,28 +340,29 @@ onMounted(async () => {
                 <Button
                   v-if="authStore.hasRole('admin') && operator.user?.id"
                   variant="outline"
-                  size="icon-sm"
-                  :title="t('admin.resetPassword')"
-                  class="shrink-0"
+                  size="sm"
+                  class="shrink-0 min-w-[10rem] text-foreground"
                   @click="showResetPasswordSheet = true"
                 >
-                  <Key class="h-4 w-4" />
+                  <Key class="h-4 w-4 mr-2" />
+                  {{ t('admin.resetPassword') }}
                 </Button>
               </div>
             </div>
           </div>
 
           <div class="min-w-0 space-y-3">
-            <div class="flex items-center justify-end gap-2">
+            <div class="flex flex-wrap items-center justify-end gap-2">
               <p class="text-xs text-muted-foreground mr-auto">{{ t('profile.qth') }}</p>
               <Button
                 v-if="canEdit"
                 variant="outline"
-                size="icon-sm"
-                :title="t('profile.editQthTooltip')"
+                size="sm"
+                class="min-w-[10rem]"
                 @click="showEditSheet = true"
               >
-                <Pencil class="h-4 w-4" />
+                <Pencil class="h-4 w-4 mr-2" />
+                {{ t('common.edit') }}
               </Button>
             </div>
             <p class="font-medium">{{ qthParts.length ? qthParts.join(' • ') : '-' }}</p>
@@ -483,8 +484,8 @@ onMounted(async () => {
             </div>
           </div>
 
-          <div v-else-if="filteredNets.length === 0" class="py-8 text-center">
-            <p class="text-muted-foreground">{{ recentNets.length === 0 ? t('operators.noNets') : t('common.noResults') }}</p>
+          <div v-else-if="filteredNets.length === 0" class="py-4 text-center">
+            <p class="text-sm text-muted-foreground">{{ recentNets.length === 0 ? t('operators.noNets') : t('common.noResults') }}</p>
           </div>
 
           <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
@@ -513,7 +514,7 @@ onMounted(async () => {
           </div>
 
           <div v-if="!isLoadingNets" class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-16 lg:pb-0">
-            <p class="text-sm text-muted-foreground order-2 lg:order-1">
+            <p v-if="recentNets.length > 0 || filteredNets.length > 0" class="text-sm text-muted-foreground order-2 lg:order-1">
               {{ filteredNets.length }}{{ hasMoreNets && recentNets.length > 0 ? '+' : '' }}/{{ recentNets.length }} {{ t('nets.name') }}
             </p>
             <div v-if="hasMoreNets && filteredNets.length > 0" class="order-1 lg:order-2 w-full lg:w-auto">
@@ -564,8 +565,8 @@ onMounted(async () => {
             <div v-for="i in 2" :key="i" class="h-20 bg-muted rounded-lg animate-pulse" />
           </div>
 
-          <div v-else-if="approvedMemberships.length === 0" class="text-center py-8">
-            <Building2 class="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+          <div v-else-if="approvedMemberships.length === 0" class="text-center py-4">
+            <Building2 class="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
             <p class="text-sm text-muted-foreground">{{ memberships.length === 0 ? t('memberships.noMemberships') : t('common.noResults') }}</p>
           </div>
 
@@ -579,7 +580,7 @@ onMounted(async () => {
               :global-role="operator?.user?.role"
             />
           </div>
-          <p v-if="!isLoadingMemberships" class="text-sm text-muted-foreground pt-4">
+          <p v-if="!isLoadingMemberships && (approvedMembershipsCount > 0 || filteredMemberships.length > 0)" class="text-sm text-muted-foreground pt-4">
             {{ filteredMemberships.length }}/{{ approvedMembershipsCount }} {{ t('operators.name') }}
           </p>
         </section>

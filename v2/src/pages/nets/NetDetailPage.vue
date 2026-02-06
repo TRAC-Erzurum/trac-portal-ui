@@ -418,6 +418,7 @@ onMounted(() => {
           v-if="canManageNet && netStatus === 'active'"
           :net-id="(route.params.id as string)"
           :attendees="attendees"
+          :priority-branch-id="net?.branch?.id"
           @attendee-added="handleAttendeeAdded"
         />
 

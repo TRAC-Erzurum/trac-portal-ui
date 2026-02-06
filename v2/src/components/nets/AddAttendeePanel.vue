@@ -20,6 +20,7 @@ interface Operator {
   country?: string
   city?: string
   district?: string
+  isBranchMember?: boolean
   user?: {
     fullName?: string
     picture?: string | null
@@ -46,9 +47,10 @@ interface SelectedEntry {
 interface Props {
   netId: string
   attendees: Attendee[]
+  priorityBranchId?: string | null
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), { priorityBranchId: null })
 
 const emit = defineEmits<{
   attendeeAdded: []
@@ -106,10 +108,11 @@ const searchOperators = debounce(async (query: string) => {
     suggestions.value = []
     return
   }
-  
+  const params = new URLSearchParams({ q, sortBy: 'attended', limit: '10' })
+  if (props.priorityBranchId) params.set('priorityBranchId', props.priorityBranchId)
   isSearching.value = true
   try {
-    const results = await api.get<Operator[]>(`/operator/search?q=${encodeURIComponent(q)}&sortBy=attended&limit=10`)
+    const results = await api.get<Operator[]>(`/operator/search?${params.toString()}`)
     suggestions.value = results
     selectedIndex.value = 0
   } catch (error) {
@@ -324,7 +327,16 @@ onUnmounted(() => {
               }"
             >
               <div class="flex-1 min-w-0">
-                <div class="font-semibold">{{ formatOperatorCallSign(op) }}</div>
+                <div class="font-semibold flex items-center gap-2">
+                  {{ formatOperatorCallSign(op) }}
+                  <span
+                    v-if="op.isBranchMember"
+                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-primary/20 text-primary"
+                    :title="t('netDetail.branchMemberTooltip')"
+                  >
+                    {{ t('netDetail.branchMember') }}
+                  </span>
+                </div>
                 <div class="text-sm text-muted-foreground truncate">
                   {{ op.fullName || op.user?.fullName || '-' }}
                   <span v-if="op.city"> · {{ op.city }}</span>

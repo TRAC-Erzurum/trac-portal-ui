@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { ClipboardList } from 'lucide-vue-next'
 import Breadcrumb from './Breadcrumb.vue'
 import BottomNav from './BottomNav.vue'
 import HeaderBranchDropdown from './HeaderBranchDropdown.vue'
-import LangToggle from './LangToggle.vue'
 import PendingApprovalBanner from './PendingApprovalBanner.vue'
 import Sidebar from './Sidebar.vue'
-import ThemeToggle from './ThemeToggle.vue'
 import UserMenu from './UserMenu.vue'
+import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
+import { api } from '@/lib/api'
 
 interface BreadcrumbItem {
   label: string
@@ -25,6 +28,32 @@ const sidebarCollapsed = ref(false)
 const logoLoaded = ref(false)
 const authStore = useAuthStore()
 const showPendingBanner = computed(() => authStore.isGuest)
+const pendingRequestsCount = ref(0)
+const { t } = useI18n()
+const router = useRouter()
+
+const showRequestsButton = computed(
+  () => (authStore.isAdmin || authStore.isSuperAdmin) && pendingRequestsCount.value > 0
+)
+
+const fetchPendingRequestsCount = async () => {
+  if (!authStore.isAdmin && !authStore.isSuperAdmin) return
+  try {
+    const data = await api.get<{ total: number }>('/auth/admin/pending-requests/count')
+    pendingRequestsCount.value = data.total
+  } catch {
+    pendingRequestsCount.value = 0
+  }
+}
+
+const goToRequests = () => {
+  router.push('/admin/requests')
+}
+
+onMounted(fetchPendingRequestsCount)
+router.afterEach(() => {
+  if (authStore.isAdmin || authStore.isSuperAdmin) fetchPendingRequestsCount()
+})
 </script>
 
 <template>
@@ -55,15 +84,24 @@ const showPendingBanner = computed(() => authStore.isGuest)
             <div class="lg:hidden">
               <HeaderBranchDropdown />
             </div>
-            <h1 v-if="title" class="text-2xl lg:text-3xl font-bold truncate">{{ title }}</h1>
-            <slot v-else name="title" />
+            <div class="hidden lg:block min-w-0 flex-1">
+              <h1 v-if="title" class="text-2xl lg:text-3xl font-bold truncate">{{ title }}</h1>
+              <slot v-else name="title" />
+            </div>
           </div>
           <div class="flex items-center gap-2 flex-shrink-0">
-            <ThemeToggle />
-            <LangToggle />
-            <div class="ml-2">
-              <UserMenu />
-            </div>
+            <Button
+              v-if="showRequestsButton"
+              variant="outline"
+              size="sm"
+              class="border-amber-500/50 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1.5"
+              @click="goToRequests"
+            >
+              <ClipboardList class="h-4 w-4" />
+              <span class="hidden sm:inline">{{ t('admin.pendingRequests') }}</span>
+              <span class="tabular-nums">({{ pendingRequestsCount }})</span>
+            </Button>
+            <UserMenu />
           </div>
         </header>
 

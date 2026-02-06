@@ -7,7 +7,6 @@ import { InfrastructureCard, InfrastructureCardSkeleton, SearchInput } from '@/c
 import { usePersistedFilters } from '@/composables'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { api } from '@/lib/api'
@@ -270,8 +269,8 @@ fetchInfrastructure()
         <InfrastructureCardSkeleton v-for="i in 6" :key="i" />
       </div>
 
-      <div v-else-if="filteredInfrastructure.length === 0" class="py-8 text-center">
-        <TowerControl class="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+      <div v-else-if="filteredInfrastructure.length === 0" class="py-4 text-center">
+        <TowerControl class="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
         <p class="text-sm text-muted-foreground">{{ t('communicationChannels.noInfrastructure') }}</p>
       </div>
 
@@ -326,8 +325,8 @@ fetchInfrastructure()
       </div>
 
       <div v-if="!isLoading" class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-16 lg:pb-0">
-        <p v-if="!isLoading" class="text-sm text-muted-foreground order-2 lg:order-1">
-          {{ filteredInfrastructure.length }}/{{ total }} {{ t('communicationChannels.name') }}
+        <p v-if="!isLoading && (total > 0 || filteredInfrastructure.length > 0)" class="text-sm text-muted-foreground order-2 lg:order-1">
+          {{ filteredInfrastructure.length }}/{{ total }} {{ t('communicationChannels.nameEntity') }}
         </p>
         <div v-if="hasMore && !isLoading && cityFilter === 'all' && districtFilter === 'all'" class="order-1 lg:order-2 w-full lg:w-auto">
           <Button

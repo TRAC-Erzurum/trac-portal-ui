@@ -1,14 +1,13 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Key } from 'lucide-vue-next'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ActivityFeed from '@/components/dashboard/ActivityFeed.vue'
 import CommunityModule from '@/components/dashboard/CommunityModule.vue'
 import NetsModule from '@/components/dashboard/NetsModule.vue'
 import PersonalStatsModule from '@/components/dashboard/PersonalStatsModule.vue'
-import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
+import { useBranchStore } from '@/stores/branch'
 import { api } from '@/lib/api'
 
 interface ActiveNet {
@@ -32,6 +31,19 @@ interface PersonalStats {
   streak: number
   averageReadability: number
   averageSignal: number
+}
+
+interface PersonalNetStatsBranchAware {
+  branch: {
+    participatedNets: number
+    managedNets: number
+    currentStreak: number
+  }
+  global: {
+    totalParticipatedNets: number
+    totalManagedNets: number
+    longestStreak: number
+  }
 }
 
 interface LeaderboardEntry {
@@ -61,6 +73,15 @@ interface CommunityStats {
   topNets: LeaderboardEntry[]
 }
 
+interface CommunityStatsBranchAware {
+  branch: {
+    totalNets: number
+    topOperators: LeaderboardEntry[]
+    topNets: LeaderboardEntry[]
+  }
+  global: CommunityStats
+}
+
 interface Activity {
   id: string
   type: string
@@ -74,9 +95,11 @@ interface Activity {
 
 const { t } = useI18n()
 const authStore = useAuthStore()
+const branchStore = useBranchStore()
+
+const currentBranchId = computed(() => branchStore.currentBranch?.id ?? authStore.user?.currentBranchId ?? null)
 
 const isLoadingActivity = ref(true)
-const passwordResetRequestsCount = ref(0)
 const isLoadingMoreActivity = ref(false)
 const isLoadingNets = ref(true)
 const isLoadingCommunity = ref(true)
@@ -87,8 +110,8 @@ const hasMoreActivity = ref(true)
 const activeNets = ref<ActiveNet[]>([])
 const pendingNets = ref<PendingNet[]>([])
 const recentNets = ref<ActiveNet[]>([])
-const personalStats = ref<PersonalStats | null>(null)
-const communityStats = ref<CommunityStats | null>(null)
+const personalStats = ref<PersonalStats | PersonalNetStatsBranchAware | null>(null)
+const communityStats = ref<CommunityStats | CommunityStatsBranchAware | null>(null)
 
 const fetchActivity = async (append = false) => {
   if (append) {
@@ -121,11 +144,14 @@ const loadMoreActivity = () => {
 
 const fetchNets = async () => {
   try {
+    const personalUrl = currentBranchId.value
+      ? `/v2/dashboard/nets/personal?branchId=${currentBranchId.value}`
+      : '/v2/dashboard/nets/personal'
     const [active, pending, recent, personal] = await Promise.all([
       api.get<ActiveNet[]>('/v2/dashboard/nets/active'),
       api.get<PendingNet[]>('/v2/dashboard/nets/pending'),
       api.get<ActiveNet[]>('/v2/dashboard/nets/recent?limit=6'),
-      api.get<PersonalStats>('/v2/dashboard/nets/personal'),
+      api.get<PersonalStats | PersonalNetStatsBranchAware>(personalUrl),
     ])
     activeNets.value = active
     pendingNets.value = pending
@@ -140,7 +166,10 @@ const fetchNets = async () => {
 
 const fetchCommunity = async () => {
   try {
-    communityStats.value = await api.get<CommunityStats>('/v2/dashboard/community')
+    const communityUrl = currentBranchId.value
+      ? `/v2/dashboard/community?branchId=${currentBranchId.value}`
+      : '/v2/dashboard/community'
+    communityStats.value = await api.get<CommunityStats | CommunityStatsBranchAware>(communityUrl)
   } catch (error) {
     console.error('Failed to fetch community stats:', error)
   } finally {
@@ -148,42 +177,22 @@ const fetchCommunity = async () => {
   }
 }
 
-const fetchPendingRequestsCount = async () => {
-  if (!authStore.isAdmin && !authStore.isSuperAdmin) return
-  try {
-    const data = await api.get<{ total: number }>('/auth/admin/pending-requests/count')
-    passwordResetRequestsCount.value = data.total
-  } catch (error) {
-    console.error('Failed to fetch pending requests count:', error)
-  }
-}
+watch(currentBranchId, () => {
+  fetchNets()
+  fetchCommunity()
+})
 
 onMounted(() => {
   Promise.all([
     fetchActivity(),
     fetchNets(),
     fetchCommunity(),
-    fetchPendingRequestsCount(),
   ])
 })
 </script>
 
 <template>
   <AppLayout :title="t('nav.dashboard')">
-    <router-link
-      v-if="(authStore.isAdmin || authStore.isSuperAdmin) && passwordResetRequestsCount > 0"
-      to="/admin/requests"
-      class="mb-6 block"
-    >
-      <Button
-        variant="outline"
-        class="w-full justify-start border-amber-500/50 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400"
-      >
-        <Key class="h-4 w-4 mr-2" />
-        {{ t('admin.pendingRequests') }} ({{ passwordResetRequestsCount }})
-      </Button>
-    </router-link>
-
     <div class="hidden xl:flex items-stretch gap-6">
       <div class="flex-1">
         <NetsModule

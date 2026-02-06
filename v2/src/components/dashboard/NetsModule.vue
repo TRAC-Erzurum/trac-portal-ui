@@ -145,13 +145,11 @@ const displayNets = computed<DisplayNet[]>(() => {
           :branch-call-sign="net.branchCallSign?.callSign"
           :branch-is-headquarters="net.branch?.isHeadquarters"
           :show-branch="true"
-          compact
-          show-status-badge
         />
       </div>
 
-      <div v-else class="py-8 text-center">
-        <p class="text-muted-foreground">{{ t('dashboard.noNets') }}</p>
+      <div v-else class="py-4 text-center">
+        <p class="text-sm text-muted-foreground">{{ t('dashboard.noNets') }}</p>
       </div>
     </template>
   </section>

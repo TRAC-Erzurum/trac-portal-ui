@@ -79,9 +79,12 @@ function onKeydown(e: KeyboardEvent) {
     highlightedIndex.value = Math.max(highlightedIndex.value - 1, -1)
     return
   }
-  if (e.key === 'Enter' && highlightedIndex.value >= 0 && filteredOptions.value[highlightedIndex.value]) {
-    e.preventDefault()
-    select(filteredOptions.value[highlightedIndex.value])
+  if (e.key === 'Enter' && highlightedIndex.value >= 0) {
+    const selected = filteredOptions.value[highlightedIndex.value]
+    if (selected !== undefined) {
+      e.preventDefault()
+      select(selected)
+    }
     return
   }
   if (e.key === 'Escape') {
