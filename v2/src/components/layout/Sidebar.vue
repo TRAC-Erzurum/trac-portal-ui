@@ -3,8 +3,9 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Home, Radio, Users, Building2, PanelLeftClose, PanelLeft } from 'lucide-vue-next'
+import { Building2, Home, PanelLeft, PanelLeftClose, Radio, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
+import HeaderBranchDropdown from './HeaderBranchDropdown.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const props = defineProps<{
@@ -57,29 +58,10 @@ function toggleCollapse() {
     ]"
   >
     <div
-      :class="[
-        'flex items-center h-16 border-b border-sidebar-border',
-        collapsed ? 'justify-center px-2' : 'justify-between px-3'
-      ]"
+      v-if="!collapsed"
+      class="h-16 border-b border-sidebar-border flex items-center"
     >
-      <router-link
-        to="/dashboard"
-        :class="['flex items-center gap-3 overflow-hidden', collapsed ? 'justify-center' : '']"
-      >
-        <img src="/logo-s.svg" alt="TRAC" class="h-8 w-8 flex-shrink-0" />
-        <span v-if="!collapsed" class="font-semibold text-sidebar-foreground truncate">
-          {{ t('brand.erzurumBranch') }}
-        </span>
-      </router-link>
-      <Button
-        v-if="!collapsed"
-        variant="ghost"
-        size="icon"
-        @click="toggleCollapse"
-        class="h-8 w-8 flex-shrink-0"
-      >
-        <PanelLeftClose class="h-4 w-4" />
-      </Button>
+      <HeaderBranchDropdown />
     </div>
 
     <nav class="flex-1 p-2 space-y-1 overflow-y-auto">
@@ -104,14 +86,14 @@ function toggleCollapse() {
       </a>
     </nav>
 
-    <div v-if="collapsed" class="p-2 border-t border-sidebar-border">
+    <div class="p-2 border-t border-sidebar-border">
       <Button
         variant="ghost"
         size="icon"
         @click="toggleCollapse"
         class="w-full h-9"
       >
-        <PanelLeft class="h-4 w-4" />
+        <component :is="collapsed ? PanelLeft : PanelLeftClose" class="h-4 w-4" />
       </Button>
     </div>
   </aside>

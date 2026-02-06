@@ -1,21 +1,24 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Edit, Trash2, RotateCcw, Star, TowerControl, MapPin, Plus, BookOpen, Power, PowerOff } from 'lucide-vue-next'
-import AppLayout from '@/components/layout/AppLayout.vue'
-import { api } from '@/lib/api'
-import { useAuthStore } from '@/stores/auth'
+import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { translateError } from '@/i18n'
-import type { ApiError } from '@/lib/api'
+import { BookOpen, Edit, MapPin, Plus, Power, PowerOff, RotateCcw, Search, Star, TowerControl, Trash2, Users } from 'lucide-vue-next'
 import EditBranchSheet from '@/components/branches/EditBranchSheet.vue'
+import AddMemberSheet from '@/components/branches/AddMemberSheet.vue'
 import CreateInfrastructureSheet from '@/components/infrastructure/CreateInfrastructureSheet.vue'
 import EditInfrastructureSheet from '@/components/infrastructure/EditInfrastructureSheet.vue'
-import { InfrastructureCard, InfrastructureCardSkeleton } from '@/components/shared'
+import AppLayout from '@/components/layout/AppLayout.vue'
+import { InfrastructureCard, InfrastructureCardSkeleton, MemberCard } from '@/components/shared'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { useAuthStore } from '@/stores/auth'
+import { translateError } from '@/i18n'
+import { api, type ApiError } from '@/lib/api'
+import { formatCallSign } from '@/lib/formatters'
 
 interface BranchCallSign {
   id: string
@@ -29,6 +32,7 @@ interface Branch {
   type: 'branch' | 'representative'
   isHeadquarters: boolean
   isActive: boolean
+  city?: string
   address?: string
   phone?: string
   email?: string
@@ -73,6 +77,26 @@ interface Infrastructure {
   hfMode?: string
 }
 
+interface BranchMember {
+  id: string
+  userId: string
+  branchId: string
+  role: string
+  user: {
+    id: string
+    fullName?: string
+    picture?: string
+    globalRole?: string
+    operator?: { 
+      id?: string
+      callSign?: string
+      prefix?: string
+      suffix?: string
+      fullName?: string 
+    }
+  }
+}
+
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -81,13 +105,21 @@ const authStore = useAuthStore()
 const branch = ref<Branch | null>(null)
 const isLoading = ref(true)
 const isEditSheetOpen = ref(false)
+const showAddMemberSheet = ref(false)
 const showDeleteDialog = ref(false)
 const isDeleting = ref(false)
 const showRestoreDialog = ref(false)
 const isRestoring = ref(false)
 
 const infrastructure = ref<Infrastructure[]>([])
+const infrastructureTotal = ref(0)
+const infrastructurePage = ref(1)
+const infrastructurePageSize = 12
+const hasMoreInfrastructure = ref(true)
 const isLoadingInfrastructure = ref(true)
+const isLoadingMoreInfrastructure = ref(false)
+const infrastructureSearch = ref('')
+const infrastructureTypeFilter = ref<string>('all')
 const isCreateInfrastructureSheetOpen = ref(false)
 const isEditInfrastructureSheetOpen = ref(false)
 const selectedInfrastructure = ref<Infrastructure | null>(null)
@@ -96,10 +128,56 @@ const isDeletingInfrastructure = ref(false)
 const showTutorialDialog = ref(false)
 const tutorialContent = ref({ title: '', content: '' })
 const isLoadingTutorial = ref(false)
+const members = ref<BranchMember[]>([])
+const membersTotal = ref(0)
+const membersPage = ref(1)
+const membersPageSize = 12
+const hasMoreMembers = ref(true)
+const isLoadingMembers = ref(true)
+const isLoadingMoreMembers = ref(false)
+const membersSearch = ref('')
+const membersRoleFilter = ref<string>('all')
+const updatingRoleMembershipId = ref<string | null>(null)
+const showRemoveMemberDialog = ref(false)
+const memberToRemove = ref<BranchMember | null>(null)
+const isRemovingMember = ref(false)
+const isJoining = ref(false)
+const userMembership = ref<{ status: string; role?: string } | null>(null)
 
 const canManage = computed(() => {
   return authStore.isSuperAdmin
 })
+
+const hasPendingRequest = computed(() => {
+  return userMembership.value?.status === 'pending'
+})
+
+const canJoin = computed(() => {
+  return !userMembership.value && authStore.isAuthenticated
+})
+
+const canManageMembers = computed(() => {
+  if (authStore.isSuperAdmin) return true
+  
+  if (!userMembership.value || userMembership.value.status !== 'approved') return false
+  
+  return userMembership.value?.role === 'admin' || userMembership.value?.role === 'president'
+})
+
+const canRemoveMember = (member: BranchMember) => {
+  if (!canManageMembers.value) return false
+  if (member.user?.globalRole === 'super_admin') return false
+  if (branch.value?.isHeadquarters) return false
+  if (member.userId === authStore.user?.id) return false
+  return true
+}
+
+const canChangeRole = (member: BranchMember) => {
+  if (!canManageMembers.value) return false
+  if (member.user?.globalRole === 'super_admin') return false
+  if (member.userId === authStore.user?.id) return false
+  return true
+}
 
 const typeLabel = computed(() => {
   if (!branch.value) return ''
@@ -134,18 +212,153 @@ const fetchBranch = async () => {
   }
 }
 
-const fetchInfrastructure = async () => {
+const fetchMembers = async (append = false) => {
   if (!route.params.id) return
-  isLoadingInfrastructure.value = true
+  if (append) {
+    isLoadingMoreMembers.value = true
+  } else {
+    isLoadingMembers.value = true
+  }
+
   try {
-    const params = canManage.value ? '?includeInactive=true' : ''
-    const data = await api.get<Infrastructure[]>(`/branches/${route.params.id}/infrastructure${params}`)
-    infrastructure.value = data
+    const params = new URLSearchParams()
+    params.set('pageNumber', String(membersPage.value))
+    params.set('pageSize', String(membersPageSize))
+    if (membersSearch.value) params.set('search', membersSearch.value)
+    if (membersRoleFilter.value !== 'all') params.set('role', membersRoleFilter.value)
+
+    const response = await api.get<{ data: BranchMember[]; total: number }>(`/branches/${route.params.id}/members?${params.toString()}`)
+    
+    if (append) {
+      members.value = [...members.value, ...response.data]
+    } else {
+      members.value = response.data
+    }
+    
+    membersTotal.value = response.total
+    hasMoreMembers.value = members.value.length < response.total
+  } catch {
+    members.value = []
+  } finally {
+    isLoadingMembers.value = false
+    isLoadingMoreMembers.value = false
+  }
+}
+
+const loadMoreMembers = () => {
+  membersPage.value++
+  fetchMembers(true)
+}
+
+const checkMembership = async () => {
+  if (!route.params.id || !authStore.isAuthenticated) return
+  try {
+    const memberships = await api.get<any[]>('/users/me/memberships')
+    userMembership.value = memberships.find(m => m.branchId === route.params.id) || null
+  } catch (error) {
+    console.error('Failed to check membership:', error)
+  }
+}
+
+const joinBranch = async () => {
+  if (!route.params.id || isJoining.value) return
+  isJoining.value = true
+  try {
+    await api.post(`/branches/${route.params.id}/members`)
+    toast.success(t('memberships.requestSent'))
+    await checkMembership()
+  } catch (e) {
+    const err = e as ApiError
+    toast.error(translateError(err.message))
+  } finally {
+    isJoining.value = false
+  }
+}
+
+const updateMemberRole = async (membershipId: string, role: string) => {
+  if (!route.params.id) return
+  updatingRoleMembershipId.value = membershipId
+  try {
+    await api.patch(`/branches/${route.params.id}/members/${membershipId}/role`, { role })
+    toast.success(t('admin.roleUpdated'))
+    await fetchMembers()
+  } catch (e) {
+    const err = e as ApiError
+    toast.error(translateError(err.message))
+  } finally {
+    updatingRoleMembershipId.value = null
+  }
+}
+
+const openRemoveMemberDialog = (member: BranchMember) => {
+  memberToRemove.value = member
+  showRemoveMemberDialog.value = true
+}
+
+const confirmRemoveMember = async () => {
+  if (!memberToRemove.value || !route.params.id || isRemovingMember.value) return
+  isRemovingMember.value = true
+  try {
+    await api.delete(`/branches/${route.params.id}/members/${memberToRemove.value.userId}`)
+    toast.success(t('branches.memberRemoved'))
+    showRemoveMemberDialog.value = false
+    memberToRemove.value = null
+    await fetchMembers()
+  } catch (e) {
+    const err = e as ApiError
+    toast.error(translateError(err.message))
+  } finally {
+    isRemovingMember.value = false
+  }
+}
+
+const memberCallSign = (m: BranchMember) => {
+  const op = m.user?.operator
+  if (!op) return m.user?.fullName || '-'
+  return formatCallSign({
+    callSign: op.callSign ?? '',
+    prefix: op.prefix,
+    suffix: op.suffix
+  })
+}
+
+const fetchInfrastructure = async (append = false) => {
+  if (!route.params.id) return
+  if (append) {
+    isLoadingMoreInfrastructure.value = true
+  } else {
+    isLoadingInfrastructure.value = true
+  }
+
+  try {
+    const params = new URLSearchParams()
+    params.set('pageNumber', String(infrastructurePage.value))
+    params.set('pageSize', String(infrastructurePageSize))
+    if (canManage.value) params.set('includeInactive', 'true')
+    if (infrastructureSearch.value) params.set('search', infrastructureSearch.value)
+    if (infrastructureTypeFilter.value !== 'all') params.set('type', infrastructureTypeFilter.value)
+
+    const response = await api.get<{ data: Infrastructure[]; total: number }>(`/branches/${route.params.id}/infrastructure?${params.toString()}`)
+    
+    if (append) {
+      infrastructure.value = [...infrastructure.value, ...response.data]
+    } else {
+      infrastructure.value = response.data
+    }
+    
+    infrastructureTotal.value = response.total
+    hasMoreInfrastructure.value = infrastructure.value.length < response.total
   } catch (error) {
     console.error('Failed to fetch infrastructure:', error)
   } finally {
     isLoadingInfrastructure.value = false
+    isLoadingMoreInfrastructure.value = false
   }
+}
+
+const loadMoreInfrastructure = () => {
+  infrastructurePage.value++
+  fetchInfrastructure(true)
 }
 
 const handleInfrastructureCreated = async () => {
@@ -265,9 +478,45 @@ const handleRestore = async () => {
   }
 }
 
+let membersSearchTimeout: ReturnType<typeof setTimeout> | null = null
+let infrastructureSearchTimeout: ReturnType<typeof setTimeout> | null = null
+
+const handleMembersSearchChange = () => {
+  if (membersSearchTimeout) clearTimeout(membersSearchTimeout)
+  membersSearchTimeout = setTimeout(() => {
+    membersPage.value = 1
+    fetchMembers()
+  }, 300)
+}
+
+const handleMembersFilterChange = () => {
+  membersPage.value = 1
+  fetchMembers()
+}
+
+const handleInfrastructureSearchChange = () => {
+  if (infrastructureSearchTimeout) clearTimeout(infrastructureSearchTimeout)
+  infrastructureSearchTimeout = setTimeout(() => {
+    infrastructurePage.value = 1
+    fetchInfrastructure()
+  }, 300)
+}
+
+const handleInfrastructureFilterChange = () => {
+  infrastructurePage.value = 1
+  fetchInfrastructure()
+}
+
+watch(membersSearch, handleMembersSearchChange)
+watch(membersRoleFilter, handleMembersFilterChange)
+watch(infrastructureSearch, handleInfrastructureSearchChange)
+watch(infrastructureTypeFilter, handleInfrastructureFilterChange)
+
 onMounted(() => {
   fetchBranch()
+  checkMembership()
   fetchInfrastructure()
+  fetchMembers()
 })
 </script>
 
@@ -312,33 +561,42 @@ onMounted(() => {
         </div>
         <div v-else class="flex-1"></div>
 
-        <div v-if="canManage" class="flex gap-2">
-          <!-- For active branches: Edit + Delete -->
-          <template v-if="branch.isActive">
-            <Button variant="outline" @click="openEdit">
-              <Edit class="h-4 w-4 mr-2" />
-              {{ t('common.edit') }}
-            </Button>
-            <Button 
-              v-if="!branch.isHeadquarters"
-              variant="outline" 
-              @click="openDeleteDialog"
-              class="text-red-600 hover:text-red-700"
-            >
-              <Trash2 class="h-4 w-4 mr-2" />
-              {{ t('branches.delete') }}
-            </Button>
-          </template>
-          <!-- For deleted branches: Restore only -->
-          <template v-else>
-            <Button 
-              variant="outline" 
-              @click="openRestoreDialog"
-              class="text-green-600 hover:text-green-700 dark:text-green-500 dark:hover:text-green-600"
-            >
-              <RotateCcw class="h-4 w-4 mr-2" />
-              {{ t('branches.restore') }}
-            </Button>
+        <div class="flex gap-2">
+          <Button v-if="canJoin && branch.isActive" @click="joinBranch" :disabled="isJoining" variant="outline" size="sm">
+            <Users class="h-4 w-4 mr-2" />
+            {{ t('branches.joinBranch') }}
+          </Button>
+          <span v-if="hasPendingRequest" class="inline-flex items-center px-3 py-1.5 rounded-md text-sm font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+            {{ t('memberships.pending') }}
+          </span>
+          <template v-if="canManage">
+            <!-- For active branches: Edit + Delete -->
+            <template v-if="branch.isActive">
+              <Button variant="outline" @click="openEdit">
+                <Edit class="h-4 w-4 mr-2" />
+                {{ t('common.edit') }}
+              </Button>
+              <Button 
+                v-if="!branch.isHeadquarters"
+                variant="outline" 
+                @click="openDeleteDialog"
+                class="text-red-600 hover:text-red-700"
+              >
+                <Trash2 class="h-4 w-4 mr-2" />
+                {{ t('branches.delete') }}
+              </Button>
+            </template>
+            <!-- For deleted branches: Restore only -->
+            <template v-else>
+              <Button 
+                variant="outline" 
+                @click="openRestoreDialog"
+                class="text-green-600 hover:text-green-700 dark:text-green-500 dark:hover:text-green-600"
+              >
+                <RotateCcw class="h-4 w-4 mr-2" />
+                {{ t('branches.restore') }}
+              </Button>
+            </template>
           </template>
         </div>
       </div>
@@ -371,6 +629,84 @@ onMounted(() => {
       <section>
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <Users class="h-4 w-4" />
+            {{ t('branches.members') }}
+          </h3>
+          <Button 
+            v-if="canManageMembers && !branch.isHeadquarters" 
+            variant="outline" 
+            size="sm"
+            @click="showAddMemberSheet = true"
+          >
+            <Plus class="h-4 w-4 mr-2" />
+            {{ t('branches.addMember') }}
+          </Button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <div class="relative flex-1 min-w-[200px]">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              v-model="membersSearch"
+              :placeholder="t('operators.searchPlaceholder')"
+              class="pl-9"
+            />
+          </div>
+          <Select v-model="membersRoleFilter">
+            <SelectTrigger class="w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{{ t('operators.roleAll') }}</SelectItem>
+              <SelectItem value="president">{{ t('roles.president') }}</SelectItem>
+              <SelectItem value="admin">{{ t('roles.admin') }}</SelectItem>
+              <SelectItem value="member">{{ t('roles.member') }}</SelectItem>
+              <SelectItem value="volunteer">{{ t('roles.volunteer') }}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div v-if="isLoadingMembers" class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <div v-for="i in 4" :key="i" class="h-20 bg-muted rounded-lg animate-pulse" />
+        </div>
+        <div v-else-if="members.length === 0" class="text-center py-8">
+          <Users class="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+          <p class="text-sm text-muted-foreground">{{ t('branches.noMembers') }}</p>
+        </div>
+        <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <MemberCard
+            v-for="m in members"
+            :key="m.id"
+            :id="m.id"
+            :user-id="m.userId"
+            :operator-id="m.user.operator?.id"
+            :role="m.role"
+            :user="m.user"
+            :can-manage="canManageMembers"
+            :can-change-role="canChangeRole(m)"
+            :can-remove="canRemoveMember(m)"
+            @role-change="updateMemberRole"
+            @remove="openRemoveMemberDialog(m)"
+          />
+        </div>
+
+        <div v-if="hasMoreMembers && !isLoadingMembers" class="pt-4">
+          <Button
+            variant="outline"
+            class="w-full lg:w-auto lg:px-8"
+            :disabled="isLoadingMoreMembers"
+            @click="loadMoreMembers"
+          >
+            {{ isLoadingMoreMembers ? t('common.loading') : t('branches.loadMore') }}
+          </Button>
+        </div>
+      </section>
+
+      <Separator class="my-8" />
+
+      <section>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2">
             <TowerControl class="h-4 w-4" />
             {{ t('infrastructure.title') }}
           </h3>
@@ -383,6 +719,29 @@ onMounted(() => {
             <Plus class="h-4 w-4 mr-2" />
             {{ t('infrastructure.create') }}
           </Button>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <div class="relative flex-1 min-w-[200px]">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              v-model="infrastructureSearch"
+              :placeholder="t('infrastructure.searchPlaceholder')"
+              class="pl-9"
+            />
+          </div>
+          <Select v-model="infrastructureTypeFilter">
+            <SelectTrigger class="w-[180px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{{ t('infrastructure.typeAll') }}</SelectItem>
+              <SelectItem value="vhf_uhf_repeater">{{ t('infrastructure.vhf_uhf_repeater') }}</SelectItem>
+              <SelectItem value="echolink">{{ t('infrastructure.echolink') }}</SelectItem>
+              <SelectItem value="aprs">{{ t('infrastructure.aprs') }}</SelectItem>
+              <SelectItem value="hf">{{ t('infrastructure.hf') }}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div v-if="isLoadingInfrastructure" class="space-y-3">
@@ -473,6 +832,17 @@ onMounted(() => {
             </InfrastructureCard>
           </div>
         </div>
+
+        <div v-if="hasMoreInfrastructure && !isLoadingInfrastructure" class="pt-4">
+          <Button
+            variant="outline"
+            class="w-full lg:w-auto lg:px-8"
+            :disabled="isLoadingMoreInfrastructure"
+            @click="loadMoreInfrastructure"
+          >
+            {{ isLoadingMoreInfrastructure ? t('common.loading') : t('infrastructure.loadMore') }}
+          </Button>
+        </div>
       </section>
     </div>
 
@@ -482,6 +852,14 @@ onMounted(() => {
       :branch="branch"
       @update:open="isEditSheetOpen = $event"
       @updated="handleBranchUpdated"
+    />
+
+    <AddMemberSheet
+      v-if="branch"
+      :open="showAddMemberSheet"
+      :branch-id="branch.id"
+      @update:open="showAddMemberSheet = $event"
+      @added="fetchMembers"
     />
 
     <Dialog :open="showDeleteDialog" @update:open="showDeleteDialog = $event">
@@ -540,6 +918,7 @@ onMounted(() => {
       v-if="branch"
       :open="isCreateInfrastructureSheetOpen"
       :branch-id="branch.id"
+      :branch-city="branch.city"
       @update:open="isCreateInfrastructureSheetOpen = $event"
       @created="handleInfrastructureCreated"
     />
@@ -548,6 +927,7 @@ onMounted(() => {
       v-if="selectedInfrastructure"
       :open="isEditInfrastructureSheetOpen"
       :infrastructure="selectedInfrastructure"
+      :branch-city="branch?.city"
       @update:open="isEditInfrastructureSheetOpen = $event"
       @updated="handleInfrastructureUpdated"
     />
@@ -592,6 +972,33 @@ onMounted(() => {
         <DialogFooter>
           <Button variant="outline" @click="showTutorialDialog = false">
             {{ t('common.close') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog :open="showRemoveMemberDialog" @update:open="showRemoveMemberDialog = $event">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{{ t('branches.removeMemberConfirmTitle') }}</DialogTitle>
+          <DialogDescription>
+            {{ t('branches.removeMemberConfirmDescription') }}
+            <span v-if="memberToRemove" class="block mt-2 font-medium">
+              {{ memberCallSign(memberToRemove) }}
+            </span>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="showRemoveMemberDialog = false" :disabled="isRemovingMember">
+            {{ t('common.cancel') }}
+          </Button>
+          <Button
+            variant="outline"
+            @click="confirmRemoveMember"
+            :disabled="isRemovingMember"
+            class="text-red-600 hover:text-red-700"
+          >
+            {{ isRemovingMember ? t('common.loading') : t('branches.removeMember') }}
           </Button>
         </DialogFooter>
       </DialogContent>

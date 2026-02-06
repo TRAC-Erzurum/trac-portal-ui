@@ -31,14 +31,24 @@ interface Branch {
   createdAt: string
 }
 
+interface BranchesResponse {
+  data: Branch[]
+  total: number
+}
+
 const { t } = useI18n()
 const authStore = useAuthStore()
 
 const branches = ref<Branch[]>([])
+const total = ref(0)
 const isLoading = ref(true)
+const isLoadingMore = ref(false)
 const search = ref('')
 const includeInactive = ref(false)
 const showCreateSheet = ref(false)
+const page = ref(1)
+const pageSize = 12
+const hasMore = ref(true)
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -46,20 +56,36 @@ const canCreate = computed(() => {
   return authStore.isSuperAdmin
 })
 
-const fetchBranches = async () => {
-  isLoading.value = true
+const fetchBranches = async (append = false) => {
+  if (append) {
+    isLoadingMore.value = true
+  } else {
+    isLoading.value = true
+  }
+
   try {
     const params = new URLSearchParams()
+    params.set('pageNumber', String(page.value))
+    params.set('pageSize', String(pageSize))
     if (search.value) params.set('search', search.value)
     if (includeInactive.value) params.set('includeInactive', 'true')
 
-    const response = await api.get<Branch[]>(`/branches?${params.toString()}`)
-    branches.value = response
+    const response = await api.get<BranchesResponse>(`/branches?${params.toString()}`)
+    
+    if (append) {
+      branches.value = [...branches.value, ...response.data]
+    } else {
+      branches.value = response.data
+    }
+    
+    total.value = response.total
+    hasMore.value = branches.value.length < response.total
   } catch (error) {
     console.error('Failed to fetch branches:', error)
     branches.value = []
   } finally {
     isLoading.value = false
+    isLoadingMore.value = false
   }
 }
 
@@ -68,12 +94,19 @@ const handleSearch = () => {
     clearTimeout(searchTimeout)
   }
   searchTimeout = setTimeout(() => {
+    page.value = 1
     fetchBranches()
   }, 300)
 }
 
+const loadMore = () => {
+  page.value++
+  fetchBranches(true)
+}
+
 const handleBranchCreated = () => {
   showCreateSheet.value = false
+  page.value = 1
   fetchBranches()
 }
 
@@ -81,10 +114,13 @@ const toggleShowDeleted = () => {
   includeInactive.value = !includeInactive.value
 }
 
-watch(search, handleSearch)
-watch(includeInactive, () => {
+const handleFilterChange = () => {
+  page.value = 1
   fetchBranches()
-})
+}
+
+watch(search, handleSearch)
+watch(includeInactive, handleFilterChange)
 
 onMounted(() => {
   fetchBranches()
@@ -149,6 +185,17 @@ onMounted(() => {
           :is-active="branch.isActive"
           :call-signs="branch.callSigns"
         />
+      </div>
+
+      <div v-if="hasMore && !isLoading" class="pt-4">
+        <Button
+          variant="outline"
+          class="w-full lg:w-auto lg:px-8"
+          :disabled="isLoadingMore"
+          @click="loadMore"
+        >
+          {{ isLoadingMore ? t('common.loading') : t('branches.loadMore') }}
+        </Button>
       </div>
     </div>
 

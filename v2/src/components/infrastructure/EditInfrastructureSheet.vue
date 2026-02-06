@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { TowerControl, Globe, Navigation, Waves } from 'lucide-vue-next'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
+import { useQthData } from '@/composables'
 
 type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs' | 'hf'
 
@@ -50,6 +51,7 @@ interface Infrastructure {
   description?: string
   isActive: boolean
   location?: string
+  district?: string
   latitude?: number
   longitude?: number
   altitude?: number
@@ -80,6 +82,7 @@ interface Infrastructure {
 const props = defineProps<{
   open: boolean
   infrastructure: Infrastructure
+  branchCity?: string
 }>()
 
 const emit = defineEmits<{
@@ -88,11 +91,19 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { getDistricts, loadCities } = useQthData()
 
 const name = ref('')
 const type = ref<InfrastructureType>('vhf_uhf_repeater')
 const description = ref('')
 const location = ref('')
+const district = ref('')
+
+const availableDistricts = computed(() => {
+  if (!props.branchCity) return []
+  return getDistricts(props.branchCity)
+})
+
 const latitude = ref<number | undefined>()
 const longitude = ref<number | undefined>()
 const altitude = ref<number | undefined>()
@@ -231,12 +242,14 @@ function parseOffset(offsetStr?: string): number | undefined {
 function loadForm() {
   if (!props.infrastructure) return
   
+  loadCities()
   skipFreqWatch.value = true
   
   name.value = props.infrastructure.name
   type.value = props.infrastructure.type as InfrastructureType
   description.value = props.infrastructure.description || ''
   location.value = props.infrastructure.location || ''
+  district.value = props.infrastructure.district || ''
   latitude.value = props.infrastructure.latitude ? Number(props.infrastructure.latitude) : undefined
   longitude.value = props.infrastructure.longitude ? Number(props.infrastructure.longitude) : undefined
   altitude.value = props.infrastructure.altitude ? Number(props.infrastructure.altitude) : undefined
@@ -321,6 +334,7 @@ async function handleSubmit() {
       name: name.value.trim(),
       type: type.value,
       description: description.value.trim() || null,
+      district: district.value.trim() || null,
     }
 
     if (showLocationFields.value) {
@@ -444,6 +458,20 @@ async function handleSubmit() {
             :placeholder="t('infrastructure.descriptionPlaceholder')"
             class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
           />
+        </div>
+
+        <Separator />
+
+        <div class="space-y-2">
+          <Label for="edit-district">{{ t('form.district') }}</Label>
+          <Select v-model="district" :disabled="!props.branchCity">
+            <SelectTrigger id="edit-district" class="w-full">
+              <SelectValue :placeholder="props.branchCity ? t('form.districtPlaceholder') : t('infrastructure.selectCityFirst')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="d in availableDistricts" :key="d" :value="d">{{ d }}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <Separator />

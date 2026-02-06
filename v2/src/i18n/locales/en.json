@@ -21,8 +21,8 @@
     "operatorChangeNotAllowed": "Operator change is not allowed",
     "pleaseWaitForCaptcha": "Please wait for verification",
     "guestRestriction": "Dear guest, please contact administrators to access this feature",
-    "superAdminRoleCannotBeAssigned": "Super admin role cannot be assigned",
-    "superAdminRoleCannotBeChanged": "Super admin role cannot be changed",
+    "superAdminRoleCannotBeAssigned": "System administrator role cannot be assigned",
+    "superAdminRoleCannotBeChanged": "System administrator role cannot be changed",
     "branchNameExists": "A branch with this name already exists",
     "callSignExists": "This call sign is already registered to another branch",
     "branchNotFound": "Branch not found",
@@ -40,7 +40,13 @@
     "cannotRemoveSuperAdmin": "Super admin cannot be removed from any branch",
     "notBranchMember": "You are not a member of this branch",
     "infrastructureNotFound": "Infrastructure not found",
-    "tutorialNotFound": "Tutorial not found"
+    "tutorialNotFound": "Tutorial not found",
+    "atLeastOneBranchRequired": "You must select at least one branch",
+    "userHasActiveNet": "This user has an active net in the branch",
+    "cannotChangeSuperAdminRole": "System administrator branch role cannot be changed",
+    "lastAdminCannotBeDemoted": "The last admin cannot be demoted",
+    "membershipNotApproved": "Membership is not approved",
+    "requestNotFound": "Request not found"
   },
   "auth": {
     "login": "Login",
@@ -78,7 +84,11 @@
     "temporaryPassword": "Temporary Password",
     "temporaryPasswordPlaceholder": "The temporary password given to you",
     "changePassword": "Change Password",
-    "passwordChanged": "Your password has been changed successfully"
+    "passwordChanged": "Your password has been changed successfully",
+    "branchSelection": "Branches you want to join",
+    "branchSelectionRequired": "You must select at least one branch",
+    "whatIsBranch": "A branch is TRAC's regional representation. You can participate in activities through the branches you join.",
+    "pendingApprovalBanner": "Your membership request is pending approval. Your account will be activated after administrators review your request."
   },
   "form": {
     "callSign": "Call Sign",
@@ -198,6 +208,10 @@
     "activityAttendeeAdded": "{callSign} joined {net}",
     "activityAttendeeUpdated": "{callSign}'s info updated in {net}",
     "activityAttendeeRemoved": "{callSign} removed from {net}",
+    "activityMembershipApproved": "{actor} was approved to {branch}",
+    "activityMembershipRejected": "{actor}'s application to {branch} was rejected",
+    "activityMembershipRemoved": "{actor} was removed from {branch}",
+    "activityMembershipRoleUpdated": "{actor} was assigned {role} role in {branch}",
     "activityOperatorCreated": "Operator {callSign} created",
     "activityOperatorUpdated": "Operator {callSign} updated",
     "activityUserUpdated": "{callSign} updated account info",
@@ -231,6 +245,19 @@
     "invalidFileType": "Invalid file type. Please upload JPG, PNG or WebP.",
     "fileTooLarge": "File too large. Maximum size is 5MB."
   },
+  "memberships": {
+    "title": "Branch Memberships",
+    "noMemberships": "Not a member of any branches yet",
+    "role": "Role",
+    "pending": "Pending Approval",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "rejectionReason": "Rejection Reason",
+    "reapply": "Reapply",
+    "requestSent": "Your application has been sent",
+    "searchPlaceholder": "Search branch name...",
+    "statusAll": "All Statuses"
+  },
   "theme": {
     "dark": "Dark",
     "light": "Light",
@@ -246,12 +273,16 @@
     "nets": "Nets",
     "operators": "Operators",
     "branches": "Branches",
+    "infrastructure": "Communication Infrastructure",
     "account": "My Account",
     "collapse": "Collapse"
   },
   "roles": {
-    "super_admin": "Super Admin",
+    "super_admin": "System Administrator",
+    "president": "President",
     "admin": "Admin",
+    "member": "Member",
+    "volunteer": "Volunteer",
     "moderator": "Moderator",
     "user": "User",
     "guest": "Guest"
@@ -282,10 +313,11 @@
     "roleAll": "All Roles"
   },
   "nets": {
-    "searchPlaceholder": "Search net name or operator...",
+    "searchPlaceholder": "Search net name...",
     "totalCount": "{count} nets",
     "noResults": "No results found",
     "loadMore": "Load more",
+    "roleAll": "All",
     "createNet": "New Net",
     "createDescription": "Create a new net",
     "createSuccess": "Net created successfully",
@@ -314,6 +346,7 @@
   },
   "branches": {
     "title": "Branches",
+    "joinBranch": "Join Branch",
     "create": "Create Branch",
     "edit": "Edit Branch",
     "createDescription": "Create a new branch",
@@ -357,6 +390,17 @@
     "noCallSigns": "No call signs",
     "members": "Members",
     "membersComingSoon": "Member list will be displayed here",
+    "noMembers": "No members",
+    "removeMember": "Remove",
+    "addMember": "Add Member",
+    "addMemberDescription": "Add a member directly to the branch",
+    "searchUser": "Search User",
+    "searchUserPlaceholder": "Search by call sign or email...",
+    "memberAdded": "Member added to branch",
+    "role": "Role",
+    "removeMemberConfirmTitle": "Remove Member",
+    "removeMemberConfirmDescription": "Are you sure you want to remove this member from the branch?",
+    "memberRemoved": "Member removed from branch",
     "restore": "Restore",
     "restoreConfirmTitle": "Restore Branch",
     "restoreConfirmDescription": "Are you sure you want to restore this branch?",
@@ -428,6 +472,13 @@
     "passwordResetRequests": "Password Reset Requests",
     "passwordResetRequestsDescription": "Manage user password reset requests",
     "pendingPasswordResetRequests": "{count} password reset request(s) pending",
+    "pendingRequests": "Pending Requests",
+    "pendingRequestsDescription": "Manage membership and password reset requests",
+    "viewAllRequests": "View All",
+    "membershipRequests": "Membership Requests",
+    "noMembershipRequests": "No pending membership requests",
+    "approveWithRole": "Approve with role",
+    "rejectionReasonOptional": "Rejection reason (optional)",
     "noPasswordResetRequests": "No pending requests",
     "approve": "Approve",
     "reject": "Reject",
@@ -444,7 +495,8 @@
       "volunteer": "Volunteer",
       "member": "Member",
       "admin": "Admin",
-      "super_admin": "Super Admin"
+      "president": "President",
+      "super_admin": "System Administrator"
     }
   },
   "common": {
@@ -454,6 +506,8 @@
     "close": "Close",
     "delete": "Delete",
     "edit": "Edit",
+    "add": "Add",
+    "change": "Change",
     "confirm": "Confirm",
     "back": "Back",
     "next": "Next",
@@ -464,7 +518,9 @@
     "minutesAgo": "{count} minute(s) ago",
     "hoursAgo": "{count} hour(s) ago",
     "daysAgo": "{count} day(s) ago",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "unknown": "Unknown",
+    "noResults": "No results found"
   },
   "infrastructure": {
     "title": "Communication Infrastructure",
@@ -482,6 +538,11 @@
     "activated": "Infrastructure activated",
     "deactivated": "Infrastructure deactivated",
     "noInfrastructure": "No communication infrastructure added yet",
+    "searchPlaceholder": "Search by name or location...",
+    "filterAllTypes": "All types",
+    "filterAllCities": "All Cities",
+    "filterAllDistricts": "All Districts",
+    "selectCityFirst": "Branch city must be selected first",
     "howToConnect": "How to Connect?",
     "tutorial": "User Guide",
     "name": "Infrastructure Name",
@@ -552,11 +613,17 @@
     "hfSection": "HF Band Information",
     "hfFrequencyRange": "Frequency Range",
     "hfMode": "Operating Mode",
+    "typeAll": "All Types",
+    "vhf_uhf_repeater": "VHF/UHF Analog Repeater",
+    "echolink": "EchoLink",
+    "aprs": "APRS",
+    "hf": "HF Band",
     "types": {
       "vhf_uhf_repeater": "VHF/UHF Analog Repeater",
       "echolink": "EchoLink",
       "aprs": "APRS",
       "hf": "HF Band"
-    }
+    },
+    "loadMore": "Load more"
   }
 }

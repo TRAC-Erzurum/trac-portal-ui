@@ -21,8 +21,8 @@
     "operatorChangeNotAllowed": "Operatör değişikliğine izin verilmiyor",
     "pleaseWaitForCaptcha": "Lütfen doğrulamayı bekleyin",
     "guestRestriction": "Değerli misafirimiz, bu özelliğe erişim için yöneticilerle iletişime geçin",
-    "superAdminRoleCannotBeAssigned": "Super admin rolü atanamaz",
-    "superAdminRoleCannotBeChanged": "Super admin rolü değiştirilemez",
+    "superAdminRoleCannotBeAssigned": "Sistem yöneticisi rolü atanamaz",
+    "superAdminRoleCannotBeChanged": "Sistem yöneticisi rolü değiştirilemez",
     "branchNameExists": "Bu isimde bir şube zaten mevcut",
     "callSignExists": "Bu çağrı işareti başka bir şubeye kayıtlı",
     "branchNotFound": "Şube bulunamadı",
@@ -37,10 +37,16 @@
     "membershipAlreadyRejected": "Üyelik zaten reddedilmiş",
     "membershipAlreadyExists": "Üyelik zaten mevcut",
     "cannotRemoveFromHeadquarters": "Genel Merkez'den üye çıkarılamaz",
-    "cannotRemoveSuperAdmin": "Super admin hiçbir şubeden çıkarılamaz",
+    "cannotRemoveSuperAdmin": "Sistem yöneticisi hiçbir şubeden çıkarılamaz",
     "notBranchMember": "Bu şubenin üyesi değilsiniz",
     "infrastructureNotFound": "Altyapı bulunamadı",
-    "tutorialNotFound": "Kılavuz bulunamadı"
+    "tutorialNotFound": "Kılavuz bulunamadı",
+    "atLeastOneBranchRequired": "En az bir şube seçmelisiniz",
+    "userHasActiveNet": "Bu kullanıcının şubede aktif çevrimi bulunmaktadır",
+    "cannotChangeSuperAdminRole": "Sistem yöneticisi şube rolü değiştirilemez",
+    "lastAdminCannotBeDemoted": "Son yönetici düşürülemez",
+    "membershipNotApproved": "Üyelik onaylı değil",
+    "requestNotFound": "Talep bulunamadı"
   },
   "auth": {
     "login": "Giriş Yap",
@@ -78,7 +84,11 @@
     "temporaryPassword": "Geçici Parola",
     "temporaryPasswordPlaceholder": "Size verilen geçici parola",
     "changePassword": "Parolayı Değiştir",
-    "passwordChanged": "Parolanız başarıyla değiştirildi"
+    "passwordChanged": "Parolanız başarıyla değiştirildi",
+    "branchSelection": "Üye olmak istediğiniz şubeler",
+    "branchSelectionRequired": "En az bir şube seçmelisiniz",
+    "whatIsBranch": "Şube, TRAC'ın il veya bölge temsilciliğidir. Üye olduğunuz şubeler üzerinden etkinliklere katılabilirsiniz.",
+    "pendingApprovalBanner": "Üyelik talebiniz onay bekliyor. Yöneticiler talebinizi inceledikten sonra hesabınız etkinleştirilecektir."
   },
   "form": {
     "callSign": "Çağrı İşareti",
@@ -198,6 +208,10 @@
     "activityAttendeeAdded": "{callSign} {net} çevrimine katıldı",
     "activityAttendeeUpdated": "{callSign} bilgileri {net} çevriminde güncellendi",
     "activityAttendeeRemoved": "{callSign} {net} çevriminden çıkarıldı",
+    "activityMembershipApproved": "{actor} {branch} şubesine onaylandı",
+    "activityMembershipRejected": "{actor} {branch} şubesi başvurusu reddedildi",
+    "activityMembershipRemoved": "{actor} {branch} şubesinden çıkarıldı",
+    "activityMembershipRoleUpdated": "{actor} {branch} şubesinde {role} rolüne atandı",
     "activityOperatorCreated": "{callSign} operatörü oluşturuldu",
     "activityOperatorUpdated": "{callSign} operatör bilgileri güncellendi",
     "activityUserUpdated": "{callSign} hesap bilgilerini güncelledi",
@@ -231,6 +245,19 @@
     "invalidFileType": "Geçersiz dosya türü. JPG, PNG veya WebP yükleyin.",
     "fileTooLarge": "Dosya çok büyük. Maksimum 5MB yüklenebilir."
   },
+  "memberships": {
+    "title": "Şube Üyelikleri",
+    "noMemberships": "Henüz bir şubeye üye değilsiniz",
+    "role": "Rol",
+    "pending": "Onay Bekliyor",
+    "approved": "Onaylandı",
+    "rejected": "Reddedildi",
+    "rejectionReason": "Red Sebebi",
+    "reapply": "Tekrar Başvur",
+    "requestSent": "Başvurunuz gönderildi",
+    "searchPlaceholder": "Şube adı ara...",
+    "statusAll": "Tüm Durumlar"
+  },
   "theme": {
     "dark": "Karanlık",
     "light": "Aydınlık",
@@ -246,12 +273,16 @@
     "nets": "Çevrimler",
     "operators": "Operatörler",
     "branches": "Şubeler",
+    "infrastructure": "İletişim Altyapısı",
     "account": "Hesabım",
     "collapse": "Daralt"
   },
   "roles": {
-    "super_admin": "Süper Admin",
+    "super_admin": "Sistem Yöneticisi",
+    "president": "Başkan",
     "admin": "Yönetici",
+    "member": "Üye",
+    "volunteer": "Gönüllü",
     "moderator": "Moderatör",
     "user": "Kullanıcı",
     "guest": "Misafir"
@@ -282,10 +313,11 @@
     "roleAll": "Tüm Roller"
   },
   "nets": {
-    "searchPlaceholder": "Çevrim adı veya operatör ara...",
+    "searchPlaceholder": "Çevrim adı ara...",
     "totalCount": "{count} çevrim",
     "noResults": "Sonuç bulunamadı",
     "loadMore": "Daha fazla yükle",
+    "roleAll": "Tümü",
     "createNet": "Yeni Çevrim",
     "createDescription": "Yeni bir çevrim oluşturun",
     "createSuccess": "Çevrim başarıyla oluşturuldu",
@@ -314,6 +346,7 @@
   },
   "branches": {
     "title": "Şubeler",
+    "joinBranch": "Üye Ol",
     "create": "Şube Oluştur",
     "edit": "Şube Düzenle",
     "createDescription": "Yeni bir şube oluşturun",
@@ -357,6 +390,17 @@
     "noCallSigns": "Çağrı işareti yok",
     "members": "Üyeler",
     "membersComingSoon": "Üye listesi burada görüntülenecek",
+    "noMembers": "Üye yok",
+    "removeMember": "Çıkar",
+    "addMember": "Üye Ekle",
+    "addMemberDescription": "Şubeye doğrudan üye ekleyin",
+    "searchUser": "Kullanıcı Ara",
+    "searchUserPlaceholder": "Çağrı işareti veya e-posta ile ara...",
+    "memberAdded": "Üye şubeye eklendi",
+    "role": "Rol",
+    "removeMemberConfirmTitle": "Üyeyi Çıkar",
+    "removeMemberConfirmDescription": "Bu üyeyi şubeden çıkarmak istediğinize emin misiniz?",
+    "memberRemoved": "Üye şubeden çıkarıldı",
     "restore": "Geri Getir",
     "restoreConfirmTitle": "Şubeyi Geri Getir",
     "restoreConfirmDescription": "Bu şubeyi geri getirmek istediğinizden emin misiniz?",
@@ -429,6 +473,13 @@
     "passwordResetRequestsDescription": "Kullanıcıların parola sıfırlama taleplerini yönetin",
     "pendingPasswordResetRequests": "{count} parola sıfırlama talebi bekliyor",
     "noPasswordResetRequests": "Bekleyen talep yok",
+    "pendingRequests": "Bekleyen Talepler",
+    "pendingRequestsDescription": "Üyelik ve parola sıfırlama taleplerini yönetin",
+    "viewAllRequests": "Tümünü Gör",
+    "membershipRequests": "Üyelik Talepleri",
+    "noMembershipRequests": "Bekleyen üyelik talebi yok",
+    "approveWithRole": "Rol ile onayla",
+    "rejectionReasonOptional": "Red nedeni (isteğe bağlı)",
     "approve": "Onayla",
     "reject": "Reddet",
     "passwordResetRejected": "Talep reddedildi",
@@ -444,7 +495,8 @@
       "volunteer": "Gönüllü",
       "member": "Üye",
       "admin": "Yönetici",
-      "super_admin": "Süper Yönetici"
+      "president": "Başkan",
+      "super_admin": "Sistem Yöneticisi"
     }
   },
   "common": {
@@ -454,6 +506,8 @@
     "close": "Kapat",
     "delete": "Sil",
     "edit": "Düzenle",
+    "add": "Ekle",
+    "change": "Değiştir",
     "confirm": "Onayla",
     "back": "Geri",
     "next": "İleri",
@@ -464,7 +518,9 @@
     "minutesAgo": "{count} dakika önce",
     "hoursAgo": "{count} saat önce",
     "daysAgo": "{count} gün önce",
-    "inactive": "Pasif"
+    "inactive": "Pasif",
+    "unknown": "Bilinmiyor",
+    "noResults": "Sonuç bulunamadı"
   },
   "infrastructure": {
     "title": "İletişim Altyapıları",
@@ -482,6 +538,11 @@
     "activated": "Altyapı aktif edildi",
     "deactivated": "Altyapı pasif edildi",
     "noInfrastructure": "Henüz iletişim altyapısı eklenmemiş",
+    "searchPlaceholder": "Altyapı adı veya konum ara...",
+    "filterAllTypes": "Tüm türler",
+    "filterAllCities": "Tüm İller",
+    "filterAllDistricts": "Tüm İlçeler",
+    "selectCityFirst": "Önce şube şehri seçilmelidir",
     "howToConnect": "Nasıl Bağlanırım?",
     "tutorial": "Kullanım Kılavuzu",
     "name": "Altyapı Adı",
@@ -552,11 +613,17 @@
     "hfSection": "HF Band Bilgileri",
     "hfFrequencyRange": "Frekans Aralığı",
     "hfMode": "Çalışma Modu",
+    "typeAll": "Tüm Türler",
+    "vhf_uhf_repeater": "VHF/UHF Analog Röle",
+    "echolink": "EchoLink",
+    "aprs": "APRS",
+    "hf": "HF Band",
     "types": {
       "vhf_uhf_repeater": "VHF/UHF Analog Röle",
       "echolink": "EchoLink",
       "aprs": "APRS",
       "hf": "HF Band"
-    }
+    },
+    "loadMore": "Daha fazla yükle"
   }
 }

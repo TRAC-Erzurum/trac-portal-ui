@@ -50,12 +50,15 @@ const formatTime = (dateString: string) => {
 const getActivityIcon = (type: string) => {
   if (type.startsWith('net.')) return Radio
   if (type.startsWith('attendee.')) return UserPlus
-  return Radio
+  if (type.startsWith('membership.')) return UserPlus
+  return ActivityIcon
 }
 
 const getActivityText = (activity: Activity) => {
   const { type, actorCallSign, targetCallSign, metadata } = activity
   const netName = metadata?.netName as string || ''
+  const branchName = metadata?.branchName as string || ''
+  const newRole = metadata?.newRole as string || ''
 
   switch (type) {
     case 'net.created':
@@ -66,6 +69,14 @@ const getActivityText = (activity: Activity) => {
       return t('dashboard.activityNetEnded', { actor: actorCallSign, name: netName })
     case 'attendee.added':
       return t('dashboard.activityAttendeeAdded', { callSign: targetCallSign, net: netName })
+    case 'membership.approved':
+      return t('dashboard.activityMembershipApproved', { actor: actorCallSign, branch: branchName })
+    case 'membership.rejected':
+      return t('dashboard.activityMembershipRejected', { actor: actorCallSign, branch: branchName })
+    case 'membership.removed':
+      return t('dashboard.activityMembershipRemoved', { actor: actorCallSign, branch: branchName })
+    case 'membership.role_updated':
+      return t('dashboard.activityMembershipRoleUpdated', { actor: actorCallSign, branch: branchName, role: t(`roles.${newRole}`) })
     default:
       return type
   }

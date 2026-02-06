@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import Sidebar from './Sidebar.vue'
-import BottomNav from './BottomNav.vue'
-import UserMenu from './UserMenu.vue'
-import ThemeToggle from './ThemeToggle.vue'
-import LangToggle from './LangToggle.vue'
+import { computed, ref } from 'vue'
 import Breadcrumb from './Breadcrumb.vue'
+import BottomNav from './BottomNav.vue'
 import HeaderBranchDropdown from './HeaderBranchDropdown.vue'
+import LangToggle from './LangToggle.vue'
+import PendingApprovalBanner from './PendingApprovalBanner.vue'
+import Sidebar from './Sidebar.vue'
+import ThemeToggle from './ThemeToggle.vue'
+import UserMenu from './UserMenu.vue'
+import { useAuthStore } from '@/stores/auth'
 
 interface BreadcrumbItem {
   label: string
@@ -21,6 +23,8 @@ defineProps<{
 
 const sidebarCollapsed = ref(false)
 const logoLoaded = ref(false)
+const authStore = useAuthStore()
+const showPendingBanner = computed(() => authStore.isGuest)
 </script>
 
 <template>
@@ -37,6 +41,8 @@ const logoLoaded = ref(false)
     
     <Sidebar v-model:collapsed="sidebarCollapsed" />
     
+    <PendingApprovalBanner v-if="showPendingBanner" />
+    
     <main
       :class="[
         'relative transition-all duration-300 pb-16 lg:pb-0',
@@ -44,11 +50,15 @@ const logoLoaded = ref(false)
       ]"
     >
       <div class="p-6 lg:p-8">
-        <header class="flex items-center justify-between mb-3 lg:mb-4">
-          <h1 v-if="title" class="text-2xl lg:text-3xl font-bold">{{ title }}</h1>
-          <slot v-else name="title" />
-          <div class="flex items-center gap-2">
-            <HeaderBranchDropdown />
+        <header class="flex items-center justify-between mb-3 lg:mb-4 gap-4">
+          <div class="flex items-center gap-3 min-w-0 flex-1">
+            <div class="lg:hidden">
+              <HeaderBranchDropdown />
+            </div>
+            <h1 v-if="title" class="text-2xl lg:text-3xl font-bold truncate">{{ title }}</h1>
+            <slot v-else name="title" />
+          </div>
+          <div class="flex items-center gap-2 flex-shrink-0">
             <ThemeToggle />
             <LangToggle />
             <div class="ml-2">

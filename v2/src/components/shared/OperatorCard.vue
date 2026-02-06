@@ -1,11 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { Users, Radio, ChevronRight } from 'lucide-vue-next'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { formatCallSign, type CallSignParts } from '@/lib/formatters'
-import { getRoleBadgeClass } from '@/lib/ui-helpers'
 
 interface Props {
   id: string
@@ -18,7 +16,6 @@ interface Props {
   attendedCount?: number
   managedCount?: number
   userFullName?: string
-  userRole?: string
   userPicture?: string
   showChevron?: boolean
 }
@@ -31,7 +28,6 @@ const emit = defineEmits<{
   click: [id: string]
 }>()
 
-const { t } = useI18n()
 const router = useRouter()
 
 const formattedCallSign = computed(() => {
@@ -63,13 +59,6 @@ const handleClick = () => {
     <div class="flex-1 min-w-0">
       <div class="flex items-center gap-2 flex-wrap">
         <span class="font-semibold">{{ formattedCallSign }}</span>
-        <span 
-          v-if="userRole && userRole !== 'guest'" 
-          class="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-          :class="getRoleBadgeClass(userRole)"
-        >
-          {{ t(`admin.roles.${userRole}`) }}
-        </span>
         <span v-if="(attendedCount && attendedCount > 0) || (managedCount && managedCount > 0)" class="flex items-center gap-2 text-xs text-muted-foreground">
           <span v-if="attendedCount && attendedCount > 0" class="flex items-center gap-0.5">
             <Users class="h-3 w-3" />

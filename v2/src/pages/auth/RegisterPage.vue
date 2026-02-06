@@ -1,19 +1,30 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { PasswordInput } from '@/components/ui/password-input'
+import { Info } from 'lucide-vue-next'
 import AuthLayout from '@/components/layout/AuthLayout.vue'
 import Captcha from '@/components/Captcha.vue'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import turkeyData from '@/data/turkey.json'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
-import type { ApiError } from '@/lib/api'
-import turkeyData from '@/data/turkey.json'
+import { api, type ApiError } from '@/lib/api'
+
+interface Branch {
+  id: string
+  name: string
+  type: string
+  isHeadquarters: boolean
+  isActive: boolean
+  callSigns?: Array<{ callSign: string; isDefault: boolean }>
+}
 
 const { t } = useI18n()
 const router = useRouter()
@@ -30,35 +41,61 @@ const privacyAccepted = ref<boolean>(false)
 const captchaToken = ref('')
 const captchaRef = ref<InstanceType<typeof Captcha>>()
 const isLoading = ref(false)
+const branches = ref<Branch[]>([])
+const branchesLoading = ref(true)
+const selectedBranchIds = ref<string[]>([])
 
 const cities = turkeyData.cities
+
+function toggleBranch(branchId: string) {
+  const idx = selectedBranchIds.value.indexOf(branchId)
+  if (idx === -1) {
+    selectedBranchIds.value = [...selectedBranchIds.value, branchId]
+  } else {
+    selectedBranchIds.value = selectedBranchIds.value.filter((id) => id !== branchId)
+  }
+}
 
 function handleCallSignInput() {
   callSign.value = callSign.value.toUpperCase()
 }
 
 const isFormValid = computed(() => {
-  const baseValid = email.value.trim() !== '' && 
-         callSign.value.trim() !== '' && 
+  const baseValid = email.value.trim() !== '' &&
+         callSign.value.trim() !== '' &&
          password.value.length >= 6 &&
          passwordConfirm.value === password.value &&
-         privacyAccepted.value === true
-  
+         privacyAccepted.value === true &&
+         selectedBranchIds.value.length >= 1
   if (captchaRef.value?.isEnabled) {
     return baseValid && captchaToken.value !== ''
   }
   return baseValid
 })
 
+async function loadBranches() {
+  branchesLoading.value = true
+  try {
+    branches.value = await api.get<Branch[]>('/auth/branches')
+  } catch {
+    branches.value = []
+  } finally {
+    branchesLoading.value = false
+  }
+}
+
+onMounted(loadBranches)
+
 async function handleSubmit() {
   if (!isFormValid.value) return
-  
+
   isLoading.value = true
   try {
     await authStore.register({
       email: email.value.trim(),
       callSign: callSign.value.trim(),
       password: password.value,
+      branchIds: selectedBranchIds.value,
       fullName: (fullName.value || '').trim() || undefined,
       city: (city.value || '').trim() || undefined,
       district: (district.value || '').trim() || undefined,
@@ -166,6 +203,33 @@ function handleGoogleLogin() {
             type="text" 
             placeholder=""
           />
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center gap-2">
+            <Label class="text-xs text-muted-foreground">{{ t('auth.branchSelection') }} {{ t('form.required') }}</Label>
+            <span
+              class="inline-flex items-center justify-center rounded-full border border-border bg-muted/50 w-5 h-5 text-muted-foreground cursor-help"
+              :title="t('auth.whatIsBranch')"
+            >
+              <Info class="h-3 w-3" />
+            </span>
+          </div>
+          <p class="text-xs text-muted-foreground mb-2">{{ t('auth.whatIsBranch') }}</p>
+          <div v-if="branchesLoading" class="text-sm text-muted-foreground py-2">{{ t('common.loading') }}</div>
+          <div v-else class="border border-border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
+            <label
+              v-for="b in branches"
+              :key="b.id"
+              class="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5 -mx-2 -my-1.5"
+            >
+              <Checkbox
+                :checked="selectedBranchIds.includes(b.id)"
+                @update:checked="() => toggleBranch(b.id)"
+              />
+              <span class="font-medium">{{ b.name }}</span>
+            </label>
+          </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

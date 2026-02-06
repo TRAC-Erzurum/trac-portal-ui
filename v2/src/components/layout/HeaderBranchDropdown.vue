@@ -2,7 +2,7 @@
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { ChevronDown, Building2, Loader2 } from 'lucide-vue-next'
+import { ChevronDown, Loader2 } from 'lucide-vue-next'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,35 +48,23 @@ onMounted(() => {
 </script>
 
 <template>
-  <div v-if="authStore.isAuthenticated && displayBranches.length > 0">
-    <div v-if="!branchStore.hasMultipleBranches" class="flex items-center gap-2 px-2 lg:px-3 py-2 text-sm">
-      <Building2 class="h-4 w-4 text-muted-foreground flex-shrink-0" />
-      <span class="font-medium truncate max-w-[100px] lg:max-w-[150px] hidden sm:inline">{{ currentBranchName }}</span>
-      <span 
-        v-if="branchStore.currentBranch?.isHeadquarters" 
-        class="px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground flex-shrink-0 hidden lg:inline"
-      >
-        {{ t('branches.headquarters') }}
-      </span>
+  <div v-if="authStore.isAuthenticated && displayBranches.length > 0" class="w-full">
+    <div v-if="!branchStore.hasMultipleBranches" class="flex items-center gap-3 px-3 py-2 text-sm">
+      <img src="/logo-s.svg" alt="TRAC" class="h-6 w-6 flex-shrink-0" />
+      <span class="font-medium truncate">{{ currentBranchName }}</span>
     </div>
     
     <DropdownMenu v-else>
       <DropdownMenuTrigger 
-        class="flex items-center gap-1.5 lg:gap-2 px-2 lg:px-3 py-2 text-sm font-medium hover:bg-accent rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        class="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium hover:bg-sidebar-accent transition-colors focus:outline-none focus:ring-0"
         :disabled="isSwitching"
       >
-        <Building2 class="h-4 w-4 text-muted-foreground flex-shrink-0" />
-        <span class="truncate max-w-[80px] lg:max-w-[150px] hidden sm:inline">{{ currentBranchName }}</span>
-        <span 
-          v-if="branchStore.currentBranch?.isHeadquarters" 
-          class="px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground flex-shrink-0 hidden lg:inline"
-        >
-          {{ t('branches.headquarters') }}
-        </span>
+        <img src="/logo-s.svg" alt="TRAC" class="h-6 w-6 flex-shrink-0" />
+        <span class="truncate flex-1 text-left">{{ currentBranchName }}</span>
         <Loader2 v-if="isSwitching" class="h-4 w-4 animate-spin text-muted-foreground flex-shrink-0" />
         <ChevronDown v-else class="h-4 w-4 text-muted-foreground flex-shrink-0" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" class="w-64">
+      <DropdownMenuContent align="start" class="w-56">
         <DropdownMenuLabel>{{ t('branch.selectBranch') }}</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -90,17 +78,9 @@ onMounted(() => {
         >
           <div class="flex items-center justify-between w-full gap-2">
             <span class="truncate">{{ branch.name }}</span>
-            <div class="flex items-center gap-1 flex-shrink-0">
-              <span 
-                v-if="branch.isHeadquarters" 
-                class="px-2 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground"
-              >
-                {{ t('branches.headquarters') }}
-              </span>
-              <span v-if="branch.id === branchStore.currentBranch?.id" class="text-xs text-muted-foreground">
-                ✓
-              </span>
-            </div>
+            <span v-if="branch.id === branchStore.currentBranch?.id" class="text-xs text-muted-foreground flex-shrink-0">
+              ✓
+            </span>
           </div>
         </DropdownMenuItem>
       </DropdownMenuContent>

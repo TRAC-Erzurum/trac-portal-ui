@@ -85,7 +85,7 @@ const router = createRouter({
       path: '/account',
       name: 'account',
       component: () => import('@/pages/account/AccountPage.vue'),
-      meta: { requiresAuth: true, minRole: 'volunteer' }
+      meta: { requiresAuth: true }
     },
     {
       path: '/branches',
@@ -98,6 +98,18 @@ const router = createRouter({
       name: 'branch-detail',
       component: () => import('@/pages/branches/BranchDetailPage.vue'),
       meta: { requiresAuth: true, minRole: 'volunteer' }
+    },
+    {
+      path: '/infrastructure',
+      name: 'infrastructure',
+      component: () => import('@/pages/infrastructure/InfrastructurePage.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/admin/requests',
+      name: 'admin-requests',
+      component: () => import('@/pages/admin/AdminRequestsPage.vue'),
+      meta: { requiresAuth: true, minRole: 'admin' }
     },
     {
       path: '/privacy',

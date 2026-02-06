@@ -42,33 +42,9 @@ export const useBranchStore = defineStore('branch', () => {
     userBranches.value.map(m => m.branch).filter(Boolean) as Branch[]
   )
 
-  function decodeJWT(token: string): { currentBranchId?: string } | null {
-    try {
-      const base64Url = token.split('.')[1]
-      if (!base64Url) return null
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-      const jsonPayload = decodeURIComponent(
-        atob(base64)
-          .split('')
-          .map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
-          .join('')
-      )
-      return JSON.parse(jsonPayload)
-    } catch {
-      return null
-    }
-  }
-
-  function getCurrentBranchIdFromCookie(): string | null {
-    const cookies = document.cookie.split(';')
-    const authCookie = cookies.find(c => c.trim().startsWith('auth_token='))
-    if (!authCookie) return null
-    
-    const token = authCookie.split('=')[1]
-    if (!token) return null
-    
-    const payload = decodeJWT(token)
-    return payload?.currentBranchId || null
+  function getCurrentBranchId(): string | null {
+    const authStore = useAuthStore()
+    return authStore.user?.currentBranchId || null
   }
 
   function getDefaultBranch(memberships: UserBranchMembership[]): Branch | undefined {
@@ -82,13 +58,13 @@ export const useBranchStore = defineStore('branch', () => {
     
     isLoading.value = true
     try {
-      const response = await api.get<UserBranchMembership[]>('/branches/users/me/branches')
+      const response = await api.get<UserBranchMembership[]>('/users/me/branches')
       userBranches.value = response
       
-      const branchIdFromCookie = getCurrentBranchIdFromCookie()
+      const branchId = getCurrentBranchId()
       const defaultBranch = getDefaultBranch(response)
-      if (branchIdFromCookie) {
-        const branch = response.find(m => m.branchId === branchIdFromCookie)?.branch
+      if (branchId) {
+        const branch = response.find(m => m.branchId === branchId)?.branch
         if (branch) {
           currentBranch.value = branch
         } else if (defaultBranch) {
@@ -112,15 +88,15 @@ export const useBranchStore = defineStore('branch', () => {
     try {
       await api.patch('/user/me/current-branch', { branchId })
       
+      const authStore = useAuthStore()
+      if (authStore.user) {
+        authStore.user.currentBranchId = branchId
+      }
+      
       const membership = userBranches.value.find(m => m.branchId === branchId)
       if (membership?.branch) {
         currentBranch.value = membership.branch
       }
-      
-      const authStore = useAuthStore()
-      await authStore.checkAuth()
-      
-      window.location.reload()
     } catch (e) {
       const err = e as ApiError
       throw err
@@ -130,7 +106,7 @@ export const useBranchStore = defineStore('branch', () => {
   }
 
   function initializeFromJWT() {
-    const branchId = getCurrentBranchIdFromCookie()
+    const branchId = getCurrentBranchId()
     const defaultBranch = getDefaultBranch(userBranches.value)
     if (branchId && userBranches.value.length > 0) {
       const membership = userBranches.value.find(m => m.branchId === branchId)

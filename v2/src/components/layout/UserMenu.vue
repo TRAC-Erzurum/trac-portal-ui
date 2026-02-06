@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { UserCircle, LogOut } from 'lucide-vue-next'
+import { UserCircle, LogOut, TowerControl } from 'lucide-vue-next'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +33,10 @@ function handleAccountClick() {
   router.push('/account')
 }
 
+function handleInfrastructureClick() {
+  router.push('/infrastructure')
+}
+
 async function handleLogout() {
   await authStore.logout()
   router.push('/')
@@ -60,6 +64,10 @@ async function handleLogout() {
       <DropdownMenuItem @click="handleAccountClick" class="cursor-pointer">
         <UserCircle class="mr-2 h-4 w-4" />
         {{ t('nav.account') }}
+      </DropdownMenuItem>
+      <DropdownMenuItem @click="handleInfrastructureClick" class="cursor-pointer">
+        <TowerControl class="mr-2 h-4 w-4" />
+        {{ t('nav.infrastructure') }}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem @click="handleLogout" class="cursor-pointer text-destructive focus:text-destructive">

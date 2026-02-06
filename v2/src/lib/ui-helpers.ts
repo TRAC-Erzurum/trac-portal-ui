@@ -1,8 +1,9 @@
-export type UserRole = 'super_admin' | 'admin' | 'member' | 'volunteer' | 'guest'
+export type UserRole = 'super_admin' | 'president' | 'admin' | 'member' | 'volunteer' | 'guest'
 
 export function getRoleBadgeClass(role?: string): string {
   switch (role) {
     case 'super_admin':
+    case 'president':
     case 'admin':
       return 'bg-red-500/10 text-red-600 dark:text-red-400'
     case 'member':

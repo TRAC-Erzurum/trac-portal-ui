@@ -3,18 +3,18 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { ChevronRight, MapPin, ExternalLink, Radio, Users, TrendingUp, Signal, Ear, Pencil, Shield, Key, Calendar } from 'lucide-vue-next'
+import { MapPin, ExternalLink, Radio, Users, TrendingUp, Signal, Ear, Pencil, Calendar, Building2, Search, ChevronRight } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
+import BranchMembershipCard from '@/components/shared/BranchMembershipCard.vue'
+import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import EditOperatorAdminSheet from '@/components/operators/EditOperatorAdminSheet.vue'
-import ResetPasswordSheet from '@/components/admin/ResetPasswordSheet.vue'
 import { useAuthStore } from '@/stores/auth'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { api } from '@/lib/api'
 import { formatCallSign, formatDateLong, formatNetDate } from '@/lib/formatters'
-import { getRoleBadgeClass, type UserRole } from '@/lib/ui-helpers'
 
 interface Operator {
   id: string
@@ -30,7 +30,7 @@ interface Operator {
     id: string
     fullName?: string
     email?: string
-    role?: UserRole
+    role?: string
     createdAt?: string
     picture?: string
   }
@@ -52,6 +52,19 @@ interface OperatorNetItem {
   attendeeCount?: number
 }
 
+interface UserBranchMembership {
+  id: string
+  userId: string
+  branchId: string
+  role: string
+  status: string
+  branch: {
+    id: string
+    name: string
+    isHeadquarters: boolean
+  }
+}
+
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -60,40 +73,26 @@ const authStore = useAuthStore()
 const operator = ref<Operator | null>(null)
 const stats = ref<OperatorStats | null>(null)
 const recentNets = ref<OperatorNetItem[]>([])
+const memberships = ref<UserBranchMembership[]>([])
 const isLoading = ref(true)
 const isLoadingStats = ref(true)
 const isLoadingNets = ref(true)
 const isLoadingMoreNets = ref(false)
+const isLoadingMemberships = ref(true)
 const showEditSheet = ref(false)
-const showResetPasswordSheet = ref(false)
+const membershipSearch = ref('')
+const membershipRoleFilter = ref('all')
+const netsSearch = ref('')
+const netsRoleFilter = ref('all')
 const netsPage = ref(1)
 const netsPageSize = 12
 const hasMoreNets = ref(true)
-const isUpdatingRole = ref(false)
-
-const availableRoles: UserRole[] = ['guest', 'volunteer', 'member', 'admin']
 
 const operatorId = computed(() => route.params.id as string)
 
 const canEdit = computed(() => authStore.isAdmin || authStore.isSuperAdmin)
 
 const hasUserAccount = computed(() => !!operator.value?.user?.id)
-
-const canChangeRole = computed(() => {
-  if (!hasUserAccount.value || !operator.value?.user?.role) return false
-  const targetRole = operator.value.user.role
-  if (authStore.isSuperAdmin) return targetRole !== 'super_admin'
-  if (authStore.isAdmin) return !['admin', 'super_admin'].includes(targetRole)
-  return false
-})
-
-const canResetPassword = computed(() => {
-  if (!hasUserAccount.value || !operator.value?.user?.role) return false
-  const targetRole = operator.value.user.role
-  if (authStore.isSuperAdmin) return targetRole !== 'super_admin'
-  if (authStore.isAdmin) return !['admin', 'super_admin'].includes(targetRole)
-  return false
-})
 
 const formatMemberSince = computed(() => {
   return formatDateLong(operator.value?.user?.createdAt)
@@ -138,6 +137,19 @@ const fetchStats = async () => {
     console.error('Failed to fetch stats:', error)
   } finally {
     isLoadingStats.value = false
+  }
+}
+
+const fetchMemberships = async () => {
+  if (!operator.value?.user?.id) return
+  
+  isLoadingMemberships.value = true
+  try {
+    memberships.value = await api.get<UserBranchMembership[]>(`/users/${operator.value.user.id}/memberships`)
+  } catch (error) {
+    console.error('Failed to fetch memberships:', error)
+  } finally {
+    isLoadingMemberships.value = false
   }
 }
 
@@ -187,27 +199,49 @@ const handleOperatorUpdated = () => {
   fetchOperator()
 }
 
-const handleRoleChange = async (value: unknown) => {
-  const newRole = value as string
-  if (!operator.value?.user?.id || !newRole) return
-  
-  isUpdatingRole.value = true
-  try {
-    await api.patch(`/user/${operator.value.user.id}/role`, { role: newRole })
-    toast.success(t('admin.roleUpdated'))
-    fetchOperator()
-  } catch (error) {
-    console.error('Failed to update role:', error)
-    toast.error(t('error.serverError'))
-  } finally {
-    isUpdatingRole.value = false
-  }
-}
+const filteredMemberships = computed(() => {
+  let filtered = memberships.value.filter(m => m.status === 'approved')
 
-onMounted(() => {
-  fetchOperator()
+  if (membershipSearch.value) {
+    const search = membershipSearch.value.toLowerCase()
+    filtered = filtered.filter(m => 
+      m.branch.name.toLowerCase().includes(search)
+    )
+  }
+
+  if (membershipRoleFilter.value !== 'all') {
+    filtered = filtered.filter(m => m.role === membershipRoleFilter.value)
+  }
+
+  return filtered
+})
+
+const approvedMemberships = computed(() => filteredMemberships.value)
+
+const filteredNets = computed(() => {
+  let filtered = recentNets.value
+
+  if (netsSearch.value) {
+    const search = netsSearch.value.toLowerCase()
+    filtered = filtered.filter(n => 
+      n.name.toLowerCase().includes(search)
+    )
+  }
+
+  if (netsRoleFilter.value !== 'all') {
+    filtered = filtered.filter(n => n.role === netsRoleFilter.value)
+  }
+
+  return filtered
+})
+
+onMounted(async () => {
+  await fetchOperator()
   fetchStats()
   fetchRecentNets()
+  if (operator.value?.user?.id) {
+    fetchMemberships()
+  }
 })
 </script>
 
@@ -249,13 +283,6 @@ onMounted(() => {
 
             <div class="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted-foreground">
               <div v-if="hasUserAccount" class="flex items-center gap-1.5">
-                <Shield class="h-4 w-4" />
-                <span 
-                  class="text-xs px-1.5 py-0.5 rounded-full font-medium"
-                  :class="getRoleBadgeClass(operator.user?.role)"
-                >{{ t(`admin.roles.${operator.user?.role}`) }}</span>
-              </div>
-              <div v-if="hasUserAccount" class="flex items-center gap-1.5">
                 <Calendar class="h-4 w-4" />
                 <span>{{ formatMemberSince }}</span>
               </div>
@@ -278,6 +305,57 @@ onMounted(() => {
         </div>
 
         <Separator class="my-8" />
+
+        <section v-if="hasUserAccount">
+          <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+            <Building2 class="h-4 w-4" />
+            {{ t('memberships.title') }}
+          </h3>
+
+          <div class="flex flex-wrap items-center gap-2 mb-4">
+            <div class="relative flex-1 min-w-[200px]">
+              <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                v-model="membershipSearch"
+                :placeholder="t('memberships.searchPlaceholder')"
+                class="pl-9"
+              />
+            </div>
+            <Select v-model="membershipRoleFilter">
+              <SelectTrigger class="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{{ t('operators.roleAll') }}</SelectItem>
+                <SelectItem value="president">{{ t('roles.president') }}</SelectItem>
+                <SelectItem value="admin">{{ t('roles.admin') }}</SelectItem>
+                <SelectItem value="member">{{ t('roles.member') }}</SelectItem>
+                <SelectItem value="volunteer">{{ t('roles.volunteer') }}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div v-if="isLoadingMemberships" class="space-y-2">
+            <div v-for="i in 2" :key="i" class="h-16 bg-muted rounded-lg animate-pulse" />
+          </div>
+          
+          <div v-else-if="approvedMemberships.length === 0" class="text-center py-8">
+            <Building2 class="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+            <p class="text-sm text-muted-foreground">{{ memberships.length === 0 ? t('memberships.noMemberships') : t('common.noResults') }}</p>
+          </div>
+          
+          <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            <BranchMembershipCard
+              v-for="m in approvedMemberships"
+              :key="m.id"
+              :branch-id="m.branchId"
+              :branch-name="m.branch.name"
+              :role="m.role"
+            />
+          </div>
+        </section>
+
+        <Separator v-if="hasUserAccount" class="my-8" />
 
         <section>
           <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
@@ -331,55 +409,6 @@ onMounted(() => {
           </div>
         </section>
 
-        <template v-if="hasUserAccount && canEdit">
-          <Separator class="my-8" />
-
-          <section>
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Key class="h-4 w-4" />
-                {{ t('admin.accountInfo') }}
-              </h3>
-              <Button 
-                v-if="canResetPassword" 
-                variant="outline" 
-                size="sm" 
-                @click="showResetPasswordSheet = true"
-              >
-                <Key class="h-4 w-4 mr-2" />
-                {{ t('admin.resetPassword') }}
-              </Button>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-8">
-              <div>
-                <p class="text-xs text-muted-foreground mb-0.5">{{ t('admin.email') }}</p>
-                <p class="font-medium truncate">{{ operator.user?.email }}</p>
-              </div>
-
-              <div>
-                <p class="text-xs text-muted-foreground mb-0.5">{{ t('admin.role') }}</p>
-                <Select 
-                  v-if="canChangeRole"
-                  :model-value="operator.user?.role" 
-                  @update:model-value="handleRoleChange"
-                  :disabled="isUpdatingRole"
-                >
-                  <SelectTrigger class="w-full h-8 mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem v-for="role in availableRoles" :key="role" :value="role">
-                      {{ t(`admin.roles.${role}`) }}
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-                <p v-else class="font-medium">{{ t(`admin.roles.${operator.user?.role}`) }}</p>
-              </div>
-            </div>
-          </section>
-        </template>
-
         <Separator class="my-8" />
 
         <section>
@@ -388,6 +417,27 @@ onMounted(() => {
             {{ t('operators.recentNets') }}
           </h3>
 
+          <div class="flex flex-wrap items-center gap-2 mb-4">
+            <div class="relative flex-1 min-w-[200px]">
+              <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                v-model="netsSearch"
+                :placeholder="t('nets.searchPlaceholder')"
+                class="pl-9"
+              />
+            </div>
+            <Select v-model="netsRoleFilter">
+              <SelectTrigger class="w-[140px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{{ t('nets.roleAll') }}</SelectItem>
+                <SelectItem value="managed">{{ t('operators.managed') }}</SelectItem>
+                <SelectItem value="attended">{{ t('operators.attended') }}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           <div v-if="isLoadingNets" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
             <div v-for="i in 6" :key="i" class="p-4 rounded-lg border border-border/50 space-y-2">
               <div class="h-5 w-48 bg-muted animate-pulse rounded" />
@@ -395,13 +445,13 @@ onMounted(() => {
             </div>
           </div>
 
-          <div v-else-if="recentNets.length === 0" class="py-8 text-center">
-            <p class="text-muted-foreground">{{ t('operators.noNets') }}</p>
+          <div v-else-if="filteredNets.length === 0" class="py-8 text-center">
+            <p class="text-muted-foreground">{{ recentNets.length === 0 ? t('operators.noNets') : t('common.noResults') }}</p>
           </div>
 
           <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
             <button
-              v-for="net in recentNets"
+              v-for="net in filteredNets"
               :key="net.id"
               @click="goToNet(net.id)"
               class="w-full text-left p-4 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all group flex items-center gap-3"
@@ -424,7 +474,7 @@ onMounted(() => {
             </button>
           </div>
 
-          <div v-if="hasMoreNets && recentNets.length > 0" class="pt-4">
+          <div v-if="hasMoreNets && filteredNets.length > 0" class="pt-4">
             <Button
               variant="outline"
               class="w-full lg:w-auto lg:px-8"
@@ -444,12 +494,6 @@ onMounted(() => {
         @updated="handleOperatorUpdated"
       />
 
-      <ResetPasswordSheet
-        v-if="operator?.user?.id"
-        v-model:open="showResetPasswordSheet"
-        :user-id="operator.user.id"
-        :call-sign="formattedCallSign"
-      />
     </div>
   </AppLayout>
 </template>

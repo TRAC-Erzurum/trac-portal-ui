@@ -36,7 +36,6 @@ interface OperatorsResponse {
 const { t } = useI18n()
 
 type MembershipFilter = 'all' | 'registered' | 'unregistered'
-type RoleFilter = 'all' | 'super_admin' | 'admin' | 'member' | 'volunteer' | 'guest'
 
 const operators = ref<Operator[]>([])
 const total = ref(0)
@@ -44,7 +43,6 @@ const isLoading = ref(true)
 const isLoadingMore = ref(false)
 const search = ref('')
 const membershipFilter = ref<MembershipFilter>('all')
-const roleFilter = ref<RoleFilter>('all')
 const page = ref(1)
 const pageSize = 12
 const hasMore = ref(true)
@@ -64,7 +62,6 @@ const fetchOperators = async (append = false) => {
     params.set('pageSize', String(pageSize))
     if (search.value) params.set('search', search.value)
     if (membershipFilter.value !== 'all') params.set('membership', membershipFilter.value)
-    if (roleFilter.value !== 'all') params.set('role', roleFilter.value)
 
     const response = await api.get<OperatorsResponse>(`/operator?${params.toString()}`)
     
@@ -106,7 +103,6 @@ const handleFilterChange = () => {
 
 watch(search, handleSearch)
 watch(membershipFilter, handleFilterChange)
-watch(roleFilter, handleFilterChange)
 
 onMounted(() => {
   fetchOperators()
@@ -134,20 +130,6 @@ onMounted(() => {
             <SelectItem value="all">{{ t('operators.membershipAll') }}</SelectItem>
             <SelectItem value="registered">{{ t('operators.membershipRegistered') }}</SelectItem>
             <SelectItem value="unregistered">{{ t('operators.membershipUnregistered') }}</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select v-model="roleFilter">
-          <SelectTrigger class="flex-1 sm:flex-none sm:w-[140px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{{ t('operators.roleAll') }}</SelectItem>
-            <SelectItem value="super_admin">{{ t('admin.roles.super_admin') }}</SelectItem>
-            <SelectItem value="admin">{{ t('admin.roles.admin') }}</SelectItem>
-            <SelectItem value="member">{{ t('admin.roles.member') }}</SelectItem>
-            <SelectItem value="volunteer">{{ t('admin.roles.volunteer') }}</SelectItem>
-            <SelectItem value="guest">{{ t('admin.roles.guest') }}</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -180,7 +162,6 @@ onMounted(() => {
           :attended-count="op.attendedCount"
           :managed-count="op.managedCount"
           :user-full-name="op.user?.fullName"
-          :user-role="op.user?.role"
           :user-picture="op.user?.picture"
         />
       </div>

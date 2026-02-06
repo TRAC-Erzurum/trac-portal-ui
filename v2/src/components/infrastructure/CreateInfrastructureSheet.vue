@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { TowerControl, Globe, Navigation, Waves } from 'lucide-vue-next'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
+import { useQthData } from '@/composables'
 
 type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs' | 'hf'
 
@@ -45,6 +46,7 @@ const TYPE_OPTIONS = [
 const props = defineProps<{
   open: boolean
   branchId: string
+  branchCity?: string
 }>()
 
 const emit = defineEmits<{
@@ -53,11 +55,18 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { getDistricts, loadCities } = useQthData()
 
 const name = ref('')
 const type = ref<InfrastructureType>('vhf_uhf_repeater')
 const description = ref('')
 const location = ref('')
+const district = ref('')
+
+const availableDistricts = computed(() => {
+  if (!props.branchCity) return []
+  return getDistricts(props.branchCity)
+})
 const latitude = ref<number | undefined>()
 const longitude = ref<number | undefined>()
 const altitude = ref<number | undefined>()
@@ -172,6 +181,7 @@ function resetForm() {
   type.value = 'vhf_uhf_repeater'
   description.value = ''
   location.value = ''
+  district.value = ''
   latitude.value = undefined
   longitude.value = undefined
   altitude.value = undefined
@@ -203,6 +213,7 @@ function resetForm() {
 
 watch(() => props.open, (isOpen) => {
   if (isOpen) {
+    loadCities()
     resetForm()
   }
 })
@@ -217,6 +228,7 @@ async function handleSubmit() {
       name: name.value.trim(),
       type: type.value,
       description: description.value.trim() || undefined,
+      district: district.value.trim() || undefined,
     }
 
     if (showLocationFields.value) {
@@ -348,6 +360,18 @@ async function handleSubmit() {
         </div>
 
         <Separator />
+
+        <div class="space-y-2">
+          <Label for="district">{{ t('form.district') }}</Label>
+          <Select v-model="district" :disabled="!props.branchCity">
+            <SelectTrigger id="district" class="w-full">
+              <SelectValue :placeholder="props.branchCity ? t('form.districtPlaceholder') : t('infrastructure.selectCityFirst')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="d in availableDistricts" :key="d" :value="d">{{ d }}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <template v-if="showLocationFields">
           <div class="space-y-4">

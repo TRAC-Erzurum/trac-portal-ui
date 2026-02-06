@@ -33,6 +33,7 @@ export interface User {
   picture?: string
   createdAt?: string
   operator?: Operator
+  currentBranchId?: string | null
 }
 
 interface AuthCheckResponse {
@@ -43,6 +44,7 @@ interface RegisterData {
   email: string
   callSign: string
   password: string
+  branchIds: string[]
   fullName?: string
   city?: string
   district?: string

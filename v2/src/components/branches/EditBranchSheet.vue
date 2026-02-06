@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
+import { useQthData } from '@/composables'
 
 interface BranchCallSign {
   id: string
@@ -24,6 +25,7 @@ interface Branch {
   type: 'branch' | 'representative'
   isHeadquarters: boolean
   isActive: boolean
+  city?: string
   address?: string
   phone?: string
   email?: string
@@ -42,9 +44,11 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { cities, loadCities } = useQthData()
 
 const name = ref('')
 const type = ref<'branch' | 'representative'>('branch')
+const city = ref('')
 const address = ref('')
 const phone = ref('')
 const email = ref('')
@@ -89,8 +93,10 @@ const setDefaultCallSign = (index: number) => {
 
 watch(() => props.open, (isOpen) => {
   if (isOpen && props.branch) {
+    loadCities()
     name.value = props.branch.name
     type.value = props.branch.type
+    city.value = props.branch.city || ''
     address.value = props.branch.address || ''
     phone.value = props.branch.phone || ''
     email.value = props.branch.email || ''
@@ -109,6 +115,7 @@ async function handleSubmit() {
   try {
     const payload: Record<string, unknown> = {
       name: name.value.trim(),
+      city: city.value.trim() || undefined,
       address: address.value.trim() || undefined,
       phone: phone.value.trim() || undefined,
       email: email.value.trim() || undefined,
@@ -169,6 +176,18 @@ async function handleSubmit() {
             <SelectContent>
               <SelectItem value="branch">{{ t('branches.typeBranch') }}</SelectItem>
               <SelectItem value="representative">{{ t('branches.typeRepresentative') }}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div class="space-y-2">
+          <Label for="city">{{ t('form.city') }}</Label>
+          <Select v-model="city">
+            <SelectTrigger id="city" class="w-full">
+              <SelectValue :placeholder="t('form.cityPlaceholder')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="c in cities" :key="c" :value="c">{{ c }}</SelectItem>
             </SelectContent>
           </Select>
         </div>

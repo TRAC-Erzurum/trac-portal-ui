@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
+import { useQthData } from '@/composables'
 
 const props = defineProps<{
   open: boolean
@@ -22,9 +23,11 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { cities, loadCities } = useQthData()
 
 const name = ref('')
 const type = ref<'branch' | 'representative'>('branch')
+const city = ref('')
 const address = ref('')
 const phone = ref('')
 const email = ref('')
@@ -66,8 +69,10 @@ const setDefaultCallSign = (index: number) => {
 
 watch(() => props.open, (isOpen) => {
   if (isOpen) {
+    loadCities()
     name.value = ''
     type.value = 'branch'
+    city.value = ''
     address.value = ''
     phone.value = ''
     email.value = ''
@@ -83,6 +88,7 @@ async function handleSubmit() {
     await api.post('/branches', {
       name: name.value.trim(),
       type: type.value,
+      city: city.value.trim() || undefined,
       address: address.value.trim() || undefined,
       phone: phone.value.trim() || undefined,
       email: email.value.trim() || undefined,
@@ -135,6 +141,18 @@ async function handleSubmit() {
             <SelectContent>
               <SelectItem value="branch">{{ t('branches.typeBranch') }}</SelectItem>
               <SelectItem value="representative">{{ t('branches.typeRepresentative') }}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div class="space-y-2">
+          <Label for="city">{{ t('form.city') }}</Label>
+          <Select v-model="city">
+            <SelectTrigger id="city" class="w-full">
+              <SelectValue :placeholder="t('form.cityPlaceholder')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem v-for="c in cities" :key="c" :value="c">{{ c }}</SelectItem>
             </SelectContent>
           </Select>
         </div>
