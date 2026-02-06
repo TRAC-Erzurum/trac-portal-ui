@@ -100,9 +100,9 @@ const router = createRouter({
       meta: { requiresAuth: true, minRole: 'volunteer' }
     },
     {
-      path: '/infrastructure',
-      name: 'infrastructure',
-      component: () => import('@/pages/infrastructure/InfrastructurePage.vue'),
+      path: '/communication-channels',
+      name: 'communicationChannels',
+      component: () => import('@/pages/communication-channels/CommunicationChannelsPage.vue'),
       meta: { requiresAuth: true }
     },
     {

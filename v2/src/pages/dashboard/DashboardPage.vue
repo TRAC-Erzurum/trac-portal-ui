@@ -14,8 +14,6 @@ import { api } from '@/lib/api'
 interface ActiveNet {
   id: string
   name: string
-  frequency: string
-  mode: string
   operatorCallSign: string
   attendeeCount: number
   startedAt: string
@@ -25,8 +23,6 @@ interface ActiveNet {
 interface PendingNet {
   id: string
   name: string
-  frequency: string
-  mode: string
   operatorCallSign: string
 }
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { formatDateTime } from '@/lib/formatters'
+import { useDateFormat } from '@/composables'
 
 interface Attendee {
   id: string
@@ -14,16 +14,33 @@ interface Attendee {
   createdAt: string
 }
 
+interface NetCommunicationChannel {
+  id: string
+  communicationChannelId?: string
+  isSimplexAdHoc?: boolean
+  simplexFrequency?: string
+  communicationChannel?: {
+    id: string
+    name: string
+    type: string
+  }
+}
+
 interface Props {
   netName: string
   operatorCallSign: string
   attendees: Attendee[]
   dateInfo: string
+  branchName?: string
+  branchCallSign?: string
+  branchIsHeadquarters?: boolean
+  communicationChannels?: NetCommunicationChannel[]
 }
 
 defineProps<Props>()
 
 const { t } = useI18n()
+const { formatDateTime } = useDateFormat()
 
 const templateRef = ref<HTMLElement | null>(null)
 
@@ -78,6 +95,22 @@ const formatReadabilitySignal = (attendee: Attendee) => {
         <tr>
           <td class="attendees-td attendees-tfoot-label">{{ t('netReport.operator') }}:</td>
           <td class="attendees-td attendees-tfoot-value" colspan="5">{{ operatorCallSign }}</td>
+        </tr>
+        <tr v-if="branchName">
+          <td class="attendees-td attendees-tfoot-label">{{ t('netReport.branch') }}:</td>
+          <td class="attendees-td attendees-tfoot-value" colspan="5">
+            <span v-if="!branchIsHeadquarters && branchCallSign">{{ branchCallSign }} · </span>{{ branchName }}
+          </td>
+        </tr>
+        <tr v-if="communicationChannels && communicationChannels.length > 0">
+          <td class="attendees-td attendees-tfoot-label">{{ t('netReport.infrastructure') }}:</td>
+          <td class="attendees-td attendees-tfoot-value" colspan="5">
+            <span v-for="(channel, idx) in communicationChannels" :key="channel.id">
+              <template v-if="channel.isSimplexAdHoc">Simpleks {{ channel.simplexFrequency }}</template>
+              <template v-else>{{ channel.communicationChannel?.name }}</template>
+              <span v-if="idx < communicationChannels.length - 1">, </span>
+            </span>
+          </td>
         </tr>
         <tr>
           <td class="attendees-td attendees-tfoot-label">{{ t('netReport.date') }}:</td>

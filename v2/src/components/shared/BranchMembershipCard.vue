@@ -2,12 +2,14 @@
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { Building2, ChevronRight } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 import { getRoleBadgeClass } from '@/lib/ui-helpers'
 
 interface Props {
   branchId: string
   branchName: string
   role: string
+  globalRole?: string
 }
 
 const props = defineProps<Props>()
@@ -15,26 +17,43 @@ const props = defineProps<Props>()
 const { t } = useI18n()
 const router = useRouter()
 
-const handleClick = () => {
+const goToDetail = () => {
   router.push(`/branches/${props.branchId}`)
 }
 </script>
 
 <template>
-  <button
-    @click="handleClick"
-    class="w-full p-1.5 rounded border border-border/50 hover:border-border hover:bg-muted/30 transition-all group flex flex-col gap-1"
-  >
-    <div class="flex items-center gap-1.5 min-w-0">
-      <Building2 class="h-3 w-3 text-muted-foreground flex-shrink-0" />
-      <p class="text-xs font-medium truncate flex-1">{{ branchName }}</p>
-      <ChevronRight class="h-2.5 w-2.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+  <div class="w-full p-4 rounded-lg border border-border bg-card transition-all flex flex-col text-left">
+    <div class="flex items-center gap-3 flex-1 min-w-0">
+      <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <Building2 class="h-5 w-5" />
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="font-medium truncate">{{ branchName }}</p>
+        <div class="flex flex-wrap gap-1 mt-1">
+          <span
+            v-if="globalRole === 'super_admin'"
+            class="inline-block px-2 py-0.5 rounded-full text-xs font-medium"
+            :class="getRoleBadgeClass('super_admin')"
+          >
+            {{ t('roles.super_admin') }}
+          </span>
+          <span
+            v-else
+            class="inline-block px-2 py-0.5 rounded-full text-xs font-medium"
+            :class="getRoleBadgeClass(role)"
+          >
+            {{ t(`roles.${role}`) }}
+          </span>
+        </div>
+      </div>
     </div>
-    <span 
-      class="px-1 py-0.5 rounded-full text-[9px] font-medium self-start"
-      :class="getRoleBadgeClass(role)"
-    >
-      {{ t(`roles.${role}`) }}
-    </span>
-  </button>
+    <div class="mt-auto flex items-center justify-end gap-1 pt-1.5 pb-0 border-t border-border/30">
+      <slot name="actions" />
+      <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="goToDetail">
+        <ChevronRight class="h-3.5 w-3.5 mr-1.5" />
+        {{ t('common.detail') }}
+      </Button>
+    </div>
+  </div>
 </template>

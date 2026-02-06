@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { AutocompleteCombobox } from '@/components/shared'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
 import { useQthData } from '@/composables/useQthData'
@@ -87,39 +87,33 @@ async function handleSubmit() {
 
 <template>
   <Sheet :open="open" @update:open="emit('update:open', $event)">
-    <SheetContent class="sm:max-w-md px-6 overflow-y-auto">
+    <SheetContent class="sm:max-w-md overflow-y-auto px-4 sm:px-6">
       <SheetHeader>
         <SheetTitle>{{ t('profile.editOperator') }}</SheetTitle>
         <SheetDescription>{{ t('profile.editOperatorDesc') }}</SheetDescription>
       </SheetHeader>
 
-      <form @submit.prevent="handleSubmit" class="mt-6 space-y-6">
+      <form @submit.prevent="handleSubmit" class="mt-6 space-y-6 pb-6">
         <div class="space-y-2">
           <Label for="city">{{ t('form.city') }}</Label>
-          <Select v-model="city">
-            <SelectTrigger id="city" class="w-full" :disabled="isFetchingCities">
-              <SelectValue :placeholder="isFetchingCities ? t('common.loading') : t('form.cityPlaceholder')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="c in cities" :key="c" :value="c">
-                {{ c }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <AutocompleteCombobox
+            id="city"
+            v-model="city"
+            :options="cities"
+            :placeholder="isFetchingCities ? t('common.loading') : t('form.cityPlaceholder')"
+            :disabled="isFetchingCities"
+          />
         </div>
 
         <div class="space-y-2">
           <Label for="district">{{ t('form.district') }}</Label>
-          <Select v-model="district" :disabled="!city">
-            <SelectTrigger id="district" class="w-full">
-              <SelectValue :placeholder="city ? t('form.district') : t('form.cityPlaceholder')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="d in districts" :key="d" :value="d">
-                {{ d }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <AutocompleteCombobox
+            id="district"
+            v-model="district"
+            :options="districts"
+            :placeholder="city ? t('form.districtPlaceholder') : t('form.cityPlaceholder')"
+            :disabled="!city"
+          />
         </div>
 
         <div class="space-y-2">

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { AutocompleteCombobox } from '@/components/shared'
 import { Checkbox } from '@/components/ui/checkbox'
 import { TowerControl, Globe, Navigation, Waves } from 'lucide-vue-next'
 import { translateError } from '@/i18n'
@@ -43,19 +44,55 @@ const TYPE_OPTIONS = [
   },
 ]
 
+interface Infrastructure {
+  id: string
+  branchId: string
+  type: InfrastructureType
+  name: string
+  description?: string
+  isActive: boolean
+  location?: string
+  district?: string
+  latitude?: number
+  longitude?: number
+  altitude?: number
+  coverage?: string
+  rxFrequency?: number
+  txFrequency?: number
+  offset?: string
+  txCtcssTone?: number
+  rxCtcssTone?: number
+  txDcsCode?: string
+  txDcsPolarity?: string
+  rxDcsCode?: string
+  rxDcsPolarity?: string
+  echolinkNode?: string
+  echolinkName?: string
+  aprsFrequency?: number
+  aprsIsIgate?: boolean
+  aprsIsDigipeater?: boolean
+  aprsIgateMode?: string
+  aprsDigipeaterType?: string
+  aprsPath?: string
+  aprsServer?: string
+  digipeater?: string
+  hfFrequencyRange?: string
+  hfMode?: string
+}
+
 const props = defineProps<{
   open: boolean
-  branchId: string
+  infrastructure: Infrastructure
   branchCity?: string
 }>()
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  'created': []
+  'updated': []
 }>()
 
 const { t } = useI18n()
-const { getDistricts, loadCities } = useQthData()
+const { getDistricts, loadCities, citiesData } = useQthData()
 
 const name = ref('')
 const type = ref<InfrastructureType>('vhf_uhf_repeater')
@@ -65,16 +102,30 @@ const district = ref('')
 
 const availableDistricts = computed(() => {
   if (!props.branchCity) return []
+  void citiesData.value
   return getDistricts(props.branchCity)
 })
+
 const latitude = ref<number | undefined>()
 const longitude = ref<number | undefined>()
 const altitude = ref<number | undefined>()
 const coverage = ref('')
 
-const rxFrequency = ref<number | undefined>()
-const txFrequency = ref<number | undefined>()
+const rxFrequency = ref('')
+const txFrequency = ref('')
 const offset = ref<number | undefined>()
+
+const formatFreq = (val: number | string | undefined): string => {
+  if (val === undefined || val === null || val === '') return ''
+  const num = typeof val === 'string' ? parseFloat(val) : val
+  return isNaN(num) ? '' : num.toFixed(3)
+}
+
+const parseFreq = (val: string): number | undefined => {
+  if (!val || val.trim() === '') return undefined
+  const num = parseFloat(val)
+  return isNaN(num) ? undefined : num
+}
 
 type ToneType = 'none' | 'ctcss' | 'dcs'
 const txToneType = ref<ToneType>('none')
@@ -107,24 +158,32 @@ const DCS_CODES = [
 ]
 
 const isCalculating = ref(false)
+const skipFreqWatch = ref(false)
 
-const hasTxFrequency = computed(() => txFrequency.value !== undefined && txFrequency.value > 0)
+const hasTxFrequency = computed(() => {
+  const freq = parseFreq(txFrequency.value)
+  return freq !== undefined && freq > 0
+})
 
 watch(offset, (newVal, oldVal) => {
-  if (isCalculating.value || newVal === oldVal) return
-  if (!hasTxFrequency.value || newVal === undefined) return
+  if (isCalculating.value || skipFreqWatch.value || newVal === oldVal) return
+  const txFreq = parseFreq(txFrequency.value)
+  if (!txFreq || newVal === undefined) return
   
   isCalculating.value = true
-  rxFrequency.value = Math.round((txFrequency.value! + (newVal / 1000)) * 10000) / 10000
+  const rxVal = Math.round((txFreq + (newVal / 1000)) * 1000) / 1000
+  rxFrequency.value = formatFreq(rxVal)
   isCalculating.value = false
 })
 
 watch(rxFrequency, (newVal, oldVal) => {
-  if (isCalculating.value || newVal === oldVal) return
-  if (!hasTxFrequency.value || newVal === undefined) return
+  if (isCalculating.value || skipFreqWatch.value || newVal === oldVal) return
+  const txFreq = parseFreq(txFrequency.value)
+  const rxFreq = parseFreq(newVal)
+  if (!txFreq || rxFreq === undefined) return
   
   isCalculating.value = true
-  offset.value = Math.round((newVal - txFrequency.value!) * 1000 * 10) / 10
+  offset.value = Math.round((rxFreq - txFreq) * 1000 * 10) / 10
   isCalculating.value = false
 })
 
@@ -137,7 +196,7 @@ const offsetDisplay = computed(() => {
 const echolinkNode = ref('')
 const echolinkName = ref('')
 
-const aprsFrequency = ref<number | undefined>()
+const aprsFrequency = ref('')
 const aprsIsIgate = ref(false)
 const aprsIsDigipeater = ref(false)
 const aprsIgateMode = ref<'rx_only' | 'tx_rx'>('rx_only')
@@ -176,47 +235,98 @@ const showHfFields = computed(() => {
   return type.value === 'hf'
 })
 
-function resetForm() {
-  name.value = ''
-  type.value = 'vhf_uhf_repeater'
-  description.value = ''
-  location.value = ''
-  district.value = ''
-  latitude.value = undefined
-  longitude.value = undefined
-  altitude.value = undefined
-  coverage.value = ''
-  rxFrequency.value = undefined
-  txFrequency.value = undefined
-  offset.value = undefined
-  txToneType.value = 'none'
-  rxToneType.value = 'none'
-  txCtcssTone.value = undefined
-  rxCtcssTone.value = undefined
-  txDcsCode.value = ''
-  txDcsPolarity.value = 'N'
-  rxDcsCode.value = ''
-  rxDcsPolarity.value = 'N'
-  echolinkNode.value = ''
-  echolinkName.value = ''
-  aprsFrequency.value = undefined
-  aprsIsIgate.value = false
-  aprsIsDigipeater.value = false
-  aprsIgateMode.value = 'rx_only'
-  aprsDigipeaterType.value = 'wide'
-  aprsPath.value = ''
-  aprsServer.value = ''
-  digipeater.value = ''
-  hfFrequencyRange.value = ''
-  hfMode.value = ''
+function parseOffset(offsetStr?: string): number | undefined {
+  if (!offsetStr) return undefined
+  const match = offsetStr.match(/([+-]?\d+(?:\.\d+)?)\s*kHz/i)
+  return match && match[1] ? parseFloat(match[1]) : undefined
 }
 
-watch(() => props.open, (isOpen) => {
-  if (isOpen) {
-    loadCities()
-    resetForm()
+function loadForm() {
+  if (!props.infrastructure) return
+  
+  loadCities()
+  skipFreqWatch.value = true
+  
+  name.value = props.infrastructure.name
+  type.value = props.infrastructure.type as InfrastructureType
+  description.value = props.infrastructure.description || ''
+  location.value = props.infrastructure.location || ''
+  district.value = props.infrastructure.district || ''
+  latitude.value = props.infrastructure.latitude ? Number(props.infrastructure.latitude) : undefined
+  longitude.value = props.infrastructure.longitude ? Number(props.infrastructure.longitude) : undefined
+  altitude.value = props.infrastructure.altitude ? Number(props.infrastructure.altitude) : undefined
+  coverage.value = props.infrastructure.coverage || ''
+  
+  rxFrequency.value = formatFreq(props.infrastructure.rxFrequency)
+  txFrequency.value = formatFreq(props.infrastructure.txFrequency)
+  offset.value = parseOffset(props.infrastructure.offset)
+  
+  if (props.infrastructure.txCtcssTone) {
+    txToneType.value = 'ctcss'
+    txCtcssTone.value = Number(props.infrastructure.txCtcssTone)
+    txDcsCode.value = ''
+    txDcsPolarity.value = 'N'
+  } else if (props.infrastructure.txDcsCode) {
+    txToneType.value = 'dcs'
+    txDcsCode.value = props.infrastructure.txDcsCode
+    txDcsPolarity.value = (props.infrastructure.txDcsPolarity as 'N' | 'I') || 'N'
+    txCtcssTone.value = undefined
+  } else {
+    txToneType.value = 'none'
+    txCtcssTone.value = undefined
+    txDcsCode.value = ''
+    txDcsPolarity.value = 'N'
   }
-})
+  
+  if (props.infrastructure.rxCtcssTone) {
+    rxToneType.value = 'ctcss'
+    rxCtcssTone.value = Number(props.infrastructure.rxCtcssTone)
+    rxDcsCode.value = ''
+    rxDcsPolarity.value = 'N'
+  } else if (props.infrastructure.rxDcsCode) {
+    rxToneType.value = 'dcs'
+    rxDcsCode.value = props.infrastructure.rxDcsCode
+    rxDcsPolarity.value = (props.infrastructure.rxDcsPolarity as 'N' | 'I') || 'N'
+    rxCtcssTone.value = undefined
+  } else {
+    rxToneType.value = 'none'
+    rxCtcssTone.value = undefined
+    rxDcsCode.value = ''
+    rxDcsPolarity.value = 'N'
+  }
+  
+  echolinkNode.value = props.infrastructure.echolinkNode || ''
+  echolinkName.value = props.infrastructure.echolinkName || ''
+  
+  aprsFrequency.value = formatFreq(props.infrastructure.aprsFrequency)
+  aprsIsIgate.value = props.infrastructure.aprsIsIgate || false
+  aprsIsDigipeater.value = props.infrastructure.aprsIsDigipeater || false
+  aprsIgateMode.value = (props.infrastructure.aprsIgateMode as 'rx_only' | 'tx_rx') || 'rx_only'
+  aprsDigipeaterType.value = (props.infrastructure.aprsDigipeaterType as 'fill_in' | 'wide') || 'wide'
+  aprsPath.value = props.infrastructure.aprsPath || ''
+  aprsServer.value = props.infrastructure.aprsServer || ''
+  digipeater.value = props.infrastructure.digipeater || ''
+  
+  hfFrequencyRange.value = props.infrastructure.hfFrequencyRange || ''
+  hfMode.value = props.infrastructure.hfMode || ''
+  
+  setTimeout(() => {
+    skipFreqWatch.value = false
+  }, 100)
+}
+
+watch(() => props.open, async (isOpen) => {
+  if (isOpen && props.infrastructure) {
+    await loadCities()
+    loadForm()
+  }
+}, { immediate: true })
+
+watch(() => props.infrastructure, (infra) => {
+  if (props.open && infra) {
+    loadForm()
+  }
+}, { immediate: true })
 
 async function handleSubmit() {
   if (!isValid.value) return
@@ -224,70 +334,78 @@ async function handleSubmit() {
   isLoading.value = true
   try {
     const payload: Record<string, unknown> = {
-      branchId: props.branchId,
       name: name.value.trim(),
       type: type.value,
-      description: description.value.trim() || undefined,
-      district: district.value.trim() || undefined,
+      description: description.value.trim() || null,
+      district: district.value.trim() || null,
     }
 
     if (showLocationFields.value) {
-      payload.location = location.value.trim() || undefined
-      payload.latitude = latitude.value
-      payload.longitude = longitude.value
-      payload.altitude = altitude.value
-      payload.coverage = coverage.value.trim() || undefined
+      payload.location = location.value.trim() || null
+      payload.latitude = latitude.value ?? null
+      payload.longitude = longitude.value ?? null
+      payload.altitude = altitude.value ?? null
+      payload.coverage = coverage.value.trim() || null
     }
 
     if (showRepeaterFields.value) {
       payload.repeaterMode = 'analog'
-      payload.rxFrequency = rxFrequency.value
-      payload.txFrequency = txFrequency.value
-      payload.offset = offset.value !== undefined ? offsetDisplay.value : undefined
+      payload.rxFrequency = parseFreq(rxFrequency.value) ?? null
+      payload.txFrequency = parseFreq(txFrequency.value) ?? null
+      payload.offset = offset.value !== undefined ? offsetDisplay.value : null
       if (txToneType.value === 'ctcss' && txCtcssTone.value) {
         payload.txCtcssTone = txCtcssTone.value
-      }
-      if (txToneType.value === 'dcs' && txDcsCode.value) {
+        payload.txDcsCode = null
+        payload.txDcsPolarity = null
+      } else if (txToneType.value === 'dcs' && txDcsCode.value) {
         payload.txDcsCode = txDcsCode.value
         payload.txDcsPolarity = txDcsPolarity.value
+        payload.txCtcssTone = null
+      } else {
+        payload.txCtcssTone = null
+        payload.txDcsCode = null
+        payload.txDcsPolarity = null
       }
+      
       if (rxToneType.value === 'ctcss' && rxCtcssTone.value) {
         payload.rxCtcssTone = rxCtcssTone.value
-      }
-      if (rxToneType.value === 'dcs' && rxDcsCode.value) {
+        payload.rxDcsCode = null
+        payload.rxDcsPolarity = null
+      } else if (rxToneType.value === 'dcs' && rxDcsCode.value) {
         payload.rxDcsCode = rxDcsCode.value
         payload.rxDcsPolarity = rxDcsPolarity.value
+        payload.rxCtcssTone = null
+      } else {
+        payload.rxCtcssTone = null
+        payload.rxDcsCode = null
+        payload.rxDcsPolarity = null
       }
     }
 
     if (showEcholinkFields.value) {
-      payload.echolinkNode = echolinkNode.value.trim() || undefined
-      payload.echolinkName = echolinkName.value.trim() || undefined
+      payload.echolinkNode = echolinkNode.value.trim() || null
+      payload.echolinkName = echolinkName.value.trim() || null
     }
 
     if (showAprsFields.value) {
-      payload.aprsFrequency = aprsFrequency.value
+      payload.aprsFrequency = parseFreq(aprsFrequency.value) ?? null
       payload.aprsIsIgate = aprsIsIgate.value
       payload.aprsIsDigipeater = aprsIsDigipeater.value
-      if (aprsIsIgate.value) {
-        payload.aprsIgateMode = aprsIgateMode.value
-        payload.aprsServer = aprsServer.value.trim() || undefined
-      }
-      if (aprsIsDigipeater.value) {
-        payload.aprsDigipeaterType = aprsDigipeaterType.value
-        payload.aprsPath = aprsPath.value.trim() || undefined
-      }
+      payload.aprsIgateMode = aprsIsIgate.value ? aprsIgateMode.value : null
+      payload.aprsServer = aprsIsIgate.value ? (aprsServer.value.trim() || null) : null
+      payload.aprsDigipeaterType = aprsIsDigipeater.value ? aprsDigipeaterType.value : null
+      payload.aprsPath = aprsIsDigipeater.value ? (aprsPath.value.trim() || null) : null
     }
 
     if (showHfFields.value) {
-      payload.hfFrequencyRange = hfFrequencyRange.value.trim() || undefined
-      payload.hfMode = hfMode.value.trim() || undefined
+      payload.hfFrequencyRange = hfFrequencyRange.value.trim() || null
+      payload.hfMode = hfMode.value.trim() || null
     }
 
-    await api.post(`/branches/${props.branchId}/infrastructure`, payload)
+    await api.patch(`/communication-channel/${props.infrastructure.id}`, payload)
 
-    toast.success(t('infrastructure.createSuccess'))
-    emit('created')
+    toast.success(t('communicationChannels.updateSuccess'))
+    emit('updated')
     emit('update:open', false)
   } catch (e) {
     const error = e as ApiError
@@ -300,61 +418,47 @@ async function handleSubmit() {
 
 <template>
   <Sheet :open="open" @update:open="emit('update:open', $event)">
-    <SheetContent class="sm:max-w-lg px-6 overflow-y-auto">
+    <SheetContent class="sm:max-w-lg overflow-y-auto px-4 sm:px-6">
       <SheetHeader>
-        <SheetTitle>{{ t('infrastructure.create') }}</SheetTitle>
-        <SheetDescription>{{ t('infrastructure.createDescription') }}</SheetDescription>
+        <SheetTitle>{{ t('communicationChannels.edit') }}</SheetTitle>
+        <SheetDescription>{{ t('communicationChannels.editDescription') }}</SheetDescription>
       </SheetHeader>
 
       <form @submit.prevent="handleSubmit" class="mt-6 space-y-6">
-        <div class="space-y-3">
-          <Label>{{ t('infrastructure.type') }} <span class="text-destructive">*</span></Label>
-          <div class="grid grid-cols-2 gap-2">
-            <button
-              v-for="opt in TYPE_OPTIONS"
-              :key="opt.value"
-              type="button"
-              @click="type = opt.value"
-              class="flex items-center gap-3 p-3 rounded-lg border-2 transition-all text-left"
-              :class="[
-                type === opt.value 
-                  ? opt.activeClasses 
-                  : 'border-border hover:border-muted-foreground/50'
-              ]"
+        <div class="space-y-2">
+          <Label>{{ t('communicationChannels.type') }}</Label>
+          <div 
+            v-if="TYPE_OPTIONS.find(opt => opt.value === type)"
+            class="flex items-center gap-3 p-3 rounded-lg border bg-muted/30"
+          >
+            <div 
+              class="p-2 rounded-md"
+              :class="TYPE_OPTIONS.find(opt => opt.value === type)?.iconActiveClasses"
             >
-              <div 
-                class="p-2 rounded-md"
-                :class="[
-                  type === opt.value 
-                    ? opt.iconActiveClasses 
-                    : 'bg-muted text-muted-foreground'
-                ]"
-              >
-                <component :is="opt.icon" class="h-4 w-4" />
-              </div>
-              <span class="text-sm font-medium">{{ t(`infrastructure.types.${opt.value}`) }}</span>
-            </button>
+              <component :is="TYPE_OPTIONS.find(opt => opt.value === type)?.icon" class="h-4 w-4" />
+            </div>
+            <span class="text-sm font-medium">{{ t(`communicationChannels.types.${type}`) }}</span>
           </div>
         </div>
 
         <div class="space-y-2">
-          <Label for="name">{{ t('infrastructure.name') }} <span class="text-destructive">*</span></Label>
+          <Label for="edit-name">{{ t('communicationChannels.name') }} <span class="text-destructive">*</span></Label>
           <Input
-            id="name"
+            id="edit-name"
             v-model="name"
             type="text"
-            :placeholder="t('infrastructure.namePlaceholder')"
+            :placeholder="t('communicationChannels.namePlaceholder')"
             required
           />
         </div>
 
         <div class="space-y-2">
-          <Label for="description">{{ t('infrastructure.description') }}</Label>
+          <Label for="edit-description">{{ t('communicationChannels.description') }}</Label>
           <textarea
-            id="description"
+            id="edit-description"
             v-model="description"
             rows="2"
-            :placeholder="t('infrastructure.descriptionPlaceholder')"
+            :placeholder="t('communicationChannels.descriptionPlaceholder')"
             class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
           />
         </div>
@@ -362,36 +466,37 @@ async function handleSubmit() {
         <Separator />
 
         <div class="space-y-2">
-          <Label for="district">{{ t('form.district') }}</Label>
-          <Select v-model="district" :disabled="!props.branchCity">
-            <SelectTrigger id="district" class="w-full">
-              <SelectValue :placeholder="props.branchCity ? t('form.districtPlaceholder') : t('infrastructure.selectCityFirst')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="d in availableDistricts" :key="d" :value="d">{{ d }}</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label for="edit-district">{{ t('form.district') }}</Label>
+          <AutocompleteCombobox
+            id="edit-district"
+            v-model="district"
+            :options="availableDistricts"
+            :placeholder="props.branchCity ? t('form.districtPlaceholder') : t('communicationChannels.selectCityFirst')"
+            :disabled="!props.branchCity"
+          />
         </div>
+
+        <Separator />
 
         <template v-if="showLocationFields">
           <div class="space-y-4">
-            <h4 class="text-sm font-medium text-muted-foreground">{{ t('infrastructure.locationSection') }}</h4>
+            <h4 class="text-sm font-medium text-muted-foreground">{{ t('communicationChannels.locationSection') }}</h4>
 
             <div class="space-y-2">
-              <Label for="location">{{ t('infrastructure.location') }}</Label>
+              <Label for="edit-location">{{ t('communicationChannels.location') }}</Label>
               <Input
-                id="location"
+                id="edit-location"
                 v-model="location"
                 type="text"
-                :placeholder="t('infrastructure.locationPlaceholder')"
+                :placeholder="t('communicationChannels.locationPlaceholder')"
               />
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
-                <Label for="latitude">{{ t('infrastructure.latitude') }}</Label>
+                <Label for="edit-latitude">{{ t('communicationChannels.latitude') }}</Label>
                 <Input
-                  id="latitude"
+                  id="edit-latitude"
                   v-model.number="latitude"
                   type="number"
                   step="0.0000001"
@@ -401,9 +506,9 @@ async function handleSubmit() {
                 />
               </div>
               <div class="space-y-2">
-                <Label for="longitude">{{ t('infrastructure.longitude') }}</Label>
+                <Label for="edit-longitude">{{ t('communicationChannels.longitude') }}</Label>
                 <Input
-                  id="longitude"
+                  id="edit-longitude"
                   v-model.number="longitude"
                   type="number"
                   step="0.0000001"
@@ -416,21 +521,21 @@ async function handleSubmit() {
 
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
-                <Label for="altitude">{{ t('infrastructure.altitude') }}</Label>
+                <Label for="edit-altitude">{{ t('communicationChannels.altitude') }}</Label>
                 <Input
-                  id="altitude"
+                  id="edit-altitude"
                   v-model.number="altitude"
                   type="number"
                   placeholder="1200"
                 />
               </div>
               <div class="space-y-2">
-                <Label for="coverage">{{ t('infrastructure.coverage') }}</Label>
+                <Label for="edit-coverage">{{ t('communicationChannels.coverage') }}</Label>
                 <Input
-                  id="coverage"
+                  id="edit-coverage"
                   v-model="coverage"
                   type="text"
-                  :placeholder="t('infrastructure.coveragePlaceholder')"
+                  :placeholder="t('communicationChannels.coveragePlaceholder')"
                 />
               </div>
             </div>
@@ -448,17 +553,17 @@ async function handleSubmit() {
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
                 </div>
                 <h4 class="text-sm font-semibold">TX</h4>
-                <span class="text-xs text-muted-foreground">{{ t('infrastructure.txLabel') }}</span>
+                <span class="text-xs text-muted-foreground">{{ t('communicationChannels.txLabel') }}</span>
               </div>
 
               <div class="space-y-2">
-                <Label for="txFrequency" class="text-xs">{{ t('infrastructure.frequency') }} <span class="text-destructive">*</span></Label>
+                <Label for="edit-txFrequency" class="text-xs">{{ t('communicationChannels.frequency') }} <span class="text-destructive">*</span></Label>
                 <div class="flex items-center gap-2">
                   <Input
-                    id="txFrequency"
-                    v-model.number="txFrequency"
-                    type="number"
-                    step="0.0001"
+                    id="edit-txFrequency"
+                    v-model="txFrequency"
+                    type="text"
+                    inputmode="decimal"
                     placeholder="439.125"
                     class="flex-1"
                   />
@@ -468,13 +573,13 @@ async function handleSubmit() {
 
               <Separator class="my-2" />
               <div class="space-y-3">
-                <Label class="text-xs">{{ t('infrastructure.tone') }}</Label>
+                <Label class="text-xs">{{ t('communicationChannels.tone') }}</Label>
                 <Select v-model="txToneType">
                   <SelectTrigger class="w-full h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{{ t('infrastructure.toneTypes.none') }}</SelectItem>
+                    <SelectItem value="none">{{ t('communicationChannels.toneTypes.none') }}</SelectItem>
                     <SelectItem value="ctcss">CTCSS</SelectItem>
                     <SelectItem value="dcs">DCS</SelectItem>
                   </SelectContent>
@@ -482,7 +587,7 @@ async function handleSubmit() {
 
                 <Select v-if="txToneType === 'ctcss'" v-model="txCtcssTone">
                   <SelectTrigger class="w-full h-8 text-xs">
-                    <SelectValue :placeholder="t('infrastructure.selectCtcssTone')" />
+                    <SelectValue :placeholder="t('communicationChannels.selectCtcssTone')" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem v-for="tone in CTCSS_TONES" :key="tone" :value="tone">
@@ -494,7 +599,7 @@ async function handleSubmit() {
                 <div v-if="txToneType === 'dcs'" class="flex gap-2">
                   <Select v-model="txDcsCode" class="flex-1">
                     <SelectTrigger class="w-full h-8 text-xs">
-                      <SelectValue :placeholder="t('infrastructure.selectDcsCode')" />
+                      <SelectValue :placeholder="t('communicationChannels.selectDcsCode')" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem v-for="code in DCS_CODES" :key="code" :value="code">
@@ -522,14 +627,14 @@ async function handleSubmit() {
                   <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
                 </div>
                 <h4 class="text-sm font-semibold">RX</h4>
-                <span class="text-xs text-muted-foreground">{{ t('infrastructure.rxLabel') }}</span>
+                <span class="text-xs text-muted-foreground">{{ t('communicationChannels.rxLabel') }}</span>
               </div>
 
               <div class="space-y-2">
-                <Label for="offset" class="text-xs">{{ t('infrastructure.offset') }}</Label>
+                <Label for="edit-offset" class="text-xs">{{ t('communicationChannels.offset') }}</Label>
                 <div class="flex items-center gap-2">
                   <Input
-                    id="offset"
+                    id="edit-offset"
                     v-model.number="offset"
                     type="number"
                     step="1"
@@ -542,31 +647,31 @@ async function handleSubmit() {
               </div>
 
               <div class="space-y-2">
-                <Label for="rxFrequency" class="text-xs">{{ t('infrastructure.frequency') }}</Label>
+                <Label for="edit-rxFrequency" class="text-xs">{{ t('communicationChannels.frequency') }}</Label>
                 <div class="flex items-center gap-2">
                   <Input
-                    id="rxFrequency"
-                    v-model.number="rxFrequency"
-                    type="number"
-                    step="0.0001"
+                    id="edit-rxFrequency"
+                    v-model="rxFrequency"
+                    type="text"
+                    inputmode="decimal"
                     placeholder="439.725"
                     :disabled="!hasTxFrequency"
                     class="flex-1"
                   />
                   <span class="text-xs text-muted-foreground">MHz</span>
                 </div>
-                <p class="text-[10px] text-muted-foreground">{{ t('infrastructure.offsetOrRxHint') }}</p>
+                <p class="text-[10px] text-muted-foreground">{{ t('communicationChannels.offsetOrRxHint') }}</p>
               </div>
 
               <Separator class="my-2" />
               <div class="space-y-3">
-                <Label class="text-xs">{{ t('infrastructure.tone') }}</Label>
+                <Label class="text-xs">{{ t('communicationChannels.tone') }}</Label>
                 <Select v-model="rxToneType" :disabled="!hasTxFrequency">
                   <SelectTrigger class="w-full h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">{{ t('infrastructure.toneTypes.none') }}</SelectItem>
+                    <SelectItem value="none">{{ t('communicationChannels.toneTypes.none') }}</SelectItem>
                     <SelectItem value="ctcss">CTCSS</SelectItem>
                     <SelectItem value="dcs">DCS</SelectItem>
                   </SelectContent>
@@ -574,7 +679,7 @@ async function handleSubmit() {
 
                 <Select v-if="rxToneType === 'ctcss'" v-model="rxCtcssTone" :disabled="!hasTxFrequency">
                   <SelectTrigger class="w-full h-8 text-xs">
-                    <SelectValue :placeholder="t('infrastructure.selectCtcssTone')" />
+                    <SelectValue :placeholder="t('communicationChannels.selectCtcssTone')" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem v-for="tone in CTCSS_TONES" :key="tone" :value="tone">
@@ -586,7 +691,7 @@ async function handleSubmit() {
                 <div v-if="rxToneType === 'dcs'" class="flex gap-2">
                   <Select v-model="rxDcsCode" class="flex-1" :disabled="!hasTxFrequency">
                     <SelectTrigger class="w-full h-8 text-xs">
-                      <SelectValue :placeholder="t('infrastructure.selectDcsCode')" />
+                      <SelectValue :placeholder="t('communicationChannels.selectDcsCode')" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem v-for="code in DCS_CODES" :key="code" :value="code">
@@ -608,29 +713,29 @@ async function handleSubmit() {
             </div>
           </div>
 
-          <p v-if="!hasTxFrequency" class="text-xs text-muted-foreground text-center">{{ t('infrastructure.enterTxFirst') }}</p>
+          <p v-if="!hasTxFrequency" class="text-xs text-muted-foreground text-center">{{ t('communicationChannels.enterTxFirst') }}</p>
 
           <Separator />
         </template>
 
         <template v-if="showEcholinkFields">
           <div class="space-y-4">
-            <h4 class="text-sm font-medium text-muted-foreground">{{ t('infrastructure.echolinkSection') }}</h4>
+            <h4 class="text-sm font-medium text-muted-foreground">{{ t('communicationChannels.echolinkSection') }}</h4>
 
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
-                <Label for="echolinkNode">{{ t('infrastructure.echolinkNode') }}</Label>
+                <Label for="edit-echolinkNode">{{ t('communicationChannels.echolinkNode') }}</Label>
                 <Input
-                  id="echolinkNode"
+                  id="edit-echolinkNode"
                   v-model="echolinkNode"
                   type="text"
                   placeholder="123456"
                 />
               </div>
               <div class="space-y-2">
-                <Label for="echolinkName">{{ t('infrastructure.echolinkName') }}</Label>
+                <Label for="edit-echolinkName">{{ t('communicationChannels.echolinkName') }}</Label>
                 <Input
-                  id="echolinkName"
+                  id="edit-echolinkName"
                   v-model="echolinkName"
                   type="text"
                   placeholder="TA3ABC-L"
@@ -644,53 +749,53 @@ async function handleSubmit() {
 
         <template v-if="showAprsFields">
           <div class="space-y-4">
-            <h4 class="text-sm font-medium text-muted-foreground">{{ t('infrastructure.aprsSection') }}</h4>
+            <h4 class="text-sm font-medium text-muted-foreground">{{ t('communicationChannels.aprsSection') }}</h4>
 
             <div class="space-y-2">
-              <Label for="aprsFrequency">{{ t('infrastructure.aprsFrequency') }}</Label>
+              <Label for="edit-aprsFrequency">{{ t('communicationChannels.aprsFrequency') }}</Label>
               <Input
-                id="aprsFrequency"
-                v-model.number="aprsFrequency"
-                type="number"
-                step="0.0001"
+                id="edit-aprsFrequency"
+                v-model="aprsFrequency"
+                type="text"
+                inputmode="decimal"
                 placeholder="144.800"
               />
             </div>
 
             <div class="space-y-3">
-              <Label>{{ t('infrastructure.aprsStationType') }}</Label>
+              <Label>{{ t('communicationChannels.aprsStationType') }}</Label>
               <div class="flex gap-6">
                 <label class="flex items-center gap-2 cursor-pointer">
                   <Checkbox :checked="aprsIsIgate" @update:checked="(v: boolean) => aprsIsIgate = v" />
-                  <span class="text-sm">{{ t('infrastructure.aprsIgate') }}</span>
+                  <span class="text-sm">{{ t('communicationChannels.aprsIgate') }}</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
                   <Checkbox :checked="aprsIsDigipeater" @update:checked="(v: boolean) => aprsIsDigipeater = v" />
-                  <span class="text-sm">{{ t('infrastructure.aprsDigipeater') }}</span>
+                  <span class="text-sm">{{ t('communicationChannels.aprsDigipeater') }}</span>
                 </label>
               </div>
             </div>
 
             <div v-if="aprsIsIgate" class="p-3 rounded-lg border border-border/50 space-y-3">
-              <h5 class="text-xs font-medium">{{ t('infrastructure.aprsIgateSettings') }}</h5>
+              <h5 class="text-xs font-medium">{{ t('communicationChannels.aprsIgateSettings') }}</h5>
               
               <div class="space-y-2">
-                <Label>{{ t('infrastructure.aprsIgateMode') }}</Label>
+                <Label>{{ t('communicationChannels.aprsIgateMode') }}</Label>
                 <Select v-model="aprsIgateMode">
                   <SelectTrigger class="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="rx_only">{{ t('infrastructure.aprsIgateModes.rx_only') }}</SelectItem>
-                    <SelectItem value="tx_rx">{{ t('infrastructure.aprsIgateModes.tx_rx') }}</SelectItem>
+                    <SelectItem value="rx_only">{{ t('communicationChannels.aprsIgateModes.rx_only') }}</SelectItem>
+                    <SelectItem value="tx_rx">{{ t('communicationChannels.aprsIgateModes.tx_rx') }}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div class="space-y-2">
-                <Label for="aprsServer">{{ t('infrastructure.aprsServer') }}</Label>
+                <Label for="edit-aprsServer">{{ t('communicationChannels.aprsServer') }}</Label>
                 <Input
-                  id="aprsServer"
+                  id="edit-aprsServer"
                   v-model="aprsServer"
                   type="text"
                   placeholder="rotate.aprs2.net:14580"
@@ -699,30 +804,30 @@ async function handleSubmit() {
             </div>
 
             <div v-if="aprsIsDigipeater" class="p-3 rounded-lg border border-border/50 space-y-3">
-              <h5 class="text-xs font-medium">{{ t('infrastructure.aprsDigipeaterSettings') }}</h5>
+              <h5 class="text-xs font-medium">{{ t('communicationChannels.aprsDigipeaterSettings') }}</h5>
               
               <div class="space-y-2">
-                <Label>{{ t('infrastructure.aprsDigipeaterType') }}</Label>
+                <Label>{{ t('communicationChannels.aprsDigipeaterType') }}</Label>
                 <Select v-model="aprsDigipeaterType">
                   <SelectTrigger class="w-full">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="fill_in">{{ t('infrastructure.aprsDigipeaterTypes.fill_in') }}</SelectItem>
-                    <SelectItem value="wide">{{ t('infrastructure.aprsDigipeaterTypes.wide') }}</SelectItem>
+                    <SelectItem value="fill_in">{{ t('communicationChannels.aprsDigipeaterTypes.fill_in') }}</SelectItem>
+                    <SelectItem value="wide">{{ t('communicationChannels.aprsDigipeaterTypes.wide') }}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div class="space-y-2">
-                <Label for="aprsPath">{{ t('infrastructure.aprsPath') }}</Label>
+                <Label for="edit-aprsPath">{{ t('communicationChannels.aprsPath') }}</Label>
                 <Input
-                  id="aprsPath"
+                  id="edit-aprsPath"
                   v-model="aprsPath"
                   type="text"
                   placeholder="WIDE1-1, WIDE2-2"
                 />
-                <p class="text-xs text-muted-foreground">{{ t('infrastructure.aprsPathHint') }}</p>
+                <p class="text-xs text-muted-foreground">{{ t('communicationChannels.aprsPathHint') }}</p>
               </div>
             </div>
           </div>
@@ -732,22 +837,22 @@ async function handleSubmit() {
 
         <template v-if="showHfFields">
           <div class="space-y-4">
-            <h4 class="text-sm font-medium text-muted-foreground">{{ t('infrastructure.hfSection') }}</h4>
+            <h4 class="text-sm font-medium text-muted-foreground">{{ t('communicationChannels.hfSection') }}</h4>
 
             <div class="grid grid-cols-2 gap-4">
               <div class="space-y-2">
-                <Label for="hfFrequencyRange">{{ t('infrastructure.hfFrequencyRange') }}</Label>
+                <Label for="edit-hfFrequencyRange">{{ t('communicationChannels.hfFrequencyRange') }}</Label>
                 <Input
-                  id="hfFrequencyRange"
+                  id="edit-hfFrequencyRange"
                   v-model="hfFrequencyRange"
                   type="text"
                   placeholder="7.000 - 7.200 MHz"
                 />
               </div>
               <div class="space-y-2">
-                <Label for="hfMode">{{ t('infrastructure.hfMode') }}</Label>
+                <Label for="edit-hfMode">{{ t('communicationChannels.hfMode') }}</Label>
                 <Input
-                  id="hfMode"
+                  id="edit-hfMode"
                   v-model="hfMode"
                   type="text"
                   placeholder="SSB, CW, FT8"

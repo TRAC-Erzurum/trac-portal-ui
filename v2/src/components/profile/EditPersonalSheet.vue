@@ -56,13 +56,13 @@ async function handleSubmit() {
 
 <template>
   <Sheet :open="open" @update:open="emit('update:open', $event)">
-    <SheetContent class="sm:max-w-md px-6">
+    <SheetContent class="sm:max-w-md overflow-y-auto px-4 sm:px-6">
       <SheetHeader>
         <SheetTitle>{{ t('profile.editPersonal') }}</SheetTitle>
         <SheetDescription>{{ t('profile.editPersonalDesc') }}</SheetDescription>
       </SheetHeader>
 
-      <form @submit.prevent="handleSubmit" class="mt-6 space-y-6">
+      <form @submit.prevent="handleSubmit" class="mt-6 space-y-6 pb-6">
         <div class="space-y-2">
           <Label for="fullName">{{ t('form.fullName') }}</Label>
           <Input

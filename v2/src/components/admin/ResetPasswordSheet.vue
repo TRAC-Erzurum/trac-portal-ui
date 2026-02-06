@@ -57,7 +57,7 @@ const handleSubmit = async () => {
 
 <template>
   <Sheet v-model:open="open">
-    <SheetContent>
+    <SheetContent class="sm:max-w-md overflow-y-auto px-4 sm:px-6">
       <SheetHeader>
         <SheetTitle>{{ t('admin.resetPassword') }}</SheetTitle>
         <SheetDescription>
@@ -65,7 +65,7 @@ const handleSubmit = async () => {
         </SheetDescription>
       </SheetHeader>
 
-      <div class="space-y-4 py-6 px-1">
+      <div class="space-y-4 py-6">
         <div class="space-y-2">
           <Label for="newPassword">{{ t('admin.newPassword') }}</Label>
           <Input 
@@ -87,7 +87,7 @@ const handleSubmit = async () => {
         </div>
       </div>
 
-      <div class="flex justify-end gap-2 px-1">
+      <div class="flex justify-end gap-2 pt-2">
         <Button variant="outline" @click="open = false">
           {{ t('common.cancel') }}
         </Button>

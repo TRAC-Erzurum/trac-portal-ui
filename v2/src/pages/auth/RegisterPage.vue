@@ -11,7 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { AutocompleteCombobox } from '@/components/shared'
 import turkeyData from '@/data/turkey.json'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
@@ -235,24 +235,21 @@ function handleGoogleLogin() {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div class="space-y-2">
             <Label for="city">{{ t('form.city') }}</Label>
-            <Select v-model="city">
-              <SelectTrigger class="w-full">
-                <SelectValue :placeholder="t('form.cityPlaceholder')" />
-              </SelectTrigger>
-              <SelectContent class="max-h-60">
-                <SelectItem v-for="c in cities" :key="c" :value="c">
-                  {{ c }}
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <AutocompleteCombobox
+              id="city"
+              :model-value="city ?? ''"
+              :options="cities"
+              :placeholder="t('form.cityPlaceholder')"
+              @update:model-value="(v) => (city = v)"
+            />
           </div>
           <div class="space-y-2">
             <Label for="district">{{ t('form.district') }}</Label>
-            <Input 
-              id="district" 
+            <Input
+              id="district"
               v-model="district"
-              type="text" 
-              placeholder=""
+              type="text"
+              :placeholder="t('form.districtPlaceholder')"
             />
           </div>
         </div>

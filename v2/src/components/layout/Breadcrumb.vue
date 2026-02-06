@@ -29,7 +29,7 @@ const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
     return []
   }
 
-  items.push({ label: t('nav.dashboard'), to: '/dashboard' })
+  items.push({ label: t('nav.home'), to: '/dashboard' })
 
   if (path.startsWith('/nets/')) {
     items.push({ label: t('nav.nets'), to: '/nets' })
@@ -37,6 +37,8 @@ const breadcrumbItems = computed<BreadcrumbItem[]>(() => {
     items.push({ label: t('nav.operators'), to: '/operators' })
   } else if (path.startsWith('/branches/')) {
     items.push({ label: t('nav.branches'), to: '/branches' })
+  } else if (path.startsWith('/communication-channels')) {
+    items.push({ label: t('nav.communicationChannels'), to: '/communication-channels' })
   }
 
   return items
@@ -52,6 +54,7 @@ const currentPageLabel = computed(() => {
   if (path === '/nets') return t('nav.nets')
   if (path === '/operators') return t('nav.operators')
   if (path === '/branches') return t('nav.branches')
+  if (path === '/communication-channels') return t('nav.communicationChannels')
   if (path === '/account') return t('nav.account')
   
   return null

@@ -17,8 +17,10 @@ interface Props {
   name: string
   type: InfrastructureType
   isActive: boolean
+  branchName?: string
   description?: string
   location?: string
+  district?: string
   latitude?: number | string
   longitude?: number | string
   altitude?: number | string
@@ -75,12 +77,12 @@ const typeIcon = computed(() => {
 
 const typeLabel = computed(() => {
   if (props.type === 'vhf_uhf_repeater' && band.value) {
-    return `${band.value} ${t('infrastructure.types.vhf_uhf_repeater').split(' ').pop()}`
+    return `${band.value} ${t('communicationChannels.types.vhf_uhf_repeater').split(' ').pop()}`
   }
   if (props.type === 'aprs' && aprsStationType.value) {
     return `APRS ${aprsStationType.value}`
   }
-  return t(`infrastructure.types.${props.type}`)
+  return t(`communicationChannels.types.${props.type}`)
 })
 
 const typeBadgeClasses = computed(() => {
@@ -190,23 +192,21 @@ const openMaps = (event: Event) => {
 
 <template>
   <div
-    class="relative w-full text-left p-3 rounded-lg border"
+    class="relative w-full text-left p-3 rounded-lg border flex flex-col"
     :class="[
       isActive 
         ? 'border-border/50' 
         : 'border-red-500/30 bg-red-500/5 opacity-60'
     ]"
   >
-    <!-- Top right slot for tutorial button -->
     <div class="absolute top-2 right-2">
       <slot name="top-right" />
     </div>
 
-    <div class="flex items-start gap-3 pr-10">
+    <div class="flex items-start gap-3 pr-10 flex-1 min-w-0">
       <div class="flex-shrink-0 p-2 rounded-md" :class="typeBadgeClasses.replace('text-', 'bg-').replace('/20', '/10')">
         <component :is="typeIcon" class="h-4 w-4" :class="typeBadgeClasses.split(' ').find(c => c.startsWith('text-'))" />
       </div>
-
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-1.5 mb-0.5">
           <span 
@@ -220,22 +220,21 @@ const openMaps = (event: Event) => {
           </span>
         </div>
         <p class="font-semibold text-sm">{{ name }}</p>
+        <p v-if="branchName" class="text-[10px] text-muted-foreground mt-0.5">{{ branchName }}</p>
+        <p v-if="district" class="text-[10px] text-muted-foreground mt-0.5">{{ t('form.district') }}: {{ district }}</p>
         <p v-if="description" class="text-xs text-muted-foreground mt-0.5 line-clamp-1">{{ description }}</p>
 
-        <!-- VHF/UHF Repeater Info - Inline -->
         <div v-if="type === 'vhf_uhf_repeater' && repeaterFreqInfo" class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono">
           <span class="text-muted-foreground">TX <span class="text-foreground font-medium">{{ repeaterFreqInfo.tx }}</span><span v-if="repeaterFreqInfo.txTone" class="text-muted-foreground/70 ml-1">{{ repeaterFreqInfo.txTone }}</span></span>
           <span class="text-muted-foreground">RX <span class="text-foreground font-medium">{{ repeaterFreqInfo.rx || repeaterFreqInfo.offset }}</span><span v-if="repeaterFreqInfo.rx && repeaterFreqInfo.offset" class="text-muted-foreground/70 ml-1">({{ repeaterFreqInfo.offset }})</span><span v-if="repeaterFreqInfo.rxTone" class="text-muted-foreground/70 ml-1">{{ repeaterFreqInfo.rxTone }}</span></span>
         </div>
 
-        <!-- Other types info -->
         <div v-if="type !== 'vhf_uhf_repeater' && (primaryInfo || aprsSecondaryInfo || secondaryInfo)" class="mt-2 text-xs font-mono">
           <p v-if="primaryInfo">{{ primaryInfo }}</p>
           <p v-if="type === 'aprs' && aprsSecondaryInfo" class="text-orange-600 dark:text-orange-400 text-[10px]">{{ aprsSecondaryInfo }}</p>
           <p v-if="type !== 'aprs' && secondaryInfo" class="text-muted-foreground text-[10px]">{{ secondaryInfo }}</p>
         </div>
 
-        <!-- Location & Meta - Inline -->
         <div v-if="location || googleMapsUrl || altitude" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
           <button
             v-if="googleMapsUrl"
@@ -257,6 +256,8 @@ const openMaps = (event: Event) => {
       </div>
     </div>
 
-    <slot name="actions" />
+    <div v-if="$slots.actions" class="mt-auto flex items-center justify-end gap-1 pt-1.5 pb-0 border-t border-border/30">
+      <slot name="actions" />
+    </div>
   </div>
 </template>

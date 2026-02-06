@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { BookOpen, Search, TowerControl } from 'lucide-vue-next'
+import { BookOpen, TowerControl } from 'lucide-vue-next'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import { InfrastructureCard, InfrastructureCardSkeleton } from '@/components/shared'
+import { InfrastructureCard, InfrastructureCardSkeleton, SearchInput } from '@/components/shared'
+import { usePersistedFilters } from '@/composables'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
 import { api } from '@/lib/api'
 
 type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs' | 'hf'
@@ -60,7 +62,7 @@ interface InfrastructureResponse {
   total: number
 }
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const searchQuery = ref('')
 const typeFilter = ref<string>('all')
 const cityFilter = ref<string>('all')
@@ -71,6 +73,7 @@ const total = ref(0)
 const isLoading = ref(true)
 const isLoadingMore = ref(false)
 const showTutorialDialog = ref(false)
+const searchTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 const tutorialContent = ref({ title: '', content: '' })
 const isLoadingTutorial = ref(false)
 const page = ref(1)
@@ -78,11 +81,11 @@ const pageSize = 12
 const hasMore = ref(true)
 
 const typeOptions = computed(() => [
-  { value: 'all', label: t('infrastructure.filterAllTypes') },
-  { value: 'vhf_uhf_repeater', label: t('infrastructure.types.vhf_uhf_repeater') },
-  { value: 'echolink', label: t('infrastructure.types.echolink') },
-  { value: 'aprs', label: t('infrastructure.types.aprs') },
-  { value: 'hf', label: t('infrastructure.types.hf') },
+  { value: 'all', label: t('communicationChannels.filterAllTypes') },
+  { value: 'vhf_uhf_repeater', label: t('communicationChannels.types.vhf_uhf_repeater') },
+  { value: 'echolink', label: t('communicationChannels.types.echolink') },
+  { value: 'aprs', label: t('communicationChannels.types.aprs') },
+  { value: 'hf', label: t('communicationChannels.types.hf') },
 ])
 
 const cityOptions = computed(() => {
@@ -92,7 +95,7 @@ const cityOptions = computed(() => {
   })
   return Array.from(cities).map(c => ({
     value: c,
-    label: c === 'all' ? t('infrastructure.filterAllCities') : c
+    label: c === 'all' ? t('communicationChannels.filterAllCities') : c
   }))
 })
 
@@ -103,7 +106,7 @@ const districtOptions = computed(() => {
   })
   return Array.from(districts).map(d => ({
     value: d,
-    label: d === 'all' ? t('infrastructure.filterAllDistricts') : d
+    label: d === 'all' ? t('communicationChannels.filterAllDistricts') : d
   }))
 })
 
@@ -129,7 +132,7 @@ async function fetchInfrastructure(append = false) {
     if (searchQuery.value.trim()) params.set('search', searchQuery.value.trim())
     if (typeFilter.value && typeFilter.value !== 'all') params.set('type', typeFilter.value)
     
-    const response = await api.get<InfrastructureResponse>(`/infrastructure?${params.toString()}`)
+    const response = await api.get<InfrastructureResponse>(`/communication-channel?${params.toString()}`)
     
     if (append) {
       infrastructure.value = [...infrastructure.value, ...response.data]
@@ -160,16 +163,28 @@ const handleFilterChange = () => {
   fetchInfrastructure()
 }
 
-watch([searchQuery, typeFilter], handleFilterChange)
+const handleSearch = () => {
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value)
+  }
+  searchTimeout.value = setTimeout(() => {
+    page.value = 1
+    fetchInfrastructure()
+  }, 300)
+}
+
+usePersistedFilters('communicationChannels', { searchQuery, typeFilter, cityFilter, districtFilter })
+
+watch(searchQuery, handleSearch)
+watch(typeFilter, handleFilterChange)
 
 watch([cityFilter, districtFilter], () => {
-  // Client-side filtering only
 })
 
 function openTutorial(type: InfrastructureType) {
   isLoadingTutorial.value = true
   showTutorialDialog.value = true
-  api.get<{ title: string; content: string }>(`/infrastructure/tutorials/${type}`)
+  api.get<{ title: string; content: string }>(`/communication-channel/tutorials/${type}`)
     .then((data) => {
       tutorialContent.value = data
     })
@@ -200,95 +215,99 @@ fetchInfrastructure()
 </script>
 
 <template>
-  <AppLayout :title="t('infrastructure.title')">
-    <div class="flex flex-col sm:flex-row gap-4 mb-6">
-      <div class="relative flex-1">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          v-model="searchQuery"
-          type="search"
-          :placeholder="t('infrastructure.searchPlaceholder')"
-          class="pl-9"
-        />
+  <AppLayout :title="t('nav.communicationChannels').toLocaleUpperCase(locale)">
+    <div class="space-y-4">
+      <div class="flex flex-col lg:flex-row lg:items-start lg:gap-4 gap-2 mb-4">
+        <div class="w-full lg:w-1/2 lg:min-w-0 flex flex-col gap-2">
+          <SearchInput
+            v-model="searchQuery"
+            :placeholder="t('communicationChannels.searchPlaceholder')"
+          />
+          <div class="flex flex-wrap items-center gap-2">
+            <Select v-model="typeFilter">
+              <SelectTrigger class="w-full sm:w-auto flex-1 min-w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  v-for="opt in typeOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Select v-model="cityFilter">
+              <SelectTrigger class="w-full sm:w-auto flex-1 min-w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in cityOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Select v-model="districtFilter">
+              <SelectTrigger class="w-full sm:w-auto flex-1 min-w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in districtOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
+        </div>
       </div>
-      <Select v-model="typeFilter">
-        <SelectTrigger class="w-full sm:w-48">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem
-            v-for="opt in typeOptions"
-            :key="opt.value"
-            :value="opt.value"
-          >
-            {{ opt.label }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-      <Select v-model="cityFilter">
-        <SelectTrigger class="w-full sm:w-36">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem v-for="option in cityOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-      <Select v-model="districtFilter">
-        <SelectTrigger class="w-full sm:w-36">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem v-for="option in districtOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </SelectItem>
-        </SelectContent>
-      </Select>
-    </div>
 
-    <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-      <InfrastructureCardSkeleton v-for="i in 6" :key="i" />
-    </div>
+      <Separator />
 
-    <div v-else-if="filteredInfrastructure.length === 0" class="py-12 text-center">
-      <TowerControl class="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
-      <p class="text-sm text-muted-foreground">{{ t('infrastructure.noInfrastructure') }}</p>
-    </div>
+      <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <InfrastructureCardSkeleton v-for="i in 6" :key="i" />
+      </div>
 
-    <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-3">
-      <div v-for="infra in filteredInfrastructure" :key="infra.id">
-        <p v-if="infra.branch?.name" class="text-xs text-muted-foreground mb-1">
-          {{ infra.branch.name }}
-        </p>
+      <div v-else-if="filteredInfrastructure.length === 0" class="py-8 text-center">
+        <TowerControl class="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+        <p class="text-sm text-muted-foreground">{{ t('communicationChannels.noInfrastructure') }}</p>
+      </div>
+
+      <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <InfrastructureCard
+          v-for="infra in filteredInfrastructure"
+          :key="infra.id"
           :id="infra.id"
           :name="infra.name"
           :type="infra.type"
           :is-active="infra.isActive"
+          :branch-name="infra.branch?.name"
           :description="infra.description"
           :location="infra.location"
+          :district="infra.district"
           :latitude="infra.latitude"
-          :longitude="infra.longitude"
-          :altitude="infra.altitude"
-          :coverage="infra.coverage"
-          :rx-frequency="infra.rxFrequency"
-          :tx-frequency="infra.txFrequency"
-          :offset="infra.offset"
-          :tx-ctcss-tone="infra.txCtcssTone"
-          :rx-ctcss-tone="infra.rxCtcssTone"
-          :tx-dcs-code="infra.txDcsCode"
-          :rx-dcs-code="infra.rxDcsCode"
-          :echolink-node="infra.echolinkNode"
-          :echolink-name="infra.echolinkName"
-          :aprs-frequency="infra.aprsFrequency"
-          :aprs-is-igate="infra.aprsIsIgate"
-          :aprs-is-digipeater="infra.aprsIsDigipeater"
-          :aprs-igate-mode="infra.aprsIgateMode"
-          :aprs-digipeater-type="infra.aprsDigipeaterType"
-          :aprs-path="infra.aprsPath"
-          :aprs-server="infra.aprsServer"
-          :digipeater="infra.digipeater"
+            :longitude="infra.longitude"
+            :altitude="infra.altitude"
+            :coverage="infra.coverage"
+            :rx-frequency="infra.rxFrequency"
+            :tx-frequency="infra.txFrequency"
+            :offset="infra.offset"
+            :tx-ctcss-tone="infra.txCtcssTone"
+            :rx-ctcss-tone="infra.rxCtcssTone"
+            :tx-dcs-code="infra.txDcsCode"
+            :rx-dcs-code="infra.rxDcsCode"
+            :echolink-node="infra.echolinkNode"
+            :echolink-name="infra.echolinkName"
+            :aprs-frequency="infra.aprsFrequency"
+            :aprs-is-igate="infra.aprsIsIgate"
+            :aprs-is-digipeater="infra.aprsIsDigipeater"
+            :aprs-igate-mode="infra.aprsIgateMode"
+            :aprs-digipeater-type="infra.aprsDigipeaterType"
+            :aprs-path="infra.aprsPath"
+            :aprs-server="infra.aprsServer"
+            :digipeater="infra.digipeater"
           :hf-frequency-range="infra.hfFrequencyRange"
           :hf-mode="infra.hfMode"
         >
@@ -297,7 +316,7 @@ fetchInfrastructure()
               variant="ghost"
               size="icon"
               class="h-7 w-7 rounded-full"
-              :title="t('infrastructure.howToConnect')"
+              :title="t('communicationChannels.howToConnect')"
               @click.stop="openTutorial(infra.type)"
             >
               <BookOpen class="h-3.5 w-3.5" />
@@ -305,24 +324,29 @@ fetchInfrastructure()
           </template>
         </InfrastructureCard>
       </div>
-    </div>
 
-    <div v-if="hasMore && !isLoading && cityFilter === 'all' && districtFilter === 'all'" class="pt-4">
-      <Button
-        variant="outline"
-        class="w-full lg:w-auto lg:px-8"
-        :disabled="isLoadingMore"
-        @click="loadMore"
-      >
-        {{ isLoadingMore ? t('common.loading') : t('infrastructure.loadMore') }}
-      </Button>
+      <div v-if="!isLoading" class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-16 lg:pb-0">
+        <p v-if="!isLoading" class="text-sm text-muted-foreground order-2 lg:order-1">
+          {{ filteredInfrastructure.length }}/{{ total }} {{ t('communicationChannels.name') }}
+        </p>
+        <div v-if="hasMore && !isLoading && cityFilter === 'all' && districtFilter === 'all'" class="order-1 lg:order-2 w-full lg:w-auto">
+          <Button
+            variant="outline"
+            class="w-full lg:w-auto lg:px-8"
+            :disabled="isLoadingMore"
+            @click="loadMore"
+          >
+            {{ isLoadingMore ? t('common.loading') : t('communicationChannels.loadMore') }}
+          </Button>
+        </div>
+      </div>
     </div>
 
     <Dialog :open="showTutorialDialog" @update:open="showTutorialDialog = $event">
       <DialogContent class="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {{ tutorialContent.title || t('infrastructure.tutorial') }}
+            {{ tutorialContent.title || t('communicationChannels.tutorial') }}
           </DialogTitle>
         </DialogHeader>
         <div v-if="isLoadingTutorial" class="py-8 text-center">

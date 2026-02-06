@@ -7,7 +7,7 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
 import { toast } from 'vue-sonner'
-import { formatDateTime } from '@/lib/formatters'
+import { useDateFormat } from '@/composables'
 import { getReportExportStyles, REPORT_EXPORT_WIDTH } from '@/lib/reportExportStyles'
 import EditAttendeeSheet from '@/components/nets/EditAttendeeSheet.vue'
 import EditNetSheet from '@/components/nets/EditNetSheet.vue'
@@ -36,22 +36,43 @@ interface Attendee {
   picture?: string | null
 }
 
+interface NetCommunicationChannel {
+  id: string
+  communicationChannelId?: string
+  isSimplexAdHoc?: boolean
+  simplexFrequency?: string
+  communicationChannel?: {
+    id: string
+    name: string
+    type: string
+  }
+}
+
 interface Net {
   id: string
   name: string
-  frequency: string
-  mode: string
-  type: string
   startedAt?: string
   endedAt?: string
   attendeeCount: number
   operator: Operator
+  branch?: {
+    id: string
+    name: string
+    isHeadquarters?: boolean
+  }
+  branchCallSign?: {
+    id: string
+    callSign: string
+    isDefault: boolean
+  }
+  communicationChannels?: NetCommunicationChannel[]
 }
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
+const { formatDateTime, formatTime } = useDateFormat()
 
 const net = ref<Net | null>(null)
 const attendees = ref<Attendee[]>([])
@@ -197,7 +218,6 @@ const getNetDateInfo = () => {
   if (!net.value) return ''
   const { startedAt, endedAt } = net.value
   if (!startedAt) return '-'
-  const formatTime = (dateStr: string) => new Date(dateStr).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
   if (!endedAt) return formatDateTime(startedAt)
   const startDate = startedAt.split('T')[0]
   const endDate = endedAt.split('T')[0]
@@ -362,7 +382,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppLayout :title="net?.name || t('common.loading')">
+  <AppLayout>
     <div v-if="isLoading" class="space-y-4">
       <div class="h-8 w-64 bg-muted rounded animate-pulse" />
       <div class="h-4 w-48 bg-muted rounded animate-pulse" />
@@ -440,7 +460,7 @@ onMounted(() => {
     <EditNetSheet
       v-if="net"
       :open="isEditNetSheetOpen"
-      :net="net"
+      :net="net as any"
       @update:open="isEditNetSheetOpen = $event"
       @updated="handleNetUpdated"
     />
@@ -452,6 +472,10 @@ onMounted(() => {
       :operator-call-sign="net.operator.callSign"
       :attendees="exportAttendees"
       :date-info="getNetDateInfo()"
+      :branch-name="net.branch?.name"
+      :branch-call-sign="net.branchCallSign?.callSign"
+      :branch-is-headquarters="net.branch?.isHeadquarters"
+      :communication-channels="net.communicationChannels"
     />
   </AppLayout>
 </template>

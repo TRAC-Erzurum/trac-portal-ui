@@ -8,9 +8,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { useDateFormat } from '@/composables'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
-import { formatDateSimple } from '@/lib/formatters'
 
 interface PendingMembership {
   id: string
@@ -42,6 +42,7 @@ interface AdminPendingResponse {
 }
 
 const { t } = useI18n()
+const { formatDateSimple } = useDateFormat()
 const isLoading = ref(true)
 const membershipRequests = ref<BranchRequests[]>([])
 const passwordResetRequests = ref<PasswordResetRequest[]>([])

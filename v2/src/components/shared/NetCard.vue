@@ -2,9 +2,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Users, ChevronRight, CheckCircle2 } from 'lucide-vue-next'
-import { getFrequencyShort } from '@/constants/net'
-import { formatDateShort } from '@/lib/formatters'
+import { ChevronRight, CheckCircle2, Users } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
+import { useDateFormat } from '@/composables'
 
 type NetStatus = 'active' | 'pending' | 'completed'
 
@@ -12,8 +12,6 @@ interface Props {
   id: string
   name: string
   operatorCallSign: string
-  frequency: string
-  mode: string
   status: NetStatus
   attendeeCount?: number
   durationMinutes?: number
@@ -22,12 +20,17 @@ interface Props {
   showChevron?: boolean
   showStatusBadge?: boolean
   compact?: boolean
+  branchName?: string
+  branchCallSign?: string
+  branchIsHeadquarters?: boolean
+  showBranch?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showChevron: true,
   showStatusBadge: false,
-  compact: false
+  compact: false,
+  showBranch: false
 })
 
 const emit = defineEmits<{
@@ -37,16 +40,11 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const router = useRouter()
 
-const statusClasses = computed(() => {
-  switch (props.status) {
-    case 'active':
-      return 'border-green-500/30 bg-green-500/5 hover:bg-green-500/10'
-    case 'pending':
-      return 'border-blue-500/30 bg-blue-500/5 hover:bg-blue-500/10'
-    case 'completed':
-      return 'border-border/50 hover:border-border hover:bg-muted/30'
-  }
-})
+const goToDetail = () => {
+  emit('click', props.id)
+  router.push(`/nets/${props.id}`)
+}
+const { formatDateShort } = useDateFormat()
 
 const statusBadgeClasses = computed(() => {
   switch (props.status) {
@@ -88,25 +86,14 @@ const formatDuration = (minutes?: number) => {
 }
 
 const secondaryInfo = computed(() => {
-  if (props.compact) {
-    return `${props.operatorCallSign} · ${props.frequency} ${props.mode}`
-  }
-  return `${props.operatorCallSign} · ${getFrequencyShort(props.frequency)} · ${props.mode.toUpperCase()}`
+  return props.operatorCallSign
 })
 
-const handleClick = () => {
-  emit('click', props.id)
-  router.push(`/nets/${props.id}`)
-}
 </script>
 
 <template>
-  <button
-    @click="handleClick"
-    class="w-full text-left p-4 rounded-lg border transition-all group"
-    :class="[statusClasses, { 'opacity-75': status === 'completed' && !compact }]"
-  >
-    <div class="flex items-start gap-3">
+  <div class="w-full text-left p-4 rounded-lg border border-border/50 transition-all flex flex-col">
+    <div class="flex items-start gap-3 flex-1 min-w-0">
       <div class="mt-0.5 flex-shrink-0" :class="{ 'mt-1': compact }">
         <span v-if="status === 'active'" class="relative flex" :class="compact ? 'h-2.5 w-2.5' : 'h-3 w-3'">
           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
@@ -122,10 +109,20 @@ const handleClick = () => {
           <CheckCircle2 v-else class="h-3 w-3 text-muted-foreground" />
         </template>
       </div>
-
       <div class="flex-1 min-w-0">
         <div class="flex items-start justify-between gap-2">
-          <p :class="compact ? 'font-medium' : 'font-semibold'" class="truncate">{{ name }}</p>
+          <div class="flex-1 min-w-0">
+            <p :class="compact ? 'font-medium' : 'font-semibold'" class="truncate">{{ name }}</p>
+            <div v-if="showBranch && branchName" class="flex items-center gap-1.5 mt-0.5">
+              <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-700 dark:text-blue-400 inline-flex items-center gap-1">
+                <template v-if="!branchIsHeadquarters && branchCallSign">
+                  <span class="font-mono">{{ branchCallSign }}</span>
+                  <span>·</span>
+                </template>
+                <span>{{ branchName }}</span>
+              </span>
+            </div>
+          </div>
           <span 
             v-if="showStatusBadge"
             class="text-[10px] font-medium px-1.5 py-0.5 rounded flex-shrink-0"
@@ -134,11 +131,9 @@ const handleClick = () => {
             {{ statusLabel }}
           </span>
         </div>
-
         <p class="text-sm text-muted-foreground" :class="compact ? 'mt-0.5' : 'mt-1'">
           {{ secondaryInfo }}
         </p>
-
         <div 
           class="flex items-center gap-3 mt-2 text-muted-foreground"
           :class="compact ? 'text-xs min-h-[1rem]' : 'text-sm'"
@@ -160,11 +155,19 @@ const handleClick = () => {
           </template>
         </div>
       </div>
-
-      <ChevronRight 
-        v-if="showChevron && !compact" 
-        class="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 mt-1" 
-      />
     </div>
-  </button>
+    <div v-if="(showChevron && !compact) || $slots.actions" class="mt-auto flex items-center justify-end gap-1 pt-1.5 pb-0 border-t border-border/30">
+      <slot name="actions" />
+      <Button
+        v-if="showChevron && !compact"
+        variant="ghost"
+        size="sm"
+        class="h-7 px-2 text-xs"
+        @click="goToDetail"
+      >
+        <ChevronRight class="h-3.5 w-3.5 mr-1.5" />
+        {{ t('common.detail') }}
+      </Button>
+    </div>
+  </div>
 </template>

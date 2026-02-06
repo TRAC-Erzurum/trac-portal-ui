@@ -118,7 +118,7 @@ const formatRelativeTime = (dateStr: string) => {
 
 <template>
   <Sheet v-model:open="open">
-    <SheetContent>
+    <SheetContent class="sm:max-w-md overflow-y-auto px-4 sm:px-6">
       <SheetHeader>
         <SheetTitle>{{ t('admin.passwordResetRequests') }}</SheetTitle>
         <SheetDescription>
@@ -126,7 +126,7 @@ const formatRelativeTime = (dateStr: string) => {
         </SheetDescription>
       </SheetHeader>
 
-      <div class="py-6 px-1 space-y-4">
+      <div class="py-6 space-y-4">
         <div v-if="approvedRequests.length > 0" class="space-y-3">
           <div
             v-for="approved in approvedRequests"

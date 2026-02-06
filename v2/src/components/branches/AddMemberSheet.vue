@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Search, UserPlus } from 'lucide-vue-next'
+import { UserPlus } from 'lucide-vue-next'
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { SearchInput } from '@/components/shared'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { api, type ApiError } from '@/lib/api'
@@ -99,6 +99,8 @@ const searchUsers = async () => {
   }
 }
 
+watch(searchQuery, searchUsers)
+
 const selectUser = (result: SearchResult) => {
   selectedUser.value = result
   searchQuery.value = ''
@@ -143,25 +145,20 @@ const handleOpenChange = (open: boolean) => {
 
 <template>
   <Sheet :open="open" @update:open="handleOpenChange">
-    <SheetContent class="sm:max-w-md overflow-y-auto">
+    <SheetContent class="sm:max-w-md overflow-y-auto px-4 sm:px-6">
       <SheetHeader>
         <SheetTitle>{{ t('branches.addMember') }}</SheetTitle>
         <SheetDescription>{{ t('branches.addMemberDescription') }}</SheetDescription>
       </SheetHeader>
 
-      <div class="space-y-6 py-6 px-4">
+      <div class="space-y-6 py-6">
         <div v-if="!selectedUser" class="space-y-4">
           <div class="space-y-2">
             <Label>{{ t('branches.searchUser') }}</Label>
-            <div class="relative">
-              <Input
-                v-model="searchQuery"
-                :placeholder="t('branches.searchUserPlaceholder')"
-                @input="searchUsers"
-                class="pr-10"
-              />
-              <Search class="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            </div>
+            <SearchInput
+              v-model="searchQuery"
+              :placeholder="t('branches.searchUserPlaceholder')"
+            />
           </div>
 
           <div v-if="isSearching" class="space-y-2">

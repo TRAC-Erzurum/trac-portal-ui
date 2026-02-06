@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { AutocompleteCombobox } from '@/components/shared'
 import { api } from '@/lib/api'
 import { toast } from 'vue-sonner'
 import { useQthData } from '@/composables/useQthData'
@@ -96,7 +97,7 @@ const handleSubmit = async () => {
 
 <template>
   <Sheet :open="open" @update:open="emit('update:open', $event)">
-    <SheetContent class="px-6">
+    <SheetContent class="sm:max-w-md overflow-y-auto px-4 sm:px-6">
       <SheetHeader>
         <SheetTitle>{{ t('netDetail.editAttendee') }}</SheetTitle>
         <SheetDescription>
@@ -104,7 +105,7 @@ const handleSubmit = async () => {
         </SheetDescription>
       </SheetHeader>
 
-      <form @submit.prevent="handleSubmit" class="space-y-4 mt-6">
+      <form @submit.prevent="handleSubmit" class="space-y-4 mt-6 pb-6">
         <div>
           <label class="text-sm font-medium mb-1.5 block">{{ t('form.fullName') }}</label>
           <Input
@@ -115,30 +116,25 @@ const handleSubmit = async () => {
 
         <div>
           <label class="text-sm font-medium mb-1.5 block">{{ t('form.city') }}</label>
-          <Select v-model="form.city">
-            <SelectTrigger class="w-full">
-              <SelectValue :placeholder="t('form.cityPlaceholder')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="city in cities" :key="city" :value="city">
-                {{ city }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <AutocompleteCombobox
+            id="edit-attendee-city"
+            :model-value="form.city"
+            :options="cities"
+            :placeholder="t('form.cityPlaceholder')"
+            @update:model-value="(v) => (form.city = v)"
+          />
         </div>
 
         <div>
           <label class="text-sm font-medium mb-1.5 block">{{ t('form.district') }}</label>
-          <Select v-model="form.district" :disabled="!form.city">
-            <SelectTrigger class="w-full">
-              <SelectValue :placeholder="form.city ? t('form.district') : '-'" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="district in districts" :key="district" :value="district">
-                {{ district }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <AutocompleteCombobox
+            id="edit-attendee-district"
+            :model-value="form.district"
+            :options="districts"
+            :placeholder="form.city ? t('form.districtPlaceholder') : '-'"
+            :disabled="!form.city"
+            @update:model-value="(v) => (form.district = v)"
+          />
         </div>
 
         <div class="grid grid-cols-2 gap-4">

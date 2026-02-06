@@ -69,13 +69,13 @@ async function handleSubmit() {
 
 <template>
   <Sheet :open="open" @update:open="val => { if (!val) resetForm(); emit('update:open', val) }">
-    <SheetContent class="sm:max-w-md px-6">
+    <SheetContent class="sm:max-w-md overflow-y-auto px-4 sm:px-6">
       <SheetHeader>
         <SheetTitle>{{ t('profile.changePassword') }}</SheetTitle>
         <SheetDescription>{{ t('profile.changePasswordDesc') }}</SheetDescription>
       </SheetHeader>
 
-      <form @submit.prevent="handleSubmit" class="mt-6 space-y-4">
+      <form @submit.prevent="handleSubmit" class="mt-6 space-y-4 pb-6">
         <div class="space-y-2">
           <Label for="currentPassword">{{ t('profile.currentPassword') }}</Label>
           <PasswordInput

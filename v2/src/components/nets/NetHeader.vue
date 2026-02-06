@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 import { Play, Square, RotateCcw, Users, Radio, Clock, Settings, Download, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { getFrequencyLabel } from '@/constants/net'
 
 interface Operator {
   id: string
@@ -12,16 +11,36 @@ interface Operator {
   fullName?: string
 }
 
+interface NetCommunicationChannel {
+  id: string
+  communicationChannelId?: string
+  isSimplexAdHoc?: boolean
+  simplexFrequency?: string
+  communicationChannel?: {
+    id: string
+    name: string
+    type: string
+  }
+}
+
 interface Net {
   id: string
   name: string
-  frequency: string
-  mode: string
-  type: string
   startedAt?: string
   endedAt?: string
   attendeeCount: number
   operator: Operator
+  branch?: {
+    id: string
+    name: string
+    isHeadquarters?: boolean
+  }
+  branchCallSign?: {
+    id: string
+    callSign: string
+    isDefault: boolean
+  }
+  communicationChannels?: NetCommunicationChannel[]
 }
 
 interface Props {
@@ -85,24 +104,48 @@ const formatDuration = (net: Net) => {
         <h1 class="text-2xl font-bold">{{ net.name }}</h1>
       </div>
 
-      <div class="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-        <div class="flex items-center gap-1.5">
-          <Radio class="h-4 w-4" />
-          <span>{{ net.operator.callSign }}</span>
+      <div class="space-y-2">
+        <div class="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
+          <div class="flex items-center gap-1.5">
+            <Radio class="h-4 w-4" />
+            <span>{{ net.operator.callSign }}</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <Users class="h-4 w-4" />
+            <span>{{ net.attendeeCount }} {{ t('nets.attendees') }}</span>
+          </div>
+          <div v-if="net.startedAt" class="flex items-center gap-1.5">
+            <Clock class="h-4 w-4" />
+            <span>{{ formatDuration(net) }}</span>
+          </div>
         </div>
-        <div class="flex items-center gap-1.5">
-          <span>{{ getFrequencyLabel(net.frequency) }}</span>
+        
+        <div v-if="net.branch" class="flex items-center gap-2 text-sm">
+          <span class="text-muted-foreground">{{ t('nets.branch') }}:</span>
+          <span class="font-medium">
+            <span v-if="!net.branch.isHeadquarters && net.branchCallSign" class="font-mono text-primary">{{ net.branchCallSign.callSign }}</span>
+            <span v-if="!net.branch.isHeadquarters && net.branchCallSign" class="mx-1.5 text-muted-foreground">·</span>
+            <span>{{ net.branch.name }}</span>
+          </span>
         </div>
-        <div class="flex items-center gap-1.5">
-          <span>{{ net.mode.toUpperCase() }}</span>
-        </div>
-        <div class="flex items-center gap-1.5">
-          <Users class="h-4 w-4" />
-          <span>{{ net.attendeeCount }} {{ t('nets.attendees') }}</span>
-        </div>
-        <div v-if="net.startedAt" class="flex items-center gap-1.5">
-          <Clock class="h-4 w-4" />
-          <span>{{ formatDuration(net) }}</span>
+        
+        <div v-if="net.communicationChannels && net.communicationChannels.length > 0" class="flex items-start gap-2 text-sm">
+          <span class="text-muted-foreground">{{ t('nets.infrastructure') }}:</span>
+          <div class="flex flex-wrap gap-1.5">
+            <span 
+              v-for="channel in net.communicationChannels" 
+              :key="channel.id"
+              class="px-2 py-0.5 rounded-md text-xs font-medium"
+              :class="channel.isSimplexAdHoc ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-700 dark:text-green-400 border border-green-500/20'"
+            >
+              <template v-if="channel.isSimplexAdHoc">
+                Simpleks {{ channel.simplexFrequency }}
+              </template>
+              <template v-else>
+                {{ channel.communicationChannel?.name }}
+              </template>
+            </span>
+          </div>
         </div>
       </div>
     </div>

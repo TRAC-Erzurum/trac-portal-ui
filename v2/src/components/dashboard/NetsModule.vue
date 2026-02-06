@@ -7,31 +7,52 @@ import { NetCard, NetCardSkeleton } from '@/components/shared'
 interface ActiveNet {
   id: string
   name: string
-  frequency: string
-  mode: string
   operatorCallSign: string
   attendeeCount: number
   startedAt: string
   durationMinutes: number
+  branch?: {
+    id: string
+    name: string
+    isHeadquarters?: boolean
+  }
+  branchCallSign?: {
+    id: string
+    callSign: string
+  }
 }
 
 interface PendingNet {
   id: string
   name: string
-  frequency: string
-  mode: string
   operatorCallSign: string
+  branch?: {
+    id: string
+    name: string
+    isHeadquarters?: boolean
+  }
+  branchCallSign?: {
+    id: string
+    callSign: string
+  }
 }
 
 interface DisplayNet {
   id: string
   name: string
-  frequency: string
-  mode: string
   operatorCallSign: string
   status: 'active' | 'pending' | 'completed'
   attendeeCount?: number
   durationMinutes?: number
+  branch?: {
+    id: string
+    name: string
+    isHeadquarters?: boolean
+  }
+  branchCallSign?: {
+    id: string
+    callSign: string
+  }
 }
 
 interface Props {
@@ -58,12 +79,12 @@ const displayNets = computed<DisplayNet[]>(() => {
     result.push({
       id: net.id,
       name: net.name,
-      frequency: net.frequency,
-      mode: net.mode,
       operatorCallSign: net.operatorCallSign,
       status: 'active',
       attendeeCount: net.attendeeCount,
       durationMinutes: net.durationMinutes,
+      branch: net.branch,
+      branchCallSign: net.branchCallSign,
     })
   }
   
@@ -72,10 +93,10 @@ const displayNets = computed<DisplayNet[]>(() => {
     result.push({
       id: net.id,
       name: net.name,
-      frequency: net.frequency,
-      mode: net.mode,
       operatorCallSign: net.operatorCallSign,
       status: 'pending',
+      branch: net.branch,
+      branchCallSign: net.branchCallSign,
     })
   }
   
@@ -84,12 +105,12 @@ const displayNets = computed<DisplayNet[]>(() => {
     result.push({
       id: net.id,
       name: net.name,
-      frequency: net.frequency,
-      mode: net.mode,
       operatorCallSign: net.operatorCallSign,
       status: 'completed',
       attendeeCount: net.attendeeCount,
       durationMinutes: net.durationMinutes,
+      branch: net.branch,
+      branchCallSign: net.branchCallSign,
     })
   }
   
@@ -117,11 +138,13 @@ const displayNets = computed<DisplayNet[]>(() => {
           :id="net.id"
           :name="net.name"
           :operator-call-sign="net.operatorCallSign"
-          :frequency="net.frequency"
-          :mode="net.mode"
           :status="net.status"
           :attendee-count="net.attendeeCount"
           :duration-minutes="net.durationMinutes"
+          :branch-name="net.branch?.name"
+          :branch-call-sign="net.branchCallSign?.callSign"
+          :branch-is-headquarters="net.branch?.isHeadquarters"
+          :show-branch="true"
           compact
           show-status-badge
         />

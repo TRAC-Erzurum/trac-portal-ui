@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { AutocompleteCombobox } from '@/components/shared'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
 import { useQthData } from '@/composables'
@@ -148,7 +149,7 @@ async function handleSubmit() {
 
 <template>
   <Sheet :open="open" @update:open="emit('update:open', $event)">
-    <SheetContent class="sm:max-w-md px-6 overflow-y-auto">
+    <SheetContent class="sm:max-w-md overflow-y-auto px-4 sm:px-6">
       <SheetHeader>
         <SheetTitle>{{ t('branches.edit') }}</SheetTitle>
         <SheetDescription>{{ t('branches.editDescription') }}</SheetDescription>
@@ -180,16 +181,14 @@ async function handleSubmit() {
           </Select>
         </div>
 
-        <div class="space-y-2">
+        <div v-if="!props.branch.isHeadquarters" class="space-y-2">
           <Label for="city">{{ t('form.city') }}</Label>
-          <Select v-model="city">
-            <SelectTrigger id="city" class="w-full">
-              <SelectValue :placeholder="t('form.cityPlaceholder')" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="c in cities" :key="c" :value="c">{{ c }}</SelectItem>
-            </SelectContent>
-          </Select>
+          <AutocompleteCombobox
+            id="city"
+            v-model="city"
+            :options="cities"
+            :placeholder="t('form.cityPlaceholder')"
+          />
         </div>
 
         <Separator v-if="!props.branch.isHeadquarters" />

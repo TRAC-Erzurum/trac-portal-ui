@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Search } from 'lucide-vue-next'
-import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import { OperatorCard, OperatorCardSkeleton } from '@/components/shared'
+import { OperatorCard, OperatorCardSkeleton, SearchInput } from '@/components/shared'
+import { usePersistedFilters } from '@/composables'
 import { api } from '@/lib/api'
 import { type UserRole } from '@/lib/ui-helpers'
 
@@ -33,7 +32,7 @@ interface OperatorsResponse {
   total: number
 }
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 
 type MembershipFilter = 'all' | 'registered' | 'unregistered'
 
@@ -101,6 +100,8 @@ const handleFilterChange = () => {
   fetchOperators()
 }
 
+usePersistedFilters('operators', { search, membershipFilter })
+
 watch(search, handleSearch)
 watch(membershipFilter, handleFilterChange)
 
@@ -110,37 +111,32 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppLayout :title="t('nav.operators')">
+  <AppLayout :title="t('nav.operators').toLocaleUpperCase(locale)">
     <div class="space-y-4">
-      <div class="flex flex-wrap items-center gap-2">
-        <div class="relative w-full sm:flex-1 sm:max-w-xs">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
+      <div class="flex flex-col lg:flex-row lg:items-start lg:gap-4 gap-2 mb-4">
+        <div class="w-full lg:w-1/2 lg:min-w-0 grid grid-cols-1 lg:grid-cols-[1fr_160px] gap-2 items-center">
+          <SearchInput
             v-model="search"
             :placeholder="t('operators.searchPlaceholder')"
-            class="pl-9"
           />
+          <Select v-model="membershipFilter" class="w-full min-w-0">
+            <SelectTrigger class="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{{ t('operators.membershipAll') }}</SelectItem>
+              <SelectItem value="registered">{{ t('operators.membershipRegistered') }}</SelectItem>
+              <SelectItem value="unregistered">{{ t('operators.membershipUnregistered') }}</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-
-        <Select v-model="membershipFilter">
-          <SelectTrigger class="flex-1 sm:flex-none sm:w-[140px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{{ t('operators.membershipAll') }}</SelectItem>
-            <SelectItem value="registered">{{ t('operators.membershipRegistered') }}</SelectItem>
-            <SelectItem value="unregistered">{{ t('operators.membershipUnregistered') }}</SelectItem>
-          </SelectContent>
-        </Select>
+        <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
+        </div>
       </div>
-
-      <p v-if="!isLoading" class="text-sm text-muted-foreground">
-        {{ t('operators.totalCount', { count: total }) }}
-      </p>
 
       <Separator />
 
-      <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+      <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <OperatorCardSkeleton v-for="i in 6" :key="i" />
       </div>
 
@@ -148,7 +144,7 @@ onMounted(() => {
         <p class="text-muted-foreground">{{ t('operators.noResults') }}</p>
       </div>
 
-      <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+      <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <OperatorCard
           v-for="op in operators"
           :key="op.id"
@@ -163,18 +159,24 @@ onMounted(() => {
           :managed-count="op.managedCount"
           :user-full-name="op.user?.fullName"
           :user-picture="op.user?.picture"
+          :global-role="op.user?.role"
         />
       </div>
 
-      <div v-if="hasMore && !isLoading" class="pt-4">
-        <Button
-          variant="outline"
-          class="w-full lg:w-auto lg:px-8"
-          :disabled="isLoadingMore"
-          @click="loadMore"
-        >
-          {{ isLoadingMore ? t('common.loading') : t('operators.loadMore') }}
-        </Button>
+      <div v-if="!isLoading" class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-16 lg:pb-0">
+        <p v-if="!isLoading" class="text-sm text-muted-foreground order-2 lg:order-1">
+          {{ operators.length }}/{{ total }} {{ t('operators.name') }}
+        </p>
+        <div v-if="hasMore && !isLoading" class="order-1 lg:order-2 w-full lg:w-auto">
+          <Button
+            variant="outline"
+            class="w-full lg:w-auto lg:px-8"
+            :disabled="isLoadingMore"
+            @click="loadMore"
+          >
+            {{ isLoadingMore ? t('common.loading') : t('operators.loadMore') }}
+          </Button>
+        </div>
       </div>
     </div>
   </AppLayout>

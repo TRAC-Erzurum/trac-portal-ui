@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Search, Plus, Check, X } from 'lucide-vue-next'
+import { Check, Plus, Search, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { AutocompleteCombobox } from '@/components/shared'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { api } from '@/lib/api'
 import { debounce } from '@/lib/utils'
@@ -285,15 +286,23 @@ onUnmounted(() => {
   <div class="mb-6 p-4 rounded-lg border border-primary/30 bg-primary/5">
     <div v-if="!selectedEntry" class="space-y-3">
       <div ref="searchContainerRef" class="relative">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
+        <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
         <Input
           v-model="searchQuery"
           :placeholder="t('netDetail.searchOperator')"
-          class="pl-9"
+          class="pl-9 pr-9"
           @keydown="handleSearchKeyDown"
           @focus="showSuggestions = searchQuery.length >= 2 && !selectedEntry"
         />
-        
+        <button
+          v-if="searchQuery"
+          type="button"
+          class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring z-10"
+          :aria-label="t('common.clear')"
+          @click="searchQuery = ''"
+        >
+          <X class="h-4 w-4" />
+        </button>
         <div
           v-if="showSuggestions && searchQuery.length >= 2 && (suggestions.length > 0 || canAddNew || isSearching)"
           class="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
@@ -405,33 +414,25 @@ onUnmounted(() => {
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div data-city-select>
           <label class="text-xs font-medium text-muted-foreground mb-1 block">{{ t('form.city') }}</label>
-          <Select v-model="selectedEntry.city" :disabled="isLoadingCities">
-            <SelectTrigger class="w-full">
-              <SelectValue :placeholder="isLoadingCities ? t('common.loading') : t('form.cityPlaceholder')">
-                {{ selectedEntry.city || (isLoadingCities ? t('common.loading') : t('form.cityPlaceholder')) }}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="city in cities" :key="city" :value="city">
-                {{ city }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <AutocompleteCombobox
+            id="add-attendee-city"
+            :model-value="selectedEntry?.city ?? ''"
+            :options="cities"
+            :placeholder="isLoadingCities ? t('common.loading') : t('form.cityPlaceholder')"
+            :disabled="isLoadingCities"
+            @update:model-value="(v) => { if (selectedEntry) selectedEntry.city = v }"
+          />
         </div>
         <div>
           <label class="text-xs font-medium text-muted-foreground mb-1 block">{{ t('form.district') }}</label>
-          <Select v-model="selectedEntry.district" :disabled="!selectedEntry.city">
-            <SelectTrigger class="w-full">
-              <SelectValue :placeholder="selectedEntry.city ? t('form.districtPlaceholder') : '-'">
-                {{ selectedEntry.district || (selectedEntry.city ? t('form.districtPlaceholder') : '-') }}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="district in districts" :key="district" :value="district">
-                {{ district }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+          <AutocompleteCombobox
+            id="add-attendee-district"
+            :model-value="selectedEntry?.district ?? ''"
+            :options="districts"
+            :placeholder="selectedEntry?.city ? t('form.districtPlaceholder') : '-'"
+            :disabled="!selectedEntry?.city"
+            @update:model-value="(v) => { if (selectedEntry) selectedEntry.district = v }"
+          />
         </div>
         <div>
           <label class="text-xs font-medium text-muted-foreground mb-1 block">{{ t('operators.readability') }}</label>

@@ -2,9 +2,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Trash2 } from 'lucide-vue-next'
-import { UserAvatar } from '@/components/ui/user-avatar'
+import { ChevronRight, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
+import { UserAvatar } from '@/components/ui/user-avatar'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCallSign } from '@/lib/formatters'
 import { getRoleBadgeClass } from '@/lib/ui-helpers'
@@ -18,6 +18,7 @@ interface Props {
     id: string
     fullName?: string
     picture?: string
+    globalRole?: string
     operator?: {
       id?: string
       callSign?: string
@@ -28,14 +29,12 @@ interface Props {
   canManage?: boolean
   canChangeRole?: boolean
   canRemove?: boolean
-  clickable?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   canManage: false,
   canChangeRole: false,
-  canRemove: false,
-  clickable: true
+  canRemove: false
 })
 
 const emit = defineEmits<{
@@ -73,9 +72,7 @@ const handleRemove = (e: Event) => {
   emit('remove', props.id)
 }
 
-function handleClick() {
-  if (!props.clickable) return
-  
+const goToDetail = () => {
   const opId = props.operatorId || props.user?.operator?.id
   if (opId) {
     router.push(`/operators/${opId}`)
@@ -84,35 +81,39 @@ function handleClick() {
 </script>
 
 <template>
-  <div
-    class="w-full p-4 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all flex items-center gap-3 group"
-    :class="{ 'cursor-pointer': clickable && (operatorId || user?.operator?.id) }"
-    @click="handleClick"
-  >
-    <UserAvatar :picture="user?.picture" class="h-10 w-10 flex-shrink-0" />
-
-    <div class="flex-1 min-w-0">
-      <div class="flex items-center gap-2 flex-wrap">
-        <span class="font-semibold">{{ displayName }}</span>
-        <span 
-          class="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
-          :class="getRoleBadgeClass(role)"
-        >
-          {{ t(`roles.${role}`) }}
-        </span>
+  <div class="w-full p-4 rounded-lg border border-border/50 transition-all flex flex-col">
+    <div class="flex items-center gap-3 min-w-0 flex-1">
+      <UserAvatar :picture="user?.picture" class="h-10 w-10 flex-shrink-0" />
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span class="font-semibold">{{ displayName }}</span>
+          <span
+            v-if="user?.globalRole === 'super_admin'"
+            class="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+            :class="getRoleBadgeClass('super_admin')"
+          >
+            {{ t('roles.super_admin') }}
+          </span>
+          <span
+            v-else
+            class="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+            :class="getRoleBadgeClass(role)"
+          >
+            {{ t(`roles.${role}`) }}
+          </span>
+        </div>
+        <p v-if="userFullName" class="text-sm text-muted-foreground truncate">
+          {{ userFullName }}
+        </p>
       </div>
-      <p v-if="userFullName" class="text-sm text-muted-foreground truncate">
-        {{ userFullName }}
-      </p>
     </div>
-
-    <div v-if="canManage" class="flex items-center gap-2 flex-shrink-0">
+    <div class="mt-auto flex items-center justify-end gap-1 pt-1.5 pb-0 border-t border-border/30">
       <Select
-        v-if="canChangeRole"
+        v-if="canManage && canChangeRole"
         :model-value="role"
         @update:model-value="handleRoleChange"
       >
-        <SelectTrigger class="w-28 h-8">
+        <SelectTrigger class="w-28 h-7">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -122,16 +123,25 @@ function handleClick() {
           <SelectItem value="president">{{ t('roles.president') }}</SelectItem>
         </SelectContent>
       </Select>
-      
       <Button
-        v-if="canRemove"
-        variant="outline"
+        v-if="canManage && canRemove"
+        variant="ghost"
         size="sm"
-        class="text-red-600 hover:text-red-700 h-8"
+        class="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
         @click="handleRemove"
       >
-        <Trash2 class="h-3.5 w-3.5 mr-1" />
+        <Trash2 class="h-3.5 w-3.5 mr-1.5" />
         {{ t('branches.removeMember') }}
+      </Button>
+      <Button
+        v-if="operatorId || user?.operator?.id"
+        variant="ghost"
+        size="sm"
+        class="h-7 px-2 text-xs"
+        @click="goToDetail"
+      >
+        <ChevronRight class="h-3.5 w-3.5 mr-1.5" />
+        {{ t('common.detail') }}
       </Button>
     </div>
   </div>

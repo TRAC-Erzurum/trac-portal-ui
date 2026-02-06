@@ -33,8 +33,8 @@ function handleAccountClick() {
   router.push('/account')
 }
 
-function handleInfrastructureClick() {
-  router.push('/infrastructure')
+function handleCommunicationChannelsClick() {
+  router.push('/communication-channels')
 }
 
 async function handleLogout() {
@@ -65,9 +65,9 @@ async function handleLogout() {
         <UserCircle class="mr-2 h-4 w-4" />
         {{ t('nav.account') }}
       </DropdownMenuItem>
-      <DropdownMenuItem @click="handleInfrastructureClick" class="cursor-pointer">
+      <DropdownMenuItem @click="handleCommunicationChannelsClick" class="cursor-pointer">
         <TowerControl class="mr-2 h-4 w-4" />
-        {{ t('nav.infrastructure') }}
+        {{ t('nav.communicationChannels') }}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem @click="handleLogout" class="cursor-pointer text-destructive focus:text-destructive">

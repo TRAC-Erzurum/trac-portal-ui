@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Search, Plus } from 'lucide-vue-next'
-import { Input } from '@/components/ui/input'
+import { Plus } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { Checkbox } from '@/components/ui/checkbox'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CreateBranchSheet from '@/components/branches/CreateBranchSheet.vue'
-import { BranchCard, BranchCardSkeleton } from '@/components/shared'
+import { BranchCard, BranchCardSkeleton, SearchInput } from '@/components/shared'
+import { usePersistedFilters } from '@/composables'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
 
@@ -36,7 +36,7 @@ interface BranchesResponse {
   total: number
 }
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const authStore = useAuthStore()
 
 const branches = ref<Branch[]>([])
@@ -119,6 +119,8 @@ const handleFilterChange = () => {
   fetchBranches()
 }
 
+usePersistedFilters('branches', { search, includeInactive })
+
 watch(search, handleSearch)
 watch(includeInactive, handleFilterChange)
 
@@ -128,45 +130,39 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppLayout :title="t('branches.title')">
+  <AppLayout :title="t('nav.branches').toLocaleUpperCase(locale)">
     <div class="space-y-4">
-      <div class="flex flex-wrap items-center gap-2">
-        <div class="relative w-full sm:flex-1 sm:max-w-xs">
-          <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
+      <div class="flex flex-col lg:flex-row lg:items-start lg:gap-4 gap-2 mb-4">
+        <div class="w-full lg:w-1/2 lg:min-w-0 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-2 items-center">
+          <SearchInput
             v-model="search"
             :placeholder="t('branches.searchPlaceholder')"
-            class="pl-9"
           />
+          <div
+            v-if="canCreate"
+            class="flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer select-none w-full lg:w-auto min-w-0"
+            @click="toggleShowDeleted"
+          >
+            <Checkbox
+              :checked="includeInactive"
+              class="pointer-events-none"
+            />
+            <span class="text-sm font-medium leading-none">
+              {{ t('branches.showDeleted') }}
+            </span>
+          </div>
         </div>
-
-        <div 
-          v-if="canCreate" 
-          class="flex items-center gap-2 px-3 py-2 border rounded-md cursor-pointer select-none"
-          @click="toggleShowDeleted"
-        >
-          <Checkbox
-            :checked="includeInactive"
-            class="pointer-events-none"
-          />
-          <span class="text-sm font-medium leading-none">
-            {{ t('branches.showDeleted') }}
-          </span>
+        <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
+          <Button v-if="canCreate" variant="outline" @click="showCreateSheet = true" class="hidden lg:inline-flex gap-2">
+            <Plus class="h-4 w-4" />
+            {{ t('branches.create') }}
+          </Button>
         </div>
-
-        <Button v-if="canCreate" variant="outline" @click="showCreateSheet = true" class="hidden lg:flex ml-auto gap-2">
-          <Plus class="h-4 w-4" />
-          {{ t('branches.create') }}
-        </Button>
       </div>
-
-      <p v-if="!isLoading" class="text-sm text-muted-foreground">
-        {{ t('branches.totalCount', { count: branches.length }) }}
-      </p>
 
       <Separator />
 
-      <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+      <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <BranchCardSkeleton v-for="i in 6" :key="i" />
       </div>
 
@@ -174,7 +170,7 @@ onMounted(() => {
         <p class="text-muted-foreground">{{ t('branches.noResults') }}</p>
       </div>
 
-      <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+      <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <BranchCard
           v-for="branch in branches"
           :key="branch.id"
@@ -187,15 +183,20 @@ onMounted(() => {
         />
       </div>
 
-      <div v-if="hasMore && !isLoading" class="pt-4">
-        <Button
-          variant="outline"
-          class="w-full lg:w-auto lg:px-8"
-          :disabled="isLoadingMore"
-          @click="loadMore"
-        >
-          {{ isLoadingMore ? t('common.loading') : t('branches.loadMore') }}
-        </Button>
+      <div v-if="!isLoading" class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-16 lg:pb-0">
+        <p v-if="!isLoading" class="text-sm text-muted-foreground order-2 lg:order-1">
+          {{ branches.length }}/{{ total }} {{ t('branches.name') }}
+        </p>
+        <div v-if="hasMore && !isLoading" class="order-1 lg:order-2 w-full lg:w-auto">
+          <Button
+            variant="outline"
+            class="w-full lg:w-auto lg:px-8"
+            :disabled="isLoadingMore"
+            @click="loadMore"
+          >
+            {{ isLoadingMore ? t('common.loading') : t('branches.loadMore') }}
+          </Button>
+        </div>
       </div>
     </div>
 
