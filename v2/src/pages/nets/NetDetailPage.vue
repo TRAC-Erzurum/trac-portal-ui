@@ -1,8 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { Users, AlertCircle, Check } from 'lucide-vue-next'
+import {
+  Clock,
+  MapPin,
+  TrendingUp,
+  Users,
+} from 'lucide-vue-next'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
@@ -93,6 +98,97 @@ const netStatus = computed(() => {
   return 'completed'
 })
 
+const isCompleted = computed(() => netStatus.value === 'completed')
+
+const geographicDistribution = computed(() => {
+  const list = attendees.value
+  const byCountry = new Map<string, number>()
+  const byCity = new Map<string, number>()
+  const byDistrict = new Map<string, number>()
+  for (const a of list) {
+    const country = (a.country ?? '').trim()
+    if (country) {
+      byCountry.set(country, (byCountry.get(country) ?? 0) + 1)
+    }
+    const city = (a.city ?? '').trim()
+    if (city) {
+      byCity.set(city, (byCity.get(city) ?? 0) + 1)
+    }
+    const district = (a.district ?? '').trim()
+    if (district) {
+      byDistrict.set(district, (byDistrict.get(district) ?? 0) + 1)
+    }
+  }
+  const sortByCount = (a: { label: string; count: number }, b: { label: string; count: number }) => b.count - a.count
+  return {
+    byCountry: Array.from(byCountry.entries())
+      .map(([label, count]) => ({ label, count }))
+      .sort(sortByCount),
+    byCity: Array.from(byCity.entries())
+      .map(([label, count]) => ({ label, count }))
+      .sort(sortByCount),
+    byDistrict: Array.from(byDistrict.entries())
+      .map(([label, count]) => ({ label, count }))
+      .sort(sortByCount),
+  }
+})
+
+const geographicTab = ref<'country' | 'city' | 'district'>('city')
+const leftStatsRef = ref<HTMLElement | null>(null)
+const leftStatsHeight = ref<number>(0)
+
+const updateLeftStatsHeight = () => {
+  if (!leftStatsRef.value) return
+  leftStatsHeight.value = leftStatsRef.value.offsetHeight
+}
+
+let resizeObserver: ResizeObserver | null = null
+
+onMounted(() => {
+  Promise.all([fetchNet(), fetchAttendees()]).then(async () => {
+    if (net.value && netStatus.value === 'completed') {
+      await fetchComparePrevious()
+      nextTick(() => {
+        updateLeftStatsHeight()
+        if (leftStatsRef.value && typeof ResizeObserver !== 'undefined') {
+          resizeObserver = new ResizeObserver(() => updateLeftStatsHeight())
+          resizeObserver.observe(leftStatsRef.value)
+        }
+      })
+    }
+  })
+})
+
+onUnmounted(() => {
+  if (resizeObserver && leftStatsRef.value) {
+    resizeObserver.disconnect()
+  }
+})
+
+const maxGeoCount = computed(() => {
+  const d = geographicDistribution.value
+  const list =
+    geographicTab.value === 'country'
+      ? d.byCountry
+      : geographicTab.value === 'city'
+        ? d.byCity
+        : d.byDistrict
+  return list.length ? Math.max(...list.map((x) => x.count)) : 1
+})
+
+const netDurationFormatted = computed(() => {
+  const n = net.value
+  if (!n?.startedAt || !n?.endedAt) return '-'
+  const start = new Date(n.startedAt)
+  const end = new Date(n.endedAt)
+  const diffMs = end.getTime() - start.getTime()
+  const totalMinutes = Math.floor(diffMs / 60000)
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+  if (hours > 0) return `${hours} ${t('netDetail.durationHours')} ${minutes} ${t('netDetail.durationMinutesShort')}`
+  return `${minutes} ${t('netDetail.durationMinutesShort')}`
+})
+
 const canManageNet = computed(() => {
   if (!net.value) return false
   if (auth.isAdmin || auth.isSuperAdmin) return true
@@ -159,6 +255,7 @@ const endNet = async () => {
   try {
     await api.patch(`/net/${route.params.id}/end`)
     await fetchNet()
+    await fetchComparePrevious()
     toast.success(t('netDetail.netEnded'))
   } catch (error) {
     toast.error(t('error.serverError'))
@@ -375,9 +472,31 @@ h1{text-align:center;font-size:1.5rem;margin-bottom:2rem}</style></head><body>
   }
 }
 
-onMounted(() => {
-  Promise.all([fetchNet(), fetchAttendees()])
-})
+interface NetComparePrevious {
+  previousAttendeeCount: number
+  previousDurationMinutes: number
+  deltaAttendeeCount: number
+  deltaDurationMinutes: number
+  previousEndedAt: string
+}
+
+const comparePrevious = ref<NetComparePrevious | null>(null)
+const isLoadingCompare = ref(false)
+
+const fetchComparePrevious = async () => {
+  if (!net.value?.id || !isCompleted.value) return
+  try {
+    isLoadingCompare.value = true
+    const data = await api.get<NetComparePrevious | null>(
+      `/v2/dashboard/net/${net.value.id}/compare-previous`
+    )
+    comparePrevious.value = data ?? null
+  } catch {
+    comparePrevious.value = null
+  } finally {
+    isLoadingCompare.value = false
+  }
+}
 </script>
 
 <template>
@@ -403,7 +522,168 @@ onMounted(() => {
         @export-png="exportToPng"
       />
 
-      <div class="border-t border-border/50 pt-6">
+      <section
+        v-if="isCompleted"
+        class="rounded-lg border border-border/50 bg-background p-4"
+      >
+        <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+          <TrendingUp class="h-4 w-4" />
+          {{ t('netDetail.statsTitle') }}
+        </h3>
+        <div class="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4 lg:items-start">
+          <!-- Sol sütun: toplam katılımcı, süre, trend (desktop) / mobilde aynı sıra alt alta -->
+          <div ref="leftStatsRef" class="flex flex-col gap-3">
+            <div class="p-4 rounded-lg border border-border/50 text-center shrink-0">
+              <div class="flex items-center justify-center gap-1.5 text-2xl font-bold">
+                <Users class="h-5 w-5 text-muted-foreground" />
+                {{ attendees.length }}
+              </div>
+              <p class="text-xs text-muted-foreground mt-1">{{ t('netReport.totalAttendees') }}</p>
+            </div>
+            <div class="p-4 rounded-lg border border-border/50 text-center shrink-0">
+              <div class="flex items-center justify-center gap-1.5 text-2xl font-bold">
+                <Clock class="h-5 w-5 text-muted-foreground" />
+                {{ netDurationFormatted }}
+              </div>
+              <p class="text-xs text-muted-foreground mt-1">{{ t('netDetail.duration') }}</p>
+            </div>
+            <div
+              v-if="comparePrevious !== null && !isLoadingCompare"
+              class="p-4 rounded-lg border border-border/50 text-center shrink-0"
+            >
+              <div class="flex items-center justify-center gap-1.5 text-xl font-bold flex-wrap">
+                <TrendingUp class="h-5 w-5 text-muted-foreground shrink-0" />
+                <span v-if="comparePrevious.deltaAttendeeCount > 0" class="text-green-600 dark:text-green-400">+{{ comparePrevious.deltaAttendeeCount }}</span>
+                <span v-else-if="comparePrevious.deltaAttendeeCount < 0" class="text-red-600 dark:text-red-400">{{ comparePrevious.deltaAttendeeCount }}</span>
+                <span v-else class="text-muted-foreground">0</span>
+                <span class="text-muted-foreground font-normal">{{ t('netDetail.trendAttendees') }}</span>
+                <span class="text-muted-foreground">·</span>
+                <span v-if="comparePrevious.deltaDurationMinutes > 0" class="text-green-600 dark:text-green-400">+{{ comparePrevious.deltaDurationMinutes }}</span>
+                <span v-else-if="comparePrevious.deltaDurationMinutes < 0" class="text-red-600 dark:text-red-400">{{ comparePrevious.deltaDurationMinutes }}</span>
+                <span v-else class="text-muted-foreground">0</span>
+                <span class="text-muted-foreground font-normal">{{ t('netDetail.durationMinutesShort') }}</span>
+              </div>
+              <p class="text-xs text-muted-foreground mt-1">{{ t('netDetail.trendVsPrevious') }}</p>
+            </div>
+            <div
+              v-else-if="isLoadingCompare"
+              class="p-4 rounded-lg border border-border/50 text-center shrink-0"
+            >
+              <div class="h-8 bg-muted animate-pulse rounded mx-auto w-24" />
+              <p class="text-xs text-muted-foreground mt-1">{{ t('netDetail.trendVsPrevious') }}</p>
+            </div>
+          </div>
+          <!-- Sağ sütun: coğrafi dağılım, desktop'ta soldaki üç kutunun yüksekliği ile sınırlı, kendi içinde scroll -->
+          <div
+            class="min-h-0 flex flex-col lg:overflow-hidden"
+            :style="leftStatsHeight ? { '--left-stats-height': leftStatsHeight + 'px' } as Record<string, string> : undefined"
+            :class="leftStatsHeight ? 'lg:max-h-[var(--left-stats-height)] lg:h-[var(--left-stats-height)]' : ''"
+          >
+            <div class="p-4 rounded-lg border border-border/50 flex-1 min-h-0 flex flex-col overflow-hidden">
+              <p class="text-xs text-muted-foreground flex items-center gap-2 mb-2 shrink-0">
+                <MapPin class="h-4 w-4" />
+                {{ t('netDetail.geographicSpread') }}
+              </p>
+              <div class="flex gap-1 mb-2 shrink-0">
+                <button
+                  type="button"
+                  class="px-2 py-1 text-xs rounded-md border transition-colors"
+                  :class="geographicTab === 'country' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
+                  @click="geographicTab = 'country'"
+                >
+                  {{ t('dashboard.stats.countries') }}
+                </button>
+                <button
+                  type="button"
+                  class="px-2 py-1 text-xs rounded-md border transition-colors"
+                  :class="geographicTab === 'city' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
+                  @click="geographicTab = 'city'"
+                >
+                  {{ t('dashboard.stats.cities') }}
+                </button>
+                <button
+                  type="button"
+                  class="px-2 py-1 text-xs rounded-md border transition-colors"
+                  :class="geographicTab === 'district' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
+                  @click="geographicTab = 'district'"
+                >
+                  {{ t('dashboard.stats.districts') }}
+                </button>
+              </div>
+              <div class="flex-1 min-h-0 overflow-y-auto space-y-1.5">
+                <template v-if="geographicTab === 'country'">
+                  <div
+                    v-for="(item, i) in geographicDistribution.byCountry"
+                    :key="item.label"
+                    class="flex items-center gap-2"
+                  >
+                    <span class="text-xs text-muted-foreground w-5">{{ i + 1 }}.</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex justify-between gap-2">
+                        <span class="font-medium truncate text-sm">{{ item.label }}</span>
+                        <span class="text-xs text-muted-foreground shrink-0">{{ item.count }}</span>
+                      </div>
+                      <div class="h-1 rounded-full bg-muted mt-0.5 overflow-hidden">
+                        <div
+                          class="h-full rounded-full bg-primary/30"
+                          :style="{ width: `${(item.count / maxGeoCount) * 100}%` }"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <template v-else-if="geographicTab === 'city'">
+                  <div
+                    v-for="(item, i) in geographicDistribution.byCity"
+                    :key="item.label"
+                    class="flex items-center gap-2"
+                  >
+                    <span class="text-xs text-muted-foreground w-5">{{ i + 1 }}.</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex justify-between gap-2">
+                        <span class="font-medium truncate text-sm">{{ item.label }}</span>
+                        <span class="text-xs text-muted-foreground shrink-0">{{ item.count }}</span>
+                      </div>
+                      <div class="h-1 rounded-full bg-muted mt-0.5 overflow-hidden">
+                        <div
+                          class="h-full rounded-full bg-primary/30"
+                          :style="{ width: `${(item.count / maxGeoCount) * 100}%` }"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <template v-else>
+                  <div
+                    v-for="(item, i) in geographicDistribution.byDistrict"
+                    :key="item.label"
+                    class="flex items-center gap-2"
+                  >
+                    <span class="text-xs text-muted-foreground w-5">{{ i + 1 }}.</span>
+                    <div class="flex-1 min-w-0">
+                      <div class="flex justify-between gap-2">
+                        <span class="font-medium truncate text-sm">{{ item.label }}</span>
+                        <span class="text-xs text-muted-foreground shrink-0">{{ item.count }}</span>
+                      </div>
+                      <div class="h-1 rounded-full bg-muted mt-0.5 overflow-hidden">
+                        <div
+                          class="h-full rounded-full bg-primary/30"
+                          :style="{ width: `${(item.count / maxGeoCount) * 100}%` }"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <p v-if="(geographicTab === 'country' ? geographicDistribution.byCountry : geographicTab === 'city' ? geographicDistribution.byCity : geographicDistribution.byDistrict).length === 0" class="text-xs text-muted-foreground py-2">
+                  {{ t('dashboard.noStats') }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div v-if="netStatus !== 'pending'" class="border-t border-border/50 pt-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold flex items-center gap-2">
             <Users class="h-5 w-5" />
@@ -419,22 +699,6 @@ onMounted(() => {
           :priority-branch-id="net?.branch?.id"
           @attendee-added="handleAttendeeAdded"
         />
-
-        <div
-          v-else-if="netStatus === 'pending'"
-          class="mb-6 p-4 rounded-lg border border-blue-500/30 bg-blue-500/5 text-center"
-        >
-          <AlertCircle class="h-5 w-5 text-blue-500 mx-auto mb-2" />
-          <p class="text-sm text-muted-foreground">{{ t('netDetail.startToAdd') }}</p>
-        </div>
-
-        <div
-          v-else-if="netStatus === 'completed'"
-          class="mb-6 p-4 rounded-lg border border-border/50 bg-muted/20 text-center"
-        >
-          <Check class="h-5 w-5 text-muted-foreground mx-auto mb-2" />
-          <p class="text-sm text-muted-foreground">{{ t('netDetail.netCompleted') }}</p>
-        </div>
 
         <AttendeeList
           :attendees="attendees"

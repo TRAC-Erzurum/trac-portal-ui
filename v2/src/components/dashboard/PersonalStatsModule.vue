@@ -7,8 +7,6 @@ interface PersonalStats {
   attendedNets: number
   managedNets: number
   streak: number
-  averageReadability: number
-  averageSignal: number
 }
 
 interface PersonalNetStatsBranchAware {
@@ -27,10 +25,13 @@ interface PersonalNetStatsBranchAware {
 interface Props {
   stats: PersonalStats | PersonalNetStatsBranchAware | null
   isLoading?: boolean
+  /** Seçili şube adı (örn. TRAC Genel Merkez); şube bloğu başlığında gösterilir */
+  branchName?: string | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
   isLoading: false,
+  branchName: null,
 })
 
 const { t } = useI18n()
@@ -56,10 +57,10 @@ const hasStats = computed(() => {
 </script>
 
 <template>
-  <section>
+  <section class="rounded-lg border border-border/50 bg-background p-4">
     <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
       <TrendingUp class="h-4 w-4" />
-      {{ isBranchAware ? t('dashboard.personalStatsBranch') : t('dashboard.yourStats') }}
+      {{ t('dashboard.yourStats') }}
     </h3>
 
     <div v-if="isLoading" class="grid grid-cols-3 gap-3">
@@ -72,7 +73,7 @@ const hasStats = computed(() => {
     <template v-else-if="hasStats">
       <div v-if="isBranchAware" class="space-y-6">
         <div>
-          <p class="text-xs text-muted-foreground mb-2">{{ t('dashboard.branchStats') }}</p>
+          <p class="text-xs text-muted-foreground mb-2">{{ branchName || t('dashboard.branchStats') }}</p>
           <div class="grid grid-cols-3 gap-3">
             <div class="p-4 rounded-lg border border-border/50 text-center">
               <div class="flex items-center justify-center gap-1 text-2xl font-bold">

@@ -10,6 +10,8 @@ import CreateCommChannelSheet from '@/components/infrastructure/CreateCommChanne
 import EditCommChannelSheet from '@/components/infrastructure/EditCommChannelSheet.vue'
 import CreateNetSheet from '@/components/nets/CreateNetSheet.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import CommunityModule from '@/components/dashboard/CommunityModule.vue'
+import NetsAttendeesTrendWidget from '@/components/dashboard/widgets/NetsAttendeesTrendWidget.vue'
 import { InfrastructureCard, InfrastructureCardSkeleton, MemberCard, NetCard, NetCardSkeleton, SearchInput } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -112,6 +114,9 @@ const showAddMemberSheet = ref(false)
 const showDeleteDialog = ref(false)
 const isDeleting = ref(false)
 const deleteBranchNameConfirm = ref('')
+
+const communityStats = ref<any>(null)
+const isLoadingCommunity = ref(false)
 
 const infrastructure = ref<Infrastructure[]>([])
 const infrastructureTotal = ref(0)
@@ -238,12 +243,34 @@ const fetchBranch = async () => {
   try {
     const data = await api.get<Branch>(`/branches/${route.params.id}`)
     branch.value = data
+    await fetchCommunityStats()
   } catch (error) {
     router.push('/branches')
   } finally {
     isLoading.value = false
   }
 }
+
+const communityPeriod = ref<'all' | '7d' | '30d'>('all')
+
+const fetchCommunityStats = async () => {
+  const branchId = route.params.id as string
+  if (!branchId) return
+  try {
+    isLoadingCommunity.value = true
+    communityStats.value = await api.get(
+      `/v2/dashboard/community?branchId=${branchId}&period=${communityPeriod.value}`
+    )
+  } catch {
+    communityStats.value = null
+  } finally {
+    isLoadingCommunity.value = false
+  }
+}
+
+watch(communityPeriod, () => {
+  fetchCommunityStats()
+})
 
 const fetchMembers = async (append = false) => {
   if (!route.params.id) return
@@ -781,6 +808,23 @@ onMounted(() => {
             </template>
           </template>
         </div>
+      </div>
+
+      <Separator class="my-8" />
+
+      <CommunityModule
+        v-model:period="communityPeriod"
+        :stats="communityStats"
+        :branch-name="branch?.name ?? null"
+        :is-loading="isLoadingCommunity"
+        :show-global-section="false"
+        :show-monthly-stats="false"
+        :show-totals="false"
+        show-period-filter
+      />
+
+      <div class="my-6">
+        <NetsAttendeesTrendWidget :branch-id="route.params.id as string" />
       </div>
 
       <Separator class="my-8" />
