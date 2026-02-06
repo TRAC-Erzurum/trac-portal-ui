@@ -476,6 +476,8 @@
     "attendeeDeleted": "Attendee deleted",
     "confirmDelete": "Are you sure you want to delete attendee {callSign}?",
     "addOperatorAsAttendee": "Add operator as first attendee",
+    "startWithOperator": "Start with operator as first attendee",
+    "startWithoutOperator": "Start without adding operator",
     "netStarted": "Net started",
     "netEnded": "Net ended",
     "netRestarted": "Net restarted",
@@ -483,7 +485,10 @@
     "editNet": "Edit Net",
     "editNetDescription": "Update net details",
     "viewReport": "View Report",
-    "export": "Export"
+    "export": "Export",
+    "statusPending": "Scheduled",
+    "statusActive": "Active",
+    "statusCompleted": "Completed"
   },
   "netReport": {
     "title": "Net Report",

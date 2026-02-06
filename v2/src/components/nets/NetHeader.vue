@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Play, Square, RotateCcw, Users, Radio, Clock, Settings, Download, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
+import { Building2, ChevronDown, Play, Square, RotateCcw, TowerControl, Users, Radio, Clock, Settings, Download, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { useDateFormat } from '@/composables'
 
 interface Operator {
   id: string
@@ -64,7 +65,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const addOperatorAsAttendee = defineModel<boolean>('addOperatorAsAttendee', { default: true })
+const { formatDateTime, formatTime } = useDateFormat()
 
 const netStatus = computed(() => {
   if (!props.net.startedAt) return 'pending'
@@ -72,161 +73,168 @@ const netStatus = computed(() => {
   return 'completed'
 })
 
+const statusLabel = computed(() => {
+  if (netStatus.value === 'pending') return t('netDetail.statusPending')
+  if (netStatus.value === 'active') return t('netDetail.statusActive')
+  return t('netDetail.statusCompleted')
+})
+
+
+const dateTimeRange = computed(() => {
+  const net = props.net
+  if (!net.startedAt) return ''
+  const startStr = formatDateTime(net.startedAt)
+  if (!net.endedAt) return startStr
+  const startDate = net.startedAt.split('T')[0]
+  const endDate = net.endedAt.split('T')[0]
+  if (startDate === endDate) {
+    return `${startStr} – ${formatTime(net.endedAt)}`
+  }
+  return `${startStr} – ${formatDateTime(net.endedAt)}`
+})
+
 const formatDuration = (net: Net) => {
   const start = new Date(net.startedAt!)
   const end = net.endedAt ? new Date(net.endedAt) : new Date()
   const diff = Math.floor((end.getTime() - start.getTime()) / 1000)
-  
   const hours = Math.floor(diff / 3600)
   const minutes = Math.floor((diff % 3600) / 60)
-  
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`
-  }
+  if (hours > 0) return `${hours}h ${minutes}m`
   return `${minutes}m`
 }
 </script>
 
 <template>
-  <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-    <div class="space-y-2">
-      <div class="flex items-center gap-3">
-        <span v-if="netStatus === 'active'" class="relative flex h-3 w-3">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-        </span>
-        <span v-else-if="netStatus === 'pending'" class="relative flex h-3 w-3">
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-        </span>
-        <span v-else class="relative flex h-3 w-3">
-          <span class="relative inline-flex rounded-full h-3 w-3 bg-muted-foreground"></span>
-        </span>
-        <h1 class="text-2xl font-bold">{{ net.name }}</h1>
-      </div>
-
-      <div class="space-y-2">
-        <div class="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-          <div class="flex items-center gap-1.5">
-            <Radio class="h-4 w-4" />
-            <span>{{ net.operator.callSign }}</span>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <Users class="h-4 w-4" />
-            <span>{{ net.attendeeCount }} {{ t('nets.attendees') }}</span>
-          </div>
-          <div v-if="net.startedAt" class="flex items-center gap-1.5">
-            <Clock class="h-4 w-4" />
-            <span>{{ formatDuration(net) }}</span>
-          </div>
+  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+    <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 min-w-0 flex-1">
+      <div class="flex justify-center sm:justify-start shrink-0">
+        <div class="h-24 w-24 rounded-lg border border-border bg-muted/30 flex items-center justify-center overflow-hidden">
+          <Radio class="h-12 w-12 text-muted-foreground" />
         </div>
-        
-        <div v-if="net.branch" class="flex items-center gap-2 text-sm">
-          <span class="text-muted-foreground">{{ t('nets.branch') }}:</span>
-          <span class="font-medium">
-            <span v-if="!net.branch.isHeadquarters && net.branchCallSign" class="font-mono text-primary">{{ net.branchCallSign.callSign }}</span>
-            <span v-if="!net.branch.isHeadquarters && net.branchCallSign" class="mx-1.5 text-muted-foreground">·</span>
-            <span>{{ net.branch.name }}</span>
+      </div>
+      <div class="min-w-0 flex-1 space-y-3">
+        <div class="flex items-center gap-2 flex-wrap">
+          <span v-if="netStatus === 'active'" class="relative flex h-3 w-3 shrink-0" :title="t('netDetail.statusActive')">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
+          </span>
+          <span v-else-if="netStatus === 'pending'" class="relative flex h-3 w-3 shrink-0 rounded-full bg-blue-500" :title="t('netDetail.statusPending')" />
+          <span v-else class="relative flex h-3 w-3 shrink-0 rounded-full bg-muted-foreground" :title="t('netDetail.statusCompleted')" />
+          <h1 class="text-2xl font-bold min-w-0 truncate">{{ net.name }}</h1>
+          <span class="text-lg text-muted-foreground shrink-0">· {{ statusLabel }}</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          <span v-if="dateTimeRange" class="flex items-center gap-2">
+            <Clock class="h-4 w-4 shrink-0" />
+            {{ dateTimeRange }}
+          </span>
+          <span class="flex items-center gap-2">
+            <Radio class="h-4 w-4 shrink-0" />
+            {{ net.operator.callSign }}
+          </span>
+          <span class="flex items-center gap-2">
+            <Users class="h-4 w-4 shrink-0" />
+            {{ net.attendeeCount }} {{ t('nets.attendees') }}
+          </span>
+          <span v-if="net.startedAt" class="flex items-center gap-2">
+            <Clock class="h-4 w-4 shrink-0" />
+            {{ formatDuration(net) }}
           </span>
         </div>
-        
-        <div v-if="net.communicationChannels && net.communicationChannels.length > 0" class="flex items-start gap-2 text-sm">
-          <span class="text-muted-foreground">{{ t('nets.infrastructure') }}:</span>
-          <div class="flex flex-wrap gap-1.5">
-            <span 
-              v-for="channel in net.communicationChannels" 
-              :key="channel.id"
-              class="px-2 py-0.5 rounded-md text-xs font-medium"
-              :class="channel.isSimplexAdHoc ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20' : 'bg-green-500/10 text-green-700 dark:text-green-400 border border-green-500/20'"
-            >
-              <template v-if="channel.isSimplexAdHoc">
-                Simpleks {{ channel.simplexFrequency }}
-              </template>
-              <template v-else>
-                {{ channel.communicationChannel?.name }}
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          <span v-if="net.branch" class="flex items-center gap-2">
+            <Building2 class="h-4 w-4 shrink-0" />
+            <span class="font-medium text-foreground">
+              <span v-if="!net.branch.isHeadquarters && net.branchCallSign" class="font-mono text-primary">{{ net.branchCallSign.callSign }}</span>
+              <span v-if="!net.branch.isHeadquarters && net.branchCallSign" class="mx-1.5 text-muted-foreground">·</span>
+              <span>{{ net.branch.name }}</span>
+            </span>
+          </span>
+          <span v-if="net.communicationChannels && net.communicationChannels.length > 0" class="flex items-center gap-2">
+            <TowerControl class="h-4 w-4 shrink-0" />
+            <span class="font-medium text-foreground">
+              <template v-for="(channel, idx) in net.communicationChannels" :key="channel.id">
+                <template v-if="idx > 0"> · </template>
+                <template v-if="channel.isSimplexAdHoc">Simpleks {{ channel.simplexFrequency }}</template>
+                <template v-else>{{ channel.communicationChannel?.name }}</template>
               </template>
             </span>
-          </div>
+          </span>
         </div>
       </div>
     </div>
-
-    <div v-if="canManage || (netStatus !== 'pending' && attendeesCount > 0)" class="flex flex-col items-end gap-3">
-      <div v-if="canManage && netStatus === 'pending'" class="flex items-center gap-2">
-        <input 
-          id="addOperatorAsAttendee" 
-          type="checkbox"
-          v-model="addOperatorAsAttendee"
-          class="h-4 w-4 rounded border-border bg-background text-primary focus:ring-primary"
-        />
-        <label for="addOperatorAsAttendee" class="text-sm cursor-pointer">
-          {{ t('netDetail.addOperatorAsAttendee') }}
-        </label>
-      </div>
-      
-      <div class="flex items-center gap-2">
-        <Button
-          v-if="canManage && netStatus === 'pending'"
-          variant="outline"
-          @click="emit('edit')"
-          class="gap-2"
-        >
-          <Settings class="h-4 w-4" />
-          {{ t('common.edit') }}
-        </Button>
-        
-        <Button
-          v-if="canManage && netStatus === 'pending'"
-          variant="outline"
-          @click="emit('start', addOperatorAsAttendee)"
-          class="gap-2"
-        >
-          <Play class="h-4 w-4" fill="currentColor" />
-          {{ t('netDetail.start') }}
-        </Button>
-        
-        <Button
-          v-if="canManage && netStatus === 'active'"
-          variant="outline"
-          @click="emit('end')"
-          class="gap-2"
-        >
-          <Square class="h-4 w-4" fill="currentColor" />
-          {{ t('netDetail.end') }}
-        </Button>
-        
-        <Button
-          v-if="canManage && netStatus === 'completed' && isAdmin"
-          variant="outline"
-          @click="emit('restart')"
-          class="gap-2"
-        >
-          <RotateCcw class="h-4 w-4" />
-          {{ t('netDetail.restart') }}
-        </Button>
-        
-        <DropdownMenu v-if="netStatus !== 'pending' && attendeesCount > 0">
-          <DropdownMenuTrigger as-child>
-            <Button variant="outline" class="gap-2" :disabled="isExporting">
-              <Download class="h-4 w-4" />
-              {{ t('netDetail.export') }}
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start">
-            <DropdownMenuItem @click="emit('exportCsv')" class="gap-2 cursor-pointer">
-              <FileSpreadsheet class="h-4 w-4" />
-              CSV
-            </DropdownMenuItem>
-            <DropdownMenuItem @click="emit('exportPdf')" class="gap-2 cursor-pointer" :disabled="isExporting">
-              <Printer class="h-4 w-4" />
-              PDF
-            </DropdownMenuItem>
-            <DropdownMenuItem @click="emit('exportPng')" class="gap-2 cursor-pointer" :disabled="isExporting">
-              <Image class="h-4 w-4" />
-              PNG
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+    <div v-if="canManage || (netStatus !== 'pending' && attendeesCount > 0)" class="flex flex-col items-end gap-2 shrink-0 sm:ml-4">
+      <Button
+        v-if="canManage && netStatus === 'pending'"
+        variant="outline"
+        size="sm"
+        class="min-w-[10rem]"
+        @click="emit('edit')"
+      >
+        <Settings class="h-4 w-4 mr-2" />
+        {{ t('common.edit') }}
+      </Button>
+      <DropdownMenu v-if="canManage && netStatus === 'pending'">
+        <DropdownMenuTrigger as-child>
+          <Button variant="outline" size="sm" class="min-w-[10rem]">
+            <Play class="h-4 w-4 mr-2" fill="currentColor" />
+            {{ t('netDetail.start') }}
+            <ChevronDown class="h-4 w-4 ml-2 shrink-0 opacity-70" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem class="gap-2 cursor-pointer" @click="emit('start', true)">
+            <Play class="h-4 w-4" fill="currentColor" />
+            {{ t('netDetail.startWithOperator') }}
+          </DropdownMenuItem>
+          <DropdownMenuItem class="gap-2 cursor-pointer" @click="emit('start', false)">
+            <Play class="h-4 w-4" fill="currentColor" />
+            {{ t('netDetail.startWithoutOperator') }}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <Button
+        v-if="canManage && netStatus === 'active'"
+        variant="outline"
+        size="sm"
+        class="min-w-[10rem]"
+        @click="emit('end')"
+      >
+        <Square class="h-4 w-4 mr-2" fill="currentColor" />
+        {{ t('netDetail.end') }}
+      </Button>
+      <Button
+        v-if="canManage && netStatus === 'completed' && isAdmin"
+        variant="outline"
+        size="sm"
+        class="min-w-[10rem]"
+        @click="emit('restart')"
+      >
+        <RotateCcw class="h-4 w-4 mr-2" />
+        {{ t('netDetail.restart') }}
+      </Button>
+      <DropdownMenu v-if="netStatus !== 'pending' && attendeesCount > 0">
+        <DropdownMenuTrigger as-child>
+          <Button variant="outline" size="sm" class="min-w-[10rem]" :disabled="isExporting">
+            <Download class="h-4 w-4 mr-2" />
+            {{ t('netDetail.export') }}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem @click="emit('exportCsv')" class="gap-2 cursor-pointer">
+            <FileSpreadsheet class="h-4 w-4" />
+            CSV
+          </DropdownMenuItem>
+          <DropdownMenuItem @click="emit('exportPdf')" class="gap-2 cursor-pointer" :disabled="isExporting">
+            <Printer class="h-4 w-4" />
+            PDF
+          </DropdownMenuItem>
+          <DropdownMenuItem @click="emit('exportPng')" class="gap-2 cursor-pointer" :disabled="isExporting">
+            <Image class="h-4 w-4" />
+            PNG
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   </div>
 </template>

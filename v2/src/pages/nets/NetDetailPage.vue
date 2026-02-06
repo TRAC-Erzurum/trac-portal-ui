@@ -78,7 +78,6 @@ const net = ref<Net | null>(null)
 const attendees = ref<Attendee[]>([])
 const isLoading = ref(true)
 const isLoadingAttendees = ref(false)
-const addOperatorAsAttendee = ref(true)
 
 const editingAttendee = ref<Attendee | null>(null)
 const isEditSheetOpen = ref(false)
@@ -382,7 +381,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <AppLayout>
+  <AppLayout :title="t('nav.nets')" :breadcrumb-label="net?.name ?? '...'">
     <div v-if="isLoading" class="space-y-4">
       <div class="h-8 w-64 bg-muted rounded animate-pulse" />
       <div class="h-4 w-48 bg-muted rounded animate-pulse" />
@@ -395,7 +394,6 @@ onMounted(() => {
         :is-admin="auth.isAdmin || auth.isSuperAdmin"
         :attendees-count="attendees.length"
         :is-exporting="isExporting"
-        v-model:add-operator-as-attendee="addOperatorAsAttendee"
         @start="startNet"
         @end="endNet"
         @restart="restartNet"

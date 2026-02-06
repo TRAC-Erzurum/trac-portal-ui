@@ -476,6 +476,8 @@
     "attendeeDeleted": "Katılımcı silindi",
     "confirmDelete": "{callSign} katılımcısını silmek istediğinize emin misiniz?",
     "addOperatorAsAttendee": "Operatörü ilk katılımcı olarak ekle",
+    "startWithOperator": "Operatörü ekleyerek başlat",
+    "startWithoutOperator": "Operatörü eklemeden başlat",
     "netStarted": "Çevrim başlatıldı",
     "netEnded": "Çevrim sonlandırıldı",
     "netRestarted": "Çevrim yeniden başlatıldı",
@@ -483,7 +485,10 @@
     "editNet": "Çevrimi Düzenle",
     "editNetDescription": "Çevrim bilgilerini güncelleyin",
     "viewReport": "Raporu Görüntüle",
-    "export": "Dışa Aktar"
+    "export": "Dışa Aktar",
+    "statusPending": "Planlandı",
+    "statusActive": "Aktif",
+    "statusCompleted": "Tamamlandı"
   },
   "netReport": {
     "title": "Çevrim Raporu",
