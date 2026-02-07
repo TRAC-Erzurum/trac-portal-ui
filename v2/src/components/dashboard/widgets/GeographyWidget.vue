@@ -14,7 +14,7 @@ const { t } = useI18n()
 const data = ref<Data | null>(null)
 const loading = ref(true)
 const error = ref(false)
-const activeTab = ref<'countries' | 'cities' | 'districts'>('countries')
+const activeTab = ref<'countries' | 'cities' | 'districts'>('cities')
 
 const fetchData = async () => {
   try {

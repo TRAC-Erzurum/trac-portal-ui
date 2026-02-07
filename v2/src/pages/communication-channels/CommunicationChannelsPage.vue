@@ -335,7 +335,7 @@ fetchInfrastructure()
             :disabled="isLoadingMore"
             @click="loadMore"
           >
-            {{ isLoadingMore ? t('common.loading') : t('communicationChannels.loadMore') }}
+            {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
           </Button>
         </div>
       </div>

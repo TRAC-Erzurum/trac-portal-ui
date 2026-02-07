@@ -178,7 +178,6 @@
     "streak": "Seri",
     "recentActivity": "Son hareket",
     "noActivity": "Henüz hareket yok",
-    "loadMore": "Daha fazla",
     "community": "Topluluk",
     "last3Months": "Son 3 ay",
     "netsLabel": "çevrim",
@@ -355,7 +354,6 @@
     "searchPlaceholder": "Çağrı işareti, isim veya şehir ara...",
     "totalCount": "{count} operatör",
     "noResults": "Sonuç bulunamadı",
-    "loadMore": "Daha fazla yükle",
     "profile": "Profil",
     "statistics": "İstatistikler",
     "netStatistics": "Çevrim İstatistikleri",
@@ -381,7 +379,6 @@
     "searchPlaceholder": "Çevrim ara...",
     "totalCount": "{count} çevrim",
     "noResults": "Sonuç bulunamadı",
-    "loadMore": "Daha fazla yükle",
     "roleAll": "Tümü",
     "createNet": "Yeni Çevrim",
     "createDescription": "Yeni bir çevrim oluşturun",
@@ -620,6 +617,7 @@
     }
   },
   "common": {
+    "loadMore": "Daha fazla yükle",
     "clear": "Temizle",
     "loading": "Yükleniyor...",
     "save": "Kaydet",
@@ -752,7 +750,6 @@
       "echolink": "EchoLink",
       "aprs": "APRS",
       "hf": "HF Band"
-    },
-    "loadMore": "Daha fazla yükle"
+    }
   }
 }

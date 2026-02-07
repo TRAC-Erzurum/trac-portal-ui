@@ -939,7 +939,7 @@ onMounted(() => {
           </p>
           <div v-if="hasMoreInfrastructure" class="order-1 lg:order-2 w-full lg:w-auto">
             <Button variant="outline" class="w-full lg:w-auto lg:px-8" :disabled="isLoadingMoreInfrastructure" @click="loadMoreInfrastructure">
-              {{ isLoadingMoreInfrastructure ? t('common.loading') : t('communicationChannels.loadMore') }}
+              {{ isLoadingMoreInfrastructure ? t('common.loading') : t('common.loadMore') }}
             </Button>
           </div>
         </div>
@@ -1025,7 +1025,7 @@ onMounted(() => {
                 :disabled="isLoadingMoreMembers"
                 @click="loadMoreMembers"
               >
-                {{ isLoadingMoreMembers ? t('common.loading') : t('branches.loadMore') }}
+                {{ isLoadingMoreMembers ? t('common.loading') : t('common.loadMore') }}
               </Button>
             </div>
           </div>
@@ -1109,7 +1109,7 @@ onMounted(() => {
               :disabled="isLoadingMoreNets"
               @click="loadMoreNets"
             >
-              {{ isLoadingMoreNets ? t('common.loading') : t('nets.loadMore') }}
+              {{ isLoadingMoreNets ? t('common.loading') : t('common.loadMore') }}
             </Button>
           </div>
         </div>

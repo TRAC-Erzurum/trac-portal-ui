@@ -178,7 +178,6 @@
     "streak": "Streak",
     "recentActivity": "Recent activity",
     "noActivity": "No activity yet",
-    "loadMore": "Load more",
     "community": "Community",
     "last3Months": "Last 3 months",
     "netsLabel": "nets",
@@ -355,7 +354,6 @@
     "searchPlaceholder": "Search call sign, name or city...",
     "totalCount": "{count} operators",
     "noResults": "No results found",
-    "loadMore": "Load more",
     "profile": "Profile",
     "statistics": "Statistics",
     "netStatistics": "Net Statistics",
@@ -381,7 +379,6 @@
     "searchPlaceholder": "Search net...",
     "totalCount": "{count} nets",
     "noResults": "No results found",
-    "loadMore": "Load more",
     "roleAll": "All",
     "createNet": "New Net",
     "createDescription": "Create a new net",
@@ -619,6 +616,7 @@
     }
   },
   "common": {
+    "loadMore": "Load more",
     "clear": "Clear",
     "loading": "Loading...",
     "save": "Save",
@@ -751,7 +749,6 @@
       "echolink": "EchoLink",
       "aprs": "APRS",
       "hf": "HF Band"
-    },
-    "loadMore": "Load more"
+    }
   }
 }

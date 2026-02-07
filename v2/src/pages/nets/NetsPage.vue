@@ -313,7 +313,7 @@ onMounted(async () => {
             :disabled="isLoadingMore"
             @click="loadMore"
           >
-            {{ isLoadingMore ? t('common.loading') : t('nets.loadMore') }}
+            {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
           </Button>
         </div>
       </div>

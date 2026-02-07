@@ -174,7 +174,7 @@ onMounted(() => {
             :disabled="isLoadingMore"
             @click="loadMore"
           >
-            {{ isLoadingMore ? t('common.loading') : t('operators.loadMore') }}
+            {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
           </Button>
         </div>
       </div>

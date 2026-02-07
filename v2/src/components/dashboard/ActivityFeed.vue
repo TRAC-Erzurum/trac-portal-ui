@@ -135,7 +135,7 @@ const getActivityText = (activity: Activity) => {
         :disabled="isLoadingMore"
         @click="emit('loadMore')"
       >
-        {{ isLoadingMore ? t('common.loading') : t('dashboard.loadMore') }}
+        {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
       </button>
     </template>
   </section>
