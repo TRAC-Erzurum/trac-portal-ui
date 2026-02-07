@@ -8,6 +8,8 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useDateFormat } from '@/composables'
 import { translateError } from '@/i18n'
@@ -55,12 +57,14 @@ const approveRole = ref<Record<string, string>>({})
 
 const showApproveDialog = ref(false)
 const showRejectDialog = ref(false)
-const showApprovePwDialog = ref(false)
+const showApprovePwSheet = ref(false)
 const showRejectPwDialog = ref(false)
 const pendingApprove = ref<{ branchId: string; userId: string; membershipId: string } | null>(null)
 const pendingReject = ref<{ branchId: string; userId: string; membershipId: string } | null>(null)
 const pendingApprovePwId = ref<string | null>(null)
 const pendingRejectPwId = ref<string | null>(null)
+const approvePwNewPassword = ref('')
+const approvePwConfirmPassword = ref('')
 
 async function fetchPending() {
   isLoading.value = true
@@ -125,9 +129,11 @@ async function confirmRejectMembership() {
   }
 }
 
-function openApprovePwDialog(requestId: string) {
+function openApprovePwSheet(requestId: string) {
   pendingApprovePwId.value = requestId
-  showApprovePwDialog.value = true
+  approvePwNewPassword.value = ''
+  approvePwConfirmPassword.value = ''
+  showApprovePwSheet.value = true
 }
 
 function openRejectPwDialog(requestId: string) {
@@ -138,12 +144,22 @@ function openRejectPwDialog(requestId: string) {
 async function confirmApprovePasswordReset() {
   const requestId = pendingApprovePwId.value
   if (!requestId) return
-  showApprovePwDialog.value = false
+  if (approvePwNewPassword.value.length < 6) {
+    toast.error(t('admin.passwordTooShort'))
+    return
+  }
+  if (approvePwNewPassword.value !== approvePwConfirmPassword.value) {
+    toast.error(t('admin.passwordMismatch'))
+    return
+  }
+  showApprovePwSheet.value = false
   pendingApprovePwId.value = null
   processingPasswordResetId.value = requestId
   try {
-    await api.post<{ newPassword: string }>(`/auth/password-reset-requests/${requestId}/approve`)
-    toast.success(t('admin.temporaryPasswordGenerated'))
+    await api.post(`/auth/password-reset-requests/${requestId}/approve`, {
+      newPassword: approvePwNewPassword.value,
+    })
+    toast.success(t('admin.passwordReset'))
     passwordResetRequests.value = passwordResetRequests.value.filter((r) => r.id !== requestId)
   } catch (e) {
     const err = e as ApiError
@@ -151,6 +167,8 @@ async function confirmApprovePasswordReset() {
   } finally {
     processingPasswordResetId.value = null
   }
+  approvePwNewPassword.value = ''
+  approvePwConfirmPassword.value = ''
 }
 
 async function confirmRejectPasswordReset() {
@@ -374,7 +392,7 @@ onMounted(fetchPending)
                 variant="outline"
                 size="sm"
                 :disabled="processingPasswordResetId === req.id"
-                @click="openApprovePwDialog(req.id)"
+                @click="openApprovePwSheet(req.id)"
               >
                 <Check class="h-4 w-4 mr-2" />
                 {{ t('admin.approve') }}
@@ -429,21 +447,47 @@ onMounted(fetchPending)
       </DialogContent>
     </Dialog>
 
-    <!-- Password reset approve confirm -->
-    <Dialog :open="showApprovePwDialog" @update:open="showApprovePwDialog = $event">
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{{ t('admin.approvePasswordResetConfirmTitle') }}</DialogTitle>
-          <DialogDescription>{{ t('admin.approvePasswordResetConfirmDescription') }}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" @click="showApprovePwDialog = false">{{ t('common.cancel') }}</Button>
-          <Button variant="outline" @click="confirmApprovePasswordReset">
-            {{ t('admin.approve') }}
+    <!-- Password reset approve: set temporary password -->
+    <Sheet v-model:open="showApprovePwSheet">
+      <SheetContent class="sm:max-w-md overflow-y-auto px-4 sm:px-6">
+        <SheetHeader>
+          <SheetTitle>{{ t('admin.approvePasswordResetConfirmTitle') }}</SheetTitle>
+          <SheetDescription>
+            {{ t('admin.approvePasswordResetSheetDescription', { callSign: passwordResetRequests.find(r => r.id === pendingApprovePwId)?.callSign || '' }) }}
+          </SheetDescription>
+        </SheetHeader>
+        <div class="space-y-4 py-6">
+          <div class="space-y-2">
+            <Label for="approvePwNew">{{ t('admin.newPassword') }}</Label>
+            <Input
+              id="approvePwNew"
+              v-model="approvePwNewPassword"
+              type="password"
+              :placeholder="t('admin.newPasswordPlaceholder')"
+            />
+          </div>
+          <div class="space-y-2">
+            <Label for="approvePwConfirm">{{ t('admin.confirmPassword') }}</Label>
+            <Input
+              id="approvePwConfirm"
+              v-model="approvePwConfirmPassword"
+              type="password"
+              :placeholder="t('admin.confirmPasswordPlaceholder')"
+            />
+          </div>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <Button variant="outline" @click="showApprovePwSheet = false">{{ t('common.cancel') }}</Button>
+          <Button
+            variant="outline"
+            :disabled="processingPasswordResetId !== null || !approvePwNewPassword || !approvePwConfirmPassword"
+            @click="confirmApprovePasswordReset"
+          >
+            {{ processingPasswordResetId ? t('common.loading') : t('admin.approve') }}
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+      </SheetContent>
+    </Sheet>
 
     <!-- Password reset reject confirm -->
     <Dialog :open="showRejectPwDialog" @update:open="showRejectPwDialog = $event">

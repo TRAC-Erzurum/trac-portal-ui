@@ -55,7 +55,7 @@ const searchQuery = ref('')
 const searchResults = ref<SearchResult[]>([])
 const isSearching = ref(false)
 const selectedUser = ref<SearchResult | null>(null)
-const selectedRole = ref('member')
+const selectedRole = ref('volunteer')
 const isAdding = ref(false)
 
 const displayName = computed(() => {
@@ -132,7 +132,7 @@ const resetForm = () => {
   searchQuery.value = ''
   searchResults.value = []
   selectedUser.value = null
-  selectedRole.value = 'member'
+  selectedRole.value = 'volunteer'
 }
 
 const handleOpenChange = (open: boolean) => {

@@ -79,18 +79,16 @@ function handleGoogleLogin() {
           />
         </div>
         <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <Label for="password">{{ t('form.password') }}</Label>
-            <router-link to="/forgot-password" class="text-sm text-primary hover:underline">
-              {{ t('auth.forgotPassword') }}
-            </router-link>
-          </div>
+          <Label for="password">{{ t('form.password') }}</Label>
           <PasswordInput 
             id="password" 
             v-model="password"
             placeholder="••••••••" 
             required
           />
+          <router-link to="/forgot-password" class="text-sm text-primary hover:underline block">
+            {{ t('auth.forgotPassword') }}
+          </router-link>
         </div>
         
         <Captcha ref="captchaRef" v-model="captchaToken" />

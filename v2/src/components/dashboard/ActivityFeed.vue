@@ -70,13 +70,18 @@ const getActivityText = (activity: Activity) => {
     case 'attendee.added':
       return t('dashboard.activityAttendeeAdded', { callSign: targetCallSign, net: netName })
     case 'membership.approved':
-      return t('dashboard.activityMembershipApproved', { actor: actorCallSign, branch: branchName })
+      return t('dashboard.activityMembershipApproved', { target: targetCallSign, branch: branchName })
     case 'membership.rejected':
-      return t('dashboard.activityMembershipRejected', { actor: actorCallSign, branch: branchName })
+      return t('dashboard.activityMembershipRejected', { target: targetCallSign, branch: branchName })
     case 'membership.removed':
-      return t('dashboard.activityMembershipRemoved', { actor: actorCallSign, branch: branchName })
+      return t('dashboard.activityMembershipRemoved', { target: targetCallSign, branch: branchName })
     case 'membership.role_updated':
-      return t('dashboard.activityMembershipRoleUpdated', { actor: actorCallSign, branch: branchName, role: t(`roles.${newRole}`) })
+      return t('dashboard.activityMembershipRoleUpdated', {
+        actor: actorCallSign,
+        target: targetCallSign || t('dashboard.unknownOperator'),
+        branch: branchName,
+        role: t(`roles.${newRole}`),
+      })
     default:
       return type
   }
@@ -85,8 +90,8 @@ const getActivityText = (activity: Activity) => {
 </script>
 
 <template>
-  <section>
-    <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+  <section class="flex flex-col min-h-0 xl:h-full">
+    <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4 shrink-0">
       <ActivityIcon class="h-4 w-4" />
       {{ t('dashboard.recentActivity') }}
     </h3>
@@ -105,8 +110,7 @@ const getActivityText = (activity: Activity) => {
     
     <template v-else>
       <div 
-        class="space-y-2"
-        :class="activities.length > 3 ? 'max-h-[180px] overflow-y-auto pr-2' : ''"
+        class="space-y-2 flex-1 min-h-0 overflow-y-auto pr-2"
       >
         <div
           v-for="activity in activities"
@@ -131,7 +135,7 @@ const getActivityText = (activity: Activity) => {
       
       <button
         v-if="hasMore"
-        class="text-xs text-muted-foreground hover:text-foreground mt-3 transition-colors"
+        class="text-xs text-muted-foreground hover:text-foreground mt-3 transition-colors shrink-0"
         :disabled="isLoadingMore"
         @click="emit('loadMore')"
       >

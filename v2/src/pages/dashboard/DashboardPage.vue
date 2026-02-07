@@ -114,7 +114,7 @@ const recentNets = ref<ActiveNet[]>([])
 const fetchActivity = async (append = false) => {
   if (append) isLoadingMoreActivity.value = true
   try {
-    const limit = 3
+    const limit = 5
     const offset = append ? activities.value.length : 0
     const data = await api.get<Activity[]>(`/v2/dashboard/activity?limit=${limit}&offset=${offset}`)
     if (append) activities.value = [...activities.value, ...data]
@@ -207,14 +207,16 @@ onMounted(() => {
         />
       </div>
       <div class="w-px bg-zinc-200 dark:bg-zinc-800" />
-      <div class="w-80 shrink-0">
-        <ActivityFeed
-          :activities="activities"
-          :is-loading="isLoadingActivity"
-          :has-more="hasMoreActivity"
-          :is-loading-more="isLoadingMoreActivity"
-          @load-more="loadMoreActivity"
-        />
+      <div class="w-80 shrink-0 flex flex-col min-h-0">
+        <div class="flex-1 min-h-0 flex flex-col">
+          <ActivityFeed
+            :activities="activities"
+            :is-loading="isLoadingActivity"
+            :has-more="hasMoreActivity"
+            :is-loading-more="isLoadingMoreActivity"
+            @load-more="loadMoreActivity"
+          />
+        </div>
       </div>
     </div>
 

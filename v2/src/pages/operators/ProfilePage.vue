@@ -581,7 +581,7 @@ onMounted(async () => {
             />
           </div>
           <p v-if="!isLoadingMemberships && (approvedMembershipsCount > 0 || filteredMemberships.length > 0)" class="text-sm text-muted-foreground pt-4">
-            {{ filteredMemberships.length }}/{{ approvedMembershipsCount }} {{ t('operators.name') }}
+            {{ filteredMemberships.length }}/{{ approvedMembershipsCount }} {{ t('branches.nameEntity') }}
           </p>
         </section>
       </template>
