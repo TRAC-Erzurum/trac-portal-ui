@@ -1,0 +1,503 @@
+# Page Layout Consistency Rules
+
+## Overview
+
+All pages must follow one of three layout patterns:
+1. **List Layout** - For listing/listing pages (operators, nets, branches, infrastructure)
+2. **Detail Layout** - For detail/view pages (profile, account, net detail, branch detail)
+3. **Homepage Layout** - Special case for dashboard
+
+---
+
+## 1. List Layout Pattern
+
+### Structure
+```vue
+<template>
+  <AppLayout :title="t('nav.resourceName')">
+    <div class="space-y-4">
+      <!-- Filters Section -->
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Search + Filters + Action Button -->
+      </div>
+
+      <!-- Count Display -->
+      <p v-if="!isLoading" class="text-sm text-muted-foreground">
+        {{ t('resource.totalCount', { count: total }) }}
+      </p>
+
+      <!-- Separator -->
+      <Separator />
+
+      <!-- Content Grid -->
+      <!-- Loading skeleton, empty state, or grid of cards -->
+      
+      <!-- Pagination -->
+      <!-- Load More button -->
+    </div>
+
+    <!-- Mobile FAB (if applicable) -->
+  </AppLayout>
+</template>
+```
+
+### Header & Breadcrumb
+- **Always use**: `AppLayout` with `:title` prop
+- **Never set**: `breadcrumb-label` or `breadcrumb-items` (auto-generated)
+- **Title format**: Use i18n key from `nav.*` namespace
+
+### Filter Bar Layout
+```vue
+<div class="flex flex-wrap items-center gap-2">
+  <!-- Search: Always first, full width on mobile, flex-1 on desktop -->
+  <div class="relative w-full sm:flex-1 sm:max-w-xs">
+    <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+    <Input
+      v-model="search"
+      :placeholder="t('resource.searchPlaceholder')"
+      class="pl-9"
+    />
+  </div>
+
+  <!-- Select Filters: flex-1 on mobile, fixed width on desktop -->
+  <Select v-model="filter1">
+    <SelectTrigger class="flex-1 sm:flex-none sm:w-[120px]">
+      <SelectValue />
+    </SelectTrigger>
+    <!-- ... -->
+  </Select>
+
+  <!-- Action Button: Hidden on mobile, visible on desktop -->
+  <Button 
+    v-if="canCreate" 
+    variant="outline" 
+    @click="showCreateSheet = true" 
+    class="hidden lg:flex ml-auto gap-2"
+  >
+    <Plus class="h-4 w-4" />
+    {{ t('resource.create') }}
+  </Button>
+</div>
+```
+
+**Filter Bar Rules:**
+- Search input: `w-full sm:flex-1 sm:max-w-xs`
+- Select filters: `flex-1 sm:flex-none sm:w-[WIDTH]` (width: 120px-180px based on content)
+- Action button: `hidden lg:flex ml-auto gap-2`
+- Gap between items: `gap-2`
+- Use `flex-wrap` to allow wrapping on mobile
+
+### Count Display
+```vue
+<p v-if="!isLoading" class="text-sm text-muted-foreground">
+  {{ t('resource.totalCount', { count: total }) }}
+</p>
+```
+- Show only when `!isLoading`
+- Use `text-sm text-muted-foreground`
+- Place between filters and separator
+
+### Separator
+```vue
+<Separator />
+```
+- Always include after filters/count
+- No custom classes (uses default spacing)
+
+### Content Grid
+```vue
+<!-- Loading State -->
+<div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+  <ResourceCardSkeleton v-for="i in 6" :key="i" />
+</div>
+
+<!-- Empty State -->
+<div v-else-if="items.length === 0" class="py-8 text-center">
+  <p class="text-muted-foreground">{{ t('resource.noResults') }}</p>
+</div>
+
+<!-- Content Grid -->
+<div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+  <ResourceCard
+    v-for="item in items"
+    :key="item.id"
+    <!-- props -->
+  />
+</div>
+```
+
+**Grid Rules:**
+- Loading: `grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3`
+- Empty state: `py-8 text-center` with muted text
+- Content: Same grid as loading
+- Gap: Always `gap-3`
+
+### Pagination
+```vue
+<div v-if="hasMore && !isLoading" class="pt-4 pb-16 lg:pb-0">
+  <Button
+    variant="outline"
+    class="w-full lg:w-auto lg:px-8"
+    :disabled="isLoadingMore"
+    @click="loadMore"
+  >
+    {{ isLoadingMore ? t('common.loading') : t('resource.loadMore') }}
+  </Button>
+</div>
+```
+
+**Pagination Rules:**
+- Show only when `hasMore && !isLoading`
+- Button: `w-full lg:w-auto lg:px-8`
+- Container: `pt-4 pb-16 lg:pb-0` (extra bottom padding on mobile for FAB)
+- Always use "Load More" pattern, never numbered pagination
+
+### Mobile FAB (Floating Action Button)
+```vue
+<Button
+  v-if="canCreate"
+  variant="outline"
+  @click="showCreateSheet = true"
+  size="icon"
+  class="lg:hidden fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40 bg-background"
+>
+  <Plus class="h-6 w-6" />
+</Button>
+```
+
+**FAB Rules:**
+- Only for create actions
+- Position: `fixed bottom-20 right-4` (above bottom nav)
+- Size: `h-14 w-14 rounded-full`
+- Shadow: `shadow-lg`
+- Z-index: `z-40`
+- Hidden on desktop: `lg:hidden`
+
+### Wrapper Spacing
+```vue
+<div class="space-y-4">
+  <!-- All content -->
+</div>
+```
+- Use `space-y-4` for list pages
+
+---
+
+## 2. Detail Layout Pattern
+
+### Structure
+```vue
+<template>
+  <AppLayout 
+    :title="t('resource.detail')" 
+    :breadcrumb-label="resourceName"
+  >
+    <div class="space-y-6">
+      <!-- Header Section (if needed) -->
+      <!-- Resource info, action buttons -->
+
+      <!-- Sections with Separators -->
+      <section>
+        <!-- Section content -->
+      </section>
+
+      <Separator class="my-8" />
+
+      <section>
+        <!-- Section content -->
+      </section>
+    </div>
+  </AppLayout>
+</template>
+```
+
+### Header & Breadcrumb
+- **Use**: `AppLayout` with `:title` prop OR custom `title` slot
+- **Always set**: `:breadcrumb-label` with resource identifier (name, call sign, etc.)
+- **Title format**: 
+  - Simple: Use `:title` prop with i18n key
+  - Complex: Use `title` slot for custom header (e.g., BranchDetailPage with badges)
+
+### Custom Title Slot (when needed)
+```vue
+<AppLayout :breadcrumb-label="branch?.name">
+  <template #title>
+    <div class="flex items-center gap-3">
+      <h1 class="text-2xl lg:text-3xl font-bold">{{ branch?.name }}</h1>
+      <!-- Badges, status indicators -->
+    </div>
+  </template>
+</AppLayout>
+```
+
+### Action Buttons Placement
+
+**Option 1: In Header (Profile/Account pages)**
+```vue
+<div class="flex items-start justify-between gap-3">
+  <div class="flex-1 min-w-0">
+    <h1 class="text-2xl font-bold">{{ title }}</h1>
+    <!-- Subtitle -->
+  </div>
+  <Button variant="outline" size="sm" @click="handleEdit" class="flex-shrink-0">
+    <Pencil class="h-4 w-4 mr-2" />
+    {{ t('common.edit') }}
+  </Button>
+</div>
+```
+
+**Option 2: In Section Header (BranchDetailPage pattern)**
+```vue
+<section>
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2">
+      <Icon class="h-4 w-4" />
+      {{ t('section.title') }}
+    </h3>
+    <Button variant="outline" size="sm" @click="handleAction">
+      <Plus class="h-4 w-4 mr-2" />
+      {{ t('section.action') }}
+    </Button>
+  </div>
+  <!-- Section content -->
+</section>
+```
+
+**Action Button Rules:**
+- Always `variant="outline"`
+- Size: `size="sm"` for section headers, `size="sm"` for header actions
+- Icons: Use `mr-2` spacing before text
+- Destructive actions: Add `text-red-600 hover:text-red-700` classes
+
+### Section Headers
+```vue
+<h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2">
+  <Icon class="h-4 w-4" />
+  {{ t('section.title') }}
+</h3>
+```
+
+**Section Header Rules:**
+- Always: `text-sm font-medium text-muted-foreground`
+- Icon: `h-4 w-4` with `gap-2` spacing
+- Use flex layout for icon + text
+
+### Section Spacing
+```vue
+<Separator class="my-8" />
+```
+
+**Separator Rules:**
+- Always: `class="my-8"` (32px vertical margin)
+- Place between every major section
+- Never use Card components as separators
+
+### Section Content Patterns
+
+**Info Grid (ProfilePage, AccountPage)**
+```vue
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-y-4 gap-x-8">
+  <div>
+    <p class="text-xs text-muted-foreground mb-0.5">{{ t('field.label') }}</p>
+    <p class="font-medium">{{ value }}</p>
+  </div>
+</div>
+```
+
+**Filtered List Section (ProfilePage memberships, BranchDetailPage members)**
+```vue
+<section>
+  <div class="flex items-center justify-between mb-4">
+    <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2">
+      <Icon class="h-4 w-4" />
+      {{ t('section.title') }}
+    </h3>
+    <Button v-if="canAction" variant="outline" size="sm">
+      <Plus class="h-4 w-4 mr-2" />
+      {{ t('section.action') }}
+    </Button>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex flex-wrap items-center gap-2 mb-4">
+    <div class="relative flex-1 min-w-[200px]">
+      <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Input v-model="search" :placeholder="t('search.placeholder')" class="pl-9" />
+    </div>
+    <Select v-model="filter">
+      <SelectTrigger class="w-[140px]">
+        <SelectValue />
+      </SelectTrigger>
+      <!-- ... -->
+    </Select>
+  </div>
+
+  <!-- Content -->
+  <!-- Loading, empty, or grid -->
+</section>
+```
+
+**Filtered List Rules:**
+- Search: `flex-1 min-w-[200px]`
+- Selects: Fixed width `w-[140px]` or `w-[180px]`
+- Filters container: `flex flex-wrap items-center gap-2 mb-4`
+
+### Wrapper Spacing
+```vue
+<div class="space-y-6">
+  <!-- All sections -->
+</div>
+```
+- Use `space-y-6` for detail pages (more spacing than list pages)
+
+### Loading States
+```vue
+<div v-if="isLoading" class="space-y-4">
+  <div class="h-8 w-64 bg-muted rounded animate-pulse" />
+  <div class="h-4 w-48 bg-muted rounded animate-pulse" />
+</div>
+```
+- Use skeleton loaders matching content structure
+- Placeholder heights match actual content
+
+### No Card Wrappers
+- **Never** wrap sections in Card components
+- Use direct content with Separators for visual separation
+- Only use Card components for list items (NetCard, OperatorCard, etc.)
+
+---
+
+## 3. Homepage Layout Pattern
+
+### Structure
+```vue
+<template>
+  <AppLayout :title="t('nav.dashboard')">
+    <!-- Optional banner/alert -->
+    
+    <!-- Desktop Layout (xl breakpoint) -->
+    <div class="hidden xl:flex items-stretch gap-6">
+      <!-- Main content -->
+      <!-- Vertical separator -->
+      <!-- Sidebar content -->
+    </div>
+
+    <!-- Mobile Layout -->
+    <div class="xl:hidden">
+      <!-- Stacked modules -->
+      <!-- Separators between modules -->
+    </div>
+  </AppLayout>
+</template>
+```
+
+### Homepage Rules
+- Reuse components from other pages (NetsModule, ActivityFeed, etc.)
+- Desktop: Side-by-side layout with vertical separator (`w-px bg-zinc-200 dark:bg-zinc-800`)
+- Mobile: Stacked layout with horizontal separators (`h-px bg-zinc-200 dark:bg-zinc-800 my-6`)
+- Use `hidden xl:flex` and `xl:hidden` for responsive layouts
+- Separators: `h-px` for horizontal, `w-px` for vertical
+
+---
+
+## Common Patterns
+
+### Search Input Pattern
+```vue
+<div class="relative w-full sm:flex-1 sm:max-w-xs">
+  <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+  <Input
+    v-model="search"
+    :placeholder="t('resource.searchPlaceholder')"
+    class="pl-9"
+  />
+</div>
+```
+
+### Select Filter Pattern
+```vue
+<Select v-model="filter">
+  <SelectTrigger class="flex-1 sm:flex-none sm:w-[140px]">
+    <SelectValue />
+  </SelectTrigger>
+  <SelectContent>
+    <SelectItem value="all">{{ t('filter.all') }}</SelectItem>
+    <!-- Options -->
+  </SelectContent>
+</Select>
+```
+
+### Empty State Pattern
+```vue
+<div class="py-8 text-center">
+  <Icon class="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+  <p class="text-sm text-muted-foreground">{{ t('resource.empty') }}</p>
+</div>
+```
+
+### Loading Skeleton Pattern
+```vue
+<div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+  <ResourceCardSkeleton v-for="i in 6" :key="i" />
+</div>
+```
+
+---
+
+## Spacing Standards
+
+| Element | Spacing |
+|---------|---------|
+| List page wrapper | `space-y-4` |
+| Detail page wrapper | `space-y-6` |
+| Section separator | `my-8` |
+| Filter bar gap | `gap-2` |
+| Grid gap | `gap-3` |
+| Section header margin | `mb-4` |
+| Pagination top padding | `pt-4` |
+
+---
+
+## Button Standards
+
+### Variants
+- **All buttons**: `variant="outline"` (no solid buttons)
+- **Destructive**: Add `text-red-600 hover:text-red-700`
+- **Success**: Add `text-green-600 hover:text-green-700`
+
+### Sizes
+- **List page actions**: Default size
+- **Detail page header actions**: `size="sm"`
+- **Section header actions**: `size="sm"`
+- **FAB**: `size="icon"` with custom classes
+
+### Icons
+- **Always**: `mr-2` spacing before text
+- **Size**: `h-4 w-4` for standard buttons, `h-6 w-6` for FAB
+
+---
+
+## Responsive Breakpoints
+
+- **Mobile**: Default (< 640px)
+- **Tablet**: `sm:` (≥ 640px)
+- **Desktop**: `lg:` (≥ 1024px)
+- **Large Desktop**: `xl:` (≥ 1280px)
+
+**Common Patterns:**
+- Hide on mobile: `hidden lg:flex`
+- Show only on mobile: `lg:hidden`
+- Full width mobile, auto desktop: `w-full lg:w-auto`
+
+---
+
+## Examples
+
+### List Page Example
+See: `NetsPage.vue`, `OperatorsPage.vue`, `BranchesPage.vue`
+
+### Detail Page Example
+See: `ProfilePage.vue`, `AccountPage.vue`, `BranchDetailPage.vue`
+
+### Homepage Example
+See: `DashboardPage.vue`
