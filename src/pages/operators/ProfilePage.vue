@@ -30,6 +30,7 @@ interface Operator {
   city?: string
   district?: string
   gridSquare?: string
+  dmrId?: number | null
   user?: {
     id: string
     fullName?: string
@@ -401,6 +402,8 @@ onMounted(async () => {
               </a>
               <p v-else class="text-sm font-medium">-</p>
             </div>
+            <p class="text-xs text-muted-foreground">{{ t('profile.dmrId') }}</p>
+            <p class="text-sm font-medium font-mono">{{ operator.dmrId || '-' }}</p>
           </div>
         </div>
 

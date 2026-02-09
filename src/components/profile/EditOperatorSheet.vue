@@ -16,6 +16,7 @@ interface Profile {
     district?: string
     city?: string
     gridSquare?: string
+    dmrId?: number | null
   }
 }
 
@@ -34,6 +35,7 @@ const { cities, getDistricts, isLoading: isFetchingCities, loadCities } = useQth
 const city = ref('')
 const district = ref('')
 const gridSquare = ref('')
+const dmrId = ref<number | undefined>()
 const isLoading = ref(false)
 const isInitializing = ref(false)
 
@@ -55,6 +57,7 @@ watch(() => props.open, async (isOpen) => {
       city.value = profile.operator?.city || ''
       district.value = profile.operator?.district || ''
       gridSquare.value = profile.operator?.gridSquare || ''
+      dmrId.value = profile.operator?.dmrId ?? undefined
     } catch {
       // ignore
     } finally {
@@ -71,6 +74,7 @@ async function handleSubmit() {
       district: district.value || undefined,
       gridSquare: gridSquare.value?.toUpperCase() || undefined,
       country: city.value ? 'Türkiye' : undefined,
+      dmrId: dmrId.value || null,
     })
 
     toast.success(t('profile.profileUpdated'))
@@ -126,6 +130,17 @@ async function handleSubmit() {
             maxlength="6"
             class="uppercase"
           />
+        </div>
+
+        <div class="space-y-2">
+          <Label for="dmrId">{{ t('profile.dmrId') }}</Label>
+          <Input
+            id="dmrId"
+            v-model.number="dmrId"
+            type="number"
+            placeholder="2860001"
+          />
+          <p class="text-xs text-muted-foreground">{{ t('profile.dmrIdHint') }}</p>
         </div>
 
         <div class="flex justify-end gap-3 pt-4">

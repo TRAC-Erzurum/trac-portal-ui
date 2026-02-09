@@ -44,6 +44,16 @@ interface Props {
   digipeater?: string
   hfFrequencyRange?: string
   hfMode?: string
+  repeaterMode?: string
+  dmrColorCode?: number | string
+  dmrNetwork?: string
+  dmrRepeaterId?: number | string
+  talkgroups?: Array<{
+    talkgroupId: number
+    talkgroupName?: string
+    timeslot: number
+    isStatic: boolean
+  }>
 }
 
 const props = defineProps<Props>()
@@ -75,9 +85,36 @@ const typeIcon = computed(() => {
   }
 })
 
+const isDigital = computed(() => {
+  return props.repeaterMode === 'digital' || props.repeaterMode === 'mixed'
+})
+
+const dmrNetworkLabel = computed(() => {
+  if (!props.dmrNetwork) return null
+  const labels: Record<string, string> = {
+    brandmeister: 'BM',
+    tgif: 'TGIF',
+    freedmr: 'FreeDMR',
+    other: t('common.other'),
+  }
+  return labels[props.dmrNetwork] || props.dmrNetwork
+})
+
+const dmrInfo = computed(() => {
+  if (!isDigital.value) return null
+  const parts: string[] = []
+  if (props.dmrNetwork) parts.push(dmrNetworkLabel.value!)
+  if (props.dmrColorCode !== undefined && props.dmrColorCode !== null) parts.push(`CC${props.dmrColorCode}`)
+  if (props.dmrRepeaterId) parts.push(`ID:${props.dmrRepeaterId}`)
+  return parts.length > 0 ? parts.join(' · ') : null
+})
+
 const typeLabel = computed(() => {
   if (props.type === 'vhf_uhf_repeater' && band.value) {
-    return `${band.value} ${t('communicationChannels.types.vhf_uhf_repeater').split(' ').pop()}`
+    const suffix = t('communicationChannels.types.vhf_uhf_repeater').split(' ').pop()
+    if (props.repeaterMode === 'digital') return `${band.value} DMR`
+    if (props.repeaterMode === 'mixed') return `${band.value} ${suffix} + DMR`
+    return `${band.value} ${suffix}`
   }
   if (props.type === 'aprs' && aprsStationType.value) {
     return `APRS ${aprsStationType.value}`
@@ -227,6 +264,24 @@ const openMaps = (event: Event) => {
         <div v-if="type === 'vhf_uhf_repeater' && repeaterFreqInfo" class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono">
           <span class="text-muted-foreground">TX <span class="text-foreground font-medium">{{ repeaterFreqInfo.tx }}</span><span v-if="repeaterFreqInfo.txTone" class="text-muted-foreground/70 ml-1">{{ repeaterFreqInfo.txTone }}</span></span>
           <span class="text-muted-foreground">RX <span class="text-foreground font-medium">{{ repeaterFreqInfo.rx || repeaterFreqInfo.offset }}</span><span v-if="repeaterFreqInfo.rx && repeaterFreqInfo.offset" class="text-muted-foreground/70 ml-1">({{ repeaterFreqInfo.offset }})</span><span v-if="repeaterFreqInfo.rxTone" class="text-muted-foreground/70 ml-1">{{ repeaterFreqInfo.rxTone }}</span></span>
+        </div>
+
+        <div v-if="isDigital && dmrInfo" class="mt-1.5 text-[10px] font-medium text-purple-600 dark:text-purple-400">
+          {{ dmrInfo }}
+        </div>
+
+        <div v-if="isDigital && talkgroups && talkgroups.length > 0" class="mt-1.5 flex flex-wrap gap-1">
+          <span
+            v-for="tg in talkgroups.slice(0, 5)"
+            :key="tg.talkgroupId"
+            class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono"
+            :class="tg.isStatic ? 'bg-purple-500/15 text-purple-700 dark:text-purple-400' : 'bg-muted text-muted-foreground'"
+          >
+            <span class="font-medium">{{ tg.talkgroupId }}</span>
+            <span v-if="tg.talkgroupName" class="text-[9px] opacity-70">{{ tg.talkgroupName }}</span>
+            <span class="opacity-50">TS{{ tg.timeslot }}</span>
+          </span>
+          <span v-if="talkgroups.length > 5" class="text-[10px] text-muted-foreground self-center">+{{ talkgroups.length - 5 }}</span>
         </div>
 
         <div v-if="type !== 'vhf_uhf_repeater' && (primaryInfo || aprsSecondaryInfo || secondaryInfo)" class="mt-2 text-xs font-mono">
