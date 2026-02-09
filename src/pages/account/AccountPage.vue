@@ -27,6 +27,7 @@ interface Operator {
   city?: string
   district?: string
   gridSquare?: string
+  dmrId?: number | null
 }
 
 interface Profile {
@@ -307,6 +308,8 @@ onMounted(() => {
               </a>
               <p v-else class="text-sm font-medium">-</p>
             </div>
+            <p class="text-xs text-muted-foreground">{{ t('profile.dmrId') }}</p>
+            <p class="text-sm font-medium font-mono">{{ profile.operator?.dmrId || '-' }}</p>
           </div>
         </div>
 

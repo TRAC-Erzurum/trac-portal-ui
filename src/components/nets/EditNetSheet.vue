@@ -200,8 +200,24 @@ const clearOperator = () => {
   operatorSuggestions.value = []
 }
 
+const newSimplexFrequency = ref('')
+
 const addSimplexFrequency = () => {
-  simplexFrequencies.value.push('')
+  const freq = newSimplexFrequency.value.trim()
+  if (!freq) return
+  if (simplexFrequencies.value.includes(freq)) {
+    toast.error(t('nets.duplicateFrequency'))
+    return
+  }
+  simplexFrequencies.value.push(freq)
+  newSimplexFrequency.value = ''
+}
+
+const handleSimplexKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    addSimplexFrequency()
+  }
 }
 
 const removeSimplexFrequency = (index: number) => {
@@ -226,6 +242,7 @@ watch(() => props.open, async (isOpen) => {
     // Load existing communication channel selections
     selectedInfrastructureIds.value = []
     simplexFrequencies.value = []
+    newSimplexFrequency.value = ''
     
     if (props.net.communicationChannels) {
       props.net.communicationChannels.forEach(nc => {
@@ -425,22 +442,45 @@ async function handleSubmit() {
         </div>
 
         <div class="space-y-3">
-          <div class="flex items-center justify-between">
-            <Label>{{ t('nets.simplexFrequencies') }}</Label>
-            <Button @click="addSimplexFrequency" size="sm" variant="outline" type="button">
-              <Plus class="h-4 w-4 mr-2" />
+          <Label>{{ t('nets.simplexFrequencies') }}</Label>
+
+          <div v-if="simplexFrequencies.length > 0" class="flex flex-wrap gap-2">
+            <span
+              v-for="(freq, idx) in simplexFrequencies"
+              :key="idx"
+              class="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-sm font-medium"
+            >
+              {{ freq }} MHz
+              <button
+                type="button"
+                class="rounded-full p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                :aria-label="t('common.delete')"
+                @click="removeSimplexFrequency(idx)"
+              >
+                <X class="h-3 w-3" />
+              </button>
+            </span>
+          </div>
+
+          <div class="flex gap-2">
+            <div class="relative flex-1">
+              <Input
+                v-model="newSimplexFrequency"
+                :placeholder="t('nets.simplexFrequencyPlaceholder')"
+                @keydown="handleSimplexKeydown"
+                class="pr-12"
+              />
+              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">MHz</span>
+            </div>
+            <Button @click="addSimplexFrequency" size="sm" variant="outline" type="button" :disabled="!newSimplexFrequency.trim()">
+              <Plus class="h-4 w-4 mr-1" />
               {{ t('common.add') }}
             </Button>
           </div>
-          <div v-for="(_, idx) in simplexFrequencies" :key="idx" class="flex gap-2">
-            <Input v-model="simplexFrequencies[idx]" :placeholder="t('nets.simplexFrequencyPlaceholder')" />
-            <Button @click="removeSimplexFrequency(idx)" size="icon" variant="ghost" type="button">
-              <X class="h-4 w-4" />
-            </Button>
-          </div>
-          <div v-if="simplexFrequencies.length === 0" class="text-xs text-muted-foreground">
-            {{ t('nets.noSimplexAdded') }}
-          </div>
+
+          <p class="text-xs text-muted-foreground">
+            {{ simplexFrequencies.length === 0 ? t('nets.noSimplexAdded') : t('nets.simplexFrequencyHint') }}
+          </p>
         </div>
 
         <div v-if="selectedInfrastructureIds.length === 0 && !simplexFrequencies.some(freq => freq.trim())" class="text-xs text-amber-600 dark:text-amber-500">

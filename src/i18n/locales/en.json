@@ -284,6 +284,8 @@
     "operator": "Operator Info",
     "qth": "QTH",
     "locator": "Locator",
+    "dmrId": "DMR ID",
+    "dmrIdHint": "Your unique DMR identifier from radioid.net",
     "security": "Security",
     "securityDesc": "Change your password or manage account security settings",
     "changePassword": "Change Password",
@@ -415,9 +417,11 @@
     "infrastructure": "Communication",
     "noInfrastructureAvailable": "No active communication available for this branch",
     "useSimplex": "Use Simplex Frequency",
-    "simplexFrequencyPlaceholder": "e.g. 145.500 MHz",
+    "simplexFrequencyPlaceholder": "e.g. 145.500",
     "simplexFrequencies": "Simplex Frequencies",
+    "simplexFrequencyHint": "Type a frequency and press Enter or click Add",
     "noSimplexAdded": "No simplex frequency added yet",
+    "duplicateFrequency": "This frequency is already added",
     "atLeastOneInfrastructureOrSimplex": "You must select at least one communication or simplex frequency",
     "atLeastOneInfrastructureOrSimplexRequired": "You must select at least one communication or simplex frequency",
     "branchFilter": "Branch Filter",
@@ -643,7 +647,8 @@
     "inactive": "Inactive",
     "unknown": "Unknown",
     "noResults": "No results found",
-    "error": "Failed to load"
+    "error": "Failed to load",
+    "other": "Other"
   },
   "communicationChannels": {
     "title": "Communication Channels",
@@ -743,15 +748,31 @@
     "hfFrequencyRange": "Frequency Range",
     "hfMode": "Operating Mode",
     "typeAll": "All Types",
-    "vhf_uhf_repeater": "VHF/UHF Analog Repeater",
+    "vhf_uhf_repeater": "VHF/UHF Repeater",
     "echolink": "EchoLink",
     "aprs": "APRS",
     "hf": "HF Band",
     "types": {
-      "vhf_uhf_repeater": "VHF/UHF Analog Repeater",
+      "vhf_uhf_repeater": "VHF/UHF Repeater",
       "echolink": "EchoLink",
       "aprs": "APRS",
       "hf": "HF Band"
-    }
+    },
+    "repeaterMode": "Repeater Mode",
+    "repeaterModes": {
+      "analog": "Analog",
+      "digital": "Digital (DMR)",
+      "mixed": "Mixed"
+    },
+    "dmrSection": "DMR Configuration",
+    "dmrColorCode": "Color Code",
+    "dmrColorCodePlaceholder": "Select CC",
+    "dmrNetwork": "DMR Network",
+    "dmrNetworkPlaceholder": "Select network",
+    "dmrRepeaterId": "DMR Repeater ID",
+    "talkgroups": "Talkgroups",
+    "talkgroupName": "Name",
+    "noTalkgroups": "No talkgroups added yet",
+    "static": "Static"
   }
 }

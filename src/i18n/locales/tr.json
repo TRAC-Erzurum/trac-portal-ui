@@ -284,6 +284,8 @@
     "operator": "Operatör Bilgileri",
     "qth": "QTH",
     "locator": "Locator",
+    "dmrId": "DMR ID",
+    "dmrIdHint": "radioid.net üzerinden alınan benzersiz DMR tanımlayıcınız",
     "security": "Güvenlik",
     "securityDesc": "Parolanızı değiştirin veya hesap güvenlik ayarlarınızı yönetin",
     "changePassword": "Parola Değiştir",
@@ -415,9 +417,11 @@
     "infrastructure": "İletişim",
     "noInfrastructureAvailable": "Bu şubede aktif iletişim bulunmuyor",
     "useSimplex": "Simpleks Frekans Kullan",
-    "simplexFrequencyPlaceholder": "Örn: 145.500 MHz",
+    "simplexFrequencyPlaceholder": "Örn: 145.500",
     "simplexFrequencies": "Simpleks Frekanslar",
+    "simplexFrequencyHint": "Frekans yazıp Enter'a basın veya Ekle'ye tıklayın",
     "noSimplexAdded": "Henüz simpleks frekans eklenmedi",
+    "duplicateFrequency": "Bu frekans zaten eklenmiş",
     "atLeastOneInfrastructureOrSimplex": "En az bir iletişim veya simpleks frekans seçmelisiniz",
     "atLeastOneInfrastructureOrSimplexRequired": "En az bir iletişim veya simpleks frekans seçmelisiniz",
     "branchFilter": "Şube Filtresi",
@@ -644,7 +648,8 @@
     "inactive": "Pasif",
     "unknown": "Bilinmiyor",
     "noResults": "Sonuç bulunamadı",
-    "error": "Yüklenemedi"
+    "error": "Yüklenemedi",
+    "other": "Diğer"
   },
   "communicationChannels": {
     "title": "İletişim Kanalları",
@@ -744,15 +749,31 @@
     "hfFrequencyRange": "Frekans Aralığı",
     "hfMode": "Çalışma Modu",
     "typeAll": "Tüm Türler",
-    "vhf_uhf_repeater": "VHF/UHF Analog Röle",
+    "vhf_uhf_repeater": "VHF/UHF Röle",
     "echolink": "EchoLink",
     "aprs": "APRS",
     "hf": "HF Band",
     "types": {
-      "vhf_uhf_repeater": "VHF/UHF Analog Röle",
+      "vhf_uhf_repeater": "VHF/UHF Röle",
       "echolink": "EchoLink",
       "aprs": "APRS",
       "hf": "HF Band"
-    }
+    },
+    "repeaterMode": "Röle Modu",
+    "repeaterModes": {
+      "analog": "Analog",
+      "digital": "Dijital (DMR)",
+      "mixed": "Karma"
+    },
+    "dmrSection": "DMR Yapılandırması",
+    "dmrColorCode": "Renk Kodu",
+    "dmrColorCodePlaceholder": "CC seçin",
+    "dmrNetwork": "DMR Ağı",
+    "dmrNetworkPlaceholder": "Ağ seçin",
+    "dmrRepeaterId": "DMR Röle ID",
+    "talkgroups": "Konuşma Grupları",
+    "talkgroupName": "Ad",
+    "noTalkgroups": "Henüz konuşma grubu eklenmemiş",
+    "static": "Statik"
   }
 }

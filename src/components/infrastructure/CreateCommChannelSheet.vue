@@ -10,12 +10,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import { AutocompleteCombobox } from '@/components/shared'
 import { Checkbox } from '@/components/ui/checkbox'
-import { TowerControl, Globe, Navigation, Waves } from 'lucide-vue-next'
+import { Plus, TowerControl, Globe, Navigation, Waves, X } from 'lucide-vue-next'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
 import { useQthData } from '@/composables'
 
 type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs' | 'hf'
+type RepeaterMode = 'analog' | 'digital' | 'mixed'
+type DmrNetwork = 'brandmeister' | 'tgif' | 'freedmr' | 'other'
+
+interface TalkgroupEntry {
+  talkgroupId: number | undefined
+  talkgroupName: string
+  timeslot: number
+  isStatic: boolean
+}
 
 const TYPE_OPTIONS = [
   { 
@@ -151,6 +160,13 @@ const digipeater = ref('')
 const hfFrequencyRange = ref('')
 const hfMode = ref('')
 
+// DMR fields
+const repeaterMode = ref<RepeaterMode>('analog')
+const dmrColorCode = ref<number | undefined>()
+const dmrNetwork = ref<DmrNetwork | undefined>()
+const dmrRepeaterId = ref<number | undefined>()
+const talkgroups = ref<TalkgroupEntry[]>([])
+
 const isLoading = ref(false)
 
 const isValid = computed(() => {
@@ -164,6 +180,14 @@ const showLocationFields = computed(() => {
 
 const showRepeaterFields = computed(() => {
   return type.value === 'vhf_uhf_repeater'
+})
+
+const showAnalogFields = computed(() => {
+  return showRepeaterFields.value && (repeaterMode.value === 'analog' || repeaterMode.value === 'mixed')
+})
+
+const showDmrFields = computed(() => {
+  return showRepeaterFields.value && (repeaterMode.value === 'digital' || repeaterMode.value === 'mixed')
 })
 
 const showEcholinkFields = computed(() => {
@@ -211,6 +235,24 @@ function resetForm() {
   digipeater.value = ''
   hfFrequencyRange.value = ''
   hfMode.value = ''
+  repeaterMode.value = 'analog'
+  dmrColorCode.value = undefined
+  dmrNetwork.value = undefined
+  dmrRepeaterId.value = undefined
+  talkgroups.value = []
+}
+
+function addTalkgroup() {
+  talkgroups.value.push({
+    talkgroupId: undefined,
+    talkgroupName: '',
+    timeslot: 1,
+    isStatic: true,
+  })
+}
+
+function removeTalkgroup(index: number) {
+  talkgroups.value.splice(index, 1)
 }
 
 watch(() => props.open, async (isOpen) => {
@@ -242,23 +284,38 @@ async function handleSubmit() {
     }
 
     if (showRepeaterFields.value) {
-      payload.repeaterMode = 'analog'
+      payload.repeaterMode = repeaterMode.value
       payload.rxFrequency = rxFrequency.value
       payload.txFrequency = txFrequency.value
       payload.offset = offset.value !== undefined ? offsetDisplay.value : undefined
-      if (txToneType.value === 'ctcss' && txCtcssTone.value) {
-        payload.txCtcssTone = txCtcssTone.value
+      if (showAnalogFields.value) {
+        if (txToneType.value === 'ctcss' && txCtcssTone.value) {
+          payload.txCtcssTone = txCtcssTone.value
+        }
+        if (txToneType.value === 'dcs' && txDcsCode.value) {
+          payload.txDcsCode = txDcsCode.value
+          payload.txDcsPolarity = txDcsPolarity.value
+        }
+        if (rxToneType.value === 'ctcss' && rxCtcssTone.value) {
+          payload.rxCtcssTone = rxCtcssTone.value
+        }
+        if (rxToneType.value === 'dcs' && rxDcsCode.value) {
+          payload.rxDcsCode = rxDcsCode.value
+          payload.rxDcsPolarity = rxDcsPolarity.value
+        }
       }
-      if (txToneType.value === 'dcs' && txDcsCode.value) {
-        payload.txDcsCode = txDcsCode.value
-        payload.txDcsPolarity = txDcsPolarity.value
-      }
-      if (rxToneType.value === 'ctcss' && rxCtcssTone.value) {
-        payload.rxCtcssTone = rxCtcssTone.value
-      }
-      if (rxToneType.value === 'dcs' && rxDcsCode.value) {
-        payload.rxDcsCode = rxDcsCode.value
-        payload.rxDcsPolarity = rxDcsPolarity.value
+      if (showDmrFields.value) {
+        payload.dmrColorCode = dmrColorCode.value
+        payload.dmrNetwork = dmrNetwork.value
+        payload.dmrRepeaterId = dmrRepeaterId.value
+        payload.talkgroups = talkgroups.value
+          .filter(tg => tg.talkgroupId)
+          .map(tg => ({
+            talkgroupId: tg.talkgroupId,
+            talkgroupName: tg.talkgroupName || undefined,
+            timeslot: tg.timeslot,
+            isStatic: tg.isStatic,
+          }))
       }
     }
 
@@ -441,6 +498,122 @@ async function handleSubmit() {
         </template>
 
         <template v-if="showRepeaterFields">
+          <div class="space-y-2">
+            <Label>{{ t('communicationChannels.repeaterMode') }}</Label>
+            <div class="flex rounded-lg border border-border overflow-hidden">
+              <button
+                v-for="mode in (['analog', 'digital', 'mixed'] as const)"
+                :key="mode"
+                type="button"
+                @click="repeaterMode = mode"
+                class="flex-1 px-3 py-2 text-xs font-medium transition-colors"
+                :class="[
+                  repeaterMode === mode
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-background hover:bg-muted text-muted-foreground'
+                ]"
+              >
+                {{ t(`communicationChannels.repeaterModes.${mode}`) }}
+              </button>
+            </div>
+          </div>
+
+          <template v-if="showDmrFields">
+            <div class="space-y-4">
+              <h4 class="text-sm font-medium text-muted-foreground">{{ t('communicationChannels.dmrSection') }}</h4>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <Label for="dmrColorCode">{{ t('communicationChannels.dmrColorCode') }}</Label>
+                  <Select v-model="dmrColorCode">
+                    <SelectTrigger class="w-full">
+                      <SelectValue :placeholder="t('communicationChannels.dmrColorCodePlaceholder')" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem v-for="cc in 16" :key="cc - 1" :value="cc - 1">
+                        CC {{ cc - 1 }}
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div class="space-y-2">
+                  <Label for="dmrNetwork">{{ t('communicationChannels.dmrNetwork') }}</Label>
+                  <Select v-model="dmrNetwork">
+                    <SelectTrigger class="w-full">
+                      <SelectValue :placeholder="t('communicationChannels.dmrNetworkPlaceholder')" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="brandmeister">BrandMeister</SelectItem>
+                      <SelectItem value="tgif">TGIF</SelectItem>
+                      <SelectItem value="freedmr">FreeDMR</SelectItem>
+                      <SelectItem value="other">{{ t('common.other') }}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div class="space-y-2">
+                <Label for="dmrRepeaterId">{{ t('communicationChannels.dmrRepeaterId') }}</Label>
+                <Input
+                  id="dmrRepeaterId"
+                  v-model.number="dmrRepeaterId"
+                  type="number"
+                  placeholder="286001"
+                />
+              </div>
+
+              <Separator />
+
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-sm font-medium text-muted-foreground">{{ t('communicationChannels.talkgroups') }}</h4>
+                  <Button type="button" variant="outline" size="sm" @click="addTalkgroup">
+                    <Plus class="h-3 w-3 mr-1" />
+                    {{ t('common.add') }}
+                  </Button>
+                </div>
+
+                <div v-if="talkgroups.length === 0" class="text-center py-4">
+                  <p class="text-xs text-muted-foreground">{{ t('communicationChannels.noTalkgroups') }}</p>
+                </div>
+
+                <div v-for="(tg, index) in talkgroups" :key="index" class="flex items-center gap-2 p-2 rounded-lg border border-border/50 bg-muted/10">
+                  <Input
+                    v-model.number="tg.talkgroupId"
+                    type="number"
+                    placeholder="TG ID"
+                    class="w-20 h-8 text-xs"
+                  />
+                  <Input
+                    v-model="tg.talkgroupName"
+                    type="text"
+                    :placeholder="t('communicationChannels.talkgroupName')"
+                    class="flex-1 h-8 text-xs"
+                  />
+                  <Select v-model="tg.timeslot" class="w-16">
+                    <SelectTrigger class="h-8 text-xs w-16">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem :value="1">TS1</SelectItem>
+                      <SelectItem :value="2">TS2</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <label class="flex items-center gap-1 cursor-pointer whitespace-nowrap">
+                    <Checkbox :checked="tg.isStatic" @update:checked="(v: boolean) => tg.isStatic = v" />
+                    <span class="text-[10px]">{{ t('communicationChannels.static') }}</span>
+                  </label>
+                  <Button type="button" variant="ghost" size="sm" class="h-7 w-7 p-0 shrink-0" @click="removeTalkgroup(index)">
+                    <X class="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+          </template>
+
+          <template v-if="showAnalogFields">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <!-- TX Card -->
             <div class="p-4 rounded-lg border border-border bg-muted/20 space-y-4">
@@ -612,6 +785,7 @@ async function handleSubmit() {
           <p v-if="!hasTxFrequency" class="text-xs text-muted-foreground text-center">{{ t('communicationChannels.enterTxFirst') }}</p>
 
           <Separator />
+          </template>
         </template>
 
         <template v-if="showEcholinkFields">
