@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Building2, ChevronDown, Play, Square, RotateCcw, TowerControl, Users, Radio, Clock, Settings, Download, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { MobileFab } from '@/components/shared'
+import type { MobileFabAction } from '@/components/shared'
 import { useDateFormat } from '@/composables'
 
 interface Operator {
@@ -105,6 +107,42 @@ const formatDuration = (net: Net) => {
   if (hours > 0) return `${hours}h ${minutes}m`
   return `${minutes}m`
 }
+
+const mobileFabActions = computed<MobileFabAction[]>(() => {
+  const actions: MobileFabAction[] = []
+  
+  if (props.canManage && netStatus.value === 'pending') {
+    actions.push({ key: 'edit', label: t('common.edit'), icon: Settings as Component })
+    actions.push({ key: 'startWith', label: t('netDetail.startWithOperator'), icon: Play as Component })
+    actions.push({ key: 'startWithout', label: t('netDetail.startWithoutOperator'), icon: Play as Component })
+  }
+  if (props.canManage && netStatus.value === 'active') {
+    actions.push({ key: 'end', label: t('netDetail.end'), icon: Square as Component })
+  }
+  if (props.canManage && netStatus.value === 'completed' && props.isAdmin) {
+    actions.push({ key: 'restart', label: t('netDetail.restart'), icon: RotateCcw as Component })
+  }
+  if (netStatus.value !== 'pending' && props.attendeesCount > 0) {
+    actions.push({ key: 'exportCsv', label: 'CSV', icon: FileSpreadsheet as Component })
+    actions.push({ key: 'exportPdf', label: 'PDF', icon: Printer as Component })
+    actions.push({ key: 'exportPng', label: 'PNG', icon: Image as Component })
+  }
+  
+  return actions
+})
+
+const handleFabAction = (key: string) => {
+  switch (key) {
+    case 'edit': emit('edit'); break
+    case 'startWith': emit('start', true); break
+    case 'startWithout': emit('start', false); break
+    case 'end': emit('end'); break
+    case 'restart': emit('restart'); break
+    case 'exportCsv': emit('exportCsv'); break
+    case 'exportPdf': emit('exportPdf'); break
+    case 'exportPng': emit('exportPng'); break
+  }
+}
 </script>
 
 <template>
@@ -166,7 +204,7 @@ const formatDuration = (net: Net) => {
         </div>
       </div>
     </div>
-    <div v-if="canManage || (netStatus !== 'pending' && attendeesCount > 0)" class="flex flex-col items-end gap-2 shrink-0 sm:ml-4">
+    <div v-if="canManage || (netStatus !== 'pending' && attendeesCount > 0)" class="hidden lg:flex flex-col items-end gap-2 shrink-0 lg:ml-4">
       <Button
         v-if="canManage && netStatus === 'pending'"
         variant="outline"
@@ -239,5 +277,6 @@ const formatDuration = (net: Net) => {
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
+    <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
   </div>
 </template>

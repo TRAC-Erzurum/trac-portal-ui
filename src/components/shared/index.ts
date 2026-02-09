@@ -9,3 +9,5 @@ export { default as InfrastructureCardSkeleton } from './InfrastructureCardSkele
 export { default as MemberCard } from './MemberCard.vue'
 export { default as AutocompleteCombobox } from './AutocompleteCombobox.vue'
 export { default as SearchInput } from './SearchInput.vue'
+export { default as MobileFab } from './MobileFab.vue'
+export type { MobileFabAction } from './MobileFab.vue'
