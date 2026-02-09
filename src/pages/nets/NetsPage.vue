@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Plus } from 'lucide-vue-next'
@@ -14,7 +14,8 @@ import {
 } from '@/components/ui/select'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CreateNetSheet from '@/components/nets/CreateNetSheet.vue'
-import { NetCard, NetCardSkeleton, SearchInput } from '@/components/shared'
+import { MobileFab, NetCard, NetCardSkeleton, SearchInput } from '@/components/shared'
+import type { MobileFabAction } from '@/components/shared'
 import { usePersistedFilters } from '@/composables'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
@@ -83,6 +84,15 @@ let searchTimeout: ReturnType<typeof setTimeout> | null = null
 const canCreate = computed(() => {
   return authStore.hasRole('member')
 })
+
+const mobileFabActions = computed<MobileFabAction[]>(() => {
+  if (!canCreate.value) return []
+  return [{ key: 'create', label: t('nets.createNet'), icon: Plus as Component }]
+})
+
+const handleFabAction = (key: string) => {
+  if (key === 'create') showCreateSheet.value = true
+}
 
 interface NetResponse {
   data: Net[]
@@ -319,15 +329,7 @@ onMounted(async () => {
       </div>
     </div>
 
-    <Button
-      v-if="canCreate"
-      variant="outline"
-      @click="showCreateSheet = true"
-      size="icon"
-      class="lg:hidden fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40 bg-background"
-    >
-      <Plus class="h-6 w-6" />
-    </Button>
+    <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
 
     <CreateNetSheet 
       v-model:open="showCreateSheet"

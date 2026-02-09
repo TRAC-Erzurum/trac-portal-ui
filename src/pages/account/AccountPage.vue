@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -10,6 +10,8 @@ import EditOperatorSheet from '@/components/profile/EditOperatorSheet.vue'
 import EditPersonalSheet from '@/components/profile/EditPersonalSheet.vue'
 import { Button } from '@/components/ui/button'
 import { UserAvatar } from '@/components/ui/user-avatar'
+import { MobileFab } from '@/components/shared'
+import type { MobileFabAction } from '@/components/shared'
 import { useDateFormat } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
@@ -74,6 +76,22 @@ const gridSquareUrl = computed(() => {
 })
 
 const memberSince = computed(() => formatDateLong(profile.value?.createdAt))
+
+const mobileFabActions = computed<MobileFabAction[]>(() => {
+  return [
+    { key: 'editPersonal', label: t('common.edit'), icon: Pencil as Component },
+    { key: 'changePassword', label: t('profile.changePassword'), icon: Key as Component },
+    { key: 'editOperator', label: t('profile.qth'), icon: Pencil as Component },
+  ]
+})
+
+const handleFabAction = (key: string) => {
+  switch (key) {
+    case 'editPersonal': showEditPersonal.value = true; break
+    case 'changePassword': showChangePassword.value = true; break
+    case 'editOperator': showEditOperator.value = true; break
+  }
+}
 
 async function fetchProfile() {
   isLoading.value = true
@@ -227,7 +245,7 @@ onMounted(() => {
                 <Button
                   variant="outline"
                   size="sm"
-                  class="shrink-0 min-w-[10rem]"
+                  class="hidden lg:inline-flex shrink-0 min-w-[10rem]"
                   @click="showEditPersonal = true"
                 >
                   <Pencil class="h-4 w-4 mr-2" />
@@ -252,7 +270,7 @@ onMounted(() => {
                 <Button
                   variant="outline"
                   size="sm"
-                  class="shrink-0 min-w-[10rem] text-foreground"
+                  class="hidden lg:inline-flex shrink-0 min-w-[10rem] text-foreground"
                   @click="showChangePassword = true"
                 >
                   <Key class="h-4 w-4 mr-2" />
@@ -268,7 +286,7 @@ onMounted(() => {
               <Button
                 variant="outline"
                 size="sm"
-                class="min-w-[10rem]"
+                class="hidden lg:inline-flex min-w-[10rem]"
                 @click="showEditOperator = true"
               >
                 <Pencil class="h-4 w-4 mr-2" />
@@ -313,6 +331,8 @@ onMounted(() => {
         </section>
       </template>
     </div>
+
+    <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
 
     <EditPersonalSheet v-model:open="showEditPersonal" @updated="handleProfileUpdated" />
     <EditOperatorSheet v-model:open="showEditOperator" @updated="handleProfileUpdated" />

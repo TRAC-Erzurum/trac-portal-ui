@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Plus } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -7,7 +7,8 @@ import { Separator } from '@/components/ui/separator'
 import { Checkbox } from '@/components/ui/checkbox'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CreateBranchSheet from '@/components/branches/CreateBranchSheet.vue'
-import { BranchCard, BranchCardSkeleton, SearchInput } from '@/components/shared'
+import { BranchCard, BranchCardSkeleton, MobileFab, SearchInput } from '@/components/shared'
+import type { MobileFabAction } from '@/components/shared'
 import { usePersistedFilters } from '@/composables'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
@@ -55,6 +56,15 @@ let searchTimeout: ReturnType<typeof setTimeout> | null = null
 const canCreate = computed(() => {
   return authStore.isSuperAdmin
 })
+
+const mobileFabActions = computed<MobileFabAction[]>(() => {
+  if (!canCreate.value) return []
+  return [{ key: 'create', label: t('branches.create'), icon: Plus as Component }]
+})
+
+const handleFabAction = (key: string) => {
+  if (key === 'create') showCreateSheet.value = true
+}
 
 const fetchBranches = async (append = false) => {
   if (append) {
@@ -200,15 +210,7 @@ onMounted(() => {
       </div>
     </div>
 
-    <Button
-      v-if="canCreate"
-      variant="outline"
-      @click="showCreateSheet = true"
-      size="icon"
-      class="lg:hidden fixed bottom-20 right-4 h-14 w-14 rounded-full shadow-lg z-40 bg-background"
-    >
-      <Plus class="h-6 w-6" />
-    </Button>
+    <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
 
     <CreateBranchSheet 
       v-model:open="showCreateSheet"

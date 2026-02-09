@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Users, MapPin, Edit2, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -15,6 +16,7 @@ interface Attendee {
   signalStrength?: number
   createdAt: string
   picture?: string | null
+  operatorId?: string
 }
 
 interface Props {
@@ -32,6 +34,13 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const router = useRouter()
+
+const goToProfile = (attendee: Attendee) => {
+  if (attendee.operatorId) {
+    router.push(`/operators/${attendee.operatorId}`)
+  }
+}
 
 const VIRTUAL_THRESHOLD = 50
 const ITEM_HEIGHT = 68
@@ -121,7 +130,9 @@ onUnmounted(() => {
           v-for="attendee in visibleAttendees"
           :key="attendee.id"
           class="group flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all"
+          :class="{ 'cursor-pointer': attendee.operatorId }"
           :style="{ height: `${ITEM_HEIGHT - 4}px` }"
+          @click="goToProfile(attendee)"
         >
           <div class="relative flex-shrink-0">
             <UserAvatar :picture="attendee.picture" class="h-8 w-8" />
@@ -152,7 +163,7 @@ onUnmounted(() => {
               variant="ghost"
               size="icon"
               class="h-8 w-8"
-              @click="emit('edit', attendee)"
+              @click.stop="emit('edit', attendee)"
             >
               <Edit2 class="h-4 w-4" />
             </Button>
@@ -160,7 +171,7 @@ onUnmounted(() => {
               variant="ghost"
               size="icon"
               class="h-8 w-8 text-destructive hover:text-destructive"
-              @click="emit('delete', attendee)"
+              @click.stop="emit('delete', attendee)"
             >
               <Trash2 class="h-4 w-4" />
             </Button>
@@ -175,6 +186,8 @@ onUnmounted(() => {
       v-for="(attendee, index) in attendees"
       :key="attendee.id"
       class="group flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all"
+      :class="{ 'cursor-pointer': attendee.operatorId }"
+      @click="goToProfile(attendee)"
     >
       <div class="relative flex-shrink-0">
         <UserAvatar :picture="attendee.picture" class="h-8 w-8" />
@@ -205,7 +218,7 @@ onUnmounted(() => {
           variant="ghost"
           size="icon"
           class="h-8 w-8"
-          @click="emit('edit', attendee)"
+          @click.stop="emit('edit', attendee)"
         >
           <Edit2 class="h-4 w-4" />
         </Button>
@@ -213,7 +226,7 @@ onUnmounted(() => {
           variant="ghost"
           size="icon"
           class="h-8 w-8 text-destructive hover:text-destructive"
-          @click="emit('delete', attendee)"
+          @click.stop="emit('delete', attendee)"
         >
           <Trash2 class="h-4 w-4" />
         </Button>

@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { Building2, Calendar, ChevronRight, Ear, ExternalLink, Key, Mail, Pencil, Radio, Signal, TrendingUp, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BranchMembershipCard from '@/components/shared/BranchMembershipCard.vue'
-import { SearchInput } from '@/components/shared'
+import { MobileFab, SearchInput } from '@/components/shared'
+import type { MobileFabAction } from '@/components/shared'
 import { usePersistedFilters } from '@/composables'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
@@ -96,6 +97,26 @@ const hasMoreNets = ref(true)
 const operatorId = computed(() => route.params.id as string)
 
 const canEdit = computed(() => authStore.isAdmin || authStore.isSuperAdmin)
+
+const mobileFabActions = computed<MobileFabAction[]>(() => {
+  const actions: MobileFabAction[] = []
+  
+  if (canEdit.value) {
+    actions.push({ key: 'edit', label: t('common.edit'), icon: Pencil as Component })
+  }
+  if (authStore.hasRole('admin') && operator.value?.user?.id) {
+    actions.push({ key: 'resetPassword', label: t('admin.resetPassword'), icon: Key as Component })
+  }
+  
+  return actions
+})
+
+const handleFabAction = (key: string) => {
+  switch (key) {
+    case 'edit': showEditSheet.value = true; break
+    case 'resetPassword': showResetPasswordSheet.value = true; break
+  }
+}
 
 const hasUserAccount = computed(() => !!operator.value?.user?.id)
 
@@ -319,7 +340,7 @@ onMounted(async () => {
                   v-if="canEdit"
                   variant="outline"
                   size="sm"
-                  class="shrink-0 min-w-[10rem]"
+                  class="hidden lg:inline-flex shrink-0 min-w-[10rem]"
                   @click="handleEditClick"
                 >
                   <Pencil class="h-4 w-4 mr-2" />
@@ -341,7 +362,7 @@ onMounted(async () => {
                   v-if="authStore.hasRole('admin') && operator.user?.id"
                   variant="outline"
                   size="sm"
-                  class="shrink-0 min-w-[10rem] text-foreground"
+                  class="hidden lg:inline-flex shrink-0 min-w-[10rem] text-foreground"
                   @click="showResetPasswordSheet = true"
                 >
                   <Key class="h-4 w-4 mr-2" />
@@ -358,7 +379,7 @@ onMounted(async () => {
                 v-if="canEdit"
                 variant="outline"
                 size="sm"
-                class="min-w-[10rem]"
+                class="hidden lg:inline-flex min-w-[10rem]"
                 @click="showEditSheet = true"
               >
                 <Pencil class="h-4 w-4 mr-2" />
@@ -585,6 +606,8 @@ onMounted(async () => {
           </p>
         </section>
       </template>
+
+      <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
 
       <EditOperatorAdminSheet
         v-if="operator"

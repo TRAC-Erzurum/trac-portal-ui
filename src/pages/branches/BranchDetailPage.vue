@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { BookOpen, Edit, Mail, MapPin, Phone, Plus, Power, PowerOff, Radio, TowerControl, Trash2, Users } from 'lucide-vue-next'
+import { BookOpen, Edit, Mail, MapPin, Phone, Plus, Power, PowerOff, Radio, Search, TowerControl, Trash2, Users } from 'lucide-vue-next'
 import EditBranchSheet from '@/components/branches/EditBranchSheet.vue'
 import AddMemberSheet from '@/components/branches/AddMemberSheet.vue'
 import CreateCommChannelSheet from '@/components/infrastructure/CreateCommChannelSheet.vue'
@@ -12,7 +12,8 @@ import CreateNetSheet from '@/components/nets/CreateNetSheet.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CommunityModule from '@/components/dashboard/CommunityModule.vue'
 import NetsAttendeesTrendWidget from '@/components/dashboard/widgets/NetsAttendeesTrendWidget.vue'
-import { InfrastructureCard, InfrastructureCardSkeleton, MemberCard, NetCard, NetCardSkeleton, SearchInput } from '@/components/shared'
+import { InfrastructureCard, InfrastructureCardSkeleton, MemberCard, MobileFab, NetCard, NetCardSkeleton, SearchInput } from '@/components/shared'
+import type { MobileFabAction } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -195,6 +196,46 @@ const canCreateNet = computed(() => {
          userMembership.value?.role === 'president' ||
          userMembership.value?.role === 'volunteer'
 })
+
+const mobileFabActions = computed<MobileFabAction[]>(() => {
+  if (!branch.value) return []
+  const actions: MobileFabAction[] = []
+  
+  // Header management actions
+  if (canJoin.value && branch.value.isActive) {
+    actions.push({ key: 'joinBranch', label: t('branches.joinBranch'), icon: Users as Component })
+  }
+  if (canManage.value && branch.value.isActive) {
+    actions.push({ key: 'editBranch', label: t('branches.edit'), icon: Edit as Component })
+  }
+  if (canManage.value && branch.value.isActive && !branch.value.isHeadquarters) {
+    actions.push({ key: 'deleteBranch', label: t('common.delete'), icon: Trash2 as Component })
+  }
+  
+  // Section create actions
+  if (canManage.value && branch.value.isActive) {
+    actions.push({ key: 'createChannel', label: t('communicationChannels.create'), icon: TowerControl as Component })
+  }
+  if (canManageMembers.value && !branch.value.isHeadquarters && isBranchMember.value) {
+    actions.push({ key: 'addMember', label: t('branches.addMember'), icon: Plus as Component })
+  }
+  if (canCreateNet.value && branch.value.isActive) {
+    actions.push({ key: 'createNet', label: t('nets.createNet'), icon: Radio as Component })
+  }
+  
+  return actions
+})
+
+const handleFabAction = (key: string) => {
+  switch (key) {
+    case 'joinBranch': joinBranch(); break
+    case 'editBranch': openEdit(); break
+    case 'deleteBranch': openDeleteDialog(); break
+    case 'createChannel': isCreateInfrastructureSheetOpen.value = true; break
+    case 'addMember': showAddMemberSheet.value = true; break
+    case 'createNet': isCreateNetSheetOpen.value = true; break
+  }
+}
 
 const canRemoveMember = (member: BranchMember) => {
   if (!canManageMembers.value) return false
@@ -774,7 +815,7 @@ onMounted(() => {
           </div>
         </div>
         <div class="flex flex-wrap items-center gap-2 shrink-0 sm:ml-4">
-          <Button v-if="canJoin && branch.isActive" @click="joinBranch" :disabled="isJoining" variant="outline" size="sm" class="min-w-[10rem]">
+          <Button v-if="canJoin && branch.isActive" @click="joinBranch" :disabled="isJoining" variant="outline" size="sm" class="hidden lg:inline-flex min-w-[10rem]">
             <Users class="h-4 w-4 mr-2" />
             {{ t('branches.joinBranch') }}
           </Button>
@@ -791,7 +832,7 @@ onMounted(() => {
           </div>
           <template v-if="canManage">
             <template v-if="branch.isActive">
-              <Button variant="outline" size="sm" class="min-w-[10rem]" @click="openEdit">
+              <Button variant="outline" size="sm" class="hidden lg:inline-flex min-w-[10rem]" @click="openEdit">
                 <Edit class="h-4 w-4 mr-2" />
                 {{ t('branches.edit') }}
               </Button>
@@ -799,7 +840,7 @@ onMounted(() => {
                 v-if="!branch.isHeadquarters"
                 variant="outline"
                 size="sm"
-                class="min-w-[10rem] text-red-600 hover:text-red-700"
+                class="hidden lg:inline-flex min-w-[10rem] text-red-600 hover:text-red-700"
                 @click="openDeleteDialog"
               >
                 <Trash2 class="h-4 w-4 mr-2" />
@@ -859,7 +900,7 @@ onMounted(() => {
               variant="outline"
               size="sm"
               @click="isCreateInfrastructureSheetOpen = true"
-              class="gap-2"
+              class="hidden lg:inline-flex gap-2"
             >
               <Plus class="h-4 w-4" />
               {{ t('communicationChannels.create') }}
@@ -982,7 +1023,7 @@ onMounted(() => {
                 variant="outline"
                 size="sm"
                 @click="showAddMemberSheet = true"
-                class="gap-2"
+                class="hidden lg:inline-flex gap-2"
               >
                 <Plus class="h-4 w-4" />
                 {{ t('branches.addMember') }}
@@ -1063,7 +1104,7 @@ onMounted(() => {
               variant="outline"
               size="sm"
               @click="isCreateNetSheetOpen = true"
-              class="gap-2"
+              class="hidden lg:inline-flex gap-2"
             >
               <Plus class="h-4 w-4" />
               {{ t('nets.createNet') }}
@@ -1115,6 +1156,8 @@ onMounted(() => {
         </div>
       </section>
     </div>
+
+    <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
 
     <EditBranchSheet
       v-if="branch"

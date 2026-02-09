@@ -39,6 +39,7 @@ interface Attendee {
   signalStrength?: number
   createdAt: string
   picture?: string | null
+  operatorId?: string
 }
 
 interface NetCommunicationChannel {
@@ -217,6 +218,7 @@ interface AttendeeResponse {
   signalStrength?: number
   createdAt: string
   operator?: {
+    id?: string
     user?: {
       picture?: string
     }
@@ -229,7 +231,8 @@ const fetchAttendees = async () => {
     const data = await api.get<AttendeeResponse[]>(`/net/${route.params.id}/attendee`)
     attendees.value = data.map(a => ({
       ...a,
-      picture: a.operator?.user?.picture || null
+      picture: a.operator?.user?.picture || null,
+      operatorId: a.operator?.id
     }))
   } catch (error) {
     attendees.value = []
