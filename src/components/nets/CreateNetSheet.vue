@@ -467,7 +467,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-if="selectedInfrastructureIds.length === 0 && simplexFrequencies.length === 0" class="text-xs text-amber-600 dark:text-amber-500">
+        <div v-if="selectedInfrastructureIds.length === 0 && !simplexFrequencies.some(freq => freq.trim())" class="text-xs text-amber-600 dark:text-amber-500">
           {{ t('nets.atLeastOneInfrastructureOrSimplexRequired') }}
         </div>
 

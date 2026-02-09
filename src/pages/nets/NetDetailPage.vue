@@ -26,6 +26,9 @@ interface Operator {
   id: string
   callSign: string
   fullName?: string
+  user?: {
+    id: string
+  }
 }
 
 interface Attendee {
@@ -192,7 +195,7 @@ const netDurationFormatted = computed(() => {
 const canManageNet = computed(() => {
   if (!net.value) return false
   if (auth.isAdmin || auth.isSuperAdmin) return true
-  return String(auth.user?.id) === net.value.operator.id
+  return net.value.operator.user?.id === auth.user?.id
 })
 
 const fetchNet = async () => {

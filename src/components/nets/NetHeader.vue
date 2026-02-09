@@ -10,6 +10,9 @@ interface Operator {
   id: string
   callSign: string
   fullName?: string
+  user?: {
+    id: string
+  }
 }
 
 interface NetCommunicationChannel {
