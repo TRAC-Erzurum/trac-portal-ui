@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { UserCircle, LogOut, TowerControl } from 'lucide-vue-next'
+import { LogOut, TowerControl, UserCircle } from 'lucide-vue-next'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,11 +13,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { UserAvatar } from '@/components/ui/user-avatar'
+import { useAppVersion } from '@/composables'
 import LangToggle from '@/components/layout/LangToggle.vue'
 import ThemeToggle from '@/components/layout/ThemeToggle.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const { t } = useI18n()
+const { versionText } = useAppVersion()
 const router = useRouter()
 const authStore = useAuthStore()
 
@@ -87,6 +89,8 @@ async function handleLogout() {
         <LogOut class="mr-2 h-4 w-4" />
         {{ t('auth.logout') }}
       </DropdownMenuItem>
+      <DropdownMenuSeparator />
+      <p class="px-3 py-2 text-[10px] text-muted-foreground" aria-hidden="true">{{ versionText }}</p>
     </DropdownMenuContent>
   </DropdownMenu>
 </template>
