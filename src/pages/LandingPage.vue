@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
-import ThemeToggle from '@/components/layout/ThemeToggle.vue'
 import LangToggle from '@/components/layout/LangToggle.vue'
+import ThemeToggle from '@/components/layout/ThemeToggle.vue'
+import { useAppVersion } from '@/composables'
 
 const { t } = useI18n()
+const { versionText } = useAppVersion()
 </script>
 
 <template>
@@ -178,6 +180,7 @@ const { t } = useI18n()
             <span class="ml-2">73</span>
           </div>
         </div>
+        <p class="mt-2 text-[10px] text-muted-foreground/70" aria-hidden="true">{{ versionText }}</p>
       </div>
     </footer>
   </div>

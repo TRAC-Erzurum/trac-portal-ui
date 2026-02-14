@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import ThemeToggle from './ThemeToggle.vue'
 import LangToggle from './LangToggle.vue'
+import ThemeToggle from './ThemeToggle.vue'
+import { useAppVersion } from '@/composables'
 
 const { t } = useI18n()
 const logoLoaded = ref(false)
+const { versionText } = useAppVersion()
 </script>
 
 <template>
@@ -42,8 +44,11 @@ const logoLoaded = ref(false)
         <ThemeToggle />
         <LangToggle />
       </div>
-      <div class="flex-1 flex items-center justify-center p-6 md:p-8 relative z-10">
-        <slot />
+      <div class="flex-1 flex flex-col items-center justify-center p-6 md:p-8 relative z-10">
+        <div class="flex-1 flex items-center justify-center w-full">
+          <slot />
+        </div>
+        <p class="text-[10px] text-muted-foreground/70 pt-4 pb-2" aria-hidden="true">{{ versionText }}</p>
       </div>
     </div>
   </div>
