@@ -69,6 +69,7 @@ const selectedEntry = ref<SelectedEntry | null>(null)
 
 const searchContainerRef = ref<HTMLDivElement | null>(null)
 const entryPanelRef = ref<HTMLDivElement | null>(null)
+const isSelectingOperator = ref(false)
 
 const districts = computed(() => {
   if (!selectedEntry.value?.city) return []
@@ -135,6 +136,7 @@ watch(searchQuery, (val) => {
 })
 
 watch(() => selectedEntry.value?.city, (newCity) => {
+  if (isSelectingOperator.value) return
   if (selectedEntry.value && newCity) {
     selectedEntry.value.district = ''
   }
@@ -142,6 +144,7 @@ watch(() => selectedEntry.value?.city, (newCity) => {
 
 
 const selectOperatorFromSuggestion = (op: Operator) => {
+  isSelectingOperator.value = true
   selectedEntry.value = {
     callSign: (op.callSign || '').trim(),
     name: (op.fullName || op.user?.fullName || '').trim(),
@@ -156,6 +159,7 @@ const selectOperatorFromSuggestion = (op: Operator) => {
   showSuggestions.value = false
   
   nextTick(() => {
+    isSelectingOperator.value = false
     const citySelect = entryPanelRef.value?.querySelector('[data-city-select] button') as HTMLElement
     citySelect?.focus()
   })
