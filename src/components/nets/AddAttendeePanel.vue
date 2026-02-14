@@ -142,7 +142,6 @@ watch(() => selectedEntry.value?.city, (newCity) => {
   }
 })
 
-
 const selectOperatorFromSuggestion = (op: Operator) => {
   isSelectingOperator.value = true
   selectedEntry.value = {
@@ -157,7 +156,7 @@ const selectOperatorFromSuggestion = (op: Operator) => {
     picture: op.user?.picture || null
   }
   showSuggestions.value = false
-  
+
   nextTick(() => {
     isSelectingOperator.value = false
     const citySelect = entryPanelRef.value?.querySelector('[data-city-select] button') as HTMLElement

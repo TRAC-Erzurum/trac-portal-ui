@@ -8,7 +8,7 @@ import NetsModule from '@/components/dashboard/NetsModule.vue'
 import PersonalStatsModule from '@/components/dashboard/PersonalStatsModule.vue'
 import PersonalLastNetsWidget from '@/components/dashboard/widgets/PersonalLastNetsWidget.vue'
 import PersonalTrendWidget from '@/components/dashboard/widgets/PersonalTrendWidget.vue'
-import ActivitySummaryWidget from '@/components/dashboard/widgets/ActivitySummaryWidget.vue'
+import CommunityPulseWidget from '@/components/dashboard/widgets/CommunityPulseWidget.vue'
 import BusiestTimeWidget from '@/components/dashboard/widgets/BusiestTimeWidget.vue'
 import GeographyWidget from '@/components/dashboard/widgets/GeographyWidget.vue'
 import MonthlyTrendWidget from '@/components/dashboard/widgets/MonthlyTrendWidget.vue'
@@ -280,7 +280,7 @@ onMounted(() => {
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <GeographyWidget />
-        <ActivitySummaryWidget />
+        <CommunityPulseWidget :period="communityPeriod" />
       </div>
     </section>
   </AppLayout>

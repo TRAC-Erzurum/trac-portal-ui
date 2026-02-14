@@ -9,13 +9,12 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { AutocompleteCombobox } from '@/components/shared'
-import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, TowerControl, Globe, Navigation, Waves, X } from 'lucide-vue-next'
+import { Plus, TowerControl, Globe, Navigation, X } from 'lucide-vue-next'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
 import { useQthData } from '@/composables'
 
-type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs' | 'hf'
+type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs'
 type RepeaterMode = 'analog' | 'digital' | 'mixed'
 type DmrNetwork = 'brandmeister' | 'tgif' | 'freedmr' | 'other'
 
@@ -44,12 +43,6 @@ const TYPE_OPTIONS = [
     icon: Navigation, 
     activeClasses: 'border-orange-500 bg-orange-500/10',
     iconActiveClasses: 'bg-orange-500/20 text-orange-600 dark:text-orange-400'
-  },
-  { 
-    value: 'hf' as const, 
-    icon: Waves, 
-    activeClasses: 'border-red-500 bg-red-500/10',
-    iconActiveClasses: 'bg-red-500/20 text-red-600 dark:text-red-400'
   },
 ]
 
@@ -84,7 +77,6 @@ interface Infrastructure {
   aprsDigipeaterType?: string
   aprsPath?: string
   aprsServer?: string
-  digipeater?: string
   hfFrequencyRange?: string
   hfMode?: string
   repeaterMode?: string
@@ -222,10 +214,7 @@ const aprsIgateMode = ref<'rx_only' | 'tx_rx'>('rx_only')
 const aprsDigipeaterType = ref<'fill_in' | 'wide'>('wide')
 const aprsPath = ref('')
 const aprsServer = ref('')
-const digipeater = ref('')
 
-const hfFrequencyRange = ref('')
-const hfMode = ref('')
 
 // DMR fields
 const repeaterMode = ref<RepeaterMode>('analog')
@@ -240,6 +229,8 @@ const isValid = computed(() => {
   if (!name.value.trim() || !type.value) return false
   return true
 })
+
+const showDistrictField = computed(() => type.value !== 'echolink')
 
 const showLocationFields = computed(() => {
   return type.value === 'vhf_uhf_repeater' || type.value === 'aprs'
@@ -263,10 +254,6 @@ const showEcholinkFields = computed(() => {
 
 const showAprsFields = computed(() => {
   return type.value === 'aprs'
-})
-
-const showHfFields = computed(() => {
-  return type.value === 'hf'
 })
 
 function parseOffset(offsetStr?: string): number | undefined {
@@ -333,16 +320,12 @@ function loadForm() {
   echolinkName.value = props.infrastructure.echolinkName || ''
   
   aprsFrequency.value = formatFreq(props.infrastructure.aprsFrequency)
-  aprsIsIgate.value = props.infrastructure.aprsIsIgate || false
-  aprsIsDigipeater.value = props.infrastructure.aprsIsDigipeater || false
+  aprsIsIgate.value = !!props.infrastructure.aprsIsIgate
+  aprsIsDigipeater.value = !!props.infrastructure.aprsIsDigipeater
   aprsIgateMode.value = (props.infrastructure.aprsIgateMode as 'rx_only' | 'tx_rx') || 'rx_only'
   aprsDigipeaterType.value = (props.infrastructure.aprsDigipeaterType as 'fill_in' | 'wide') || 'wide'
   aprsPath.value = props.infrastructure.aprsPath || ''
   aprsServer.value = props.infrastructure.aprsServer || ''
-  digipeater.value = props.infrastructure.digipeater || ''
-  
-  hfFrequencyRange.value = props.infrastructure.hfFrequencyRange || ''
-  hfMode.value = props.infrastructure.hfMode || ''
 
   // DMR fields
   repeaterMode.value = (props.infrastructure.repeaterMode as RepeaterMode) || 'analog'
@@ -396,7 +379,7 @@ async function handleSubmit() {
       name: name.value.trim(),
       type: type.value,
       description: description.value.trim() || null,
-      district: district.value.trim() || null,
+      district: showDistrictField.value ? district.value.trim() || null : null,
     }
 
     if (showLocationFields.value) {
@@ -486,11 +469,6 @@ async function handleSubmit() {
       payload.aprsPath = aprsIsDigipeater.value ? (aprsPath.value.trim() || null) : null
     }
 
-    if (showHfFields.value) {
-      payload.hfFrequencyRange = hfFrequencyRange.value.trim() || null
-      payload.hfMode = hfMode.value.trim() || null
-    }
-
     await api.patch(`/communication-channel/${props.infrastructure.id}`, payload)
 
     toast.success(t('communicationChannels.updateSuccess'))
@@ -546,15 +524,17 @@ async function handleSubmit() {
           <textarea
             id="edit-description"
             v-model="description"
-            rows="2"
+            rows="3"
+            maxlength="500"
             :placeholder="t('communicationChannels.descriptionPlaceholder')"
             class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
           />
+          <p class="text-xs text-muted-foreground">{{ description.length }}/500</p>
         </div>
 
         <Separator />
 
-        <div class="space-y-2">
+        <div v-if="showDistrictField" class="space-y-2">
           <Label for="edit-district">{{ t('form.district') }}</Label>
           <AutocompleteCombobox
             id="edit-district"
@@ -565,7 +545,7 @@ async function handleSubmit() {
           />
         </div>
 
-        <Separator />
+        <Separator v-if="showDistrictField" />
 
         <template v-if="showLocationFields">
           <div class="space-y-4">
@@ -736,7 +716,12 @@ async function handleSubmit() {
                     </SelectContent>
                   </Select>
                   <label class="flex items-center gap-1 cursor-pointer whitespace-nowrap">
-                    <Checkbox :checked="tg.isStatic" @update:checked="(v: boolean) => tg.isStatic = v" />
+                    <input
+                      type="checkbox"
+                      :checked="tg.isStatic"
+                      class="h-4 w-4 rounded border-input"
+                      @change="tg.isStatic = ($event.target as HTMLInputElement).checked"
+                    />
                     <span class="text-[10px]">{{ t('communicationChannels.static') }}</span>
                   </label>
                   <Button type="button" variant="ghost" size="sm" class="h-7 w-7 p-0 shrink-0" @click="removeTalkgroup(index)">
@@ -972,11 +957,19 @@ async function handleSubmit() {
               <Label>{{ t('communicationChannels.aprsStationType') }}</Label>
               <div class="flex gap-6">
                 <label class="flex items-center gap-2 cursor-pointer">
-                  <Checkbox :checked="aprsIsIgate" @update:checked="(v: boolean) => aprsIsIgate = v" />
+                  <input
+                    v-model="aprsIsIgate"
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-input"
+                  />
                   <span class="text-sm">{{ t('communicationChannels.aprsIgate') }}</span>
                 </label>
                 <label class="flex items-center gap-2 cursor-pointer">
-                  <Checkbox :checked="aprsIsDigipeater" @update:checked="(v: boolean) => aprsIsDigipeater = v" />
+                  <input
+                    v-model="aprsIsDigipeater"
+                    type="checkbox"
+                    class="h-4 w-4 rounded border-input"
+                  />
                   <span class="text-sm">{{ t('communicationChannels.aprsDigipeater') }}</span>
                 </label>
               </div>
@@ -1034,35 +1027,6 @@ async function handleSubmit() {
                   placeholder="WIDE1-1, WIDE2-2"
                 />
                 <p class="text-xs text-muted-foreground">{{ t('communicationChannels.aprsPathHint') }}</p>
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-        </template>
-
-        <template v-if="showHfFields">
-          <div class="space-y-4">
-            <h4 class="text-sm font-medium text-muted-foreground">{{ t('communicationChannels.hfSection') }}</h4>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <Label for="edit-hfFrequencyRange">{{ t('communicationChannels.hfFrequencyRange') }}</Label>
-                <Input
-                  id="edit-hfFrequencyRange"
-                  v-model="hfFrequencyRange"
-                  type="text"
-                  placeholder="7.000 - 7.200 MHz"
-                />
-              </div>
-              <div class="space-y-2">
-                <Label for="edit-hfMode">{{ t('communicationChannels.hfMode') }}</Label>
-                <Input
-                  id="edit-hfMode"
-                  v-model="hfMode"
-                  type="text"
-                  placeholder="SSB, CW, FT8"
-                />
               </div>
             </div>
           </div>

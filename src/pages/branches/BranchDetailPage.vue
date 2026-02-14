@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, type Component } from 'vue'
+import { computed, onMounted, ref, toRaw, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
@@ -24,6 +24,7 @@ import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
 import { formatCallSign } from '@/lib/formatters'
+import { buildTutorialContent } from '@/lib/tutorial-content'
 
 interface BranchCallSign {
   id: string
@@ -45,7 +46,7 @@ interface Branch {
   createdAt: string
 }
 
-type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs' | 'hf'
+type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs'
 
 interface Infrastructure {
   id: string
@@ -78,7 +79,6 @@ interface Infrastructure {
   aprsDigipeaterType?: string
   aprsPath?: string
   aprsServer?: string
-  digipeater?: string
   hfFrequencyRange?: string
   hfMode?: string
 }
@@ -135,7 +135,6 @@ const showDeleteInfrastructureDialog = ref(false)
 const isDeletingInfrastructure = ref(false)
 const showTutorialDialog = ref(false)
 const tutorialContent = ref({ title: '', content: '' })
-const isLoadingTutorial = ref(false)
 const members = ref<BranchMember[]>([])
 const membersTotal = ref(0)
 const membersPage = ref(1)
@@ -578,19 +577,10 @@ const toggleInfrastructureStatus = async (infra: Infrastructure) => {
   }
 }
 
-const openTutorial = async (type: InfrastructureType) => {
-  isLoadingTutorial.value = true
+const openTutorial = (infra: Infrastructure) => {
+  const plain = JSON.parse(JSON.stringify(toRaw(infra))) as Record<string, unknown>
+  tutorialContent.value = buildTutorialContent(plain, t)
   showTutorialDialog.value = true
-  try {
-    const data = await api.get<{ title: string; content: string }>(`/communication-channel/tutorials/${type}`)
-    tutorialContent.value = data
-  } catch (error) {
-    const err = error as ApiError
-    toast.error(translateError(err.message))
-    showTutorialDialog.value = false
-  } finally {
-    isLoadingTutorial.value = false
-  }
 }
 
 const openEdit = () => {
@@ -890,7 +880,6 @@ onMounted(() => {
                 <SelectItem value="vhf_uhf_repeater">{{ t('communicationChannels.vhf_uhf_repeater') }}</SelectItem>
                 <SelectItem value="echolink">{{ t('communicationChannels.echolink') }}</SelectItem>
                 <SelectItem value="aprs">{{ t('communicationChannels.aprs') }}</SelectItem>
-                <SelectItem value="hf">{{ t('communicationChannels.hf') }}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -922,6 +911,8 @@ onMounted(() => {
               :name="infra.name"
               :type="infra.type"
               :is-active="infra.isActive"
+              :branch-name="branch?.name"
+              :branch-city="branch?.city"
               :description="infra.description"
               :location="infra.location"
               :district="infra.district"
@@ -945,12 +936,11 @@ onMounted(() => {
               :aprs-digipeater-type="infra.aprsDigipeaterType"
               :aprs-path="infra.aprsPath"
               :aprs-server="infra.aprsServer"
-              :digipeater="infra.digipeater"
               :hf-frequency-range="infra.hfFrequencyRange"
               :hf-mode="infra.hfMode"
             >
               <template v-if="infra.isActive" #top-right>
-                <Button variant="ghost" size="icon" class="h-7 w-7 rounded-full" :title="t('communicationChannels.howToConnect')" @click.stop="openTutorial(infra.type)">
+                <Button variant="ghost" size="icon" class="h-7 w-7 rounded-full" :title="t('communicationChannels.howToConnect')" @click.stop="openTutorial(infra)">
                   <BookOpen class="h-3.5 w-3.5" />
                 </Button>
               </template>
@@ -1307,15 +1297,12 @@ onMounted(() => {
 
     <Dialog :open="showTutorialDialog" @update:open="showTutorialDialog = $event">
       <DialogContent class="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {{ tutorialContent.title || t('communicationChannels.tutorial') }}
+        <DialogHeader class="pr-8">
+          <DialogTitle class="text-lg font-semibold leading-tight text-foreground">
+            {{ tutorialContent.title }}
           </DialogTitle>
         </DialogHeader>
-        <div v-if="isLoadingTutorial" class="py-8 text-center">
-          <p class="text-sm text-muted-foreground">{{ t('common.loading') }}</p>
-        </div>
-        <div v-else class="tutorial-content text-sm" v-html="renderMarkdown(tutorialContent.content)" />
+        <div class="tutorial-content text-sm text-foreground" v-html="renderMarkdown(tutorialContent.content)" />
         <DialogFooter>
           <Button variant="outline" @click="showTutorialDialog = false">
             {{ t('common.close') }}
