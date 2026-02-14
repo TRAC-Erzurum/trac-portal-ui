@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { 
-  TowerControl, 
-  Globe, 
-  Navigation, 
-  Waves,
+import {
+  TowerControl,
+  Globe,
+  Navigation,
   MapPin,
-  Mountain
+  Mountain,
 } from 'lucide-vue-next'
 
-export type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs' | 'hf'
+export type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs'
+
+const DESCRIPTION_MAX_LENGTH = 500
 
 interface Props {
   id: string
@@ -18,6 +19,7 @@ interface Props {
   type: InfrastructureType
   isActive: boolean
   branchName?: string
+  branchCity?: string
   description?: string
   location?: string
   district?: string
@@ -41,7 +43,6 @@ interface Props {
   aprsDigipeaterType?: string
   aprsPath?: string
   aprsServer?: string
-  digipeater?: string
   hfFrequencyRange?: string
   hfMode?: string
   repeaterMode?: string
@@ -78,11 +79,42 @@ const typeIcon = computed(() => {
       return Globe
     case 'aprs':
       return Navigation
-    case 'hf':
-      return Waves
     default:
       return TowerControl
   }
+})
+
+const iconBgClasses = computed(() => {
+  switch (props.type) {
+    case 'vhf_uhf_repeater':
+      return 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+    case 'echolink':
+      return 'bg-green-500/10 text-green-600 dark:text-green-400'
+    case 'aprs':
+      return 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
+    default:
+      return 'bg-muted text-muted-foreground'
+  }
+})
+
+const typeLabel = computed(() => {
+  if (props.type === 'vhf_uhf_repeater' && band.value) {
+    const suffix = t('communicationChannels.types.vhf_uhf_repeater').split(' ').pop()
+    if (props.repeaterMode === 'digital') return `${band.value} DMR`
+    if (props.repeaterMode === 'mixed') return `${band.value} ${suffix} + DMR`
+    return `${band.value} ${suffix}`
+  }
+  if (props.type === 'aprs' && aprsStationType.value) {
+    return `APRS ${aprsStationType.value}`
+  }
+  return t(`communicationChannels.types.${props.type}`)
+})
+
+const displayDescription = computed(() => {
+  if (!props.description?.trim()) return ''
+  const text = props.description.trim()
+  if (text.length <= DESCRIPTION_MAX_LENGTH) return text
+  return text.slice(0, DESCRIPTION_MAX_LENGTH) + '…'
 })
 
 const isDigital = computed(() => {
@@ -100,66 +132,79 @@ const dmrNetworkLabel = computed(() => {
   return labels[props.dmrNetwork] || props.dmrNetwork
 })
 
-const dmrInfo = computed(() => {
-  if (!isDigital.value) return null
-  const parts: string[] = []
-  if (props.dmrNetwork) parts.push(dmrNetworkLabel.value!)
-  if (props.dmrColorCode !== undefined && props.dmrColorCode !== null) parts.push(`CC${props.dmrColorCode}`)
-  if (props.dmrRepeaterId) parts.push(`ID:${props.dmrRepeaterId}`)
-  return parts.length > 0 ? parts.join(' · ') : null
-})
-
-const typeLabel = computed(() => {
-  if (props.type === 'vhf_uhf_repeater' && band.value) {
-    const suffix = t('communicationChannels.types.vhf_uhf_repeater').split(' ').pop()
-    if (props.repeaterMode === 'digital') return `${band.value} DMR`
-    if (props.repeaterMode === 'mixed') return `${band.value} ${suffix} + DMR`
-    return `${band.value} ${suffix}`
-  }
-  if (props.type === 'aprs' && aprsStationType.value) {
-    return `APRS ${aprsStationType.value}`
-  }
-  return t(`communicationChannels.types.${props.type}`)
-})
-
-const typeBadgeClasses = computed(() => {
-  switch (props.type) {
-    case 'vhf_uhf_repeater':
-      return 'bg-blue-500/20 text-blue-700 dark:text-blue-400'
-    case 'echolink':
-      return 'bg-green-500/20 text-green-700 dark:text-green-400'
-    case 'aprs':
-      return 'bg-orange-500/20 text-orange-700 dark:text-orange-400'
-    case 'hf':
-      return 'bg-red-500/20 text-red-700 dark:text-red-400'
-    default:
-      return 'bg-muted text-muted-foreground'
-  }
-})
-
-const repeaterFreqInfo = computed(() => {
+const repeaterConnectionDisplay = computed(() => {
   if (props.type !== 'vhf_uhf_repeater') return null
-  if (!props.txFrequency && !props.rxFrequency) return null
-  
   const formatFreq = (freq: number | string | undefined) => {
-    if (!freq) return null
+    if (freq == null || freq === '') return null
     const num = Number(freq)
-    return num.toFixed(3)
+    return Number.isFinite(num) ? num.toFixed(3) : null
   }
-  
-  const formatTone = (ctcss: number | string | undefined, dcs: string | undefined) => {
-    if (ctcss) return `${Number(ctcss)} Hz`
-    if (dcs) return `D${dcs}`
-    return null
+  const txFreq = formatFreq(props.txFrequency)
+  const rxFreq = formatFreq(props.rxFrequency)
+  if (!txFreq && !rxFreq) return null
+
+  const txTone =
+    props.txCtcssTone != null && props.txCtcssTone !== ''
+      ? `${props.txCtcssTone} Hz`
+      : props.txDcsCode?.trim()
+        ? `D${props.txDcsCode.trim()}`
+        : null
+  const rxTone =
+    props.rxCtcssTone != null && props.rxCtcssTone !== ''
+      ? `${props.rxCtcssTone} Hz`
+      : props.rxDcsCode?.trim()
+        ? `D${props.rxDcsCode.trim()}`
+        : null
+  const offset = props.offset?.trim() || null
+
+  let dmrLine: string | null = null
+  if (isDigital.value && dmrNetworkLabel.value) {
+    const parts = [dmrNetworkLabel.value]
+    if (props.dmrColorCode != null && props.dmrColorCode !== '') parts.push(`CC${props.dmrColorCode}`)
+    if (props.dmrRepeaterId != null && props.dmrRepeaterId !== '') parts.push(`ID ${props.dmrRepeaterId}`)
+    dmrLine = parts.join(' · ')
   }
-  
+
+  let talkgroupsLine: string | null = null
+  if (props.talkgroups?.length) {
+    const tgList = props.talkgroups.slice(0, 5).map(tg => `TG${tg.talkgroupId}`).join(', ')
+    talkgroupsLine = props.talkgroups.length > 5 ? `${tgList} +${props.talkgroups.length - 5}` : tgList
+  }
+
   return {
-    tx: formatFreq(props.txFrequency),
-    rx: formatFreq(props.rxFrequency),
-    offset: props.offset || null,
-    txTone: formatTone(props.txCtcssTone, props.txDcsCode),
-    rxTone: formatTone(props.rxCtcssTone, props.rxDcsCode)
+    txFreq,
+    rxFreq,
+    txTone,
+    rxTone,
+    offset,
+    dmrLine,
+    talkgroupsLine,
   }
+})
+
+const echolinkConnectionDisplay = computed(() => {
+  if (props.type !== 'echolink') return null
+  const node = props.echolinkNode?.trim() || null
+  const name = props.echolinkName?.trim() || null
+  if (!node && !name) return null
+  return { node, name }
+})
+
+const aprsConnectionDisplay = computed(() => {
+  if (props.type !== 'aprs') return null
+  let frequency: string | null = null
+  if (props.aprsFrequency != null && props.aprsFrequency !== '') {
+    const freq = Number(props.aprsFrequency)
+    frequency = Number.isFinite(freq) ? String(freq) : String(props.aprsFrequency)
+  }
+  const types: string[] = []
+  if (props.aprsIsIgate) types.push(props.aprsIgateMode === 'tx_rx' ? 'IGate (TX/RX)' : 'IGate (RX)')
+  if (props.aprsIsDigipeater) types.push(props.aprsDigipeaterType === 'wide' ? 'Digipeater (Wide)' : 'Digipeater (Fill-in)')
+  const stationType = types.length ? types.join(' · ') : null
+  const path = props.aprsPath?.trim() || null
+  const server = props.aprsServer?.trim() || null
+  if (!frequency && !stationType && !path && !server) return null
+  return { frequency, stationType, path, server }
 })
 
 const aprsStationType = computed(() => {
@@ -170,51 +215,25 @@ const aprsStationType = computed(() => {
   return types.length > 0 ? types.join(' + ') : null
 })
 
-const primaryInfo = computed(() => {
-  switch (props.type) {
-    case 'echolink':
-      if (props.echolinkNode) {
-        return props.echolinkName 
-          ? `Node: ${props.echolinkNode} (${props.echolinkName})`
-          : `Node: ${props.echolinkNode}`
-      }
-      return ''
-    case 'aprs':
-      return props.aprsFrequency ? `${props.aprsFrequency} MHz` : ''
-    case 'hf':
-      return props.hfFrequencyRange || ''
-    default:
-      return ''
-  }
-})
-
-const aprsSecondaryInfo = computed(() => {
-  if (props.type !== 'aprs') return null
+const locationParts = computed(() => {
   const parts: string[] = []
-  if (props.aprsIsIgate && props.aprsIgateMode) {
-    parts.push(props.aprsIgateMode === 'tx_rx' ? 'TX/RX' : 'RX-only')
-  }
-  if (props.aprsIsDigipeater && props.aprsDigipeaterType) {
-    parts.push(props.aprsDigipeaterType === 'wide' ? 'Wide' : 'Fill-in')
-  }
-  if (props.aprsPath) {
-    parts.push(props.aprsPath)
-  }
-  return parts.length > 0 ? parts.join(' · ') : null
+  if (props.location?.trim()) parts.push(props.location.trim())
+  if (props.district?.trim()) parts.push(props.district.trim())
+  if (props.branchCity?.trim() && props.district?.trim()) parts.push(props.branchCity.trim())
+  return parts
 })
 
-const secondaryInfo = computed(() => {
-  switch (props.type) {
-    case 'hf':
-      return props.hfMode ? `Mode: ${props.hfMode}` : ''
-    default:
-      return ''
-  }
+const hasLocation = computed(() => {
+  return locationParts.value.length > 0 || (props.altitude != null && props.altitude !== '')
 })
 
 const googleMapsUrl = computed(() => {
-  if (props.latitude && props.longitude) {
-    return `https://www.google.com/maps?q=${props.latitude},${props.longitude}`
+  if (props.latitude != null && props.longitude != null) {
+    const lat = Number(props.latitude)
+    const lng = Number(props.longitude)
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return `https://www.google.com/maps?q=${lat},${lng}`
+    }
   }
   return null
 })
@@ -231,8 +250,8 @@ const openMaps = (event: Event) => {
   <div
     class="relative w-full text-left p-3 rounded-lg border flex flex-col"
     :class="[
-      isActive 
-        ? 'border-border/50' 
+      isActive
+        ? 'border-border/50'
         : 'border-red-500/30 bg-red-500/5 opacity-60'
     ]"
   >
@@ -241,71 +260,132 @@ const openMaps = (event: Event) => {
     </div>
 
     <div class="flex items-start gap-3 pr-10 flex-1 min-w-0">
-      <div class="flex-shrink-0 p-2 rounded-md" :class="typeBadgeClasses.replace('text-', 'bg-').replace('/20', '/10')">
-        <component :is="typeIcon" class="h-4 w-4" :class="typeBadgeClasses.split(' ').find(c => c.startsWith('text-'))" />
+      <div
+        class="flex-shrink-0 p-2 rounded-md"
+        :class="iconBgClasses"
+        aria-hidden="true"
+      >
+        <component :is="typeIcon" class="h-4 w-4" />
       </div>
-      <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-1.5 mb-0.5">
-          <span 
-            class="text-[10px] font-medium px-1.5 py-0.5 rounded whitespace-nowrap"
-            :class="typeBadgeClasses"
-          >
-            {{ typeLabel }}
+
+      <div class="flex-1 min-w-0 space-y-1.5">
+        <p class="text-sm font-medium text-muted-foreground">
+          {{ typeLabel }}
+          <span v-if="!isActive" class="ml-1.5 text-xs font-normal text-red-600 dark:text-red-400">
+            · {{ t('common.inactive') }}
           </span>
-          <span v-if="!isActive" class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-red-500/20 text-red-700 dark:text-red-400">
-            {{ t('common.inactive') }}
-          </span>
-        </div>
-        <p class="font-semibold text-sm">{{ name }}</p>
-        <p v-if="branchName" class="text-[10px] text-muted-foreground mt-0.5">{{ branchName }}</p>
-        <p v-if="district" class="text-[10px] text-muted-foreground mt-0.5">{{ t('form.district') }}: {{ district }}</p>
-        <p v-if="description" class="text-xs text-muted-foreground mt-0.5 line-clamp-1">{{ description }}</p>
+        </p>
 
-        <div v-if="type === 'vhf_uhf_repeater' && repeaterFreqInfo" class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono">
-          <span class="text-muted-foreground">TX <span class="text-foreground font-medium">{{ repeaterFreqInfo.tx }}</span><span v-if="repeaterFreqInfo.txTone" class="text-muted-foreground/70 ml-1">{{ repeaterFreqInfo.txTone }}</span></span>
-          <span class="text-muted-foreground">RX <span class="text-foreground font-medium">{{ repeaterFreqInfo.rx || repeaterFreqInfo.offset }}</span><span v-if="repeaterFreqInfo.rx && repeaterFreqInfo.offset" class="text-muted-foreground/70 ml-1">({{ repeaterFreqInfo.offset }})</span><span v-if="repeaterFreqInfo.rxTone" class="text-muted-foreground/70 ml-1">{{ repeaterFreqInfo.rxTone }}</span></span>
+        <h3 class="font-semibold text-sm leading-tight">{{ name }}</h3>
+
+        <p v-if="branchName" class="text-xs text-muted-foreground">
+          {{ branchName }}
+        </p>
+
+        <p
+          v-if="displayDescription"
+          class="text-xs text-muted-foreground leading-relaxed line-clamp-3 break-words"
+        >
+          {{ displayDescription }}
+        </p>
+
+        <!-- Bağlantı bilgisi: tüm tipler aynı sub-card stili -->
+        <div
+          v-if="repeaterConnectionDisplay"
+          class="connection-block rounded-md border border-border/60 bg-muted/20 px-2.5 py-2 font-mono text-xs"
+        >
+          <div class="space-y-1.5">
+            <div v-if="repeaterConnectionDisplay.txFreq" class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span class="shrink-0 min-w-14 text-muted-foreground text-[10px] uppercase tracking-wide">TX</span>
+              <span class="tabular-nums text-foreground">{{ repeaterConnectionDisplay.txFreq }} MHz</span>
+              <span v-if="repeaterConnectionDisplay.txTone" class="text-muted-foreground tabular-nums">
+                {{ repeaterConnectionDisplay.txTone }}
+              </span>
+            </div>
+            <div v-if="repeaterConnectionDisplay.rxFreq" class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span class="shrink-0 min-w-14 text-muted-foreground text-[10px] uppercase tracking-wide">RX</span>
+              <span class="tabular-nums text-foreground">{{ repeaterConnectionDisplay.rxFreq }} MHz</span>
+              <span v-if="repeaterConnectionDisplay.offset" class="text-muted-foreground tabular-nums">
+                Shift {{ repeaterConnectionDisplay.offset }}
+              </span>
+              <span v-if="repeaterConnectionDisplay.rxTone" class="text-muted-foreground tabular-nums">
+                {{ repeaterConnectionDisplay.rxTone }}
+              </span>
+            </div>
+          </div>
+          <div v-if="repeaterConnectionDisplay.dmrLine" class="mt-1.5 pt-1.5 border-t border-border/40 text-muted-foreground">
+            {{ repeaterConnectionDisplay.dmrLine }}
+          </div>
+          <div v-if="repeaterConnectionDisplay.talkgroupsLine" class="mt-1 pt-1 border-t border-border/40 text-muted-foreground">
+            {{ repeaterConnectionDisplay.talkgroupsLine }}
+          </div>
         </div>
 
-        <div v-if="isDigital && dmrInfo" class="mt-1.5 text-[10px] font-medium text-purple-600 dark:text-purple-400">
-          {{ dmrInfo }}
+        <div
+          v-else-if="echolinkConnectionDisplay"
+          class="connection-block rounded-md border border-border/60 bg-muted/20 px-2.5 py-2 font-mono text-xs"
+        >
+          <div class="space-y-1.5">
+            <div v-if="echolinkConnectionDisplay.node" class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span class="shrink-0 min-w-14 text-muted-foreground text-[10px] uppercase tracking-wide">{{ t('communicationChannels.echolinkNode') }}</span>
+              <span class="tabular-nums text-foreground">{{ echolinkConnectionDisplay.node }}</span>
+            </div>
+            <div v-if="echolinkConnectionDisplay.name" class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span class="shrink-0 min-w-14 text-muted-foreground text-[10px] uppercase tracking-wide">{{ t('communicationChannels.echolinkName') }}</span>
+              <span class="text-foreground break-words">{{ echolinkConnectionDisplay.name }}</span>
+            </div>
+          </div>
         </div>
 
-        <div v-if="isDigital && talkgroups && talkgroups.length > 0" class="mt-1.5 flex flex-wrap gap-1">
+        <div
+          v-else-if="aprsConnectionDisplay"
+          class="connection-block rounded-md border border-border/60 bg-muted/20 px-2.5 py-2 font-mono text-xs"
+        >
+          <div class="space-y-1.5">
+            <div v-if="aprsConnectionDisplay.frequency" class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span class="shrink-0 min-w-14 text-muted-foreground text-[10px] uppercase tracking-wide">{{ t('communicationChannels.frequency') }}</span>
+              <span class="tabular-nums text-foreground">{{ aprsConnectionDisplay.frequency }} MHz</span>
+            </div>
+            <div v-if="aprsConnectionDisplay.stationType" class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span class="shrink-0 min-w-14 text-muted-foreground text-[10px] uppercase tracking-wide">{{ t('communicationChannels.aprsStationType') }}</span>
+              <span class="text-foreground">{{ aprsConnectionDisplay.stationType }}</span>
+            </div>
+            <div v-if="aprsConnectionDisplay.path" class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span class="shrink-0 min-w-14 text-muted-foreground text-[10px] uppercase tracking-wide">{{ t('communicationChannels.aprsPath') }}</span>
+              <span class="text-foreground tabular-nums font-mono text-[10px]">{{ aprsConnectionDisplay.path }}</span>
+            </div>
+            <div v-if="aprsConnectionDisplay.server" class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span class="shrink-0 min-w-14 text-muted-foreground text-[10px] uppercase tracking-wide">{{ t('communicationChannels.aprsServer') }}</span>
+              <span class="text-foreground text-[10px] break-all">{{ aprsConnectionDisplay.server }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-if="hasLocation"
+          class="flex flex-wrap items-center gap-x-2 gap-y-0.5 pt-0.5 text-xs text-muted-foreground"
+        >
+          <template v-if="locationParts.length > 0">
+            <button
+              v-if="googleMapsUrl"
+              type="button"
+              class="inline-flex items-center gap-1 hover:text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+              @click.stop="openMaps"
+            >
+              <MapPin class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span>{{ locationParts.join(', ') }}</span>
+            </button>
+            <span v-else class="inline-flex items-center gap-1">
+              <MapPin class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span>{{ locationParts.join(', ') }}</span>
+            </span>
+          </template>
           <span
-            v-for="tg in talkgroups.slice(0, 5)"
-            :key="tg.talkgroupId"
-            class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-mono"
-            :class="tg.isStatic ? 'bg-purple-500/15 text-purple-700 dark:text-purple-400' : 'bg-muted text-muted-foreground'"
+            v-if="altitude != null && altitude !== ''"
+            class="inline-flex items-center gap-1"
           >
-            <span class="font-medium">{{ tg.talkgroupId }}</span>
-            <span v-if="tg.talkgroupName" class="text-[9px] opacity-70">{{ tg.talkgroupName }}</span>
-            <span class="opacity-50">TS{{ tg.timeslot }}</span>
-          </span>
-          <span v-if="talkgroups.length > 5" class="text-[10px] text-muted-foreground self-center">+{{ talkgroups.length - 5 }}</span>
-        </div>
-
-        <div v-if="type !== 'vhf_uhf_repeater' && (primaryInfo || aprsSecondaryInfo || secondaryInfo)" class="mt-2 text-xs font-mono">
-          <p v-if="primaryInfo">{{ primaryInfo }}</p>
-          <p v-if="type === 'aprs' && aprsSecondaryInfo" class="text-orange-600 dark:text-orange-400 text-[10px]">{{ aprsSecondaryInfo }}</p>
-          <p v-if="type !== 'aprs' && secondaryInfo" class="text-muted-foreground text-[10px]">{{ secondaryInfo }}</p>
-        </div>
-
-        <div v-if="location || googleMapsUrl || altitude" class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
-          <button
-            v-if="googleMapsUrl"
-            @click.stop="openMaps"
-            class="flex items-center gap-1 text-primary hover:underline"
-          >
-            <MapPin class="h-3 w-3" />
-            <span>{{ location || `${latitude}, ${longitude}` }}</span>
-          </button>
-          <span v-else-if="location" class="flex items-center gap-1">
-            <MapPin class="h-3 w-3" />
-            {{ location }}
-          </span>
-          <span v-if="altitude" class="flex items-center gap-1">
-            <Mountain class="h-3 w-3" />
-            {{ altitude }}m
+            <Mountain class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span>{{ altitude }} m</span>
           </span>
         </div>
       </div>

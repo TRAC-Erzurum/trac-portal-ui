@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, toRaw, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { BookOpen, TowerControl } from 'lucide-vue-next'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { api } from '@/lib/api'
+import { buildTutorialContent } from '@/lib/tutorial-content'
 
-type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs' | 'hf'
+type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs'
 
 interface Branch {
   id: string
@@ -51,7 +52,6 @@ interface Infrastructure {
   aprsDigipeaterType?: string
   aprsPath?: string
   aprsServer?: string
-  digipeater?: string
   hfFrequencyRange?: string
   hfMode?: string
 }
@@ -74,7 +74,6 @@ const isLoadingMore = ref(false)
 const showTutorialDialog = ref(false)
 const searchTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 const tutorialContent = ref({ title: '', content: '' })
-const isLoadingTutorial = ref(false)
 const page = ref(1)
 const pageSize = 12
 const hasMore = ref(true)
@@ -84,7 +83,6 @@ const typeOptions = computed(() => [
   { value: 'vhf_uhf_repeater', label: t('communicationChannels.types.vhf_uhf_repeater') },
   { value: 'echolink', label: t('communicationChannels.types.echolink') },
   { value: 'aprs', label: t('communicationChannels.types.aprs') },
-  { value: 'hf', label: t('communicationChannels.types.hf') },
 ])
 
 const cityOptions = computed(() => {
@@ -180,19 +178,10 @@ watch(typeFilter, handleFilterChange)
 watch([cityFilter, districtFilter], () => {
 })
 
-function openTutorial(type: InfrastructureType) {
-  isLoadingTutorial.value = true
+function openTutorial(infra: Infrastructure) {
+  const plain = JSON.parse(JSON.stringify(toRaw(infra))) as Record<string, unknown>
+  tutorialContent.value = buildTutorialContent(plain, t)
   showTutorialDialog.value = true
-  api.get<{ title: string; content: string }>(`/communication-channel/tutorials/${type}`)
-    .then((data) => {
-      tutorialContent.value = data
-    })
-    .catch(() => {
-      showTutorialDialog.value = false
-    })
-    .finally(() => {
-      isLoadingTutorial.value = false
-    })
 }
 
 const renderMarkdown = (content: string) => {
@@ -283,6 +272,7 @@ fetchInfrastructure()
           :type="infra.type"
           :is-active="infra.isActive"
           :branch-name="infra.branch?.name"
+          :branch-city="infra.branch?.city"
           :description="infra.description"
           :location="infra.location"
           :district="infra.district"
@@ -306,7 +296,6 @@ fetchInfrastructure()
             :aprs-digipeater-type="infra.aprsDigipeaterType"
             :aprs-path="infra.aprsPath"
             :aprs-server="infra.aprsServer"
-            :digipeater="infra.digipeater"
           :hf-frequency-range="infra.hfFrequencyRange"
           :hf-mode="infra.hfMode"
         >
@@ -316,7 +305,7 @@ fetchInfrastructure()
               size="icon"
               class="h-7 w-7 rounded-full"
               :title="t('communicationChannels.howToConnect')"
-              @click.stop="openTutorial(infra.type)"
+              @click.stop="openTutorial(infra)"
             >
               <BookOpen class="h-3.5 w-3.5" />
             </Button>
@@ -343,15 +332,12 @@ fetchInfrastructure()
 
     <Dialog :open="showTutorialDialog" @update:open="showTutorialDialog = $event">
       <DialogContent class="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {{ tutorialContent.title || t('communicationChannels.tutorial') }}
+        <DialogHeader class="pr-8">
+          <DialogTitle class="text-lg font-semibold leading-tight text-foreground">
+            {{ tutorialContent.title }}
           </DialogTitle>
         </DialogHeader>
-        <div v-if="isLoadingTutorial" class="py-8 text-center">
-          <p class="text-sm text-muted-foreground">{{ t('common.loading') }}</p>
-        </div>
-        <div v-else class="tutorial-content text-sm" v-html="renderMarkdown(tutorialContent.content)" />
+        <div class="tutorial-content text-sm text-foreground" v-html="renderMarkdown(tutorialContent.content)" />
         <DialogFooter>
           <Button variant="outline" @click="showTutorialDialog = false">
             {{ t('common.close') }}
