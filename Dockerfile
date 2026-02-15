@@ -7,8 +7,6 @@ RUN yarn install --frozen-lockfile
 
 COPY . .
 
-ARG VERSION=
-ENV VITE_APP_VERSION=${VERSION}
 RUN yarn build
 
 FROM node:20-alpine

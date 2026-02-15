@@ -89,8 +89,10 @@ async function handleLogout() {
         <LogOut class="mr-2 h-4 w-4" />
         {{ t('auth.logout') }}
       </DropdownMenuItem>
-      <DropdownMenuSeparator />
-      <p class="px-3 py-2 text-[10px] text-muted-foreground" aria-hidden="true">{{ versionText }}</p>
+      <template v-if="versionText">
+        <DropdownMenuSeparator />
+        <p class="px-3 py-2 text-[10px] text-muted-foreground" aria-hidden="true">{{ versionText }}</p>
+      </template>
     </DropdownMenuContent>
   </DropdownMenu>
 </template>

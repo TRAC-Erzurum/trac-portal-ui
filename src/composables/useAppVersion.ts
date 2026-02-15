@@ -2,43 +2,44 @@ import { ref, computed, onMounted } from 'vue'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
-const uiVersion = ref<string>(
-  typeof import.meta.env.VITE_APP_VERSION === 'string' && import.meta.env.VITE_APP_VERSION
-    ? import.meta.env.VITE_APP_VERSION
-    : '-'
-)
-const apiVersion = ref<string>('-')
+const uiVersion = ref<string>('')
+const apiVersion = ref<string>('')
 let healthFetched = false
 
-async function fetchApiVersion() {
+async function fetchVersions() {
   if (healthFetched || !API_BASE) return
   healthFetched = true
   try {
     const res = await fetch(`${API_BASE}/health`, { credentials: 'include' })
     if (res.ok) {
       const data = await res.json()
-      if (typeof data?.version === 'string') {
-        apiVersion.value = data.version
-      }
+      if (typeof data?.uiVersion === 'string') uiVersion.value = data.uiVersion
+      if (typeof data?.version === 'string') apiVersion.value = data.version
     }
   } catch {
-    apiVersion.value = '-'
+    uiVersion.value = ''
+    apiVersion.value = ''
   }
 }
 
-export function useAppVersion() {
-  onMounted(fetchApiVersion)
+function formatVersionText(): string {
+  const ui = uiVersion.value.trim()
+  const api = apiVersion.value.trim()
+  if (!ui && !api) return ''
+  if (ui && api) return `${ui} | API ${api}`
+  if (api) return `API ${api}`
+  return ui
+}
 
-  const versionText = computed(() => {
-    const ui = uiVersion.value
-    const api = apiVersion.value
-    return `${ui} | API ${api}`
-  })
+export function useAppVersion() {
+  onMounted(fetchVersions)
+
+  const versionText = computed(() => formatVersionText())
 
   return {
     uiVersion,
     apiVersion,
     versionText,
-    fetchApiVersion,
+    fetchVersions,
   }
 }
