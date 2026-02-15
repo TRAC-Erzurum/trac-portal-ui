@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Building2, ChevronDown, Play, Square, RotateCcw, TowerControl, Users, Radio, Clock, Settings, Download, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
+import { Building2, ChevronDown, Play, RotateCcw, Square, TowerControl, Users, XCircle, Radio, Clock, Settings, Download, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { MobileFab } from '@/components/shared'
@@ -73,6 +73,7 @@ const { t } = useI18n()
 const { formatDateTime, formatTime } = useDateFormat()
 
 const netStatus = computed(() => {
+  if (props.net.endedAt && !props.net.startedAt) return 'cancelled'
   if (props.net.endedAt) return 'completed'
   if (props.net.startedAt) return 'active'
   return 'pending'
@@ -81,6 +82,7 @@ const netStatus = computed(() => {
 const statusLabel = computed(() => {
   if (netStatus.value === 'pending') return t('netDetail.statusPending')
   if (netStatus.value === 'active') return t('netDetail.statusActive')
+  if (netStatus.value === 'cancelled') return t('netDetail.statusCancelled')
   return t('netDetail.statusCompleted')
 })
 
@@ -88,7 +90,7 @@ const statusLabel = computed(() => {
 const dateTimeRange = computed(() => {
   const net = props.net
   if (!net.startedAt && net.endedAt) {
-    return t('netDetail.endedAtOnly', { date: formatDateTime(net.endedAt) })
+    return t('netDetail.cancelledAt', { date: formatDateTime(net.endedAt) })
   }
   if (!net.startedAt) return ''
   const startStr = formatDateTime(net.startedAt)
@@ -114,21 +116,25 @@ const formatDuration = (net: Net) => {
 const mobileFabActions = computed<MobileFabAction[]>(() => {
   const actions: MobileFabAction[] = []
   
-  if (props.canManage) {
+  if (props.canManage && netStatus.value !== 'cancelled') {
     actions.push({ key: 'edit', label: t('common.edit'), icon: Settings as Component })
   }
   if (props.canManage && netStatus.value === 'pending') {
     actions.push({ key: 'startWith', label: t('netDetail.startWithOperator'), icon: Play as Component })
     actions.push({ key: 'startWithout', label: t('netDetail.startWithoutOperator'), icon: Play as Component })
-    actions.push({ key: 'end', label: t('netDetail.end'), icon: Square as Component })
+    actions.push({ key: 'end', label: t('netDetail.cancel'), icon: XCircle as Component })
   }
   if (props.canManage && netStatus.value === 'active') {
     actions.push({ key: 'end', label: t('netDetail.end'), icon: Square as Component })
   }
-  if (props.canManage && netStatus.value === 'completed' && props.isAdmin) {
-    actions.push({ key: 'restart', label: t('netDetail.restart'), icon: RotateCcw as Component })
+  if (props.canManage && (netStatus.value === 'completed' || netStatus.value === 'cancelled') && props.isAdmin) {
+    actions.push({
+      key: 'restart',
+      label: netStatus.value === 'cancelled' ? t('netDetail.undoCancellation') : t('netDetail.restart'),
+      icon: RotateCcw as Component,
+    })
   }
-  if (netStatus.value !== 'pending' && props.attendeesCount > 0) {
+  if (netStatus.value !== 'pending' && netStatus.value !== 'cancelled' && props.attendeesCount > 0) {
     actions.push({ key: 'exportCsv', label: 'CSV', icon: FileSpreadsheet as Component })
     actions.push({ key: 'exportPdf', label: 'PDF', icon: Printer as Component })
     actions.push({ key: 'exportPng', label: 'PNG', icon: Image as Component })
@@ -166,6 +172,7 @@ const handleFabAction = (key: string) => {
             <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
           </span>
           <span v-else-if="netStatus === 'pending'" class="relative flex h-3 w-3 shrink-0 rounded-full bg-blue-500" :title="t('netDetail.statusPending')" />
+          <span v-else-if="netStatus === 'cancelled'" class="relative flex h-3 w-3 shrink-0 rounded-full bg-amber-500" :title="t('netDetail.statusCancelled')" />
           <span v-else class="relative flex h-3 w-3 shrink-0 rounded-full bg-muted-foreground" :title="t('netDetail.statusCompleted')" />
           <h1 class="text-2xl font-bold min-w-0 truncate">{{ net.name }}</h1>
           <span class="text-lg text-muted-foreground shrink-0">· {{ statusLabel }}</span>
@@ -212,7 +219,7 @@ const handleFabAction = (key: string) => {
     </div>
     <div v-if="canManage || (netStatus !== 'pending' && attendeesCount > 0)" class="hidden lg:flex flex-col items-end gap-2 shrink-0 lg:ml-4">
       <Button
-        v-if="canManage"
+        v-if="canManage && netStatus !== 'cancelled'"
         variant="outline"
         size="sm"
         class="min-w-[10rem]"
@@ -221,7 +228,7 @@ const handleFabAction = (key: string) => {
         <Settings class="h-4 w-4 mr-2" />
         {{ t('common.edit') }}
       </Button>
-      <DropdownMenu v-if="canManage && netStatus === 'pending'">
+      <DropdownMenu v-if="canManage && netStatus === 'pending' && !net.endedAt">
         <DropdownMenuTrigger as-child>
           <Button variant="outline" size="sm" class="min-w-[10rem]">
             <Play class="h-4 w-4 mr-2" fill="currentColor" />
@@ -241,26 +248,27 @@ const handleFabAction = (key: string) => {
         </DropdownMenuContent>
       </DropdownMenu>
       <Button
-        v-if="canManage && (netStatus === 'pending' || netStatus === 'active')"
+        v-if="canManage && (netStatus === 'pending' || netStatus === 'active') && !net.endedAt"
         variant="outline"
         size="sm"
         class="min-w-[10rem]"
         @click="emit('end')"
       >
-        <Square class="h-4 w-4 mr-2" fill="currentColor" />
-        {{ t('netDetail.end') }}
+        <XCircle v-if="netStatus === 'pending'" class="h-4 w-4 mr-2" />
+        <Square v-else class="h-4 w-4 mr-2" fill="currentColor" />
+        {{ netStatus === 'pending' ? t('netDetail.cancel') : t('netDetail.end') }}
       </Button>
       <Button
-        v-if="canManage && netStatus === 'completed' && isAdmin"
+        v-if="canManage && (netStatus === 'completed' || netStatus === 'cancelled') && isAdmin"
         variant="outline"
         size="sm"
         class="min-w-[10rem]"
         @click="emit('restart')"
       >
         <RotateCcw class="h-4 w-4 mr-2" />
-        {{ t('netDetail.restart') }}
+        {{ netStatus === 'cancelled' ? t('netDetail.undoCancellation') : t('netDetail.restart') }}
       </Button>
-      <DropdownMenu v-if="netStatus !== 'pending' && attendeesCount > 0">
+      <DropdownMenu v-if="netStatus !== 'pending' && netStatus !== 'cancelled' && attendeesCount > 0">
         <DropdownMenuTrigger as-child>
           <Button variant="outline" size="sm" class="min-w-[10rem]" :disabled="isExporting">
             <Download class="h-4 w-4 mr-2" />

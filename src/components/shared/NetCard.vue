@@ -6,7 +6,7 @@ import { Building2, CheckCircle2, ChevronRight, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useDateFormat } from '@/composables'
 
-type NetStatus = 'active' | 'pending' | 'completed'
+type NetStatus = 'active' | 'pending' | 'completed' | 'cancelled'
 
 interface Props {
   id: string
@@ -54,6 +54,10 @@ const statusBadgeClasses = computed(() => {
       return 'bg-blue-500/20 text-blue-700 dark:text-blue-400'
     case 'completed':
       return 'bg-muted text-muted-foreground'
+    case 'cancelled':
+      return 'bg-amber-500/20 text-amber-700 dark:text-amber-400'
+    default:
+      return 'bg-muted text-muted-foreground'
   }
 })
 
@@ -65,6 +69,10 @@ const statusLabel = computed(() => {
       return t('nets.filterPending')
     case 'completed':
       return t('nets.filterCompleted')
+    case 'cancelled':
+      return t('nets.filterCancelled')
+    default:
+      return ''
   }
 })
 
@@ -101,6 +109,9 @@ const secondaryInfo = computed(() => {
         </span>
         <span v-else-if="status === 'pending'" class="relative flex" :class="compact ? 'h-2.5 w-2.5' : 'h-3 w-3'">
           <span class="relative inline-flex rounded-full bg-blue-500" :class="compact ? 'h-2.5 w-2.5' : 'h-3 w-3'"></span>
+        </span>
+        <span v-else-if="status === 'cancelled'" class="relative flex" :class="compact ? 'h-2.5 w-2.5' : 'h-3 w-3'">
+          <span class="relative inline-flex rounded-full bg-amber-500" :class="compact ? 'h-2.5 w-2.5' : 'h-3 w-3'"></span>
         </span>
         <template v-else>
           <span v-if="compact" class="relative flex h-2.5 w-2.5">
@@ -149,6 +160,9 @@ const secondaryInfo = computed(() => {
               · {{ formatDuration() }}
             </span>
             <span v-else-if="status === 'completed' && endedAt">
+              · {{ formatDateShort(endedAt) }}
+            </span>
+            <span v-else-if="status === 'cancelled' && endedAt">
               · {{ formatDateShort(endedAt) }}
             </span>
             <span v-else-if="status === 'pending' && !compact">

@@ -33,6 +33,15 @@ interface PendingNet {
   operatorCallSign: string
 }
 
+interface CancelledNet {
+  id: string
+  name: string
+  operatorCallSign: string
+  endedAt?: string
+  branch?: { id: string; name: string; isHeadquarters?: boolean }
+  branchCallSign?: { id: string; callSign: string }
+}
+
 interface PersonalStats {
   attendedNets: number
   managedNets: number
@@ -110,6 +119,7 @@ const hasMoreActivity = ref(true)
 const activeNets = ref<ActiveNet[]>([])
 const pendingNets = ref<PendingNet[]>([])
 const recentNets = ref<ActiveNet[]>([])
+const cancelledNets = ref<CancelledNet[]>([])
 
 const fetchActivity = async (append = false) => {
   if (append) isLoadingMoreActivity.value = true
@@ -133,14 +143,16 @@ const loadMoreActivity = () => fetchActivity(true)
 const fetchNets = async () => {
   try {
     isLoadingNets.value = true
-    const [active, pending, recent] = await Promise.all([
+    const [active, pending, recent, cancelled] = await Promise.all([
       api.get<ActiveNet[]>('/dashboard/nets/active'),
       api.get<PendingNet[]>('/dashboard/nets/pending'),
       api.get<ActiveNet[]>('/dashboard/nets/recent?limit=6'),
+      api.get<CancelledNet[]>('/dashboard/nets/cancelled?limit=6'),
     ])
     activeNets.value = active
     pendingNets.value = pending
     recentNets.value = recent
+    cancelledNets.value = cancelled
   } catch (e) {
     console.error('Failed to fetch nets:', e)
   } finally {
@@ -202,6 +214,7 @@ onMounted(() => {
           :active-nets="activeNets"
           :pending-nets="pendingNets"
           :recent-nets="recentNets"
+          :cancelled-nets="cancelledNets"
           :is-loading="isLoadingNets"
           :max-nets="6"
         />
@@ -225,6 +238,7 @@ onMounted(() => {
         :active-nets="activeNets"
         :pending-nets="pendingNets"
         :recent-nets="recentNets"
+        :cancelled-nets="cancelledNets"
         :is-loading="isLoadingNets"
         :max-nets="3"
       />
