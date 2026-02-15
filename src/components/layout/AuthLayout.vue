@@ -48,7 +48,7 @@ const { versionText } = useAppVersion()
         <div class="flex-1 flex items-center justify-center w-full">
           <slot />
         </div>
-        <p class="text-[10px] text-muted-foreground/70 pt-4 pb-2" aria-hidden="true">{{ versionText }}</p>
+        <p v-if="versionText" class="text-[10px] text-muted-foreground/70 pt-4 pb-2" aria-hidden="true">{{ versionText }}</p>
       </div>
     </div>
   </div>
