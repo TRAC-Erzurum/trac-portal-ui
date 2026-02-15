@@ -3,11 +3,10 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import LangToggle from './LangToggle.vue'
 import ThemeToggle from './ThemeToggle.vue'
-import { useAppVersion } from '@/composables'
+import { AppVersionBox } from '@/components/shared'
 
 const { t } = useI18n()
 const logoLoaded = ref(false)
-const { versionText } = useAppVersion()
 </script>
 
 <template>
@@ -48,7 +47,7 @@ const { versionText } = useAppVersion()
         <div class="flex-1 flex items-center justify-center w-full">
           <slot />
         </div>
-        <p v-if="versionText" class="text-[10px] text-muted-foreground/70 pt-4 pb-2" aria-hidden="true">{{ versionText }}</p>
+        <AppVersionBox class="pt-4 pb-2" />
       </div>
     </div>
   </div>

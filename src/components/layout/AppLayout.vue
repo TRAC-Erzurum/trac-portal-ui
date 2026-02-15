@@ -6,9 +6,12 @@ import { ClipboardList } from 'lucide-vue-next'
 import Breadcrumb from './Breadcrumb.vue'
 import BottomNav from './BottomNav.vue'
 import HeaderBranchDropdown from './HeaderBranchDropdown.vue'
+import LangToggle from './LangToggle.vue'
 import PendingApprovalBanner from './PendingApprovalBanner.vue'
 import Sidebar from './Sidebar.vue'
+import ThemeToggle from './ThemeToggle.vue'
 import UserMenu from './UserMenu.vue'
+import { AppVersionBox } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
 import { api } from '@/lib/api'
@@ -108,6 +111,18 @@ router.afterEach(() => {
         <Breadcrumb :items="breadcrumbItems" :current-label="breadcrumbLabel" />
         
         <slot />
+
+        <footer class="border-t border-border/20 mt-6 pt-4 flex flex-col gap-1.5">
+          <div class="flex justify-between items-center text-xs text-muted-foreground/80">
+            <p>© {{ new Date().getFullYear() }} {{ t('brand.erzurumBranch') }}</p>
+            <div class="flex items-center gap-1">
+              <ThemeToggle />
+              <LangToggle />
+              <span class="ml-1.5">73</span>
+            </div>
+          </div>
+          <AppVersionBox />
+        </footer>
       </div>
     </main>
 

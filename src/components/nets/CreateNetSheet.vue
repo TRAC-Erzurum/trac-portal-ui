@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Search, X, Check, AlertTriangle, Plus } from 'lucide-vue-next'
+import { Search, X, Check, AlertTriangle } from 'lucide-vue-next'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Checkbox } from '@/components/ui/checkbox'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
 import { debounce } from '@/lib/utils'
@@ -71,18 +70,31 @@ const isLoadingCallSigns = ref(false)
 const infrastructures = ref<Infrastructure[]>([])
 const selectedInfrastructureIds = ref<string[]>([])
 const isLoadingInfrastructure = ref(false)
-const simplexFrequencies = ref<string[]>([])
+
+interface SimplexRow {
+  checked: boolean
+  value: string
+}
+const simplexRows = ref<SimplexRow[]>([{ checked: false, value: '' }])
+
+const hasAtLeastOneChannelSelected = computed(
+  () =>
+    selectedInfrastructureIds.value.length > 0 ||
+    simplexRows.value.some(row => row.checked && row.value.trim())
+)
 
 const isValid = computed(() => {
-  const hasInfrastructure = selectedInfrastructureIds.value.length > 0
-  const hasSimplex = simplexFrequencies.value.some(freq => freq.trim())
-  const hasAtLeastOne = hasInfrastructure || hasSimplex
-  
-  return name.value.trim() && 
-         selectedOperator.value && 
-         selectedBranchId.value &&
-         selectedCallSignId.value &&
-         hasAtLeastOne
+  const allCheckedRowsFilled = simplexRows.value
+    .filter(row => row.checked)
+    .every(row => row.value.trim())
+  return (
+    name.value.trim() &&
+    selectedOperator.value &&
+    selectedBranchId.value &&
+    selectedCallSignId.value &&
+    hasAtLeastOneChannelSelected.value &&
+    allCheckedRowsFilled
+  )
 })
 
 const generateDefaultName = () => {
@@ -154,7 +166,7 @@ const loadInfrastructure = async (branchId: string) => {
 watch(selectedBranchId, async (branchId) => {
   selectedCallSignId.value = ''
   selectedInfrastructureIds.value = []
-  simplexFrequencies.value = []
+  simplexRows.value = [{ checked: false, value: '' }]
   if (branchId) {
     await Promise.all([
       loadBranchCallSigns(branchId),
@@ -216,28 +228,72 @@ const clearOperator = () => {
   operatorSuggestions.value = []
 }
 
-const newSimplexFrequency = ref('')
+const toggleInfra = (infraId: string, e: Event) => {
+  const checked = (e.target as HTMLInputElement).checked
+  if (checked) {
+    if (!selectedInfrastructureIds.value.includes(infraId)) {
+      selectedInfrastructureIds.value = [...selectedInfrastructureIds.value, infraId]
+    }
+  } else {
+    selectedInfrastructureIds.value = selectedInfrastructureIds.value.filter(id => id !== infraId)
+  }
+}
 
-const addSimplexFrequency = () => {
-  const freq = newSimplexFrequency.value.trim()
-  if (!freq) return
-  if (simplexFrequencies.value.includes(freq)) {
-    toast.error(t('nets.duplicateFrequency'))
+const simplexInputRefs = ref<(HTMLInputElement | null)[]>([])
+
+const setSimplexRowRef = (index: number, el: unknown) => {
+  if (!el) {
+    simplexInputRefs.value[index] = null
     return
   }
-  simplexFrequencies.value.push(freq)
-  newSimplexFrequency.value = ''
+  const root = el as HTMLElement
+  const textInput = root.querySelector?.<HTMLInputElement>('input[type="text"]')
+  simplexInputRefs.value[index] = textInput ?? null
 }
 
-const handleSimplexKeydown = (e: KeyboardEvent) => {
-  if (e.key === 'Enter') {
-    e.preventDefault()
-    addSimplexFrequency()
+const setSimplexRowChecked = (index: number, checked: boolean) => {
+  const row = simplexRows.value[index]
+  if (!row) return
+  simplexRows.value[index] = { checked, value: row.value }
+  if (checked) {
+    nextTick(() => simplexInputRefs.value[index]?.focus())
   }
 }
 
-const removeSimplexFrequency = (index: number) => {
-  simplexFrequencies.value.splice(index, 1)
+const setSimplexRowValue = (index: number, value: string) => {
+  const row = simplexRows.value[index]
+  if (!row) return
+  simplexRows.value[index] = { checked: row.checked, value }
+}
+
+const ensureOneEmptySimplexRow = () => {
+  const hasEmpty = simplexRows.value.some(row => !row.value.trim())
+  if (!hasEmpty) {
+    simplexRows.value.push({ checked: false, value: '' })
+  }
+}
+
+const handleSimplexBlur = (index: number) => {
+  const row = simplexRows.value[index]
+  if (!row) return
+  if (!row.value.trim()) {
+    simplexRows.value.splice(index, 1)
+    if (simplexRows.value.length === 0) {
+      simplexRows.value.push({ checked: false, value: '' })
+    } else {
+      ensureOneEmptySimplexRow()
+    }
+    nextTick(() => { simplexInputRefs.value.length = 0 })
+  } else {
+    ensureOneEmptySimplexRow()
+  }
+}
+
+const clearSimplexRow = (index: number) => {
+  const row = simplexRows.value[index]
+  if (!row) return
+  simplexRows.value[index] = { ...row, value: '' }
+  simplexInputRefs.value[index]?.focus()
 }
 
 watch(() => props.open, async (isOpen) => {
@@ -246,6 +302,7 @@ watch(() => props.open, async (isOpen) => {
     selectedOperator.value = null
     operatorSearch.value = ''
     operatorSuggestions.value = []
+    simplexRows.value = [{ checked: false, value: '' }]
     
     await loadAvailableBranches()
     
@@ -271,27 +328,32 @@ async function handleSubmit() {
   if (!isValid.value || !selectedOperator.value || !selectedBranchId.value || !selectedCallSignId.value) return
 
   const hasInfrastructure = selectedInfrastructureIds.value.length > 0
-  const hasSimplex = simplexFrequencies.value.some(freq => freq.trim())
+  const simplexFreqs = simplexRows.value
+    .filter(row => row.checked && row.value.trim())
+    .map(row => row.value.trim())
+  const hasSimplex = simplexFreqs.length > 0
   if (!hasInfrastructure && !hasSimplex) {
     toast.error(t('nets.atLeastOneInfrastructureOrSimplex'))
+    return
+  }
+  if (simplexFreqs.length !== new Set(simplexFreqs).size) {
+    toast.error(t('nets.duplicateFrequency'))
     return
   }
 
   isLoading.value = true
   try {
     const communicationChannels: Array<{ communicationChannelId?: string; isSimplexAdHoc?: boolean; simplexFrequency?: string }> = []
-    
+
     selectedInfrastructureIds.value.forEach(infraId => {
       communicationChannels.push({ communicationChannelId: infraId })
     })
-    
-    simplexFrequencies.value.forEach(freq => {
-      if (freq.trim()) {
-        communicationChannels.push({
-          isSimplexAdHoc: true,
-          simplexFrequency: freq.trim()
-        })
-      }
+
+    simplexFreqs.forEach(freq => {
+      communicationChannels.push({
+        isSimplexAdHoc: true,
+        simplexFrequency: freq
+      })
     })
 
     await api.post('/net', {
@@ -430,84 +492,70 @@ onMounted(() => {
         <Separator />
 
         <div class="space-y-3">
-          <Label>{{ t('nets.infrastructure') }}</Label>
+          <Label class="text-sm font-medium text-muted-foreground">{{ t('nets.communicationChannelSection') }}</Label>
           <div v-if="isLoadingInfrastructure" class="text-sm text-muted-foreground py-2">
             {{ t('common.loading') }}
           </div>
-          <div v-else-if="infrastructures.length === 0 && selectedBranchId" class="text-sm text-muted-foreground py-2">
-            {{ t('nets.noInfrastructureAvailable') }}
-          </div>
-          <div v-else-if="infrastructures.length > 0" class="border border-border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
-            <label
-              v-for="infra in infrastructures"
-              :key="infra.id"
-              class="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5 -mx-2 -my-1.5"
-            >
-              <Checkbox
-                :checked="selectedInfrastructureIds.includes(infra.id)"
-                @update:checked="(checked: boolean) => {
-                  if (checked) {
-                    if (!selectedInfrastructureIds.includes(infra.id)) {
-                      selectedInfrastructureIds.push(infra.id)
-                    }
-                  } else {
-                    const index = selectedInfrastructureIds.indexOf(infra.id)
-                    if (index > -1) {
-                      selectedInfrastructureIds.splice(index, 1)
-                    }
-                  }
-                }"
-              />
-              <span class="font-medium text-sm">{{ infra.name }}</span>
-              <span class="text-xs text-muted-foreground ml-auto">{{ t(`communicationChannels.types.${infra.type}`) }}</span>
-            </label>
-          </div>
-        </div>
-
-        <div class="space-y-3">
-          <Label>{{ t('nets.simplexFrequencies') }}</Label>
-
-          <div v-if="simplexFrequencies.length > 0" class="flex flex-wrap gap-2">
-            <span
-              v-for="(freq, idx) in simplexFrequencies"
-              :key="idx"
-              class="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1 text-sm font-medium"
-            >
-              {{ freq }} MHz
-              <button
-                type="button"
-                class="rounded-full p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                :aria-label="t('common.delete')"
-                @click="removeSimplexFrequency(idx)"
+          <template v-else>
+            <p v-if="infrastructures.length === 0 && selectedBranchId" class="text-sm text-muted-foreground py-1 -mx-2">
+              {{ t('nets.noInfrastructureAvailable') }}
+            </p>
+            <div v-else-if="infrastructures.length > 0" class="space-y-2">
+              <label
+                v-for="infra in infrastructures"
+                :key="infra.id"
+                class="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5 -mx-2 -my-1.5"
               >
-                <X class="h-3 w-3" />
-              </button>
-            </span>
-          </div>
-
-          <div class="flex gap-2">
-            <div class="relative flex-1">
-              <Input
-                v-model="newSimplexFrequency"
-                :placeholder="t('nets.simplexFrequencyPlaceholder')"
-                @keydown="handleSimplexKeydown"
-                class="pr-12"
-              />
-              <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">MHz</span>
+                <input
+                  type="checkbox"
+                  :checked="selectedInfrastructureIds.includes(infra.id)"
+                  class="h-4 w-4 shrink-0 rounded border border-input bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  @change="toggleInfra(infra.id, $event)"
+                />
+                <span class="font-medium text-sm">{{ infra.name }}</span>
+                <span class="text-xs text-muted-foreground ml-auto">{{ t(`communicationChannels.types.${infra.type}`) }}</span>
+              </label>
             </div>
-            <Button @click="addSimplexFrequency" size="sm" variant="outline" type="button" :disabled="!newSimplexFrequency.trim()">
-              <Plus class="h-4 w-4 mr-1" />
-              {{ t('common.add') }}
-            </Button>
-          </div>
-
-          <p class="text-xs text-muted-foreground">
-            {{ simplexFrequencies.length === 0 ? t('nets.noSimplexAdded') : t('nets.simplexFrequencyHint') }}
+            <div class="space-y-2">
+              <div
+                v-for="(row, i) in simplexRows"
+                :key="i"
+                :ref="(el) => setSimplexRowRef(i, el)"
+                class="flex items-center gap-2 hover:bg-muted/50 rounded px-2 py-1 -mx-2 -my-1"
+              >
+              <input
+                type="checkbox"
+                :checked="row.checked"
+                class="h-4 w-4 shrink-0 rounded border border-input bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                @change="(e: Event) => setSimplexRowChecked(i, (e.target as HTMLInputElement).checked)"
+              />
+              <div class="relative z-[1] flex-1 min-w-0 min-w-[6rem] cursor-text">
+                <input
+                  type="text"
+                  :value="row.value"
+                  class="border-input h-8 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 pr-8 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
+                  :class="{ 'border-destructive': row.checked && !row.value.trim() }"
+                  @input="(e: Event) => setSimplexRowValue(i, (e.target as HTMLInputElement).value)"
+                  @focus="setSimplexRowChecked(i, true)"
+                  @blur="handleSimplexBlur(i)"
+                />
+                <button
+                  v-if="row.value"
+                  type="button"
+                  class="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  :aria-label="t('common.clear')"
+                  @click.stop="clearSimplexRow(i)"
+                >
+                  <X class="h-3.5 w-3.5" />
+                </button>
+              </div>
+              <span class="text-xs text-muted-foreground ml-auto shrink-0">{{ t('nets.simplexLabel') }}</span>
+            </div>
+            </div>
+          </template>
+          <p v-if="!hasAtLeastOneChannelSelected" class="text-xs text-destructive">
+            {{ t('nets.atLeastOneInfrastructureOrSimplexRequired') }}
           </p>
-        </div>
-
-        <div v-if="selectedInfrastructureIds.length === 0 && !simplexFrequencies.some(freq => freq.trim())" class="text-xs text-amber-600 dark:text-amber-500">
-          {{ t('nets.atLeastOneInfrastructureOrSimplexRequired') }}
         </div>
 
         <div class="flex justify-end gap-3 pt-4">

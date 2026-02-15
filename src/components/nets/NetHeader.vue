@@ -73,9 +73,9 @@ const { t } = useI18n()
 const { formatDateTime, formatTime } = useDateFormat()
 
 const netStatus = computed(() => {
-  if (!props.net.startedAt) return 'pending'
-  if (!props.net.endedAt) return 'active'
-  return 'completed'
+  if (props.net.endedAt) return 'completed'
+  if (props.net.startedAt) return 'active'
+  return 'pending'
 })
 
 const statusLabel = computed(() => {
@@ -87,6 +87,9 @@ const statusLabel = computed(() => {
 
 const dateTimeRange = computed(() => {
   const net = props.net
+  if (!net.startedAt && net.endedAt) {
+    return t('netDetail.endedAtOnly', { date: formatDateTime(net.endedAt) })
+  }
   if (!net.startedAt) return ''
   const startStr = formatDateTime(net.startedAt)
   if (!net.endedAt) return startStr
@@ -111,10 +114,13 @@ const formatDuration = (net: Net) => {
 const mobileFabActions = computed<MobileFabAction[]>(() => {
   const actions: MobileFabAction[] = []
   
-  if (props.canManage && netStatus.value === 'pending') {
+  if (props.canManage) {
     actions.push({ key: 'edit', label: t('common.edit'), icon: Settings as Component })
+  }
+  if (props.canManage && netStatus.value === 'pending') {
     actions.push({ key: 'startWith', label: t('netDetail.startWithOperator'), icon: Play as Component })
     actions.push({ key: 'startWithout', label: t('netDetail.startWithoutOperator'), icon: Play as Component })
+    actions.push({ key: 'end', label: t('netDetail.end'), icon: Square as Component })
   }
   if (props.canManage && netStatus.value === 'active') {
     actions.push({ key: 'end', label: t('netDetail.end'), icon: Square as Component })
@@ -206,7 +212,7 @@ const handleFabAction = (key: string) => {
     </div>
     <div v-if="canManage || (netStatus !== 'pending' && attendeesCount > 0)" class="hidden lg:flex flex-col items-end gap-2 shrink-0 lg:ml-4">
       <Button
-        v-if="canManage && netStatus === 'pending'"
+        v-if="canManage"
         variant="outline"
         size="sm"
         class="min-w-[10rem]"
@@ -235,7 +241,7 @@ const handleFabAction = (key: string) => {
         </DropdownMenuContent>
       </DropdownMenu>
       <Button
-        v-if="canManage && netStatus === 'active'"
+        v-if="canManage && (netStatus === 'pending' || netStatus === 'active')"
         variant="outline"
         size="sm"
         class="min-w-[10rem]"

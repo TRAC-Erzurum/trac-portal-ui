@@ -1,3 +1,4 @@
+export { default as AppVersionBox } from './AppVersionBox.vue'
 export { default as NetCard } from './NetCard.vue'
 export { default as NetCardSkeleton } from './NetCardSkeleton.vue'
 export { default as OperatorCard } from './OperatorCard.vue'
