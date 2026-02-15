@@ -171,15 +171,15 @@ const { t } = useI18n()
           </div>
         </div>
         
-        <div class="border-t border-border/40 mt-8 pt-6 flex justify-between items-center text-sm text-muted-foreground">
-          <p>© {{ new Date().getFullYear() }} {{ t('brand.erzurumBranch') }}</p>
-          <div class="flex items-center gap-1">
+        <div class="border-t border-border/40 mt-8 pt-6 flex justify-between items-center text-sm text-muted-foreground gap-2 flex-wrap">
+          <p class="shrink-0">© {{ new Date().getFullYear() }} {{ t('brand.erzurumBranch') }}</p>
+          <div class="flex items-center gap-2 flex-shrink-0">
             <ThemeToggle />
-            <span>73!</span>
             <LangToggle />
+            <AppVersionBox />
+            <span>73!</span>
           </div>
         </div>
-        <AppVersionBox class="mt-2" />
       </div>
     </footer>
   </div>

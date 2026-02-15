@@ -112,16 +112,16 @@ router.afterEach(() => {
         
         <slot />
 
-        <footer class="border-t border-border/20 mt-6 pt-4 flex flex-col gap-1.5">
-          <div class="flex justify-between items-center text-xs text-muted-foreground/80">
-            <p>© {{ new Date().getFullYear() }} {{ t('brand.erzurumBranch') }}</p>
-            <div class="flex items-center gap-1">
+        <footer class="border-t border-border/20 mt-6 pt-4">
+          <div class="flex justify-between items-center text-xs text-muted-foreground/80 gap-2 flex-wrap">
+            <p class="shrink-0">© {{ new Date().getFullYear() }} {{ t('brand.erzurumBranch') }}</p>
+            <div class="flex items-center gap-2 flex-shrink-0">
               <ThemeToggle />
-              <span>73!</span>
               <LangToggle />
+              <AppVersionBox />
+              <span>73!</span>
             </div>
           </div>
-          <AppVersionBox />
         </footer>
       </div>
     </main>

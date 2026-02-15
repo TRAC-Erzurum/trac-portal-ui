@@ -2,7 +2,12 @@ import { ref, computed, onMounted } from 'vue'
 
 const API_BASE = import.meta.env.VITE_API_URL || ''
 
-const uiVersion = ref<string>('')
+const buildTimeUiVersion =
+  typeof import.meta.env.VITE_APP_VERSION === 'string' && import.meta.env.VITE_APP_VERSION.trim()
+    ? import.meta.env.VITE_APP_VERSION.trim()
+    : ''
+
+const uiVersion = ref<string>(buildTimeUiVersion)
 const apiVersion = ref<string>('')
 let healthFetched = false
 
@@ -13,11 +18,13 @@ async function fetchVersions() {
     const res = await fetch(`${API_BASE}/health`, { credentials: 'include' })
     if (res.ok) {
       const data = await res.json()
-      if (typeof data?.uiVersion === 'string') uiVersion.value = data.uiVersion
+      // Prefer API's uiVersion (set at deploy from UI_TAG); fallback to build-time only when API doesn't send it
+      const fromApi = typeof data?.uiVersion === 'string' && data.uiVersion.trim()
+      uiVersion.value = fromApi ? data.uiVersion.trim() : buildTimeUiVersion
       if (typeof data?.version === 'string') apiVersion.value = data.version
     }
   } catch {
-    uiVersion.value = ''
+    uiVersion.value = buildTimeUiVersion
     apiVersion.value = ''
   }
 }
