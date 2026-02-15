@@ -117,8 +117,8 @@ router.afterEach(() => {
             <p>© {{ new Date().getFullYear() }} {{ t('brand.erzurumBranch') }}</p>
             <div class="flex items-center gap-1">
               <ThemeToggle />
+              <span>73!</span>
               <LangToggle />
-              <span class="ml-1.5">73</span>
             </div>
           </div>
           <AppVersionBox />
