@@ -13,13 +13,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { UserAvatar } from '@/components/ui/user-avatar'
-import { useAppVersion } from '@/composables'
-import LangToggle from '@/components/layout/LangToggle.vue'
-import ThemeToggle from '@/components/layout/ThemeToggle.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const { t } = useI18n()
-const { versionText } = useAppVersion()
 const router = useRouter()
 const authStore = useAuthStore()
 
@@ -74,25 +70,10 @@ async function handleLogout() {
         {{ t('nav.communicationChannels') }}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
-      <div class="grid grid-cols-2 gap-3 px-3 py-3" @click.stop>
-        <div class="flex flex-col items-center gap-2">
-          <span class="text-xs text-muted-foreground">{{ t('settings.theme') }}</span>
-          <ThemeToggle />
-        </div>
-        <div class="flex flex-col items-center gap-2">
-          <span class="text-xs text-muted-foreground">{{ t('settings.language') }}</span>
-          <LangToggle />
-        </div>
-      </div>
-      <DropdownMenuSeparator />
       <DropdownMenuItem @click="handleLogout" class="cursor-pointer text-destructive focus:text-destructive">
         <LogOut class="mr-2 h-4 w-4" />
         {{ t('auth.logout') }}
       </DropdownMenuItem>
-      <template v-if="versionText">
-        <DropdownMenuSeparator />
-        <p class="px-3 py-2 text-[10px] text-muted-foreground" aria-hidden="true">{{ versionText }}</p>
-      </template>
     </DropdownMenuContent>
   </DropdownMenu>
 </template>

@@ -97,9 +97,9 @@ const exportAttendees = ref<Attendee[]>([])
 const isExporting = ref(false)
 
 const netStatus = computed(() => {
-  if (!net.value?.startedAt) return 'pending'
-  if (!net.value?.endedAt) return 'active'
-  return 'completed'
+  if (net.value?.endedAt) return 'completed'
+  if (net.value?.startedAt) return 'active'
+  return 'pending'
 })
 
 const isCompleted = computed(() => netStatus.value === 'completed')

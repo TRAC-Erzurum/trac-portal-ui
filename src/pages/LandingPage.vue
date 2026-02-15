@@ -3,10 +3,9 @@ import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
 import LangToggle from '@/components/layout/LangToggle.vue'
 import ThemeToggle from '@/components/layout/ThemeToggle.vue'
-import { useAppVersion } from '@/composables'
+import { AppVersionBox } from '@/components/shared'
 
 const { t } = useI18n()
-const { versionText } = useAppVersion()
 </script>
 
 <template>
@@ -180,7 +179,7 @@ const { versionText } = useAppVersion()
             <span class="ml-2">73</span>
           </div>
         </div>
-        <p v-if="versionText" class="mt-2 text-[10px] text-muted-foreground/70" aria-hidden="true">{{ versionText }}</p>
+        <AppVersionBox class="mt-2" />
       </div>
     </footer>
   </div>
