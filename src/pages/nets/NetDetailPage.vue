@@ -97,6 +97,7 @@ const exportAttendees = ref<Attendee[]>([])
 const isExporting = ref(false)
 
 const netStatus = computed(() => {
+  if (net.value?.endedAt && !net.value?.startedAt) return 'cancelled'
   if (net.value?.endedAt) return 'completed'
   if (net.value?.startedAt) return 'active'
   return 'pending'
@@ -689,7 +690,7 @@ const fetchComparePrevious = async () => {
         </div>
       </section>
 
-      <div v-if="netStatus !== 'pending'" class="border-t border-border/50 pt-6">
+      <div v-if="netStatus !== 'pending' && netStatus !== 'cancelled'" class="border-t border-border/50 pt-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold flex items-center gap-2">
             <Users class="h-5 w-5" />

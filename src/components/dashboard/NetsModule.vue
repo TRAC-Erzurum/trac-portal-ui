@@ -37,13 +37,30 @@ interface PendingNet {
   }
 }
 
+interface CancelledNet {
+  id: string
+  name: string
+  operatorCallSign: string
+  endedAt?: string
+  branch?: {
+    id: string
+    name: string
+    isHeadquarters?: boolean
+  }
+  branchCallSign?: {
+    id: string
+    callSign: string
+  }
+}
+
 interface DisplayNet {
   id: string
   name: string
   operatorCallSign: string
-  status: 'active' | 'pending' | 'completed'
+  status: 'active' | 'pending' | 'completed' | 'cancelled'
   attendeeCount?: number
   durationMinutes?: number
+  endedAt?: string
   branch?: {
     id: string
     name: string
@@ -59,11 +76,13 @@ interface Props {
   activeNets: ActiveNet[]
   pendingNets: PendingNet[]
   recentNets: ActiveNet[]
+  cancelledNets: CancelledNet[]
   isLoading?: boolean
   maxNets?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  cancelledNets: () => [],
   isLoading: false,
   maxNets: 3,
 })
@@ -113,7 +132,20 @@ const displayNets = computed<DisplayNet[]>(() => {
       branchCallSign: net.branchCallSign,
     })
   }
-  
+
+  for (const net of props.cancelledNets) {
+    if (result.length >= max) break
+    result.push({
+      id: net.id,
+      name: net.name,
+      operatorCallSign: net.operatorCallSign,
+      status: 'cancelled',
+      endedAt: net.endedAt,
+      branch: net.branch,
+      branchCallSign: net.branchCallSign,
+    })
+  }
+
   return result
 })
 
@@ -141,6 +173,7 @@ const displayNets = computed<DisplayNet[]>(() => {
           :status="net.status"
           :attendee-count="net.attendeeCount"
           :duration-minutes="net.durationMinutes"
+          :ended-at="net.endedAt"
           :branch-name="net.branch?.name"
           :branch-call-sign="net.branchCallSign?.callSign"
           :branch-is-headquarters="net.branch?.isHeadquarters"

@@ -48,7 +48,7 @@ interface Branch {
   name: string
 }
 
-type NetStatus = 'all' | 'active' | 'pending' | 'completed'
+type NetStatus = 'all' | 'active' | 'pending' | 'completed' | 'cancelled'
 type DateFilter = 'all' | 'week' | 'month' | '3months'
 type BranchFilterValue = 'selected' | 'my-branches' | 'all'
 
@@ -174,7 +174,8 @@ const loadMore = () => {
   fetchNets(true)
 }
 
-const getNetStatus = (net: Net): 'active' | 'pending' | 'completed' => {
+const getNetStatus = (net: Net): 'active' | 'pending' | 'completed' | 'cancelled' => {
+  if (net.endedAt && !net.startedAt) return 'cancelled'
   if (net.endedAt) return 'completed'
   if (net.startedAt) return 'active'
   return 'pending'
@@ -202,7 +203,7 @@ function syncFiltersToUrl() {
 function applyFiltersFromUrl() {
   const q = route.query
   if (typeof q.search === 'string') search.value = q.search
-  if (q.status === 'active' || q.status === 'pending' || q.status === 'completed') statusFilter.value = q.status
+  if (q.status === 'active' || q.status === 'pending' || q.status === 'completed' || q.status === 'cancelled') statusFilter.value = q.status
   if (q.dateFilter === 'week' || q.dateFilter === 'month' || q.dateFilter === '3months') dateFilter.value = q.dateFilter
   if (q.branchFilter === 'selected' || q.branchFilter === 'my-branches' || q.branchFilter === 'all') branchFilter.value = q.branchFilter
 }
@@ -251,6 +252,7 @@ onMounted(async () => {
                 <SelectItem value="active">{{ t('nets.filterActive') }}</SelectItem>
                 <SelectItem value="pending">{{ t('nets.filterPending') }}</SelectItem>
                 <SelectItem value="completed">{{ t('nets.filterCompleted') }}</SelectItem>
+                <SelectItem value="cancelled">{{ t('nets.filterCancelled') }}</SelectItem>
               </SelectContent>
             </Select>
             <Select v-model="dateFilter">

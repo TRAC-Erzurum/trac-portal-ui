@@ -692,10 +692,21 @@ const handleNetCreated = async () => {
   await fetchNets()
 }
 
-const getNetStatus = (net: any): 'active' | 'pending' | 'completed' => {
+const getNetStatus = (net: any): 'active' | 'pending' | 'completed' | 'cancelled' => {
+  if (net.endedAt && !net.startedAt) return 'cancelled'
   if (net.endedAt) return 'completed'
   if (net.startedAt) return 'active'
   return 'pending'
+}
+
+const netStatusOrder = (status: string) => {
+  switch (status) {
+    case 'active': return 0
+    case 'pending': return 1
+    case 'completed': return 2
+    case 'cancelled': return 3
+    default: return 4
+  }
 }
 
 const filteredNets = computed(() => {
@@ -713,6 +724,14 @@ const filteredNets = computed(() => {
   if (statusFilter !== 'all') {
     list = list.filter((net) => getNetStatus(net) === statusFilter)
   }
+  list = [...list].sort((a, b) => {
+    const orderA = netStatusOrder(getNetStatus(a))
+    const orderB = netStatusOrder(getNetStatus(b))
+    if (orderA !== orderB) return orderA - orderB
+    const dateA = a.endedAt || a.startedAt || a.createdAt || ''
+    const dateB = b.endedAt || b.startedAt || b.createdAt || ''
+    return dateB.localeCompare(dateA)
+  })
   return list
 })
 
@@ -1085,6 +1104,7 @@ onMounted(() => {
                 <SelectItem value="active">{{ t('nets.filterActive') }}</SelectItem>
                 <SelectItem value="pending">{{ t('nets.filterPending') }}</SelectItem>
                 <SelectItem value="completed">{{ t('nets.filterCompleted') }}</SelectItem>
+                <SelectItem value="cancelled">{{ t('nets.filterCancelled') }}</SelectItem>
               </SelectContent>
             </Select>
           </div>

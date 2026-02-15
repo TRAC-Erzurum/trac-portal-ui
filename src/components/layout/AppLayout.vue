@@ -60,7 +60,7 @@ router.afterEach(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-background relative overflow-hidden">
+  <div class="min-h-screen flex flex-col bg-background relative overflow-hidden">
     <img
       v-show="logoLoaded"
       src="/logo-s.svg"
@@ -77,12 +77,12 @@ router.afterEach(() => {
     
     <main
       :class="[
-        'relative transition-all duration-300 pb-16 lg:pb-0',
+        'relative flex flex-col flex-1 min-h-0 transition-all duration-300 pb-16 lg:pb-0',
         sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
       ]"
     >
-      <div class="p-6 lg:p-8">
-        <header class="flex items-center justify-between mb-3 lg:mb-4 gap-4">
+      <div class="p-6 lg:p-8 flex flex-col flex-1 min-h-0">
+        <header class="flex items-center justify-between mb-3 lg:mb-4 gap-4 flex-shrink-0">
           <div class="flex items-center gap-3 min-w-0 flex-1">
             <div class="lg:hidden">
               <HeaderBranchDropdown />
@@ -108,11 +108,13 @@ router.afterEach(() => {
           </div>
         </header>
 
-        <Breadcrumb :items="breadcrumbItems" :current-label="breadcrumbLabel" />
+        <Breadcrumb :items="breadcrumbItems" :current-label="breadcrumbLabel" class="flex-shrink-0" />
         
-        <slot />
+        <div class="flex-1">
+          <slot />
+        </div>
 
-        <footer class="border-t border-border/20 mt-6 pt-4">
+        <footer class="border-t border-border/20 mt-6 pt-4 flex-shrink-0">
           <div class="flex justify-between items-center text-xs text-muted-foreground/80 gap-2 flex-wrap">
             <p class="shrink-0">© {{ new Date().getFullYear() }} {{ t('brand.erzurumBranch') }}</p>
             <div class="flex items-center gap-2 flex-shrink-0">
