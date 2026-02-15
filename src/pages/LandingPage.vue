@@ -180,7 +180,7 @@ const { versionText } = useAppVersion()
             <span class="ml-2">73</span>
           </div>
         </div>
-        <p class="mt-2 text-[10px] text-muted-foreground/70" aria-hidden="true">{{ versionText }}</p>
+        <p v-if="versionText" class="mt-2 text-[10px] text-muted-foreground/70" aria-hidden="true">{{ versionText }}</p>
       </div>
     </footer>
   </div>
