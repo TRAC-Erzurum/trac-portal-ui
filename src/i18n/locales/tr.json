@@ -803,6 +803,8 @@
       "hf": "HF Band"
     },
     "repeaterMode": "Röle Modu",
+    "brand": "Marka",
+    "brandPlaceholder": "örn. Motorola, Icom",
     "repeaterModes": {
       "analog": "Analog",
       "digital": "Dijital (DMR)",
@@ -817,6 +819,17 @@
     "talkgroups": "Konuşma Grupları",
     "talkgroupName": "Ad",
     "noTalkgroups": "Henüz konuşma grubu eklenmemiş",
-    "static": "Statik"
+    "static": "Statik",
+    "channelLabelSimplex": "Simpleks {frequency}",
+    "channelLabelEcholink": "Echolink {display}",
+    "channelLabelEcholinkOnly": "Echolink",
+    "channelLabelVhfUhf": "VHF/UHF",
+    "channelLabelRepeater": "{frequency} {band} Röle",
+    "channelLabelRepeaterFreqOnly": "{frequency} Röle",
+    "channelLabelRepeaterBandOnly": "{band} Röle",
+    "bandVhf": "VHF",
+    "bandUhf": "UHF",
+    "band6m": "6m",
+    "band23cm": "23cm"
   }
 }

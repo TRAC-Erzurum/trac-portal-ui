@@ -802,6 +802,8 @@
       "hf": "HF Band"
     },
     "repeaterMode": "Repeater Mode",
+    "brand": "Brand",
+    "brandPlaceholder": "e.g. Motorola, Icom",
     "repeaterModes": {
       "analog": "Analog",
       "digital": "Digital (DMR)",
@@ -816,6 +818,17 @@
     "talkgroups": "Talkgroups",
     "talkgroupName": "Name",
     "noTalkgroups": "No talkgroups added yet",
-    "static": "Static"
+    "static": "Static",
+    "channelLabelSimplex": "Simplex {frequency}",
+    "channelLabelEcholink": "Echolink {display}",
+    "channelLabelEcholinkOnly": "Echolink",
+    "channelLabelVhfUhf": "VHF/UHF",
+    "channelLabelRepeater": "{frequency} {band} Repeater",
+    "channelLabelRepeaterFreqOnly": "{frequency} Repeater",
+    "channelLabelRepeaterBandOnly": "{band} Repeater",
+    "bandVhf": "VHF",
+    "bandUhf": "UHF",
+    "band6m": "6m",
+    "band23cm": "23cm"
   }
 }

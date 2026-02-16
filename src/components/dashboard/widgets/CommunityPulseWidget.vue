@@ -5,7 +5,7 @@ import { TrendingDown, TrendingUp } from 'lucide-vue-next'
 import StatCard from '../StatCard.vue'
 import { api } from '@/lib/api'
 
-type Period = 'all' | '7d' | '30d'
+type Period = '7d' | '30d'
 
 interface PeriodSnapshot {
   completedNets: number
@@ -14,7 +14,7 @@ interface PeriodSnapshot {
 }
 
 interface Data {
-  period: Period
+  period: string
   completedNets: number
   totalCheckIns: number
   uniqueParticipants: number
@@ -23,7 +23,7 @@ interface Data {
 
 const props = withDefaults(
   defineProps<{
-    /** Parent section period (7d, 30d, all); trend is vs previous period */
+    /** This card only supports 7d or 30d (trend vs previous period) */
     period?: Period
   }>(),
   { period: '7d' }
@@ -36,8 +36,6 @@ const error = ref(false)
 
 const periodLabel = (p: Period) => {
   switch (p) {
-    case 'all':
-      return t('dashboard.stats.periodAll')
     case '7d':
       return t('dashboard.stats.period7d')
     case '30d':
@@ -113,7 +111,17 @@ const trendLabel = computed(() => {
   return t('dashboard.stats.noComparison')
 })
 
-const hasComparison = computed(() => props.period !== 'all' && data.value?.previousPeriod != null)
+const hasComparison = computed(() => data.value?.previousPeriod != null)
+
+const emit = defineEmits<{
+  'update:period': [value: Period]
+}>()
+
+const periods: Period[] = ['30d', '7d']
+
+const setPeriod = (p: Period) => {
+  emit('update:period', p)
+}
 
 onMounted(fetchData)
 watch(() => props.period, fetchData, { flush: 'sync' })
@@ -121,10 +129,24 @@ watch(() => props.period, fetchData, { flush: 'sync' })
 
 <template>
   <StatCard
-    :title="`${t('dashboard.stats.communityPulse')} · ${periodLabel(period)}`"
+    :title="t('dashboard.stats.communityPulse')"
     :loading="loading"
     :error="error"
   >
+    <template #actions>
+      <div class="flex gap-1">
+        <button
+          v-for="p in periods"
+          :key="p"
+          type="button"
+          class="px-2 py-1 text-xs rounded-md border transition-colors"
+          :class="period === p ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted/30'"
+          @click="setPeriod(p)"
+        >
+          {{ periodLabel(p) }}
+        </button>
+      </div>
+    </template>
     <template v-if="data">
       <div v-if="hasComparison" class="space-y-3">
         <div

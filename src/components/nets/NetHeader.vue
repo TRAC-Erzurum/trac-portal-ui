@@ -7,6 +7,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MobileFab } from '@/components/shared'
 import type { MobileFabAction } from '@/components/shared'
 import { useDateFormat } from '@/composables'
+import { formatCommunicationChannelLabel } from '@/lib/formatters'
 
 interface Operator {
   id: string
@@ -24,8 +25,11 @@ interface NetCommunicationChannel {
   simplexFrequency?: string
   communicationChannel?: {
     id: string
-    name: string
     type: string
+    txFrequency?: number | null
+    rxFrequency?: number | null
+    echolinkNode?: string | null
+    echolinkName?: string | null
   }
 }
 
@@ -209,8 +213,7 @@ const handleFabAction = (key: string) => {
             <span class="font-medium text-foreground">
               <template v-for="(channel, idx) in net.communicationChannels" :key="channel.id">
                 <template v-if="idx > 0"> · </template>
-                <template v-if="channel.isSimplexAdHoc">Simpleks {{ channel.simplexFrequency }}</template>
-                <template v-else>{{ channel.communicationChannel?.name }}</template>
+                {{ formatCommunicationChannelLabel(channel) }}
               </template>
             </span>
           </span>

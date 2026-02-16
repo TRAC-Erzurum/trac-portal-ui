@@ -16,10 +16,13 @@ withDefaults(defineProps<Props>(), {
 
 <template>
   <section class="rounded-lg border border-border/50 bg-background p-4">
-    <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
-      <component :is="icon" v-if="icon" class="h-4 w-4" />
-      {{ title }}
-    </h3>
+    <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+      <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2">
+        <component :is="icon" v-if="icon" class="h-4 w-4" />
+        {{ title }}
+      </h3>
+      <slot name="actions" />
+    </div>
     <div v-if="loading" class="animate-pulse space-y-2">
       <div class="h-8 w-3/4 rounded bg-muted" />
       <div class="h-4 w-1/2 rounded bg-muted" />
