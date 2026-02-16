@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDateFormat } from '@/composables'
+import { formatCommunicationChannelLabel } from '@/lib/formatters'
 
 interface Attendee {
   id: string
@@ -21,8 +22,11 @@ interface NetCommunicationChannel {
   simplexFrequency?: string
   communicationChannel?: {
     id: string
-    name: string
     type: string
+    txFrequency?: number | null
+    rxFrequency?: number | null
+    echolinkNode?: string | null
+    echolinkName?: string | null
   }
 }
 
@@ -106,8 +110,7 @@ const formatReadabilitySignal = (attendee: Attendee) => {
           <td class="attendees-td attendees-tfoot-label">{{ t('netReport.infrastructure') }}:</td>
           <td class="attendees-td attendees-tfoot-value" colspan="5">
             <span v-for="(channel, idx) in communicationChannels" :key="channel.id">
-              <template v-if="channel.isSimplexAdHoc">Simpleks {{ channel.simplexFrequency }}</template>
-              <template v-else>{{ channel.communicationChannel?.name }}</template>
+              {{ formatCommunicationChannelLabel(channel) }}
               <span v-if="idx < communicationChannels.length - 1">, </span>
             </span>
           </td>

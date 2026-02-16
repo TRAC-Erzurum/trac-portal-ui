@@ -1,5 +1,5 @@
 /**
- * Builds "Nasıl bağlanırım" tutorial title and content from infrastructure data.
+ * Builds "Nasıl bağlanırım" tutorial title and content from communication channel data.
  * Uses i18n templates with placeholders filled from the selected channel.
  */
 

@@ -13,6 +13,7 @@ import { Plus, TowerControl, Globe, Navigation, X } from 'lucide-vue-next'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
 import { useQthData } from '@/composables'
+import type { CommunicationChannel } from '@/types/communication-channel'
 
 type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs'
 type RepeaterMode = 'analog' | 'digital' | 'mixed'
@@ -46,54 +47,9 @@ const TYPE_OPTIONS = [
   },
 ]
 
-interface Infrastructure {
-  id: string
-  branchId: string
-  type: InfrastructureType
-  name: string
-  description?: string
-  isActive: boolean
-  location?: string
-  district?: string
-  latitude?: number
-  longitude?: number
-  altitude?: number
-  coverage?: string
-  rxFrequency?: number
-  txFrequency?: number
-  offset?: string
-  txCtcssTone?: number
-  rxCtcssTone?: number
-  txDcsCode?: string
-  txDcsPolarity?: string
-  rxDcsCode?: string
-  rxDcsPolarity?: string
-  echolinkNode?: string
-  echolinkName?: string
-  aprsFrequency?: number
-  aprsIsIgate?: boolean
-  aprsIsDigipeater?: boolean
-  aprsIgateMode?: string
-  aprsDigipeaterType?: string
-  aprsPath?: string
-  aprsServer?: string
-  hfFrequencyRange?: string
-  hfMode?: string
-  repeaterMode?: string
-  dmrColorCode?: number
-  dmrNetwork?: DmrNetwork
-  dmrRepeaterId?: number
-  talkgroups?: Array<{
-    talkgroupId: number
-    talkgroupName?: string
-    timeslot: number
-    isStatic: boolean
-  }>
-}
-
 const props = defineProps<{
   open: boolean
-  infrastructure: Infrastructure
+  channel: CommunicationChannel
   branchCity?: string
 }>()
 
@@ -105,7 +61,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { getDistricts, loadCities, citiesData } = useQthData()
 
-const name = ref('')
 const type = ref<InfrastructureType>('vhf_uhf_repeater')
 const description = ref('')
 const location = ref('')
@@ -218,6 +173,7 @@ const aprsServer = ref('')
 
 // DMR fields
 const repeaterMode = ref<RepeaterMode>('analog')
+const brand = ref('')
 const dmrColorCode = ref<number | undefined>()
 const dmrNetwork = ref<DmrNetwork | undefined>()
 const dmrRepeaterId = ref<number | undefined>()
@@ -226,7 +182,7 @@ const talkgroups = ref<TalkgroupEntry[]>([])
 const isLoading = ref(false)
 
 const isValid = computed(() => {
-  if (!name.value.trim() || !type.value) return false
+  if (!type.value) return false
   return true
 })
 
@@ -263,34 +219,33 @@ function parseOffset(offsetStr?: string): number | undefined {
 }
 
 function loadForm() {
-  if (!props.infrastructure) return
+  if (!props.channel) return
   
   loadCities()
   skipFreqWatch.value = true
   
-  name.value = props.infrastructure.name
-  type.value = props.infrastructure.type as InfrastructureType
-  description.value = props.infrastructure.description || ''
-  location.value = props.infrastructure.location || ''
-  district.value = props.infrastructure.district || ''
-  latitude.value = props.infrastructure.latitude ? Number(props.infrastructure.latitude) : undefined
-  longitude.value = props.infrastructure.longitude ? Number(props.infrastructure.longitude) : undefined
-  altitude.value = props.infrastructure.altitude ? Number(props.infrastructure.altitude) : undefined
-  coverage.value = props.infrastructure.coverage || ''
+  type.value = props.channel.type as InfrastructureType
+  description.value = props.channel.description || ''
+  location.value = props.channel.location || ''
+  district.value = props.channel.district || ''
+  latitude.value = props.channel.latitude ? Number(props.channel.latitude) : undefined
+  longitude.value = props.channel.longitude ? Number(props.channel.longitude) : undefined
+  altitude.value = props.channel.altitude ? Number(props.channel.altitude) : undefined
+  coverage.value = props.channel.coverage || ''
   
-  rxFrequency.value = formatFreq(props.infrastructure.rxFrequency)
-  txFrequency.value = formatFreq(props.infrastructure.txFrequency)
-  offset.value = parseOffset(props.infrastructure.offset)
+  rxFrequency.value = formatFreq(props.channel.rxFrequency)
+  txFrequency.value = formatFreq(props.channel.txFrequency)
+  offset.value = parseOffset(props.channel.offset)
   
-  if (props.infrastructure.txCtcssTone) {
+  if (props.channel.txCtcssTone) {
     txToneType.value = 'ctcss'
-    txCtcssTone.value = Number(props.infrastructure.txCtcssTone)
+    txCtcssTone.value = Number(props.channel.txCtcssTone)
     txDcsCode.value = ''
     txDcsPolarity.value = 'N'
-  } else if (props.infrastructure.txDcsCode) {
+  } else if (props.channel.txDcsCode) {
     txToneType.value = 'dcs'
-    txDcsCode.value = props.infrastructure.txDcsCode
-    txDcsPolarity.value = (props.infrastructure.txDcsPolarity as 'N' | 'I') || 'N'
+    txDcsCode.value = props.channel.txDcsCode
+    txDcsPolarity.value = (props.channel.txDcsPolarity as 'N' | 'I') || 'N'
     txCtcssTone.value = undefined
   } else {
     txToneType.value = 'none'
@@ -299,15 +254,15 @@ function loadForm() {
     txDcsPolarity.value = 'N'
   }
   
-  if (props.infrastructure.rxCtcssTone) {
+  if (props.channel.rxCtcssTone) {
     rxToneType.value = 'ctcss'
-    rxCtcssTone.value = Number(props.infrastructure.rxCtcssTone)
+    rxCtcssTone.value = Number(props.channel.rxCtcssTone)
     rxDcsCode.value = ''
     rxDcsPolarity.value = 'N'
-  } else if (props.infrastructure.rxDcsCode) {
+  } else if (props.channel.rxDcsCode) {
     rxToneType.value = 'dcs'
-    rxDcsCode.value = props.infrastructure.rxDcsCode
-    rxDcsPolarity.value = (props.infrastructure.rxDcsPolarity as 'N' | 'I') || 'N'
+    rxDcsCode.value = props.channel.rxDcsCode
+    rxDcsPolarity.value = (props.channel.rxDcsPolarity as 'N' | 'I') || 'N'
     rxCtcssTone.value = undefined
   } else {
     rxToneType.value = 'none'
@@ -316,23 +271,24 @@ function loadForm() {
     rxDcsPolarity.value = 'N'
   }
   
-  echolinkNode.value = props.infrastructure.echolinkNode || ''
-  echolinkName.value = props.infrastructure.echolinkName || ''
+  echolinkNode.value = props.channel.echolinkNode || ''
+  echolinkName.value = props.channel.echolinkName || ''
   
-  aprsFrequency.value = formatFreq(props.infrastructure.aprsFrequency)
-  aprsIsIgate.value = !!props.infrastructure.aprsIsIgate
-  aprsIsDigipeater.value = !!props.infrastructure.aprsIsDigipeater
-  aprsIgateMode.value = (props.infrastructure.aprsIgateMode as 'rx_only' | 'tx_rx') || 'rx_only'
-  aprsDigipeaterType.value = (props.infrastructure.aprsDigipeaterType as 'fill_in' | 'wide') || 'wide'
-  aprsPath.value = props.infrastructure.aprsPath || ''
-  aprsServer.value = props.infrastructure.aprsServer || ''
+  aprsFrequency.value = formatFreq(props.channel.aprsFrequency)
+  aprsIsIgate.value = !!props.channel.aprsIsIgate
+  aprsIsDigipeater.value = !!props.channel.aprsIsDigipeater
+  aprsIgateMode.value = (props.channel.aprsIgateMode as 'rx_only' | 'tx_rx') || 'rx_only'
+  aprsDigipeaterType.value = (props.channel.aprsDigipeaterType as 'fill_in' | 'wide') || 'wide'
+  aprsPath.value = props.channel.aprsPath || ''
+  aprsServer.value = props.channel.aprsServer || ''
 
   // DMR fields
-  repeaterMode.value = (props.infrastructure.repeaterMode as RepeaterMode) || 'analog'
-  dmrColorCode.value = props.infrastructure.dmrColorCode ?? undefined
-  dmrNetwork.value = props.infrastructure.dmrNetwork ?? undefined
-  dmrRepeaterId.value = props.infrastructure.dmrRepeaterId ?? undefined
-  talkgroups.value = (props.infrastructure.talkgroups || []).map(tg => ({
+  repeaterMode.value = (props.channel.repeaterMode as RepeaterMode) || 'analog'
+  brand.value = props.channel.brand || ''
+  dmrColorCode.value = props.channel.dmrColorCode ?? undefined
+  dmrNetwork.value = (props.channel.dmrNetwork as DmrNetwork | undefined) ?? undefined
+  dmrRepeaterId.value = props.channel.dmrRepeaterId ?? undefined
+  talkgroups.value = (props.channel.talkgroups || []).map(tg => ({
     talkgroupId: tg.talkgroupId,
     talkgroupName: tg.talkgroupName || '',
     timeslot: tg.timeslot,
@@ -358,14 +314,14 @@ function removeTalkgroup(index: number) {
 }
 
 watch(() => props.open, async (isOpen) => {
-  if (isOpen && props.infrastructure) {
+  if (isOpen && props.channel) {
     await loadCities()
     loadForm()
   }
 }, { immediate: true })
 
-watch(() => props.infrastructure, (infra) => {
-  if (props.open && infra) {
+watch(() => props.channel, (channel) => {
+  if (props.open && channel) {
     loadForm()
   }
 }, { immediate: true })
@@ -376,7 +332,6 @@ async function handleSubmit() {
   isLoading.value = true
   try {
     const payload: Record<string, unknown> = {
-      name: name.value.trim(),
       type: type.value,
       description: description.value.trim() || null,
       district: showDistrictField.value ? district.value.trim() || null : null,
@@ -392,6 +347,7 @@ async function handleSubmit() {
 
     if (showRepeaterFields.value) {
       payload.repeaterMode = repeaterMode.value
+      payload.brand = brand.value.trim() || null
       payload.rxFrequency = parseFreq(rxFrequency.value) ?? null
       payload.txFrequency = parseFreq(txFrequency.value) ?? null
       payload.offset = offset.value !== undefined ? offsetDisplay.value : null
@@ -469,7 +425,7 @@ async function handleSubmit() {
       payload.aprsPath = aprsIsDigipeater.value ? (aprsPath.value.trim() || null) : null
     }
 
-    await api.patch(`/communication-channel/${props.infrastructure.id}`, payload)
+    await api.patch(`/communication-channel/${props.channel.id}`, payload)
 
     toast.success(t('communicationChannels.updateSuccess'))
     emit('updated')
@@ -508,14 +464,14 @@ async function handleSubmit() {
           </div>
         </div>
 
-        <div class="space-y-2">
-          <Label for="edit-name">{{ t('communicationChannels.name') }} <span class="text-destructive">*</span></Label>
+        <div v-if="showRepeaterFields" class="space-y-2">
+          <Label for="edit-brand" class="text-xs">{{ t('communicationChannels.brand') }}</Label>
           <Input
-            id="edit-name"
-            v-model="name"
+            id="edit-brand"
+            v-model="brand"
             type="text"
-            :placeholder="t('communicationChannels.namePlaceholder')"
-            required
+            :placeholder="t('communicationChannels.brandPlaceholder')"
+            class="w-full"
           />
         </div>
 

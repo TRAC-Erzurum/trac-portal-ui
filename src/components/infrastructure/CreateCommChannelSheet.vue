@@ -60,7 +60,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { getDistricts, loadCities, citiesData } = useQthData()
 
-const name = ref('')
 const type = ref<InfrastructureType>('vhf_uhf_repeater')
 const description = ref('')
 const location = ref('')
@@ -152,6 +151,7 @@ const aprsServer = ref('')
 
 // DMR fields
 const repeaterMode = ref<RepeaterMode>('analog')
+const brand = ref('')
 const dmrColorCode = ref<number | undefined>()
 const dmrNetwork = ref<DmrNetwork | undefined>()
 const dmrRepeaterId = ref<number | undefined>()
@@ -160,7 +160,7 @@ const talkgroups = ref<TalkgroupEntry[]>([])
 const isLoading = ref(false)
 
 const isValid = computed(() => {
-  if (!name.value.trim() || !type.value) return false
+  if (!type.value) return false
   return true
 })
 
@@ -197,7 +197,6 @@ watch(type, (newType) => {
 })
 
 function resetForm() {
-  name.value = ''
   type.value = 'vhf_uhf_repeater'
   description.value = ''
   location.value = ''
@@ -227,6 +226,7 @@ function resetForm() {
   aprsPath.value = ''
   aprsServer.value = ''
   repeaterMode.value = 'analog'
+  brand.value = ''
   dmrColorCode.value = undefined
   dmrNetwork.value = undefined
   dmrRepeaterId.value = undefined
@@ -260,7 +260,6 @@ async function handleSubmit() {
   try {
     const payload: Record<string, unknown> = {
       branchId: props.branchId,
-      name: name.value.trim(),
       type: type.value,
       description: description.value.trim() || undefined,
       district: showDistrictField.value ? district.value.trim() || undefined : undefined,
@@ -276,6 +275,7 @@ async function handleSubmit() {
 
     if (showRepeaterFields.value) {
       payload.repeaterMode = repeaterMode.value
+      payload.brand = brand.value.trim() || undefined
       payload.rxFrequency = rxFrequency.value
       payload.txFrequency = txFrequency.value
       payload.offset = offset.value !== undefined ? offsetDisplay.value : undefined
@@ -382,14 +382,14 @@ async function handleSubmit() {
           </div>
         </div>
 
-        <div class="space-y-2">
-          <Label for="name">{{ t('communicationChannels.name') }} <span class="text-destructive">*</span></Label>
+        <div v-if="showRepeaterFields" class="space-y-2">
+          <Label for="create-brand" class="text-xs">{{ t('communicationChannels.brand') }}</Label>
           <Input
-            id="name"
-            v-model="name"
+            id="create-brand"
+            v-model="brand"
             type="text"
-            :placeholder="t('communicationChannels.namePlaceholder')"
-            required
+            :placeholder="t('communicationChannels.brandPlaceholder')"
+            class="w-full"
           />
         </div>
 

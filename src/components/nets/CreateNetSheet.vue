@@ -10,10 +10,12 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { translateError } from '@/i18n'
+import { formatCommunicationChannelLabel } from '@/lib/formatters'
 import { api, type ApiError } from '@/lib/api'
 import { debounce } from '@/lib/utils'
 import { useBranchStore, type Branch } from '@/stores/branch'
 import { useAuthStore } from '@/stores/auth'
+import type { CommunicationChannel } from '@/types/communication-channel'
 
 interface Operator {
   id: string
@@ -29,13 +31,6 @@ interface BranchCallSign {
   id: string
   callSign: string
   isDefault: boolean
-}
-
-interface Infrastructure {
-  id: string
-  name: string
-  type: string
-  isActive: boolean
 }
 
 const props = defineProps<{
@@ -67,9 +62,9 @@ const branchCallSigns = ref<BranchCallSign[]>([])
 const selectedCallSignId = ref<string>('')
 const isLoadingCallSigns = ref(false)
 
-const infrastructures = ref<Infrastructure[]>([])
-const selectedInfrastructureIds = ref<string[]>([])
-const isLoadingInfrastructure = ref(false)
+const channels = ref<CommunicationChannel[]>([])
+const selectedChannelIds = ref<string[]>([])
+const isLoadingChannels = ref(false)
 
 interface SimplexRow {
   checked: boolean
@@ -79,7 +74,7 @@ const simplexRows = ref<SimplexRow[]>([{ checked: false, value: '' }])
 
 const hasAtLeastOneChannelSelected = computed(
   () =>
-    selectedInfrastructureIds.value.length > 0 ||
+    selectedChannelIds.value.length > 0 ||
     simplexRows.value.some(row => row.checked && row.value.trim())
 )
 
@@ -144,37 +139,37 @@ const loadBranchCallSigns = async (branchId: string) => {
   }
 }
 
-const loadInfrastructure = async (branchId: string) => {
+const loadChannels = async (branchId: string) => {
   if (!branchId) {
-    infrastructures.value = []
-    selectedInfrastructureIds.value = []
+    channels.value = []
+    selectedChannelIds.value = []
     return
   }
   
-  isLoadingInfrastructure.value = true
+  isLoadingChannels.value = true
   try {
-    const response = await api.get<{ data: Infrastructure[]; total: number }>(`/branches/${branchId}/communication-channel?pageSize=100`)
-    infrastructures.value = response.data.filter(infra => infra.isActive)
+    const response = await api.get<{ data: CommunicationChannel[]; total: number }>(`/branches/${branchId}/communication-channel?pageSize=100`)
+    channels.value = response.data.filter(ch => ch.isActive)
   } catch (error) {
-    console.error('Failed to load infrastructure:', error)
-    infrastructures.value = []
+    console.error('Failed to load communication channels:', error)
+    channels.value = []
   } finally {
-    isLoadingInfrastructure.value = false
+    isLoadingChannels.value = false
   }
 }
 
 watch(selectedBranchId, async (branchId) => {
   selectedCallSignId.value = ''
-  selectedInfrastructureIds.value = []
+  selectedChannelIds.value = []
   simplexRows.value = [{ checked: false, value: '' }]
   if (branchId) {
     await Promise.all([
       loadBranchCallSigns(branchId),
-      loadInfrastructure(branchId)
+      loadChannels(branchId)
     ])
   } else {
     branchCallSigns.value = []
-    infrastructures.value = []
+    channels.value = []
   }
 })
 
@@ -228,14 +223,14 @@ const clearOperator = () => {
   operatorSuggestions.value = []
 }
 
-const toggleInfra = (infraId: string, e: Event) => {
+const toggleChannel = (channelId: string, e: Event) => {
   const checked = (e.target as HTMLInputElement).checked
   if (checked) {
-    if (!selectedInfrastructureIds.value.includes(infraId)) {
-      selectedInfrastructureIds.value = [...selectedInfrastructureIds.value, infraId]
+    if (!selectedChannelIds.value.includes(channelId)) {
+      selectedChannelIds.value = [...selectedChannelIds.value, channelId]
     }
   } else {
-    selectedInfrastructureIds.value = selectedInfrastructureIds.value.filter(id => id !== infraId)
+    selectedChannelIds.value = selectedChannelIds.value.filter(id => id !== channelId)
   }
 }
 
@@ -327,12 +322,12 @@ watch(() => props.open, async (isOpen) => {
 async function handleSubmit() {
   if (!isValid.value || !selectedOperator.value || !selectedBranchId.value || !selectedCallSignId.value) return
 
-  const hasInfrastructure = selectedInfrastructureIds.value.length > 0
+  const hasChannels = selectedChannelIds.value.length > 0
   const simplexFreqs = simplexRows.value
     .filter(row => row.checked && row.value.trim())
     .map(row => row.value.trim())
   const hasSimplex = simplexFreqs.length > 0
-  if (!hasInfrastructure && !hasSimplex) {
+  if (!hasChannels && !hasSimplex) {
     toast.error(t('nets.atLeastOneInfrastructureOrSimplex'))
     return
   }
@@ -345,8 +340,8 @@ async function handleSubmit() {
   try {
     const communicationChannels: Array<{ communicationChannelId?: string; isSimplexAdHoc?: boolean; simplexFrequency?: string }> = []
 
-    selectedInfrastructureIds.value.forEach(infraId => {
-      communicationChannels.push({ communicationChannelId: infraId })
+    selectedChannelIds.value.forEach(channelId => {
+      communicationChannels.push({ communicationChannelId: channelId })
     })
 
     simplexFreqs.forEach(freq => {
@@ -493,27 +488,27 @@ onMounted(() => {
 
         <div class="space-y-3">
           <Label class="text-sm font-medium text-muted-foreground">{{ t('nets.communicationChannelSection') }}</Label>
-          <div v-if="isLoadingInfrastructure" class="text-sm text-muted-foreground py-2">
+          <div v-if="isLoadingChannels" class="text-sm text-muted-foreground py-2">
             {{ t('common.loading') }}
           </div>
           <template v-else>
-            <p v-if="infrastructures.length === 0 && selectedBranchId" class="text-sm text-muted-foreground py-1 -mx-2">
+            <p v-if="channels.length === 0 && selectedBranchId" class="text-sm text-muted-foreground py-1 -mx-2">
               {{ t('nets.noInfrastructureAvailable') }}
             </p>
-            <div v-else-if="infrastructures.length > 0" class="space-y-2">
+            <div v-else-if="channels.length > 0" class="space-y-2">
               <label
-                v-for="infra in infrastructures"
-                :key="infra.id"
+                v-for="ch in channels"
+                :key="ch.id"
                 class="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5 -mx-2 -my-1.5"
               >
                 <input
                   type="checkbox"
-                  :checked="selectedInfrastructureIds.includes(infra.id)"
+                  :checked="selectedChannelIds.includes(ch.id)"
                   class="h-4 w-4 shrink-0 rounded border border-input bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  @change="toggleInfra(infra.id, $event)"
+                  @change="toggleChannel(ch.id, $event)"
                 />
-                <span class="font-medium text-sm">{{ infra.name }}</span>
-                <span class="text-xs text-muted-foreground ml-auto">{{ t(`communicationChannels.types.${infra.type}`) }}</span>
+                <span class="font-medium text-sm">{{ formatCommunicationChannelLabel({ communicationChannel: ch }) }}</span>
+                <span class="text-xs text-muted-foreground ml-auto">{{ t(`communicationChannels.types.${ch.type}`) }}</span>
               </label>
             </div>
             <div class="space-y-2">

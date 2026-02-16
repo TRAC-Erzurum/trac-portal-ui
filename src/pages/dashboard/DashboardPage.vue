@@ -175,6 +175,7 @@ const fetchPersonalStats = async () => {
 }
 
 const communityPeriod = ref<'all' | '7d' | '30d'>('all')
+const communityPulsePeriod = ref<'7d' | '30d'>('7d')
 
 const fetchCommunity = async () => {
   try {
@@ -294,7 +295,7 @@ onMounted(() => {
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <GeographyWidget />
-        <CommunityPulseWidget :period="communityPeriod" />
+        <CommunityPulseWidget v-model:period="communityPulsePeriod" />
       </div>
     </section>
   </AppLayout>

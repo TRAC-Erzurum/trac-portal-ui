@@ -3,7 +3,7 @@ import { computed, onMounted, ref, toRaw, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { BookOpen, Edit, Mail, MapPin, Phone, Plus, Power, PowerOff, Radio, Search, TowerControl, Trash2, Users } from 'lucide-vue-next'
+import { Edit, Mail, MapPin, Phone, Plus, Radio, Search, TowerControl, Trash2, Users } from 'lucide-vue-next'
 import EditBranchSheet from '@/components/branches/EditBranchSheet.vue'
 import AddMemberSheet from '@/components/branches/AddMemberSheet.vue'
 import CreateCommChannelSheet from '@/components/infrastructure/CreateCommChannelSheet.vue'
@@ -12,7 +12,7 @@ import CreateNetSheet from '@/components/nets/CreateNetSheet.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CommunityModule from '@/components/dashboard/CommunityModule.vue'
 import NetsAttendeesTrendWidget from '@/components/dashboard/widgets/NetsAttendeesTrendWidget.vue'
-import { InfrastructureCard, InfrastructureCardSkeleton, MemberCard, MobileFab, NetCard, NetCardSkeleton, SearchInput } from '@/components/shared'
+import { CommunicationChannelCard, CommunicationChannelCardSkeleton, MemberCard, MobileFab, NetCard, NetCardSkeleton, SearchInput } from '@/components/shared'
 import type { MobileFabAction } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -23,8 +23,9 @@ import { usePersistedFilters } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
-import { formatCallSign } from '@/lib/formatters'
+import { formatCallSign, formatCommunicationChannelLabel } from '@/lib/formatters'
 import { buildTutorialContent } from '@/lib/tutorial-content'
+import type { CommunicationChannel } from '@/types/communication-channel'
 
 interface BranchCallSign {
   id: string
@@ -44,43 +45,6 @@ interface Branch {
   email?: string
   callSigns: BranchCallSign[]
   createdAt: string
-}
-
-type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs'
-
-interface Infrastructure {
-  id: string
-  branchId: string
-  type: InfrastructureType
-  name: string
-  description?: string
-  isActive: boolean
-  location?: string
-  district?: string
-  latitude?: number
-  longitude?: number
-  altitude?: number
-  coverage?: string
-  rxFrequency?: number
-  txFrequency?: number
-  offset?: string
-  txCtcssTone?: number
-  rxCtcssTone?: number
-  txDcsCode?: string
-  txDcsPolarity?: string
-  rxDcsCode?: string
-  rxDcsPolarity?: string
-  echolinkNode?: string
-  echolinkName?: string
-  aprsFrequency?: number
-  aprsIsIgate?: boolean
-  aprsIsDigipeater?: boolean
-  aprsIgateMode?: string
-  aprsDigipeaterType?: string
-  aprsPath?: string
-  aprsServer?: string
-  hfFrequencyRange?: string
-  hfMode?: string
 }
 
 interface BranchMember {
@@ -119,22 +83,23 @@ const deleteBranchNameConfirm = ref('')
 const communityStats = ref<any>(null)
 const isLoadingCommunity = ref(false)
 
-const infrastructure = ref<Infrastructure[]>([])
-const infrastructureTotal = ref(0)
-const infrastructurePage = ref(1)
-const infrastructurePageSize = 12
-const hasMoreInfrastructure = ref(true)
-const isLoadingInfrastructure = ref(true)
-const isLoadingMoreInfrastructure = ref(false)
-const infrastructureSearch = ref('')
-const infrastructureTypeFilter = ref<string>('all')
-const isCreateInfrastructureSheetOpen = ref(false)
-const isEditInfrastructureSheetOpen = ref(false)
-const selectedInfrastructure = ref<Infrastructure | null>(null)
-const showDeleteInfrastructureDialog = ref(false)
-const isDeletingInfrastructure = ref(false)
+const channels = ref<CommunicationChannel[]>([])
+const channelsTotal = ref(0)
+const channelPage = ref(1)
+const channelPageSize = 12
+const hasMoreChannels = ref(true)
+const isLoadingChannels = ref(true)
+const isLoadingMoreChannels = ref(false)
+const channelSearch = ref('')
+const channelTypeFilter = ref<string>('all')
+const isCreateChannelSheetOpen = ref(false)
+const isEditChannelSheetOpen = ref(false)
+const selectedChannel = ref<CommunicationChannel | null>(null)
+const showDeleteChannelDialog = ref(false)
+const isDeletingChannel = ref(false)
 const showTutorialDialog = ref(false)
 const tutorialContent = ref({ title: '', content: '' })
+const tutorialTitle = ref('')
 const members = ref<BranchMember[]>([])
 const membersTotal = ref(0)
 const membersPage = ref(1)
@@ -230,7 +195,7 @@ const handleFabAction = (key: string) => {
     case 'joinBranch': joinBranch(); break
     case 'editBranch': openEdit(); break
     case 'deleteBranch': openDeleteDialog(); break
-    case 'createChannel': isCreateInfrastructureSheetOpen.value = true; break
+    case 'createChannel': isCreateChannelSheetOpen.value = true; break
     case 'addMember': showAddMemberSheet.value = true; break
     case 'createNet': isCreateNetSheetOpen.value = true; break
   }
@@ -423,69 +388,69 @@ const memberCallSign = (m: BranchMember) => {
   })
 }
 
-const fetchInfrastructure = async (append = false) => {
+const fetchChannels = async (append = false) => {
   if (!route.params.id) return
   if (append) {
-    isLoadingMoreInfrastructure.value = true
+    isLoadingMoreChannels.value = true
   } else {
-    isLoadingInfrastructure.value = true
+    isLoadingChannels.value = true
   }
 
   try {
     const params = new URLSearchParams()
-    params.set('pageNumber', String(infrastructurePage.value))
-    params.set('pageSize', String(infrastructurePageSize))
+    params.set('pageNumber', String(channelPage.value))
+    params.set('pageSize', String(channelPageSize))
     if (canManage.value) params.set('includeInactive', 'true')
-    if (infrastructureSearch.value) params.set('search', infrastructureSearch.value)
-    if (infrastructureTypeFilter.value !== 'all') params.set('type', infrastructureTypeFilter.value)
+    if (channelSearch.value) params.set('search', channelSearch.value)
+    if (channelTypeFilter.value !== 'all') params.set('type', channelTypeFilter.value)
 
-    const response = await api.get<{ data: Infrastructure[]; total: number }>(`/branches/${route.params.id}/communication-channel?${params.toString()}`)
+    const response = await api.get<{ data: CommunicationChannel[]; total: number }>(`/branches/${route.params.id}/communication-channel?${params.toString()}`)
     
     if (append) {
-      infrastructure.value = [...infrastructure.value, ...response.data]
+      channels.value = [...channels.value, ...response.data]
     } else {
-      infrastructure.value = response.data
+      channels.value = response.data
     }
     
-    infrastructureTotal.value = response.total
-    hasMoreInfrastructure.value = infrastructure.value.length < response.total
+    channelsTotal.value = response.total
+    hasMoreChannels.value = channels.value.length < response.total
   } catch (error) {
-    console.error('Failed to fetch infrastructure:', error)
+    console.error('Failed to fetch channels:', error)
   } finally {
-    isLoadingInfrastructure.value = false
-    isLoadingMoreInfrastructure.value = false
+    isLoadingChannels.value = false
+    isLoadingMoreChannels.value = false
   }
 }
 
-const loadMoreInfrastructure = () => {
-  infrastructurePage.value++
-  fetchInfrastructure(true)
+const loadMoreChannels = () => {
+  channelPage.value++
+  fetchChannels(true)
 }
 
-const handleInfrastructureCreated = async () => {
-  await fetchInfrastructure()
+const handleChannelCreated = async () => {
+  await fetchChannels()
 }
 
-const handleInfrastructureUpdated = async () => {
-  await fetchInfrastructure()
+const handleChannelUpdated = async () => {
+  await fetchChannels()
 }
 
-const openEditInfrastructure = (infra: Infrastructure) => {
-  selectedInfrastructure.value = infra
-  isEditInfrastructureSheetOpen.value = true
+const openEditChannel = (channel: CommunicationChannel) => {
+  selectedChannel.value = channel
+  isEditChannelSheetOpen.value = true
 }
 
 const activeNetsCount = ref(0)
 const isLoadingActiveNets = ref(false)
 
-const openDeleteInfrastructureDialog = async (infra: Infrastructure) => {
-  selectedInfrastructure.value = infra
-  showDeleteInfrastructureDialog.value = true
+const openDeleteChannelDialog = async (channel: CommunicationChannel) => {
+  selectedChannel.value = channel
+  showDeleteChannelDialog.value = true
   
-  // Check for active nets using this infrastructure
+  // Check for active nets using this channels
   isLoadingActiveNets.value = true
   try {
-    const response = await api.get<{ count: number }>(`/communication-channel/${infra.id}/active-nets`)
+    const response = await api.get<{ count: number }>(`/communication-channel/${channel.id}/active-nets`)
     activeNetsCount.value = response.count || 0
   } catch (error) {
     console.error('Failed to check active nets:', error)
@@ -495,40 +460,40 @@ const openDeleteInfrastructureDialog = async (infra: Infrastructure) => {
   }
 }
 
-const deleteInfrastructure = async () => {
-  if (!selectedInfrastructure.value || isDeletingInfrastructure.value) return
+const deleteChannel = async () => {
+  if (!selectedChannel.value || isDeletingChannel.value) return
 
   if (activeNetsCount.value > 0) {
     toast.error(t('communicationChannels.cannotDeleteWithActiveNets', { count: activeNetsCount.value }))
     return
   }
 
-  isDeletingInfrastructure.value = true
+  isDeletingChannel.value = true
   try {
-    await api.delete(`/communication-channel/${selectedInfrastructure.value.id}`)
-    await fetchInfrastructure()
+    await api.delete(`/communication-channel/${selectedChannel.value.id}`)
+    await fetchChannels()
     toast.success(t('communicationChannels.deleteSuccess'))
-    showDeleteInfrastructureDialog.value = false
+    showDeleteChannelDialog.value = false
     activeNetsCount.value = 0
   } catch (error) {
     const err = error as ApiError
     toast.error(translateError(err.message))
   } finally {
-    isDeletingInfrastructure.value = false
+    isDeletingChannel.value = false
   }
 }
 
-const showDeactivateInfrastructureDialog = ref(false)
-const isDeactivatingInfrastructure = ref(false)
+const showDeactivateChannelDialog = ref(false)
+const isDeactivatingChannel = ref(false)
 
-const openDeactivateInfrastructureDialog = async (infra: Infrastructure) => {
-  selectedInfrastructure.value = infra
-  showDeactivateInfrastructureDialog.value = true
+const openDeactivateChannelDialog = async (channel: CommunicationChannel) => {
+  selectedChannel.value = channel
+  showDeactivateChannelDialog.value = true
   
-  // Check for active nets using this infrastructure
+  // Check for active nets using this channels
   isLoadingActiveNets.value = true
   try {
-    const response = await api.get<{ count: number }>(`/communication-channel/${infra.id}/active-nets`)
+    const response = await api.get<{ count: number }>(`/communication-channel/${channel.id}/active-nets`)
     activeNetsCount.value = response.count || 0
   } catch (error) {
     console.error('Failed to check active nets:', error)
@@ -538,37 +503,37 @@ const openDeactivateInfrastructureDialog = async (infra: Infrastructure) => {
   }
 }
 
-const confirmDeactivateInfrastructure = async () => {
-  if (!selectedInfrastructure.value || isDeactivatingInfrastructure.value) return
+const confirmDeactivateChannel = async () => {
+  if (!selectedChannel.value || isDeactivatingChannel.value) return
 
-  isDeactivatingInfrastructure.value = true
+  isDeactivatingChannel.value = true
   try {
-    await api.patch(`/communication-channel/${selectedInfrastructure.value.id}`, {
+    await api.patch(`/communication-channel/${selectedChannel.value.id}`, {
       isActive: false
     })
-    await fetchInfrastructure()
+    await fetchChannels()
     toast.success(t('communicationChannels.deactivated'))
-    showDeactivateInfrastructureDialog.value = false
+    showDeactivateChannelDialog.value = false
     activeNetsCount.value = 0
   } catch (error) {
     const err = error as ApiError
     toast.error(translateError(err.message))
   } finally {
-    isDeactivatingInfrastructure.value = false
+    isDeactivatingChannel.value = false
   }
 }
 
-const toggleInfrastructureStatus = async (infra: Infrastructure) => {
-  if (infra.isActive) {
+const toggleChannelStatus = async (channel: CommunicationChannel) => {
+  if (channel.isActive) {
     // For deactivation, show dialog with warning if active nets exist
-    await openDeactivateInfrastructureDialog(infra)
+    await openDeactivateChannelDialog(channel)
   } else {
     // For activation, proceed directly
     try {
-      await api.patch(`/communication-channel/${infra.id}`, {
+      await api.patch(`/communication-channel/${channel.id}`, {
         isActive: true
       })
-      await fetchInfrastructure()
+      await fetchChannels()
       toast.success(t('communicationChannels.activated'))
     } catch (error) {
       const err = error as ApiError
@@ -577,9 +542,10 @@ const toggleInfrastructureStatus = async (infra: Infrastructure) => {
   }
 }
 
-const openTutorial = (infra: Infrastructure) => {
-  const plain = JSON.parse(JSON.stringify(toRaw(infra))) as Record<string, unknown>
+const openTutorial = (channel: CommunicationChannel) => {
+  const plain = JSON.parse(JSON.stringify(toRaw(channel))) as Record<string, unknown>
   tutorialContent.value = buildTutorialContent(plain, t)
+  tutorialTitle.value = formatCommunicationChannelLabel({ communicationChannel: channel })
   showTutorialDialog.value = true
 }
 
@@ -617,7 +583,7 @@ const deleteBranch = async () => {
 }
 
 let membersSearchTimeout: ReturnType<typeof setTimeout> | null = null
-let infrastructureSearchTimeout: ReturnType<typeof setTimeout> | null = null
+let channelSearchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const handleMembersSearchChange = () => {
   if (membersSearchTimeout) clearTimeout(membersSearchTimeout)
@@ -632,17 +598,17 @@ const handleMembersFilterChange = () => {
   fetchMembers()
 }
 
-const handleInfrastructureSearchChange = () => {
-  if (infrastructureSearchTimeout) clearTimeout(infrastructureSearchTimeout)
-  infrastructureSearchTimeout = setTimeout(() => {
-    infrastructurePage.value = 1
-    fetchInfrastructure()
+const handleChannelSearchChange = () => {
+  if (channelSearchTimeout) clearTimeout(channelSearchTimeout)
+  channelSearchTimeout = setTimeout(() => {
+    channelPage.value = 1
+    fetchChannels()
   }, 300)
 }
 
-const handleInfrastructureFilterChange = () => {
-  infrastructurePage.value = 1
-  fetchInfrastructure()
+const handleChannelFilterChange = () => {
+  channelPage.value = 1
+  fetchChannels()
 }
 
 const fetchNets = async (append = false) => {
@@ -736,17 +702,17 @@ const filteredNets = computed(() => {
 })
 
 const branchId = computed(() => route.params.id as string)
-const branchInfrastructureFilterKey = computed(() => `branch-detail-infrastructure-${branchId.value}`)
+const branchChannelFilterKey = computed(() => `branch-detail-channels-${branchId.value}`)
 const branchMembersFilterKey = computed(() => `branch-detail-members-${branchId.value}`)
 const branchNetsFilterKey = computed(() => `branch-detail-nets-${branchId.value}`)
-usePersistedFilters(branchInfrastructureFilterKey, { infrastructureSearch, infrastructureTypeFilter })
+usePersistedFilters(branchChannelFilterKey, { channelSearch, channelTypeFilter })
 usePersistedFilters(branchMembersFilterKey, { membersSearch, membersRoleFilter })
 usePersistedFilters(branchNetsFilterKey, { netsSearch, netsStatusFilter })
 
 watch(membersSearch, handleMembersSearchChange)
 watch(membersRoleFilter, handleMembersFilterChange)
-watch(infrastructureSearch, handleInfrastructureSearchChange)
-watch(infrastructureTypeFilter, handleInfrastructureFilterChange)
+watch(channelSearch, handleChannelSearchChange)
+watch(channelTypeFilter, handleChannelFilterChange)
 
 watch(
   userMembership,
@@ -764,7 +730,7 @@ watch(
 onMounted(() => {
   fetchBranch()
   checkMembership()
-  fetchInfrastructure()
+  fetchChannels()
   fetchNets()
 })
 </script>
@@ -887,10 +853,10 @@ onMounted(() => {
         <div class="flex flex-col lg:flex-row lg:items-start lg:gap-4 gap-2 mb-4">
           <div class="w-full lg:w-1/2 lg:min-w-0 grid grid-cols-1 lg:grid-cols-[1fr_160px] gap-2 items-center">
             <SearchInput
-              v-model="infrastructureSearch"
+              v-model="channelSearch"
               :placeholder="t('communicationChannels.searchPlaceholder')"
             />
-            <Select v-model="infrastructureTypeFilter" class="w-full min-w-0">
+            <Select v-model="channelTypeFilter" class="w-full min-w-0">
               <SelectTrigger class="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -907,7 +873,7 @@ onMounted(() => {
               v-if="canManage && branch.isActive"
               variant="outline"
               size="sm"
-              @click="isCreateInfrastructureSheetOpen = true"
+              @click="isCreateChannelSheetOpen = true"
               class="hidden lg:inline-flex gap-2"
             >
               <Plus class="h-4 w-4" />
@@ -915,81 +881,34 @@ onMounted(() => {
             </Button>
           </div>
         </div>
-        <div v-if="isLoadingInfrastructure" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-          <InfrastructureCardSkeleton v-for="i in 6" :key="i" class="h-full" />
+        <div v-if="isLoadingChannels" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+          <CommunicationChannelCardSkeleton v-for="i in 6" :key="i" class="h-full" />
         </div>
-        <div v-else-if="infrastructure.length === 0" class="text-center py-4">
+        <div v-else-if="channels.length === 0" class="text-center py-4">
           <TowerControl class="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
           <p class="text-sm text-muted-foreground">{{ t('communicationChannels.noInfrastructure') }}</p>
         </div>
         <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3 items-stretch">
-          <div v-for="infra in infrastructure" :key="infra.id" class="flex">
-            <InfrastructureCard
-              class="w-full flex flex-col"
-              :id="infra.id"
-              :name="infra.name"
-              :type="infra.type"
-              :is-active="infra.isActive"
+          <div v-for="ch in channels" :key="ch.id" class="flex">
+            <CommunicationChannelCard
+              :channel="ch"
+              :can-manage="canManage"
               :branch-name="branch?.name"
               :branch-city="branch?.city"
-              :description="infra.description"
-              :location="infra.location"
-              :district="infra.district"
-              :latitude="infra.latitude"
-              :longitude="infra.longitude"
-              :altitude="infra.altitude"
-              :coverage="infra.coverage"
-              :rx-frequency="infra.rxFrequency"
-              :tx-frequency="infra.txFrequency"
-              :offset="infra.offset"
-              :tx-ctcss-tone="infra.txCtcssTone"
-              :rx-ctcss-tone="infra.rxCtcssTone"
-              :tx-dcs-code="infra.txDcsCode"
-              :rx-dcs-code="infra.rxDcsCode"
-              :echolink-node="infra.echolinkNode"
-              :echolink-name="infra.echolinkName"
-              :aprs-frequency="infra.aprsFrequency"
-              :aprs-is-igate="infra.aprsIsIgate"
-              :aprs-is-digipeater="infra.aprsIsDigipeater"
-              :aprs-igate-mode="infra.aprsIgateMode"
-              :aprs-digipeater-type="infra.aprsDigipeaterType"
-              :aprs-path="infra.aprsPath"
-              :aprs-server="infra.aprsServer"
-              :hf-frequency-range="infra.hfFrequencyRange"
-              :hf-mode="infra.hfMode"
-            >
-              <template v-if="infra.isActive" #top-right>
-                <Button variant="ghost" size="icon" class="h-7 w-7 rounded-full" :title="t('communicationChannels.howToConnect')" @click.stop="openTutorial(infra)">
-                  <BookOpen class="h-3.5 w-3.5" />
-                </Button>
-              </template>
-              <template v-if="canManage" #actions>
-                <div class="flex items-center justify-end gap-1">
-                  <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click.stop="openEditInfrastructure(infra)">
-                    <Edit class="h-3.5 w-3.5 mr-1.5" />
-                    {{ t('common.edit') }}
-                  </Button>
-                  <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click.stop="infra.isActive ? openDeactivateInfrastructureDialog(infra) : toggleInfrastructureStatus(infra)">
-                    <Power v-if="infra.isActive" class="h-3.5 w-3.5 mr-1.5" />
-                    <PowerOff v-else class="h-3.5 w-3.5 mr-1.5" />
-                    {{ infra.isActive ? t('communicationChannels.deactivate') : t('communicationChannels.activate') }}
-                  </Button>
-                  <Button variant="ghost" size="sm" class="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950" @click.stop="openDeleteInfrastructureDialog(infra)">
-                    <Trash2 class="h-3.5 w-3.5 mr-1.5" />
-                    {{ t('common.delete') }}
-                  </Button>
-                </div>
-              </template>
-            </InfrastructureCard>
+              @edit="openEditChannel"
+              @delete="openDeleteChannelDialog"
+              @toggle-status="(ch) => ch.isActive ? openDeactivateChannelDialog(ch) : toggleChannelStatus(ch)"
+              @open-tutorial="openTutorial"
+            />
           </div>
         </div>
-        <div v-if="!isLoadingInfrastructure" class="flex flex-wrap items-center justify-between gap-2 pt-4">
-          <p v-if="infrastructureTotal > 0 || infrastructure.length > 0" class="text-sm text-muted-foreground order-2 lg:order-1">
-            {{ infrastructure.length }}/{{ infrastructureTotal }} {{ t('communicationChannels.nameEntity') }}
+        <div v-if="!isLoadingChannels" class="flex flex-wrap items-center justify-between gap-2 pt-4">
+          <p v-if="channelsTotal > 0 || channels.length > 0" class="text-sm text-muted-foreground order-2 lg:order-1">
+            {{ channels.length }}/{{ channelsTotal }} {{ t('communicationChannels.nameEntity') }}
           </p>
-          <div v-if="hasMoreInfrastructure" class="order-1 lg:order-2 w-full lg:w-auto">
-            <Button variant="outline" class="w-full lg:w-auto lg:px-8" :disabled="isLoadingMoreInfrastructure" @click="loadMoreInfrastructure">
-              {{ isLoadingMoreInfrastructure ? t('common.loading') : t('common.loadMore') }}
+          <div v-if="hasMoreChannels" class="order-1 lg:order-2 w-full lg:w-auto">
+            <Button variant="outline" class="w-full lg:w-auto lg:px-8" :disabled="isLoadingMoreChannels" @click="loadMoreChannels">
+              {{ isLoadingMoreChannels ? t('common.loading') : t('common.loadMore') }}
             </Button>
           </div>
         </div>
@@ -1223,11 +1142,11 @@ onMounted(() => {
 
     <CreateCommChannelSheet
       v-if="branch"
-      :open="isCreateInfrastructureSheetOpen"
+      :open="isCreateChannelSheetOpen"
       :branch-id="branch.id"
       :branch-city="branch.city"
-      @update:open="isCreateInfrastructureSheetOpen = $event"
-      @created="handleInfrastructureCreated"
+      @update:open="isCreateChannelSheetOpen = $event"
+      @created="handleChannelCreated"
     />
 
     <CreateNetSheet
@@ -1239,15 +1158,15 @@ onMounted(() => {
     />
 
     <EditCommChannelSheet
-      v-if="selectedInfrastructure"
-      :open="isEditInfrastructureSheetOpen"
-      :infrastructure="selectedInfrastructure"
+      v-if="selectedChannel"
+      :open="isEditChannelSheetOpen"
+      :channel="selectedChannel"
       :branch-city="branch?.city"
-      @update:open="isEditInfrastructureSheetOpen = $event"
-      @updated="handleInfrastructureUpdated"
+      @update:open="isEditChannelSheetOpen = $event"
+      @updated="handleChannelUpdated"
     />
 
-    <Dialog :open="showDeleteInfrastructureDialog" @update:open="showDeleteInfrastructureDialog = $event">
+    <Dialog :open="showDeleteChannelDialog" @update:open="showDeleteChannelDialog = $event">
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
@@ -1266,22 +1185,22 @@ onMounted(() => {
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" @click="showDeleteInfrastructureDialog = false" :disabled="isDeletingInfrastructure">
+          <Button variant="outline" @click="showDeleteChannelDialog = false" :disabled="isDeletingChannel">
             {{ t('common.cancel') }}
           </Button>
           <Button 
             variant="outline" 
-            @click="deleteInfrastructure"
-            :disabled="isDeletingInfrastructure || activeNetsCount > 0"
+            @click="deleteChannel"
+            :disabled="isDeletingChannel || activeNetsCount > 0"
             class="text-red-600 hover:text-red-700"
           >
-            {{ isDeletingInfrastructure ? t('common.loading') : t('common.delete') }}
+            {{ isDeletingChannel ? t('common.loading') : t('common.delete') }}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
 
-    <Dialog :open="showDeactivateInfrastructureDialog" @update:open="showDeactivateInfrastructureDialog = $event">
+    <Dialog :open="showDeactivateChannelDialog" @update:open="showDeactivateChannelDialog = $event">
       <DialogContent>
         <DialogHeader>
           <DialogTitle>
@@ -1300,16 +1219,16 @@ onMounted(() => {
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
-          <Button variant="outline" @click="showDeactivateInfrastructureDialog = false" :disabled="isDeactivatingInfrastructure">
+          <Button variant="outline" @click="showDeactivateChannelDialog = false" :disabled="isDeactivatingChannel">
             {{ t('common.cancel') }}
           </Button>
           <Button 
             variant="outline" 
-            @click="confirmDeactivateInfrastructure"
-            :disabled="isDeactivatingInfrastructure"
+            @click="confirmDeactivateChannel"
+            :disabled="isDeactivatingChannel"
             class="text-amber-600 hover:text-amber-700"
           >
-            {{ isDeactivatingInfrastructure ? t('common.loading') : t('communicationChannels.deactivate') }}
+            {{ isDeactivatingChannel ? t('common.loading') : t('communicationChannels.deactivate') }}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -1319,7 +1238,7 @@ onMounted(() => {
       <DialogContent class="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader class="pr-8">
           <DialogTitle class="text-lg font-semibold leading-tight text-foreground">
-            {{ tutorialContent.title }}
+            {{ tutorialTitle }}
           </DialogTitle>
         </DialogHeader>
         <div class="tutorial-content text-sm text-foreground" v-html="renderMarkdown(tutorialContent.content)" />

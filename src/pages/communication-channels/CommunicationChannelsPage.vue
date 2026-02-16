@@ -1,82 +1,68 @@
 <script setup lang="ts">
-import { computed, ref, toRaw, watch } from 'vue'
+import { computed, onMounted, ref, toRaw, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { BookOpen, TowerControl } from 'lucide-vue-next'
+import { toast } from 'vue-sonner'
+import { TowerControl } from 'lucide-vue-next'
+import EditCommChannelSheet from '@/components/infrastructure/EditCommChannelSheet.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import { InfrastructureCard, InfrastructureCardSkeleton, SearchInput } from '@/components/shared'
+import { CommunicationChannelCard, CommunicationChannelCardSkeleton, SearchInput } from '@/components/shared'
 import { usePersistedFilters } from '@/composables'
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { useAuthStore } from '@/stores/auth'
+import { translateError } from '@/i18n'
+import { api, type ApiError } from '@/lib/api'
+import { formatCommunicationChannelLabel } from '@/lib/formatters'
+import { buildTutorialContent } from '@/lib/tutorial-content'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { api } from '@/lib/api'
-import { buildTutorialContent } from '@/lib/tutorial-content'
+import type { CommunicationChannel, CommunicationChannelListResponse } from '@/types/communication-channel'
 
-type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs'
-
-interface Branch {
-  id: string
-  name: string
-  city?: string
-}
-
-interface Infrastructure {
-  id: string
+interface UserMembership {
   branchId: string
-  branch?: Branch
-  type: InfrastructureType
-  name: string
-  description?: string
-  isActive: boolean
-  location?: string
-  district?: string
-  latitude?: number
-  longitude?: number
-  altitude?: number
-  coverage?: string
-  rxFrequency?: number
-  txFrequency?: number
-  offset?: string
-  txCtcssTone?: number
-  rxCtcssTone?: number
-  txDcsCode?: string
-  txDcsPolarity?: string
-  rxDcsCode?: string
-  rxDcsPolarity?: string
-  echolinkNode?: string
-  echolinkName?: string
-  aprsFrequency?: number
-  aprsIsIgate?: boolean
-  aprsIsDigipeater?: boolean
-  aprsIgateMode?: string
-  aprsDigipeaterType?: string
-  aprsPath?: string
-  aprsServer?: string
-  hfFrequencyRange?: string
-  hfMode?: string
-}
-
-interface InfrastructureResponse {
-  data: Infrastructure[]
-  total: number
+  role: string
+  status: string
 }
 
 const { t, locale } = useI18n()
+const authStore = useAuthStore()
+const userMemberships = ref<UserMembership[]>([])
 const searchQuery = ref('')
 const typeFilter = ref<string>('all')
 const cityFilter = ref<string>('all')
 const districtFilter = ref<string>('all')
-const infrastructure = ref<Infrastructure[]>([])
-const allInfrastructure = ref<Infrastructure[]>([])
+const channels = ref<CommunicationChannel[]>([])
+const allChannels = ref<CommunicationChannel[]>([])
 const total = ref(0)
 const isLoading = ref(true)
 const isLoadingMore = ref(false)
 const showTutorialDialog = ref(false)
 const searchTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 const tutorialContent = ref({ title: '', content: '' })
+const tutorialTitle = ref('')
 const page = ref(1)
 const pageSize = 12
 const hasMore = ref(true)
+
+function canManageBranch(branchId: string): boolean {
+  if (authStore.isSuperAdmin) return true
+  return userMemberships.value.some(
+    (m) =>
+      m.branchId === branchId &&
+      m.status === 'approved' &&
+      (m.role === 'admin' || m.role === 'president')
+  )
+}
+
+async function fetchUserMemberships() {
+  if (!authStore.isAuthenticated) return
+  try {
+    const list = await api.get<UserMembership[]>('/users/me/memberships')
+    userMemberships.value = list
+  } catch {
+    userMemberships.value = []
+  }
+}
 
 const typeOptions = computed(() => [
   { value: 'all', label: t('communicationChannels.filterAllTypes') },
@@ -87,7 +73,7 @@ const typeOptions = computed(() => [
 
 const cityOptions = computed(() => {
   const cities = new Set(['all'])
-  allInfrastructure.value.forEach(i => {
+  allChannels.value.forEach(i => {
     if (i.branch?.city) cities.add(i.branch.city)
   })
   return Array.from(cities).map(c => ({
@@ -98,7 +84,7 @@ const cityOptions = computed(() => {
 
 const districtOptions = computed(() => {
   const districts = new Set(['all'])
-  allInfrastructure.value.forEach(i => {
+  allChannels.value.forEach(i => {
     if (i.district) districts.add(i.district)
   })
   return Array.from(districts).map(d => ({
@@ -107,15 +93,15 @@ const districtOptions = computed(() => {
   }))
 })
 
-const filteredInfrastructure = computed(() => {
-  return infrastructure.value.filter(i => {
+const filteredChannels = computed(() => {
+  return channels.value.filter(i => {
     if (cityFilter.value !== 'all' && i.branch?.city !== cityFilter.value) return false
     if (districtFilter.value !== 'all' && i.district !== districtFilter.value) return false
     return true
   })
 })
 
-async function fetchInfrastructure(append = false) {
+async function fetchChannels(append = false) {
   if (append) {
     isLoadingMore.value = true
   } else {
@@ -129,21 +115,21 @@ async function fetchInfrastructure(append = false) {
     if (searchQuery.value.trim()) params.set('search', searchQuery.value.trim())
     if (typeFilter.value && typeFilter.value !== 'all') params.set('type', typeFilter.value)
     
-    const response = await api.get<InfrastructureResponse>(`/communication-channel?${params.toString()}`)
+    const response = await api.get<CommunicationChannelListResponse>(`/communication-channel?${params.toString()}`)
     
     if (append) {
-      infrastructure.value = [...infrastructure.value, ...response.data]
-      allInfrastructure.value = [...allInfrastructure.value, ...response.data]
+      channels.value = [...channels.value, ...response.data]
+      allChannels.value = [...allChannels.value, ...response.data]
     } else {
-      infrastructure.value = response.data
-      allInfrastructure.value = response.data
+      channels.value = response.data
+      allChannels.value = response.data
     }
     
     total.value = response.total
-    hasMore.value = infrastructure.value.length < response.total
+    hasMore.value = channels.value.length < response.total
   } catch {
-    infrastructure.value = []
-    allInfrastructure.value = []
+    channels.value = []
+    allChannels.value = []
   } finally {
     isLoading.value = false
     isLoadingMore.value = false
@@ -152,12 +138,12 @@ async function fetchInfrastructure(append = false) {
 
 const loadMore = () => {
   page.value++
-  fetchInfrastructure(true)
+  fetchChannels(true)
 }
 
 const handleFilterChange = () => {
   page.value = 1
-  fetchInfrastructure()
+  fetchChannels()
 }
 
 const handleSearch = () => {
@@ -166,7 +152,7 @@ const handleSearch = () => {
   }
   searchTimeout.value = setTimeout(() => {
     page.value = 1
-    fetchInfrastructure()
+    fetchChannels()
   }, 300)
 }
 
@@ -178,9 +164,112 @@ watch(typeFilter, handleFilterChange)
 watch([cityFilter, districtFilter], () => {
 })
 
-function openTutorial(infra: Infrastructure) {
-  const plain = JSON.parse(JSON.stringify(toRaw(infra))) as Record<string, unknown>
+const selectedChannel = ref<CommunicationChannel | null>(null)
+const isEditSheetOpen = ref(false)
+const showDeleteDialog = ref(false)
+const showDeactivateDialog = ref(false)
+const isDeleting = ref(false)
+const isDeactivating = ref(false)
+const activeNetsCount = ref(0)
+const isLoadingActiveNets = ref(false)
+
+function openEditChannel(channel: CommunicationChannel) {
+  selectedChannel.value = channel
+  isEditSheetOpen.value = true
+}
+
+function openDeleteChannelDialog(channel: CommunicationChannel) {
+  selectedChannel.value = channel
+  showDeleteDialog.value = true
+  isLoadingActiveNets.value = true
+  api
+    .get<{ count: number }>(`/communication-channel/${channel.id}/active-nets`)
+    .then((res) => {
+      activeNetsCount.value = res.count ?? 0
+    })
+    .catch(() => {
+      activeNetsCount.value = 0
+    })
+    .finally(() => {
+      isLoadingActiveNets.value = false
+    })
+}
+
+function openDeactivateChannelDialog(channel: CommunicationChannel) {
+  selectedChannel.value = channel
+  showDeactivateDialog.value = true
+  isLoadingActiveNets.value = true
+  api
+    .get<{ count: number }>(`/communication-channel/${channel.id}/active-nets`)
+    .then((res) => {
+      activeNetsCount.value = res.count ?? 0
+    })
+    .catch(() => {
+      activeNetsCount.value = 0
+    })
+    .finally(() => {
+      isLoadingActiveNets.value = false
+    })
+}
+
+async function deleteChannel() {
+  if (!selectedChannel.value || isDeleting.value) return
+  if (activeNetsCount.value > 0) {
+    toast.error(t('communicationChannels.cannotDeleteWithActiveNets', { count: activeNetsCount.value }))
+    return
+  }
+  isDeleting.value = true
+  try {
+    await api.delete(`/communication-channel/${selectedChannel.value.id}`)
+    await fetchChannels()
+    toast.success(t('communicationChannels.deleteSuccess'))
+    showDeleteDialog.value = false
+    activeNetsCount.value = 0
+  } catch (e) {
+    toast.error(translateError((e as ApiError).message))
+  } finally {
+    isDeleting.value = false
+  }
+}
+
+async function confirmDeactivateChannel() {
+  if (!selectedChannel.value || isDeactivating.value) return
+  isDeactivating.value = true
+  try {
+    await api.patch(`/communication-channel/${selectedChannel.value.id}`, { isActive: false })
+    await fetchChannels()
+    toast.success(t('communicationChannels.deactivated'))
+    showDeactivateDialog.value = false
+    activeNetsCount.value = 0
+  } catch (e) {
+    toast.error(translateError((e as ApiError).message))
+  } finally {
+    isDeactivating.value = false
+  }
+}
+
+async function toggleChannelStatus(channel: CommunicationChannel) {
+  if (channel.isActive) {
+    openDeactivateChannelDialog(channel)
+  } else {
+    try {
+      await api.patch(`/communication-channel/${channel.id}`, { isActive: true })
+      await fetchChannels()
+      toast.success(t('communicationChannels.activated'))
+    } catch (e) {
+      toast.error(translateError((e as ApiError).message))
+    }
+  }
+}
+
+function handleChannelUpdated() {
+  void fetchChannels()
+}
+
+function openTutorial(channel: CommunicationChannel) {
+  const plain = JSON.parse(JSON.stringify(toRaw(channel))) as Record<string, unknown>
   tutorialContent.value = buildTutorialContent(plain, t)
+  tutorialTitle.value = formatCommunicationChannelLabel({ communicationChannel: channel })
   showTutorialDialog.value = true
 }
 
@@ -199,7 +288,10 @@ const renderMarkdown = (content: string) => {
     .replace(/\n/g, ' ')
 }
 
-fetchInfrastructure()
+onMounted(() => {
+  fetchUserMemberships()
+})
+fetchChannels()
 </script>
 
 <template>
@@ -255,67 +347,30 @@ fetchInfrastructure()
       <Separator />
 
       <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <InfrastructureCardSkeleton v-for="i in 6" :key="i" />
+        <CommunicationChannelCardSkeleton v-for="i in 6" :key="i" />
       </div>
 
-      <div v-else-if="filteredInfrastructure.length === 0" class="py-4 text-center">
+      <div v-else-if="filteredChannels.length === 0" class="py-4 text-center">
         <TowerControl class="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
         <p class="text-sm text-muted-foreground">{{ t('communicationChannels.noInfrastructure') }}</p>
       </div>
 
       <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <InfrastructureCard
-          v-for="infra in filteredInfrastructure"
-          :key="infra.id"
-          :id="infra.id"
-          :name="infra.name"
-          :type="infra.type"
-          :is-active="infra.isActive"
-          :branch-name="infra.branch?.name"
-          :branch-city="infra.branch?.city"
-          :description="infra.description"
-          :location="infra.location"
-          :district="infra.district"
-          :latitude="infra.latitude"
-            :longitude="infra.longitude"
-            :altitude="infra.altitude"
-            :coverage="infra.coverage"
-            :rx-frequency="infra.rxFrequency"
-            :tx-frequency="infra.txFrequency"
-            :offset="infra.offset"
-            :tx-ctcss-tone="infra.txCtcssTone"
-            :rx-ctcss-tone="infra.rxCtcssTone"
-            :tx-dcs-code="infra.txDcsCode"
-            :rx-dcs-code="infra.rxDcsCode"
-            :echolink-node="infra.echolinkNode"
-            :echolink-name="infra.echolinkName"
-            :aprs-frequency="infra.aprsFrequency"
-            :aprs-is-igate="infra.aprsIsIgate"
-            :aprs-is-digipeater="infra.aprsIsDigipeater"
-            :aprs-igate-mode="infra.aprsIgateMode"
-            :aprs-digipeater-type="infra.aprsDigipeaterType"
-            :aprs-path="infra.aprsPath"
-            :aprs-server="infra.aprsServer"
-          :hf-frequency-range="infra.hfFrequencyRange"
-          :hf-mode="infra.hfMode"
-        >
-          <template v-if="infra.isActive" #top-right>
-            <Button
-              variant="ghost"
-              size="icon"
-              class="h-7 w-7 rounded-full"
-              :title="t('communicationChannels.howToConnect')"
-              @click.stop="openTutorial(infra)"
-            >
-              <BookOpen class="h-3.5 w-3.5" />
-            </Button>
-          </template>
-        </InfrastructureCard>
+        <CommunicationChannelCard
+          v-for="ch in filteredChannels"
+          :key="ch.id"
+          :channel="ch"
+          :can-manage="canManageBranch(ch.branchId)"
+          @edit="openEditChannel"
+          @delete="openDeleteChannelDialog"
+          @toggle-status="(ch) => ch.isActive ? openDeactivateChannelDialog(ch) : toggleChannelStatus(ch)"
+          @open-tutorial="openTutorial"
+        />
       </div>
 
       <div v-if="!isLoading" class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-16 lg:pb-0">
-        <p v-if="!isLoading && (total > 0 || filteredInfrastructure.length > 0)" class="text-sm text-muted-foreground order-2 lg:order-1">
-          {{ filteredInfrastructure.length }}/{{ total }} {{ t('communicationChannels.nameEntity') }}
+        <p v-if="!isLoading && (total > 0 || filteredChannels.length > 0)" class="text-sm text-muted-foreground order-2 lg:order-1">
+          {{ filteredChannels.length }}/{{ total }} {{ t('communicationChannels.nameEntity') }}
         </p>
         <div v-if="hasMore && !isLoading && cityFilter === 'all' && districtFilter === 'all'" class="order-1 lg:order-2 w-full lg:w-auto">
           <Button
@@ -330,11 +385,80 @@ fetchInfrastructure()
       </div>
     </div>
 
+    <EditCommChannelSheet
+      v-if="selectedChannel"
+      :open="isEditSheetOpen"
+      :channel="selectedChannel"
+      :branch-city="selectedChannel.branch?.city"
+      @update:open="isEditSheetOpen = $event"
+      @updated="handleChannelUpdated"
+    />
+
+    <Dialog :open="showDeleteDialog" @update:open="showDeleteDialog = $event">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{{ t('communicationChannels.deleteConfirmTitle') }}</DialogTitle>
+          <DialogDescription>
+            <div v-if="isLoadingActiveNets" class="py-2">{{ t('common.loading') }}</div>
+            <div v-else>
+              <p>{{ t('communicationChannels.deleteConfirmDescription') }}</p>
+              <p v-if="activeNetsCount > 0" class="mt-2 text-amber-600 dark:text-amber-500 font-medium">
+                {{ t('communicationChannels.cannotDeleteWithActiveNets', { count: activeNetsCount }) }}
+              </p>
+            </div>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="showDeleteDialog = false" :disabled="isDeleting">
+            {{ t('common.cancel') }}
+          </Button>
+          <Button
+            variant="outline"
+            @click="deleteChannel"
+            :disabled="isDeleting || activeNetsCount > 0"
+            class="text-red-600 hover:text-red-700"
+          >
+            {{ isDeleting ? t('common.loading') : t('common.delete') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog :open="showDeactivateDialog" @update:open="showDeactivateDialog = $event">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{{ t('communicationChannels.deactivateConfirmTitle') }}</DialogTitle>
+          <DialogDescription>
+            <div v-if="isLoadingActiveNets" class="py-2">{{ t('common.loading') }}</div>
+            <div v-else>
+              <p>{{ t('communicationChannels.deactivateConfirmDescription') }}</p>
+              <p v-if="activeNetsCount > 0" class="mt-2 text-amber-600 dark:text-amber-500 font-medium">
+                {{ t('communicationChannels.activeNetsWarning', { count: activeNetsCount }) }}
+              </p>
+            </div>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="showDeactivateDialog = false" :disabled="isDeactivating">
+            {{ t('common.cancel') }}
+          </Button>
+          <Button
+            variant="outline"
+            @click="confirmDeactivateChannel"
+            :disabled="isDeactivating"
+            class="text-amber-600 hover:text-amber-700"
+          >
+            {{ isDeactivating ? t('common.loading') : t('communicationChannels.deactivate') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
     <Dialog :open="showTutorialDialog" @update:open="showTutorialDialog = $event">
       <DialogContent class="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader class="pr-8">
           <DialogTitle class="text-lg font-semibold leading-tight text-foreground">
-            {{ tutorialContent.title }}
+            {{ tutorialTitle }}
           </DialogTitle>
         </DialogHeader>
         <div class="tutorial-content text-sm text-foreground" v-html="renderMarkdown(tutorialContent.content)" />
