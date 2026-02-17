@@ -4,15 +4,14 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { Info } from 'lucide-vue-next'
+import { PopoverContent, PopoverRoot, PopoverTrigger } from 'reka-ui'
 import AuthLayout from '@/components/layout/AuthLayout.vue'
 import Captcha from '@/components/Captcha.vue'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
-import { AutocompleteCombobox } from '@/components/shared'
-import turkeyData from '@/data/turkey.json'
+import { LocatorMapPicker } from '@/components/shared'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
@@ -35,8 +34,9 @@ const callSign = ref('')
 const fullName = ref('')
 const password = ref('')
 const passwordConfirm = ref('')
-const city = ref<string>()
+const city = ref('')
 const district = ref('')
+const gridSquare = ref('')
 const privacyAccepted = ref<boolean>(false)
 const captchaToken = ref('')
 const captchaRef = ref<InstanceType<typeof Captcha>>()
@@ -45,9 +45,32 @@ const branches = ref<Branch[]>([])
 const branchesLoading = ref(true)
 const selectedBranchIds = ref<string[]>([])
 
-const cities = turkeyData.cities
+const locatorSelection = computed({
+  get() {
+    if (!gridSquare.value?.trim() && !city.value?.trim() && !district.value?.trim()) return null
+    return {
+      gridSquare: gridSquare.value?.trim()?.toUpperCase() ?? '',
+      city: city.value?.trim() ?? '',
+      district: district.value?.trim() ?? ''
+    }
+  },
+  set(val: { gridSquare: string; city: string; district: string } | null) {
+    if (!val) {
+      city.value = ''
+      district.value = ''
+      gridSquare.value = ''
+      return
+    }
+    city.value = val.city
+    district.value = val.district
+    gridSquare.value = val.gridSquare
+  }
+})
+
+const headquartersId = computed(() => branches.value.find((b) => b.isHeadquarters)?.id ?? null)
 
 function toggleBranch(branchId: string) {
+  if (branchId === headquartersId.value) return
   const idx = selectedBranchIds.value.indexOf(branchId)
   if (idx === -1) {
     selectedBranchIds.value = [...selectedBranchIds.value, branchId]
@@ -76,7 +99,13 @@ const isFormValid = computed(() => {
 async function loadBranches() {
   branchesLoading.value = true
   try {
-    branches.value = await api.get<Branch[]>('/auth/branches')
+    const res = await api.get<{ data: Branch[]; total: number }>('/auth/branches')
+    const data = res.data ?? []
+    branches.value = [...data].sort((a, b) => (b.isHeadquarters ? 1 : 0) - (a.isHeadquarters ? 1 : 0))
+    const hq = branches.value.find((b) => b.isHeadquarters)
+    if (hq && !selectedBranchIds.value.includes(hq.id)) {
+      selectedBranchIds.value = [hq.id, ...selectedBranchIds.value.filter((id) => id !== hq.id)]
+    }
   } catch {
     branches.value = []
   } finally {
@@ -99,7 +128,8 @@ async function handleSubmit() {
       fullName: (fullName.value || '').trim() || undefined,
       city: (city.value || '').trim() || undefined,
       district: (district.value || '').trim() || undefined,
-      country: t('form.country'),
+      country: (city.value || '').trim() ? t('form.country') : undefined,
+      gridSquare: (gridSquare.value || '').trim() ? gridSquare.value.trim().toUpperCase() : undefined,
       captchaToken: captchaToken.value || undefined
     })
     toast.success(t('auth.registerSuccess'))
@@ -207,51 +237,52 @@ function handleGoogleLogin() {
 
         <div class="space-y-2">
           <div class="flex items-center gap-2">
-            <Label class="text-xs text-muted-foreground">{{ t('auth.branchSelection') }} {{ t('form.required') }}</Label>
-            <span
-              class="inline-flex items-center justify-center rounded-full border border-border bg-muted/50 w-5 h-5 text-muted-foreground cursor-help"
-              :title="t('auth.whatIsBranch')"
-            >
-              <Info class="h-3 w-3" />
-            </span>
+            <Label class="text-xs text-muted-foreground">{{ t('auth.branchSelection') }}</Label>
+            <PopoverRoot>
+              <PopoverTrigger
+                type="button"
+                class="inline-flex items-center justify-center rounded-full border border-border bg-muted/50 w-5 h-5 text-muted-foreground cursor-pointer hover:bg-muted transition-colors"
+                :aria-label="t('auth.whatIsBranch')"
+              >
+                <Info class="h-3 w-3" />
+              </PopoverTrigger>
+              <PopoverContent
+                class="z-50 max-w-xs rounded-md border bg-popover p-3 text-popover-foreground shadow-md outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2"
+                :side-offset="6"
+              >
+                <p class="text-xs text-muted-foreground">{{ t('auth.whatIsBranch') }}</p>
+              </PopoverContent>
+            </PopoverRoot>
           </div>
-          <p class="text-xs text-muted-foreground mb-2">{{ t('auth.whatIsBranch') }}</p>
           <div v-if="branchesLoading" class="text-sm text-muted-foreground py-2">{{ t('common.loading') }}</div>
           <div v-else class="border border-border rounded-md p-3 max-h-48 overflow-y-auto space-y-2">
             <label
               v-for="b in branches"
               :key="b.id"
-              class="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5 -mx-2 -my-1.5"
+              :class="[
+                'flex items-center gap-2 rounded px-2 py-1.5 -mx-2 -my-1.5',
+                b.isHeadquarters ? 'cursor-default opacity-90' : 'cursor-pointer hover:bg-muted/50'
+              ]"
             >
-              <Checkbox
-                :checked="selectedBranchIds.includes(b.id)"
-                @update:checked="() => toggleBranch(b.id)"
+              <input
+                type="checkbox"
+                :checked="b.isHeadquarters || selectedBranchIds.includes(b.id)"
+                :disabled="b.isHeadquarters"
+                class="h-4 w-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background disabled:opacity-70"
+                @change="toggleBranch(b.id)"
               />
               <span class="font-medium">{{ b.name }}</span>
+              <span v-if="b.isHeadquarters" class="text-xs text-muted-foreground ml-1">({{ t('branches.headquarters') }})</span>
             </label>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="space-y-2">
-            <Label for="city">{{ t('form.city') }}</Label>
-            <AutocompleteCombobox
-              id="city"
-              :model-value="city ?? ''"
-              :options="cities"
-              :placeholder="t('form.cityPlaceholder')"
-              @update:model-value="(v) => (city = v)"
-            />
-          </div>
-          <div class="space-y-2">
-            <Label for="district">{{ t('form.district') }}</Label>
-            <Input
-              id="district"
-              v-model="district"
-              type="text"
-              :placeholder="t('form.districtPlaceholder')"
-            />
-          </div>
+        <div class="space-y-2">
+          <Label>{{ t('profile.qth') }}</Label>
+          <LocatorMapPicker
+            v-model="locatorSelection"
+            :standalone="false"
+          />
         </div>
 
         <div class="flex items-center gap-3 pt-2">

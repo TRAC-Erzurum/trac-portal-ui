@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { toast } from 'vue-sonner'
 import { LogOut, TowerControl, UserCircle } from 'lucide-vue-next'
 import {
   DropdownMenu,
@@ -26,10 +25,6 @@ const displayName = computed(() => {
 })
 
 function handleAccountClick() {
-  if (authStore.isGuest) {
-    toast.error(t('error.guestRestriction'))
-    return
-  }
   router.push('/account')
 }
 

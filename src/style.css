@@ -165,3 +165,36 @@
   }
 }
 
+/* Leaflet popup: varsayılan sağ üst kapatma kullanılmıyor, popup içindeki buton kullanılıyor */
+.leaflet-container a.leaflet-popup-close-button {
+  display: none;
+}
+
+/* Leaflet popup: theme-aware in dark mode (popup is injected by Leaflet, not in component tree) */
+.dark .leaflet-popup-content-wrapper,
+.dark .leaflet-popup-tip {
+  background: var(--background);
+  color: var(--foreground);
+  border: 1px solid var(--border);
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.5);
+}
+.dark .leaflet-container a.leaflet-popup-close-button {
+  color: var(--muted-foreground);
+}
+.dark .leaflet-container a.leaflet-popup-close-button:hover,
+.dark .leaflet-container a.leaflet-popup-close-button:focus {
+  color: var(--foreground);
+}
+
+/* İletişim kanalı pinleri: röle/APRS ikonları, varsayılan pin stilini kaldır */
+.leaflet-marker-icon.channel-marker-icon {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Çevrim detay haritası: katılımcı marker (çağrı işareti etiketi) */
+.leaflet-marker-icon.net-detail-attendee-marker {
+  background: transparent !important;
+  border: none !important;
+}
+

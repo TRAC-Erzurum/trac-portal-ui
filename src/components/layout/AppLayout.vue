@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ClipboardList } from 'lucide-vue-next'
@@ -57,6 +57,7 @@ onMounted(fetchPendingRequestsCount)
 router.afterEach(() => {
   if (authStore.isAdmin || authStore.isSuperAdmin) fetchPendingRequestsCount()
 })
+provide('refreshPendingRequestsCount', fetchPendingRequestsCount)
 </script>
 
 <template>
@@ -73,14 +74,14 @@ router.afterEach(() => {
     
     <Sidebar v-model:collapsed="sidebarCollapsed" />
     
-    <PendingApprovalBanner v-if="showPendingBanner" />
-    
-    <main
+    <div
       :class="[
-        'relative flex flex-col flex-1 min-h-0 transition-all duration-300 pb-16 lg:pb-0',
+        'relative flex flex-col flex-1 min-h-0 transition-all duration-300',
         sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
       ]"
     >
+      <PendingApprovalBanner v-if="showPendingBanner" />
+      <main class="relative flex flex-col flex-1 min-h-0 pb-16 lg:pb-0">
       <div class="p-6 lg:p-8 flex flex-col flex-1 min-h-0">
         <header class="flex items-center justify-between mb-3 lg:mb-4 gap-4 flex-shrink-0">
           <div class="flex items-center gap-3 min-w-0 flex-1">
@@ -126,7 +127,8 @@ router.afterEach(() => {
           </div>
         </footer>
       </div>
-    </main>
+      </main>
+    </div>
 
     <BottomNav />
   </div>

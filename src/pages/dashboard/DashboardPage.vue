@@ -11,6 +11,7 @@ import PersonalTrendWidget from '@/components/dashboard/widgets/PersonalTrendWid
 import CommunityPulseWidget from '@/components/dashboard/widgets/CommunityPulseWidget.vue'
 import BusiestTimeWidget from '@/components/dashboard/widgets/BusiestTimeWidget.vue'
 import GeographyWidget from '@/components/dashboard/widgets/GeographyWidget.vue'
+import MapPreviewWidget from '@/components/dashboard/widgets/MapPreviewWidget.vue'
 import MonthlyTrendWidget from '@/components/dashboard/widgets/MonthlyTrendWidget.vue'
 import NetsAttendeesTrendWidget from '@/components/dashboard/widgets/NetsAttendeesTrendWidget.vue'
 import { Separator } from '@/components/ui/separator'
@@ -251,6 +252,10 @@ onMounted(() => {
         :is-loading-more="isLoadingMoreActivity"
         @load-more="loadMoreActivity"
       />
+    </div>
+
+    <div class="mt-6">
+      <MapPreviewWidget />
     </div>
 
     <Separator class="my-8" />

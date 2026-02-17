@@ -3,12 +3,16 @@ import { useAuthStore, type UserRole } from '@/stores/auth'
 import { toast } from 'vue-sonner'
 import { i18n } from '@/i18n'
 
+const BASE_TITLE = 'TRAC Portal'
+
 declare module 'vue-router' {
   interface RouteMeta {
     requiresAuth?: boolean
     guestOnly?: boolean
     minRole?: UserRole
     forceChangePassword?: boolean
+    /** i18n key for document title (tab). Rendered as "TRAC Portal | {t(titleKey)}" */
+    titleKey?: string
   }
 }
 
@@ -25,116 +29,128 @@ const router = createRouter({
       path: '/',
       name: 'landing',
       component: () => import('@/pages/LandingPage.vue'),
-      meta: { requiresAuth: false, guestOnly: true }
+      meta: { requiresAuth: false, guestOnly: true, titleKey: 'nav.home' }
     },
     {
       path: '/login',
       name: 'login',
       component: () => import('@/pages/auth/LoginPage.vue'),
-      meta: { requiresAuth: false, guestOnly: true }
+      meta: { requiresAuth: false, guestOnly: true, titleKey: 'auth.login' }
     },
     {
       path: '/register',
       name: 'register',
       component: () => import('@/pages/auth/RegisterPage.vue'),
-      meta: { requiresAuth: false, guestOnly: true }
+      meta: { requiresAuth: false, guestOnly: true, titleKey: 'auth.register' }
     },
     {
       path: '/forgot-password',
       name: 'forgot-password',
       component: () => import('@/pages/auth/ForgotPasswordPage.vue'),
-      meta: { requiresAuth: false, guestOnly: true }
+      meta: { requiresAuth: false, guestOnly: true, titleKey: 'auth.forgotPasswordTitle' }
     },
     {
       path: '/change-password',
       name: 'force-change-password',
       component: () => import('@/pages/auth/ForceChangePasswordPage.vue'),
-      meta: { requiresAuth: true, forceChangePassword: true }
+      meta: { requiresAuth: true, forceChangePassword: true, titleKey: 'auth.changePassword' }
     },
     {
       path: '/dashboard',
       name: 'dashboard',
       component: () => import('@/pages/dashboard/DashboardPage.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, titleKey: 'nav.dashboard' }
     },
     {
       path: '/nets',
       name: 'nets',
       component: () => import('@/pages/nets/NetsPage.vue'),
-      meta: { requiresAuth: true, minRole: 'volunteer' }
+      meta: { requiresAuth: true, minRole: 'volunteer', titleKey: 'nav.nets' }
     },
     {
       path: '/nets/:id',
       name: 'net-detail',
       component: () => import('@/pages/nets/NetDetailPage.vue'),
-      meta: { requiresAuth: true, minRole: 'volunteer' }
+      meta: { requiresAuth: true, minRole: 'volunteer', titleKey: 'nav.nets' }
     },
     {
       path: '/operators',
       name: 'operators',
       component: () => import('@/pages/operators/OperatorsPage.vue'),
-      meta: { requiresAuth: true, minRole: 'volunteer' }
+      meta: { requiresAuth: true, minRole: 'volunteer', titleKey: 'nav.operators' }
     },
     {
       path: '/operators/:id',
       name: 'profile',
       component: () => import('@/pages/operators/ProfilePage.vue'),
-      meta: { requiresAuth: true, minRole: 'volunteer' }
+      meta: { requiresAuth: true, minRole: 'volunteer', titleKey: 'operators.profile' }
     },
     {
       path: '/account',
       name: 'account',
       component: () => import('@/pages/account/AccountPage.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: true, titleKey: 'nav.account' }
     },
     {
       path: '/branches',
       name: 'branches',
       component: () => import('@/pages/branches/BranchesPage.vue'),
-      meta: { requiresAuth: true, minRole: 'volunteer' }
+      meta: { requiresAuth: true, minRole: 'volunteer', titleKey: 'nav.branches' }
     },
     {
       path: '/branches/:id',
       name: 'branch-detail',
       component: () => import('@/pages/branches/BranchDetailPage.vue'),
-      meta: { requiresAuth: true, minRole: 'volunteer' }
+      meta: { requiresAuth: true, minRole: 'volunteer', titleKey: 'nav.branches' }
     },
     {
       path: '/communication-channels',
       name: 'communicationChannels',
       component: () => import('@/pages/communication-channels/CommunicationChannelsPage.vue'),
-      meta: { requiresAuth: true }
+      meta: { requiresAuth: false, titleKey: 'nav.communicationChannels' }
     },
     {
       path: '/admin/requests',
       name: 'admin-requests',
       component: () => import('@/pages/admin/AdminRequestsPage.vue'),
-      meta: { requiresAuth: true, minRole: 'admin' }
+      meta: { requiresAuth: true, minRole: 'admin', titleKey: 'admin.pendingRequests' }
+    },
+    {
+      path: '/map',
+      name: 'map',
+      component: () => import('@/pages/MapPage.vue'),
+      meta: { requiresAuth: false, titleKey: 'map.title' }
     },
     {
       path: '/privacy',
       name: 'privacy',
       component: () => import('@/pages/PrivacyPage.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: false, titleKey: 'privacy.title' }
     },
     {
       path: '/403',
       name: 'forbidden',
       component: () => import('@/pages/ForbiddenPage.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: false, titleKey: 'error.forbidden' }
     },
     {
       path: '/500',
       name: 'error',
       component: () => import('@/pages/ErrorPage.vue'),
-      meta: { requiresAuth: false }
+      meta: { requiresAuth: false, titleKey: 'error.serverError' }
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
-      component: () => import('@/pages/NotFoundPage.vue')
+      component: () => import('@/pages/NotFoundPage.vue'),
+      meta: { titleKey: 'notFound.title' }
     }
   ]
+})
+
+router.afterEach((to) => {
+  const titleKey = to.meta.titleKey as string | undefined
+  document.title = titleKey ? `${BASE_TITLE} | ${i18n.global.t(titleKey)}` : BASE_TITLE
 })
 
 router.beforeEach(async (to) => {

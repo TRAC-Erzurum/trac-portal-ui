@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -8,9 +8,15 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-vue-next'
+import L from 'leaflet'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
+import { LMap, LTileLayer } from '@vue-leaflet/vue-leaflet'
+import 'leaflet/dist/leaflet.css'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
 import { toast } from 'vue-sonner'
 import { useDateFormat } from '@/composables'
 import { getReportExportStyles, REPORT_EXPORT_WIDTH } from '@/lib/reportExportStyles'
@@ -20,7 +26,15 @@ import ExportReportTemplate from '@/components/nets/ExportReportTemplate.vue'
 import NetHeader from '@/components/nets/NetHeader.vue'
 import AddAttendeePanel from '@/components/nets/AddAttendeePanel.vue'
 import AttendeeList from '@/components/nets/AttendeeList.vue'
+import { Separator } from '@/components/ui/separator'
 import html2canvas from 'html2canvas'
+import type { Map as LeafletMap } from 'leaflet'
+
+// Extend Leaflet with MarkerClusterGroup (side effect)
+import 'leaflet.markercluster'
+
+const MAP_DEFAULT_CENTER: [number, number] = [20, 0]
+const MAP_DEFAULT_ZOOM = 2
 
 interface Operator {
   id: string
@@ -96,14 +110,168 @@ const exportTemplateRef = ref<InstanceType<typeof ExportReportTemplate> | null>(
 const exportAttendees = ref<Attendee[]>([])
 const isExporting = ref(false)
 
+const themeStore = useThemeStore()
+const mapRef = ref<{ leafletObject: LeafletMap } | null>(null)
+const leafletMapInstance = ref<LeafletMap | null>(null)
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- leaflet.markercluster extends L at runtime
+let clusterGroupInstance: any = null
+
+interface AttendeePoint {
+  attendee: Attendee
+  lat: number
+  lng: number
+}
+const attendeePoints = ref<AttendeePoint[]>([])
+const mapLoading = ref(false)
+
+const tileLayerUrl = computed(() => {
+  const isDark = themeStore.effectiveTheme === 'dark'
+  return isDark
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+})
+const tileLayerAttribution = computed(() => {
+  const isDark = themeStore.effectiveTheme === 'dark'
+  return isDark
+    ? '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>'
+    : undefined
+})
+
 const netStatus = computed(() => {
   if (net.value?.endedAt && !net.value?.startedAt) return 'cancelled'
   if (net.value?.endedAt) return 'completed'
   if (net.value?.startedAt) return 'active'
   return 'pending'
 })
-
 const isCompleted = computed(() => netStatus.value === 'completed')
+
+const attendeesWithCity = computed(() =>
+  attendees.value.filter((a) => (a.city ?? '').trim())
+)
+const showMapSection = computed(
+  () => isCompleted.value && attendeesWithCity.value.length > 0
+)
+
+async function buildAttendeePoints() {
+  const list = attendeesWithCity.value
+  if (!list.length) {
+    attendeePoints.value = []
+    return
+  }
+  mapLoading.value = true
+  attendeePoints.value = []
+  try {
+    const keyToCoords = new Map<string, { lat: number; lng: number }>()
+    const keys = [...new Set(list.map((a) => `${(a.city ?? '').trim()}|${(a.district ?? '').trim()}|${(a.country ?? '').trim()}`))]
+    for (const key of keys) {
+      const [city, district, country] = key.split('|')
+      const params = new URLSearchParams()
+      params.set('city', city ?? '')
+      if (district) params.set('district', district)
+      if (country) params.set('country', country)
+      const res = await api.get<{ lat: number; lng: number } | null>(
+        `/qth/geocode?${params.toString()}`
+      )
+      if (res && Number.isFinite(res.lat) && Number.isFinite(res.lng)) {
+        keyToCoords.set(key, { lat: res.lat, lng: res.lng })
+      }
+    }
+    const keyIndex = new Map<string, number>()
+    const out: AttendeePoint[] = []
+    for (const a of list) {
+      const k = `${(a.city ?? '').trim()}|${(a.district ?? '').trim()}|${(a.country ?? '').trim()}`
+      const coords = keyToCoords.get(k)
+      if (!coords) continue
+      const idx = keyIndex.get(k) ?? 0
+      keyIndex.set(k, idx + 1)
+      const offset = 0.006
+      const row = Math.floor(idx / 4)
+      const col = idx % 4
+      out.push({
+        attendee: a,
+        lat: coords.lat + (row - 1.5) * offset,
+        lng: coords.lng + (col - 1.5) * offset
+      })
+    }
+    attendeePoints.value = out
+  } catch {
+    attendeePoints.value = []
+  } finally {
+    mapLoading.value = false
+  }
+}
+
+function getPopupContent(a: Attendee): string {
+  const qth = [a.district, a.city, a.country].filter(Boolean).join(', ') || '—'
+  const r = a.readability
+  const s = a.signalStrength
+  const signal = (r != null || s != null) ? `${r ?? '-'}/${s ?? '-'}` : '—'
+  const popupQth = String(t('netDetail.popupQth'))
+  const popupSignal = String(t('netDetail.popupSignal'))
+  const profileLabel = String(t('operators.profile'))
+  const profileHref = a.operatorId ? `/operators/${encodeURIComponent(a.operatorId)}` : ''
+  return `
+    <div class="min-w-[12rem] rounded-md border border-border bg-background py-2 px-3 shadow-sm text-left">
+      <div class="font-semibold text-sm">${escapeHtml(a.callSign)}</div>
+      <div class="text-xs mt-1.5"><span class="text-muted-foreground">${escapeHtml(popupQth)}:</span> ${escapeHtml(qth)}</div>
+      <div class="text-xs"><span class="text-muted-foreground">${escapeHtml(popupSignal)}:</span> ${escapeHtml(signal)}</div>
+      ${profileHref ? `<a href="${escapeHtml(profileHref)}" class="text-xs mt-1.5 inline-block text-primary hover:underline focus:underline">${escapeHtml(profileLabel)}</a>` : ''}
+    </div>
+  `
+}
+
+function createAttendeeMarkerIcon(callSign: string): L.DivIcon {
+  return L.divIcon({
+    className: 'net-detail-attendee-marker',
+    html: `<span class="flex items-center justify-center min-w-[2rem] h-6 px-1.5 rounded-md bg-primary/90 text-primary-foreground text-xs font-medium shadow border border-background/80">${escapeHtml(callSign)}</span>`,
+    iconSize: [80, 24],
+    iconAnchor: [40, 12]
+  })
+}
+
+function updateCluster() {
+  const map = leafletMapInstance.value
+  if (!map || !attendeePoints.value.length) return
+  if (clusterGroupInstance) {
+    map.removeLayer(clusterGroupInstance)
+    clusterGroupInstance = null
+  }
+  const markerClusterGroupFn = (L as any).markerClusterGroup
+  if (!markerClusterGroupFn) return
+  const group = markerClusterGroupFn({
+    chunkedLoading: true,
+    maxClusterRadius: 60
+  })
+  for (const { attendee, lat, lng } of attendeePoints.value) {
+    const marker = L.marker([lat, lng], {
+      icon: createAttendeeMarkerIcon(attendee.callSign)
+    })
+    marker.bindPopup(getPopupContent(attendee), { className: 'net-detail-popup' })
+    group.addLayer(marker)
+  }
+  group.addTo(map)
+  clusterGroupInstance = group
+  const bounds = clusterGroupInstance.getBounds?.()
+  if (bounds?.isValid?.()) map.fitBounds(bounds, { padding: [24, 24], maxZoom: 12 })
+}
+
+function onMapReady(leafletMap: LeafletMap) {
+  leafletMapInstance.value = mapRef.value?.leafletObject ?? leafletMap
+  nextTick(() => updateCluster())
+}
+
+watch(
+  () => [attendeePoints.value, leafletMapInstance.value] as const,
+  () => updateCluster(),
+  { flush: 'post' }
+)
+watch(
+  () => [attendees.value, isCompleted.value] as const,
+  () => {
+    if (showMapSection.value) buildAttendeePoints()
+  },
+  { immediate: true }
+)
 
 const geographicDistribution = computed(() => {
   const list = attendees.value
@@ -167,6 +335,10 @@ onMounted(() => {
 onUnmounted(() => {
   if (resizeObserver && leftStatsRef.value) {
     resizeObserver.disconnect()
+  }
+  if (clusterGroupInstance && leafletMapInstance.value) {
+    leafletMapInstance.value.removeLayer(clusterGroupInstance)
+    clusterGroupInstance = null
   }
 })
 
@@ -686,6 +858,46 @@ const fetchComparePrevious = async () => {
                 </p>
               </div>
             </div>
+          </div>
+        </div>
+
+        <Separator class="my-8" />
+
+        <div
+          v-if="showMapSection"
+          class="rounded-lg border border-border/50 bg-background p-4"
+        >
+          <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-2">
+            <MapPin class="h-4 w-4" />
+            {{ t('netDetail.participantsMap') }}
+          </h3>
+          <p class="text-xs text-muted-foreground mb-4">
+            {{ t('netDetail.participantsMapDesc') }}
+          </p>
+          <div class="rounded-lg overflow-hidden border border-border/50 h-[320px] bg-muted/30">
+            <div v-if="mapLoading" class="h-full flex items-center justify-center text-sm text-muted-foreground">
+              {{ t('netDetail.mapLoading') }}
+            </div>
+            <template v-else-if="attendeePoints.length === 0">
+              <div class="h-full flex items-center justify-center text-sm text-muted-foreground">
+                {{ t('netDetail.mapNoLocations') }}
+              </div>
+            </template>
+            <LMap
+              v-else
+              ref="mapRef"
+              :use-global-leaflet="true"
+              :center="MAP_DEFAULT_CENTER"
+              :zoom="MAP_DEFAULT_ZOOM"
+              class="h-full w-full rounded-lg"
+              :options="{ zoomControl: true }"
+              @ready="onMapReady"
+            >
+              <LTileLayer
+                :url="tileLayerUrl"
+                :attribution="tileLayerAttribution"
+              />
+            </LMap>
           </div>
         </div>
       </section>

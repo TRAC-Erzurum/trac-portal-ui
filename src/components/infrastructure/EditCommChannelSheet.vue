@@ -8,11 +8,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { AutocompleteCombobox } from '@/components/shared'
+import { LocationMapPicker, type LocationSelection } from '@/components/shared'
 import { Plus, TowerControl, Globe, Navigation, X } from 'lucide-vue-next'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
-import { useQthData } from '@/composables'
+import { WGS84ToMaidenhead } from '@/lib/maidenhead'
 import type { CommunicationChannel } from '@/types/communication-channel'
 
 type InfrastructureType = 'vhf_uhf_repeater' | 'echolink' | 'aprs'
@@ -59,23 +59,44 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { getDistricts, loadCities, citiesData } = useQthData()
 
 const type = ref<InfrastructureType>('vhf_uhf_repeater')
 const description = ref('')
 const location = ref('')
 const district = ref('')
 
-const availableDistricts = computed(() => {
-  if (!props.branchCity) return []
-  void citiesData.value
-  return getDistricts(props.branchCity)
-})
-
 const latitude = ref<number | undefined>()
 const longitude = ref<number | undefined>()
 const altitude = ref<number | undefined>()
 const coverage = ref('')
+
+const locationSelection = computed({
+  get(): LocationSelection | null {
+    const lat = latitude.value
+    const lng = longitude.value
+    if (lat == null || lng == null || !Number.isFinite(lat) || !Number.isFinite(lng)) return null
+    return {
+      gridSquare: WGS84ToMaidenhead({ lat, lng }, 6),
+      city: props.branchCity ?? props.channel.branch?.city ?? '',
+      district: district.value?.trim() ?? '',
+      lat,
+      lng,
+      altitude: altitude.value ?? null
+    }
+  },
+  set(val: LocationSelection | null) {
+    if (!val) {
+      latitude.value = undefined
+      longitude.value = undefined
+      altitude.value = undefined
+      return
+    }
+    latitude.value = val.lat
+    longitude.value = val.lng
+    altitude.value = val.altitude ?? undefined
+    district.value = val.district
+  }
+})
 
 const rxFrequency = ref('')
 const txFrequency = ref('')
@@ -220,8 +241,7 @@ function parseOffset(offsetStr?: string): number | undefined {
 
 function loadForm() {
   if (!props.channel) return
-  
-  loadCities()
+
   skipFreqWatch.value = true
   
   type.value = props.channel.type as InfrastructureType
@@ -313,11 +333,8 @@ function removeTalkgroup(index: number) {
   talkgroups.value.splice(index, 1)
 }
 
-watch(() => props.open, async (isOpen) => {
-  if (isOpen && props.channel) {
-    await loadCities()
-    loadForm()
-  }
+watch(() => props.open, (isOpen) => {
+  if (isOpen && props.channel) loadForm()
 }, { immediate: true })
 
 watch(() => props.channel, (channel) => {
@@ -490,22 +507,18 @@ async function handleSubmit() {
 
         <Separator />
 
-        <div v-if="showDistrictField" class="space-y-2">
-          <Label for="edit-district">{{ t('form.district') }}</Label>
-          <AutocompleteCombobox
-            id="edit-district"
-            v-model="district"
-            :options="availableDistricts"
-            :placeholder="props.branchCity ? t('form.districtPlaceholder') : t('communicationChannels.selectCityFirst')"
-            :disabled="!props.branchCity"
-          />
-        </div>
-
-        <Separator v-if="showDistrictField" />
-
         <template v-if="showLocationFields">
           <div class="space-y-4">
             <h4 class="text-sm font-medium text-muted-foreground">{{ t('communicationChannels.locationSection') }}</h4>
+
+            <div class="space-y-2">
+              <Label>{{ t('communicationChannels.selectLocationOnMap') }}</Label>
+              <LocationMapPicker
+                v-model="locationSelection"
+                :allowed-province="branchCity ?? channel?.branch?.city"
+                :standalone="false"
+              />
+            </div>
 
             <div class="space-y-2">
               <Label for="edit-location">{{ t('communicationChannels.location') }}</Label>
@@ -517,52 +530,14 @@ async function handleSubmit() {
               />
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <Label for="edit-latitude">{{ t('communicationChannels.latitude') }}</Label>
-                <Input
-                  id="edit-latitude"
-                  v-model.number="latitude"
-                  type="number"
-                  step="0.0000001"
-                  min="-90"
-                  max="90"
-                  placeholder="41.0082"
-                />
-              </div>
-              <div class="space-y-2">
-                <Label for="edit-longitude">{{ t('communicationChannels.longitude') }}</Label>
-                <Input
-                  id="edit-longitude"
-                  v-model.number="longitude"
-                  type="number"
-                  step="0.0000001"
-                  min="-180"
-                  max="180"
-                  placeholder="28.9784"
-                />
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 gap-4">
-              <div class="space-y-2">
-                <Label for="edit-altitude">{{ t('communicationChannels.altitude') }}</Label>
-                <Input
-                  id="edit-altitude"
-                  v-model.number="altitude"
-                  type="number"
-                  placeholder="1200"
-                />
-              </div>
-              <div class="space-y-2">
-                <Label for="edit-coverage">{{ t('communicationChannels.coverage') }}</Label>
-                <Input
-                  id="edit-coverage"
-                  v-model="coverage"
-                  type="text"
-                  :placeholder="t('communicationChannels.coveragePlaceholder')"
-                />
-              </div>
+            <div class="space-y-2">
+              <Label for="edit-coverage">{{ t('communicationChannels.coverage') }}</Label>
+              <Input
+                id="edit-coverage"
+                v-model="coverage"
+                type="text"
+                :placeholder="t('communicationChannels.coveragePlaceholder')"
+              />
             </div>
           </div>
 

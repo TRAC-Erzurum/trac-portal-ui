@@ -5,6 +5,7 @@ import { ChevronRight, Radio, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { useI18n } from 'vue-i18n'
+import { getMapLocatorUrl } from '@/lib/maidenhead'
 import { formatCallSign, type CallSignParts } from '@/lib/formatters'
 import { getRoleBadgeClass } from '@/lib/ui-helpers'
 
@@ -16,6 +17,7 @@ interface Props {
   fullName?: string
   city?: string
   district?: string
+  gridSquare?: string
   attendedCount?: number
   managedCount?: number
   userFullName?: string
@@ -53,6 +55,11 @@ const qth = computed(() => {
   return parts.join(', ')
 })
 
+const mapLocatorUrl = computed(() => {
+  const gs = props.gridSquare?.trim()
+  return gs ? getMapLocatorUrl(gs) : null
+})
+
 </script>
 
 <template>
@@ -88,8 +95,17 @@ const qth = computed(() => {
         </p>
       </div>
     </div>
-    <div v-if="showChevron || $slots.actions" class="mt-auto flex items-center justify-end gap-1 pt-1.5 pb-0 border-t border-border/30">
+    <div v-if="showChevron || $slots.actions || mapLocatorUrl" class="mt-auto flex flex-wrap items-center justify-end gap-1 pt-1.5 pb-0 border-t border-border/30">
       <slot name="actions" />
+      <a
+        v-if="mapLocatorUrl"
+        :href="mapLocatorUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-xs text-muted-foreground hover:text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded px-2 py-1"
+      >
+        {{ t('map.showOnMap') }}
+      </a>
       <Button v-if="showChevron" variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="goToDetail">
         <ChevronRight class="h-3.5 w-3.5 mr-1.5" />
         {{ t('common.detail') }}

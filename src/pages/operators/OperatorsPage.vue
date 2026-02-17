@@ -18,6 +18,7 @@ interface Operator {
   fullName?: string
   city?: string
   district?: string
+  gridSquare?: string
   attendedCount: number
   managedCount: number
   user?: {
@@ -155,6 +156,7 @@ onMounted(() => {
           :full-name="op.fullName"
           :city="op.city"
           :district="op.district"
+          :grid-square="op.gridSquare"
           :attended-count="op.attendedCount"
           :managed-count="op.managedCount"
           :user-full-name="op.user?.fullName"

@@ -7,6 +7,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   plugins: [vue(), tailwindcss()],
   base: '/',
+  optimizeDeps: {
+    include: ['leaflet', 'leaflet.markercluster'],
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

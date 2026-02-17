@@ -5,6 +5,7 @@ import { toast } from 'vue-sonner'
 import { TowerControl } from 'lucide-vue-next'
 import EditCommChannelSheet from '@/components/infrastructure/EditCommChannelSheet.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
+import PublicPageLayout from '@/components/layout/PublicPageLayout.vue'
 import { CommunicationChannelCard, CommunicationChannelCardSkeleton, SearchInput } from '@/components/shared'
 import { usePersistedFilters } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
@@ -295,7 +296,114 @@ fetchChannels()
 </script>
 
 <template>
-  <AppLayout :title="t('nav.communicationChannels').toLocaleUpperCase(locale)">
+  <PublicPageLayout v-if="!authStore.isAuthenticated">
+    <div class="space-y-4">
+      <h1 class="text-2xl lg:text-3xl font-bold mb-4">
+        {{ t('nav.communicationChannels').toLocaleUpperCase(locale) }}
+      </h1>
+      <div class="flex flex-col lg:flex-row lg:items-start lg:gap-4 gap-2 mb-4">
+        <div class="w-full lg:w-1/2 lg:min-w-0 flex flex-col gap-2">
+          <SearchInput
+            v-model="searchQuery"
+            :placeholder="t('communicationChannels.searchPlaceholder')"
+          />
+          <div class="flex flex-wrap items-center gap-2">
+            <Select v-model="typeFilter">
+              <SelectTrigger class="w-full sm:w-auto flex-1 min-w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem
+                  v-for="opt in typeOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Select v-model="cityFilter">
+              <SelectTrigger class="w-full sm:w-auto flex-1 min-w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in cityOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Select v-model="districtFilter">
+              <SelectTrigger class="w-full sm:w-auto flex-1 min-w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="option in districtOptions" :key="option.value" :value="option.value">
+                  {{ option.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
+        </div>
+      </div>
+
+      <Separator />
+
+      <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <CommunicationChannelCardSkeleton v-for="i in 6" :key="i" />
+      </div>
+
+      <div v-else-if="filteredChannels.length === 0" class="py-4 text-center">
+        <TowerControl class="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+        <p class="text-sm text-muted-foreground">{{ t('communicationChannels.noInfrastructure') }}</p>
+      </div>
+
+      <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <CommunicationChannelCard
+          v-for="ch in filteredChannels"
+          :key="ch.id"
+          :channel="ch"
+          :can-manage="false"
+          @open-tutorial="openTutorial"
+        />
+      </div>
+
+      <div v-if="!isLoading" class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-16 lg:pb-0">
+        <p v-if="!isLoading && (total > 0 || filteredChannels.length > 0)" class="text-sm text-muted-foreground order-2 lg:order-1">
+          {{ filteredChannels.length }}/{{ total }} {{ t('communicationChannels.nameEntity') }}
+        </p>
+        <div v-if="hasMore && !isLoading && cityFilter === 'all' && districtFilter === 'all'" class="order-1 lg:order-2 w-full lg:w-auto">
+          <Button
+            variant="outline"
+            class="w-full lg:w-auto lg:px-8"
+            :disabled="isLoadingMore"
+            @click="loadMore"
+          >
+            {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
+          </Button>
+        </div>
+      </div>
+    </div>
+
+    <Dialog :open="showTutorialDialog" @update:open="showTutorialDialog = $event">
+      <DialogContent class="sm:max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader class="pr-8">
+          <DialogTitle class="text-lg font-semibold leading-tight text-foreground">
+            {{ tutorialTitle }}
+          </DialogTitle>
+        </DialogHeader>
+        <div class="tutorial-content text-sm text-foreground" v-html="renderMarkdown(tutorialContent.content)" />
+        <DialogFooter>
+          <Button variant="outline" @click="showTutorialDialog = false">
+            {{ t('common.close') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  </PublicPageLayout>
+
+  <AppLayout v-else :title="t('nav.communicationChannels').toLocaleUpperCase(locale)">
     <div class="space-y-4">
       <div class="flex flex-col lg:flex-row lg:items-start lg:gap-4 gap-2 mb-4">
         <div class="w-full lg:w-1/2 lg:min-w-0 flex flex-col gap-2">

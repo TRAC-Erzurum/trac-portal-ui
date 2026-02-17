@@ -1,0 +1,231 @@
+<script setup lang="ts">
+import { computed, nextTick, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { LMap, LTileLayer, LMarker, LPopup } from '@vue-leaflet/vue-leaflet'
+import 'leaflet/dist/leaflet.css'
+import MapSelectionSummary from '@/components/shared/MapSelectionSummary.vue'
+import { useThemeStore } from '@/stores/theme'
+import { api } from '@/lib/api'
+import { parseLocatorForMap } from '@/lib/maidenhead'
+
+const TURKEY_CENTER: [number, number] = [39.93, 32.85]
+const MAP_ZOOM = 8
+
+const props = withDefaults(
+  defineProps<{
+    gridSquare: string | null
+    /** When false, no outer border (e.g. inside dashboard card). */
+    standalone?: boolean
+  }>(),
+  { standalone: true }
+)
+
+const emit = defineEmits<{
+  click: []
+}>()
+
+const { t } = useI18n()
+const themeStore = useThemeStore()
+
+const userGrid = computed(() =>
+  props.gridSquare?.trim()?.toUpperCase() ?? null
+)
+
+const userParsed = computed(() =>
+  userGrid.value ? parseLocatorForMap(userGrid.value) : null
+)
+
+const mapCenter = computed((): [number, number] => {
+  if (!userParsed.value) return TURKEY_CENTER
+  const [a, b] = userParsed.value.bounds
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
+})
+
+const mapZoom = computed(() => MAP_ZOOM)
+
+const markerLatLng = computed((): [number, number] | null => {
+  if (!userParsed.value) return null
+  const { lat, lng } = userParsed.value.wgs84
+  return [lat, lng]
+})
+
+const addressPlace = ref<{
+  country: string
+  province: string
+  district: string
+} | null>(null)
+const addressLoading = ref(false)
+const addressCache = new Map<string, { country: string; province: string; district: string }>()
+const markerRef = ref<{ leafletObject: { openPopup: () => void } } | null>(null)
+
+async function fetchAddress(lat: number, lng: number) {
+  const key = `${lat.toFixed(4)},${lng.toFixed(4)}`
+  const cached = addressCache.get(key)
+  if (cached) {
+    addressPlace.value = cached
+    return
+  }
+  addressLoading.value = true
+  addressPlace.value = null
+  try {
+    const data = await api.get<{
+      address?: Record<string, string>
+    } | null>(`/qth/reverse?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}`)
+    if (!data?.address) {
+      addressPlace.value = null
+      return
+    }
+    const addr = data.address
+    const country = addr.country ?? ''
+    const province =
+      addr.province ?? addr.state ?? addr.state_district ?? addr.region ?? ''
+    const district =
+      addr.town ?? addr.county ?? addr.municipality ?? addr.village ?? ''
+    const place = { country, province, district }
+    addressPlace.value = place
+    addressCache.set(key, place)
+  } catch {
+    addressPlace.value = null
+  } finally {
+    addressLoading.value = false
+  }
+}
+
+const popupDecimalDisplay = computed(() => {
+  const ll = markerLatLng.value
+  return ll ? `${ll[0].toFixed(5)}, ${ll[1].toFixed(5)}` : ''
+})
+
+watch(
+  () => userParsed.value?.wgs84,
+  (wgs84) => {
+    if (!wgs84) {
+      addressPlace.value = null
+      return
+    }
+    const { lat, lng } = wgs84
+    const key = `${Number(lat).toFixed(4)},${Number(lng).toFixed(4)}`
+    const cached = addressCache.get(key)
+    if (cached) {
+      addressPlace.value = cached
+      return
+    }
+    fetchAddress(lat, lng)
+  },
+  { immediate: true }
+)
+
+function openPopupIfReady() {
+  if (!markerLatLng.value) return
+  const marker = markerRef.value?.leafletObject
+  if (marker?.openPopup) marker.openPopup()
+}
+
+function onMarkerAdd() {
+  nextTick(openPopupIfReady)
+  setTimeout(openPopupIfReady, 80)
+}
+
+const tileLayerUrl = computed(() => {
+  const isDark = themeStore.effectiveTheme === 'dark'
+  return isDark
+    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+})
+
+const tileLayerAttribution = computed(() =>
+  themeStore.effectiveTheme === 'dark'
+    ? '© OpenStreetMap © CARTO'
+    : undefined
+)
+
+const mapOptions = {
+  dragging: false,
+  scrollWheelZoom: false,
+  doubleClickZoom: false,
+  touchZoom: false,
+  zoomControl: false,
+  boxZoom: false,
+  keyboard: false,
+}
+
+function onMapClick() {
+  emit('click')
+}
+
+const selectionSummary = computed(() => {
+  if (!userParsed.value) return null
+  const ll = markerLatLng.value
+  const lat = ll?.[0] ?? null
+  const lng = ll?.[1] ?? null
+  const district = addressPlace.value?.district ?? null
+  return { district, lat, lng }
+})
+</script>
+
+<template>
+  <div
+    role="button"
+    tabindex="0"
+    class="overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    :class="standalone ? 'rounded-lg border border-border bg-background' : ''"
+    :aria-label="userParsed ? t('map.title') : t('dashboard.mapPreviewNoQth')"
+    @click="onMapClick"
+    @keydown.enter="onMapClick"
+    @keydown.space.prevent="onMapClick"
+  >
+    <div class="h-48 relative">
+      <div class="absolute inset-0 z-0 cursor-pointer" @click.stop="onMapClick">
+        <LMap
+          :use-global-leaflet="true"
+          :center="mapCenter"
+          :zoom="mapZoom"
+          :class="['h-full w-full', standalone ? 'rounded-lg' : 'rounded-b-lg']"
+          :options="mapOptions"
+        >
+          <LTileLayer
+            :url="tileLayerUrl"
+            :attribution="tileLayerAttribution"
+          />
+          <LMarker
+            v-if="markerLatLng"
+            ref="markerRef"
+            :lat-lng="markerLatLng"
+            @add="onMarkerAdd"
+          >
+            <LPopup :options="{ closeButton: false }">
+              <div
+                class="rounded bg-background px-2 py-1.5 shadow-sm min-w-0 max-w-[20rem]"
+                @click.stop
+              >
+                <p class="text-[11px] font-medium text-foreground break-words">
+                  <span class="font-mono">{{ userGrid }}</span>
+                  <span class="text-muted-foreground font-normal"> · </span>
+                  <span class="text-muted-foreground">{{ addressLoading ? t('common.loading') : (addressPlace?.province || '—') }}{{ addressPlace?.district ? `, ${addressPlace.district}` : '' }}</span>
+                </p>
+                <p v-if="markerLatLng" class="tabular-nums text-[10px] text-muted-foreground mt-0.5 break-words">
+                  {{ popupDecimalDisplay }}
+                </p>
+              </div>
+            </LPopup>
+          </LMarker>
+        </LMap>
+      </div>
+      <div
+        v-if="!userParsed"
+        :class="['absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-sm', standalone ? 'rounded-lg' : 'rounded-b-lg']"
+      >
+        <p class="text-sm font-medium text-muted-foreground text-center px-4">
+          {{ t('dashboard.mapPreviewNoQth') }}
+        </p>
+      </div>
+    </div>
+    <MapSelectionSummary
+      v-if="selectionSummary"
+      :district="selectionSummary.district"
+      :lat="selectionSummary.lat"
+      :lng="selectionSummary.lng"
+      :rounded-bottom="standalone"
+    />
+  </div>
+</template>

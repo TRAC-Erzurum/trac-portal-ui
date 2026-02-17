@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -47,6 +47,7 @@ interface AdminPendingResponse {
 const { t } = useI18n()
 const router = useRouter()
 const { formatDateSimple } = useDateFormat()
+const refreshPendingRequestsCount = inject<() => Promise<void>>('refreshPendingRequestsCount')
 const isLoading = ref(true)
 const membershipRequests = ref<BranchRequests[]>([])
 const passwordResetRequests = ref<PasswordResetRequest[]>([])
@@ -102,6 +103,7 @@ async function confirmApproveMembership() {
     await api.patch(`/branches/${branchId}/members/${userId}/approve`, { role })
     toast.success(t('admin.roleUpdated'))
     await fetchPending()
+    await refreshPendingRequestsCount?.()
   } catch (e) {
     const err = e as ApiError
     toast.error(translateError(err.message))
@@ -121,6 +123,7 @@ async function confirmRejectMembership() {
     await api.patch(`/branches/${branchId}/members/${userId}/reject`, { rejectionReason: reason })
     toast.success(t('admin.membershipRejected'))
     await fetchPending()
+    await refreshPendingRequestsCount?.()
   } catch (e) {
     const err = e as ApiError
     toast.error(translateError(err.message))
@@ -161,6 +164,7 @@ async function confirmApprovePasswordReset() {
     })
     toast.success(t('admin.passwordReset'))
     passwordResetRequests.value = passwordResetRequests.value.filter((r) => r.id !== requestId)
+    await refreshPendingRequestsCount?.()
   } catch (e) {
     const err = e as ApiError
     toast.error(translateError(err.message))
@@ -181,6 +185,7 @@ async function confirmRejectPasswordReset() {
     await api.post(`/auth/password-reset-requests/${requestId}/reject`)
     toast.success(t('admin.passwordResetRejected'))
     passwordResetRequests.value = passwordResetRequests.value.filter((r) => r.id !== requestId)
+    await refreshPendingRequestsCount?.()
   } catch (e) {
     const err = e as ApiError
     toast.error(translateError(err.message))

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { BookOpen, Edit, Globe, MapPin, Mountain, Navigation, Power, PowerOff, Tag, TowerControl, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { getMapLocatorUrl, WGS84ToMaidenhead } from '@/lib/maidenhead'
 import type { CommunicationChannel } from '@/types/communication-channel'
 
 const props = withDefaults(
@@ -188,21 +189,22 @@ const hasLocation = computed(() => {
   return locationParts.value.length > 0 || c.value.altitude != null
 })
 
-const googleMapsUrl = computed(() => {
+const mapLocatorUrl = computed(() => {
   if (c.value.latitude != null && c.value.longitude != null) {
     const lat = Number(c.value.latitude)
     const lng = Number(c.value.longitude)
     if (Number.isFinite(lat) && Number.isFinite(lng)) {
-      return `https://www.google.com/maps?q=${lat},${lng}`
+      const locator = WGS84ToMaidenhead({ lat, lng })
+      return getMapLocatorUrl(locator)
     }
   }
   return null
 })
 
-function openMaps(event: Event) {
+function openMap(event: Event) {
   event.stopPropagation()
-  if (googleMapsUrl.value) {
-    window.open(googleMapsUrl.value, '_blank')
+  if (mapLocatorUrl.value) {
+    window.open(mapLocatorUrl.value, '_blank')
   }
 }
 
@@ -331,10 +333,10 @@ const showActions = computed(() => c.value.isActive || props.canManage)
           <div class="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
             <template v-if="locationParts.length > 0">
               <button
-                v-if="googleMapsUrl"
+                v-if="mapLocatorUrl"
                 type="button"
                 class="inline-flex items-center gap-1 hover:text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
-                @click.stop="openMaps"
+                @click.stop="openMap"
               >
                 <MapPin class="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 <span>{{ locationParts.join(', ') }}</span>
