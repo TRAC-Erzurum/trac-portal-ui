@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, type Component } from 'vue'
+import { computed, onMounted, ref, watch, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { Calendar, Camera, ChevronRight, ExternalLink, Key, LogIn, Mail, Pencil, Trash2, UserCircle } from 'lucide-vue-next'
+import { Calendar, Camera, ChevronRight, Key, LogIn, Mail, Pencil, Trash2, UserCircle } from 'lucide-vue-next'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ChangePasswordSheet from '@/components/profile/ChangePasswordSheet.vue'
 import EditOperatorSheet from '@/components/profile/EditOperatorSheet.vue'
@@ -15,6 +15,7 @@ import type { MobileFabAction } from '@/components/shared'
 import { useDateFormat } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
+import { LocatorMapPreview } from '@/components/shared'
 import { api, type ApiError } from '@/lib/api'
 import { formatCallSign } from '@/lib/formatters'
 
@@ -42,6 +43,8 @@ interface Profile {
 }
 
 const { t } = useI18n()
+const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const { formatDateLong } = useDateFormat()
 
@@ -57,6 +60,7 @@ const isUploadingAvatar = ref(false)
 const showEditPersonal = ref(false)
 const showEditOperator = ref(false)
 const showChangePassword = ref(false)
+const pendingEditOperator = ref(false)
 
 const formattedCallSign = computed(() => {
   const op = profile.value?.operator
@@ -64,17 +68,17 @@ const formattedCallSign = computed(() => {
   return formatCallSign(op)
 })
 
-const qth = computed(() => {
-  const op = profile.value?.operator
-  if (!op) return null
-  const parts = [op.district, op.city, op.country].filter(Boolean)
-  return parts.length > 0 ? parts.join(' • ') : null
-})
+const gridSquareForMap = computed(() =>
+  profile.value?.operator?.gridSquare?.trim() ?? null
+)
 
-const gridSquareUrl = computed(() => {
-  const gs = profile.value?.operator?.gridSquare
-  return gs ? `https://k7fry.com/grid/?qth=${gs}` : null
-})
+function onLocatorMapClick() {
+  if (gridSquareForMap.value) {
+    router.push({ path: '/map', query: { locator: gridSquareForMap.value } })
+  } else {
+    showEditOperator.value = true
+  }
+}
 
 const memberSince = computed(() => formatDateLong(profile.value?.createdAt))
 
@@ -82,7 +86,7 @@ const mobileFabActions = computed<MobileFabAction[]>(() => {
   return [
     { key: 'editPersonal', label: t('common.edit'), icon: Pencil as Component },
     { key: 'changePassword', label: t('profile.changePassword'), icon: Key as Component },
-    { key: 'editOperator', label: t('profile.qth'), icon: Pencil as Component },
+    { key: 'editOperator', label: t('profile.editOperatorAction'), icon: Pencil as Component },
   ]
 })
 
@@ -178,6 +182,28 @@ async function handleProfileUpdated() {
 onMounted(() => {
   fetchProfile()
 })
+
+watch(
+  () => route.query.edit,
+  (edit) => {
+    if (edit === 'operator') {
+      pendingEditOperator.value = true
+      router.replace({ path: '/account', query: {} })
+    }
+  },
+  { immediate: true }
+)
+
+watch(
+  () => [profile.value, pendingEditOperator.value] as const,
+  ([p, pending]) => {
+    if (pending && p) {
+      pendingEditOperator.value = false
+      showEditOperator.value = true
+    }
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -283,37 +309,29 @@ onMounted(() => {
 
           <div class="min-w-0 space-y-3">
             <div class="flex flex-wrap items-center justify-end gap-2">
-              <p class="text-xs text-muted-foreground mr-auto">{{ t('profile.qth') }}</p>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs text-muted-foreground">{{ t('profile.dmrId') }}</p>
+                <p class="text-sm font-medium font-mono">{{ profile.operator?.dmrId || '-' }}</p>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
-                class="hidden lg:inline-flex min-w-[10rem]"
+                class="hidden lg:inline-flex min-w-[10rem] shrink-0"
                 @click="showEditOperator = true"
               >
                 <Pencil class="h-4 w-4 mr-2" />
                 {{ t('common.edit') }}
               </Button>
             </div>
-            <p class="font-medium">{{ qth || '-' }}</p>
-            <p class="text-xs text-muted-foreground">{{ t('profile.locator') }}</p>
-            <div>
-              <a
-                v-if="gridSquareUrl"
-                :href="gridSquareUrl"
-                target="_blank"
-                class="text-sm text-primary hover:underline inline-flex items-center gap-1"
-              >
-                {{ profile.operator?.gridSquare }}
-                <ExternalLink class="h-3 w-3" />
-              </a>
-              <p v-else class="text-sm font-medium">-</p>
-            </div>
-            <p class="text-xs text-muted-foreground">{{ t('profile.dmrId') }}</p>
-            <p class="text-sm font-medium font-mono">{{ profile.operator?.dmrId || '-' }}</p>
+            <p class="text-xs text-muted-foreground">{{ t('profile.qth') }}</p>
+            <LocatorMapPreview
+              :grid-square="gridSquareForMap"
+              @click="onLocatorMapClick"
+            />
           </div>
         </div>
 
-        <section v-if="profileUrl" class="mt-10">
+        <section v-if="profileUrl && !authStore.isGuest" class="mt-10">
           <RouterLink
             :to="profileUrl"
             class="flex items-center gap-5 p-6 rounded-xl border border-border bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all duration-200 group"
@@ -338,7 +356,11 @@ onMounted(() => {
     <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
 
     <EditPersonalSheet v-model:open="showEditPersonal" @updated="handleProfileUpdated" />
-    <EditOperatorSheet v-model:open="showEditOperator" @updated="handleProfileUpdated" />
+    <EditOperatorSheet
+      v-model:open="showEditOperator"
+      :initial-profile="profile"
+      @updated="handleProfileUpdated"
+    />
     <ChangePasswordSheet v-model:open="showChangePassword" />
   </AppLayout>
 </template>

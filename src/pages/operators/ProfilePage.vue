@@ -3,10 +3,10 @@ import { ref, computed, onMounted, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Building2, Calendar, ChevronRight, Ear, ExternalLink, Key, Mail, Pencil, Radio, Signal, TrendingUp, Users } from 'lucide-vue-next'
+import { Building2, Calendar, ChevronRight, Ear, Key, Mail, Pencil, Radio, Signal, TrendingUp, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BranchMembershipCard from '@/components/shared/BranchMembershipCard.vue'
-import { MobileFab, SearchInput } from '@/components/shared'
+import { LocatorMapPreview, MobileFab, SearchInput } from '@/components/shared'
 import type { MobileFabAction } from '@/components/shared'
 import { usePersistedFilters } from '@/composables'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -103,7 +103,7 @@ const mobileFabActions = computed<MobileFabAction[]>(() => {
   const actions: MobileFabAction[] = []
   
   if (canEdit.value) {
-    actions.push({ key: 'edit', label: t('common.edit'), icon: Pencil as Component })
+    actions.push({ key: 'edit', label: t('profile.editOperatorAction'), icon: Pencil as Component })
   }
   if (authStore.hasRole('admin') && operator.value?.user?.id) {
     actions.push({ key: 'resetPassword', label: t('admin.resetPassword'), icon: Key as Component })
@@ -135,15 +135,17 @@ const displayName = computed(() => {
   return operator.value.user?.fullName || operator.value.fullName || ''
 })
 
-const qthParts = computed(() => {
-  if (!operator.value) return []
-  return [operator.value.district, operator.value.city, operator.value.country].filter(Boolean)
-})
+const gridSquareForMap = computed(() =>
+  operator.value?.gridSquare?.trim() ?? null
+)
 
-const locatorLink = computed(() => {
-  if (!operator.value?.gridSquare) return null
-  return `https://www.k7fry.com/grid/?qth=${operator.value.gridSquare}`
-})
+function onLocatorMapClick() {
+  if (gridSquareForMap.value) {
+    router.push({ path: '/map', query: { locator: gridSquareForMap.value } })
+  } else if (canEdit.value) {
+    showEditSheet.value = true
+  }
+}
 
 const fetchOperator = async () => {
   try {
@@ -375,35 +377,26 @@ onMounted(async () => {
 
           <div class="min-w-0 space-y-3">
             <div class="flex flex-wrap items-center justify-end gap-2">
-              <p class="text-xs text-muted-foreground mr-auto">{{ t('profile.qth') }}</p>
+              <div class="min-w-0 flex-1">
+                <p class="text-xs text-muted-foreground">{{ t('profile.dmrId') }}</p>
+                <p class="text-sm font-medium font-mono">{{ operator.dmrId || '-' }}</p>
+              </div>
               <Button
                 v-if="canEdit"
                 variant="outline"
                 size="sm"
-                class="hidden lg:inline-flex min-w-[10rem]"
+                class="hidden lg:inline-flex min-w-[10rem] shrink-0"
                 @click="showEditSheet = true"
               >
                 <Pencil class="h-4 w-4 mr-2" />
                 {{ t('common.edit') }}
               </Button>
             </div>
-            <p class="font-medium">{{ qthParts.length ? qthParts.join(' • ') : '-' }}</p>
-            <p class="text-xs text-muted-foreground">{{ t('profile.locator') }}</p>
-            <div>
-              <a
-                v-if="locatorLink"
-                :href="locatorLink"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="text-sm text-primary hover:underline inline-flex items-center gap-1"
-              >
-                {{ operator.gridSquare }}
-                <ExternalLink class="h-3 w-3" />
-              </a>
-              <p v-else class="text-sm font-medium">-</p>
-            </div>
-            <p class="text-xs text-muted-foreground">{{ t('profile.dmrId') }}</p>
-            <p class="text-sm font-medium font-mono">{{ operator.dmrId || '-' }}</p>
+            <p class="text-xs text-muted-foreground">{{ t('profile.qth') }}</p>
+            <LocatorMapPreview
+              :grid-square="gridSquareForMap"
+              @click="onLocatorMapClick"
+            />
           </div>
         </div>
 

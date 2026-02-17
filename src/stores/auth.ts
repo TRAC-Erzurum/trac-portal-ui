@@ -49,6 +49,7 @@ interface RegisterData {
   city?: string
   district?: string
   country?: string
+  gridSquare?: string
   captchaToken?: string
 }
 

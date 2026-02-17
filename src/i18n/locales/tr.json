@@ -116,7 +116,29 @@
     "developedBy": "TRAC Erzurum Şubesi \"YM9KE\" destekleriyle gönüllü radyo amatörleri tarafından geliştirildi."
   },
   "landing": {
-    "heroDescription": "Türkiye'nin dört bir yanından radyo amatörleri burada buluşuyor. Aktivitelerinizi kaydedin, istatistiklerinizi görün, topluluğun bir parçası olun.",
+    "heroDescription": "Çevrimlere katılın, istatistiklerinizi takip edin, topluluğun bir parçası olun.",
+    "heroMapLink": "QTH haritası",
+    "heroChannelsLink": "İletişim kanalları",
+    "whatsHere": {
+      "title": "Burada neler var?",
+      "nets": "Çevrimler ve aktiviteler",
+      "netsDesc": "Şubenizin düzenlediği çevrimlere katılın, el telsizinizle veya EchoLink ile bağlanın. Katıldığınız her çevrimi işaretleyin; kişisel istatistikleriniz ve sinyal raporlarınız kendiliğinden güncellenir. Düzenli katılımla sıralamalarda yükselin.",
+      "map": "QTH haritası",
+      "mapDesc": "Maidenhead locator ile konumunuzu birkaç karakterle ifade edin. Haritada herhangi bir locator arayın, koordinata çevirin veya QTH’nizi paylaşmak için link oluşturun. Radyo amatörleri arasında dünya çapında kullanılan bu sistem, harita üzerinde hızlı keşif imkânı sunar.",
+      "channels": "İletişim kanalları",
+      "channelsDesc": "VHF/UHF röleler, EchoLink düğümleri ve APRS istasyonlarının frekans, ton ve konum bilgilerini tek yerden görün. Yakınınızdaki röleleri keşfedin, cihazınıza kaydedin veya harita üzerinde iletişim altyapısını inceleyin.",
+      "community": "Operatörler ve sıralamalar",
+      "communityDesc": "Türkiye genelindeki operatörleri çağrı işareti, şehir ve QTH ile arayın. Şube ve genel sıralama tablolarında en aktif operatörleri takip edin; istatistiklerinizi PDF veya CSV olarak dışa aktarın."
+    },
+    "howItWorks": {
+      "title": "Nasıl başlarım?",
+      "step1": "Kayıt olun",
+      "step1Desc": "E-posta veya Google ile ücretsiz hesap oluşturun.",
+      "step2": "Şube seçin, onay bekleyin",
+      "step2Desc": "Üye olmak istediğiniz şubeyi seçin; yönetici onayından sonra hesabınız etkinleşir.",
+      "step3": "Çevrimlere katılın, katılımlarınızı işaretleyin",
+      "step3Desc": "Aktif çevrimlere katılın; katıldıkça işaretleyin, istatistikleriniz kendiliğinden dolsun."
+    },
     "stats": {
       "operators": "Kayıtlı operatör",
       "activities": "Kayıtlı aktivite",
@@ -136,15 +158,25 @@
       "reporting": "Raporlama",
       "reportingDesc": "Verilerinizi PDF, CSV veya PNG olarak dışa aktarın. Yakında sertifika desteği.",
       "mobile": "Mobil Uyumlu",
-      "mobileDesc": "Her cihazdan erişin, sahada bile kullanın."
+      "mobileDesc": "Her cihazdan erişin, sahada bile kullanın.",
+      "qthMap": "QTH Haritası",
+      "qthMapDesc": "Herhangi bir Maidenhead locator'ı haritada arayın, koordinat alın ve link paylaşın. Giriş gerekmez."
+    },
+    "qth": {
+      "title": "QTH locator nedir?",
+      "description": "QTH locator (Maidenhead grid), konumunuzu haritada birkaç karakterle ifade eden uluslararası bir koddur. Radyo amatörleri tarafından dünya çapında kullanılır; 2 ile 10 karakter arası uzunlukta olabilir—karakter sayısı arttıkça hassasiyet artar. Konumunuzu birkaç tuşla paylaşın veya herhangi bir locator'ı haritada arayın.",
+      "cta": "Haritayı aç"
     },
     "cta": {
       "title": "Topluluğa katılın",
-      "description": "Ücretsiz hesap oluşturun, aktivitelerinizi kaydedin ve Türkiye'deki radyo amatörleri topluluğuyla tanışın."
+      "line": "Ücretsiz hesap açın, çevrimlere katılmaya başlayın.",
+      "description": "Ücretsiz hesap oluşturun, çevrimlere katılın ve Türkiye'deki radyo amatörleri topluluğuyla tanışın."
     },
     "footer": {
       "platform": "Platform",
-      "links": "Bağlantılar"
+      "links": "Bağlantılar",
+      "ariaMainNav": "Ana menü",
+      "ariaFooterLinks": "Footer bağlantıları"
     }
   },
   "privacy": {
@@ -226,6 +258,15 @@
     "activityOperatorUpdated": "{callSign} operatör bilgileri güncellendi",
     "activityUserUpdated": "{callSign} hesap bilgilerini güncelledi",
     "activityAvatarChanged": "{callSign} profil fotoğrafını değiştirdi",
+    "mapPreview": "QTH",
+    "mapPreviewNoQth": "Haritayı görmek için QTH bilginizi girin",
+    "mapPreviewCountry": "Ülke",
+    "mapPreviewProvince": "İl",
+    "mapPreviewDistrict": "İlçe",
+    "mapPickerSelectHint": "QTH / konum seçmek için haritaya tıklayın (il ve ilçe otomatik doldurulur)",
+    "mapPickerConfirmTitle": "Konumu onayla",
+    "mapPickerConfirmDescription": "Aşağıdaki konumu kontrol edip onaylayın veya iptal edin.",
+    "mapPickerSelectedSummary": "Seçilen: {qth} · {city} · {district}",
     "sections": {
       "me": "Özet",
       "community": "Topluluk"
@@ -283,6 +324,37 @@
     "theme": "Tema",
     "language": "Dil"
   },
+  "map": {
+    "title": "QTH Locator Haritası",
+    "locator": "Locator",
+    "coordinates": "Koordinat",
+    "coordinatesDecimal": "Ondalık (lat, lng)",
+    "coordinatesDMS": "Derece Dakika Saniye",
+    "locatorField": "Field (2)",
+    "locatorSquare": "Square (4)",
+    "locatorSubsquare": "Subsquare (6)",
+    "locatorExtended": "Extended (8)",
+    "utcOffset": "Yaklaşık saat dilimi",
+    "distanceFromTurkey": "Türkiye merkezine mesafe",
+    "copy": "Locator kopyala",
+    "copyLink": "Harita linkini kopyala",
+    "share": "Paylaş",
+    "copyLocatorA11y": "Locator kopyala",
+    "copyCoordinatesA11y": "Koordinat kopyala",
+    "copyDecimalA11y": "Ondalık koordinat kopyala",
+    "copyDMSA11y": "Derece dakika saniye kopyala",
+    "shareMapA11y": "Harita linkini paylaş",
+    "showOnMap": "Haritada göster",
+    "addressExpandA11y": "Tam adresi göster",
+    "addressCollapseA11y": "Tam adresi gizle",
+    "invalidLocator": "Geçersiz locator",
+    "locationDenied": "Konum izni verilmedi",
+    "defaultView": "Türkiye",
+    "layerStandard": "Harita: Standart",
+    "layerSatellite": "Harita: Uydu",
+    "layerTerrain": "Harita: Arazi",
+    "searchPlaceholder": "QTH locator ara"
+  },
   "account": {
     "viewProfile": "Profilinizi Görüntüleyin",
     "viewProfileDesc": "Çevrim istatistiklerinizi, son çevrimlerinizi ve daha fazlasını profil sayfanızda görün."
@@ -306,6 +378,7 @@
     "editNameTooltip": "İsim değiştir",
     "editQthTooltip": "QTH ve konum düzenle",
     "editOperator": "Operatör Bilgileri",
+    "editOperatorAction": "Operatör düzenle",
     "editOperatorDesc": "QTH ve locator bilgilerinizi güncelleyin",
     "profileUpdated": "Profil güncellendi",
     "avatarUpdated": "Profil fotoğrafı güncellendi",
@@ -567,7 +640,14 @@
     "geographicSpread": "Coğrafi Dağılım",
     "firstLastJoin": "İlk / Son katılım",
     "trendAttendees": "katılımcı",
-    "trendVsPrevious": "Önceki çevrime göre"
+    "trendVsPrevious": "Önceki çevrime göre",
+    "participantsMap": "Katılımcı Haritası",
+    "participantsMapDesc": "Katılımcıların konumları. Yakınlaştırın veya kümelere tıklayın; çağrı işaretleri görünür.",
+    "mapLoading": "Harita yükleniyor...",
+    "mapNoLocations": "Konum bilgisi olan katılımcı yok",
+    "popupQth": "QTH",
+    "popupSignal": "Sinyal",
+    "popupJoinTime": "Katılım zamanı"
   },
   "netReport": {
     "title": "Çevrim Raporu",
@@ -730,6 +810,8 @@
     "descriptionPlaceholder": "Kısa açıklama girin (en fazla 500 karakter)",
     "descriptionMaxChars": "500 karakter",
     "locationSection": "Konum Bilgileri",
+    "selectLocationOnMap": "Haritadan konum seçin",
+    "locationMapPickerOnlyProvince": "Yalnızca {province} ili sınırları içinde bir nokta seçebilirsiniz",
     "location": "Konum",
     "locationPlaceholder": "Örn: Uludağ Tepe",
     "latitude": "Enlem",

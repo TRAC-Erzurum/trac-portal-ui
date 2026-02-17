@@ -7,6 +7,7 @@ const STORAGE_KEY = 'trac-theme'
 
 export const useThemeStore = defineStore('theme', () => {
   const mode = ref<ThemeMode>('system')
+  const effectiveTheme = ref<'dark' | 'light'>('dark')
 
   function getSystemTheme(): 'dark' | 'light' {
     try {
@@ -17,9 +18,9 @@ export const useThemeStore = defineStore('theme', () => {
   }
 
   function applyTheme(themeMode: ThemeMode) {
-    const effectiveTheme = themeMode === 'system' ? getSystemTheme() : themeMode
-    
-    if (effectiveTheme === 'dark') {
+    const next = themeMode === 'system' ? getSystemTheme() : themeMode
+    effectiveTheme.value = next
+    if (next === 'dark') {
       document.documentElement.classList.add('dark')
     } else {
       document.documentElement.classList.remove('dark')
@@ -50,6 +51,7 @@ export const useThemeStore = defineStore('theme', () => {
 
   return {
     mode,
+    effectiveTheme,
     setMode,
     initialize
   }

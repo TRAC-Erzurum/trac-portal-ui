@@ -1,11 +1,15 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import L from 'leaflet'
 import App from './App.vue'
 import router from './router'
 import { i18n } from './i18n'
 import './style.css'
 import { useThemeStore } from './stores/theme'
 import { useLocaleStore } from './stores/locale'
+
+// Expose Leaflet globally so @vue-leaflet/vue-leaflet can use it (avoids "Default" undefined in Vite dev)
+if (typeof window !== 'undefined') (window as unknown as { L: typeof L }).L = L
 
 const app = createApp(App)
 const pinia = createPinia()

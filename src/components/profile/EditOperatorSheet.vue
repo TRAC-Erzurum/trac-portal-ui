@@ -1,28 +1,32 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
+import { nextTick, ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { AutocompleteCombobox } from '@/components/shared'
+import { LocatorMapPicker } from '@/components/shared'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
-import { useQthData } from '@/composables/useQthData'
-
-interface Profile {
-  operator?: {
-    district?: string
-    city?: string
-    gridSquare?: string
-    dmrId?: number | null
-  }
+export interface ProfileOperator {
+  district?: string
+  city?: string
+  gridSquare?: string
+  dmrId?: number | null
 }
 
-const props = defineProps<{
-  open: boolean
-}>()
+interface Profile {
+  operator?: ProfileOperator
+}
+
+const props = withDefaults(
+  defineProps<{
+    open: boolean
+    initialProfile?: Profile | null
+  }>(),
+  { initialProfile: null }
+)
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
@@ -30,7 +34,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { cities, getDistricts, isLoading: isFetchingCities, loadCities } = useQthData()
 
 const city = ref('')
 const district = ref('')
@@ -39,25 +42,43 @@ const dmrId = ref<number | undefined>()
 const isLoading = ref(false)
 const isInitializing = ref(false)
 
-const districts = computed(() => getDistricts(city.value))
-
-watch(city, () => {
-  if (isInitializing.value) return
-  if (!districts.value.includes(district.value)) {
-    district.value = ''
+const locatorSelection = computed({
+  get() {
+    if (!gridSquare.value?.trim() && !city.value?.trim() && !district.value?.trim()) return null
+    return {
+      gridSquare: gridSquare.value?.trim()?.toUpperCase() ?? '',
+      city: city.value?.trim() ?? '',
+      district: district.value?.trim() ?? ''
+    }
+  },
+  set(val: { gridSquare: string; city: string; district: string } | null) {
+    if (!val) {
+      city.value = ''
+      district.value = ''
+      gridSquare.value = ''
+      return
+    }
+    city.value = val.city
+    district.value = val.district
+    gridSquare.value = val.gridSquare
   }
 })
 
 watch(() => props.open, async (isOpen) => {
   if (isOpen) {
     isInitializing.value = true
-    await loadCities()
     try {
-      const profile = await api.get<Profile>('/user/profile')
-      city.value = profile.operator?.city || ''
-      district.value = profile.operator?.district || ''
-      gridSquare.value = profile.operator?.gridSquare || ''
-      dmrId.value = profile.operator?.dmrId ?? undefined
+      const profile = props.initialProfile ?? await api.get<Profile>('/user/profile')
+      const op = profile.operator
+      city.value = op?.city || ''
+      district.value = op?.district || ''
+      gridSquare.value = op?.gridSquare || ''
+      dmrId.value = op?.dmrId ?? undefined
+      await nextTick()
+      city.value = op?.city || ''
+      district.value = op?.district || ''
+      gridSquare.value = op?.gridSquare || ''
+      dmrId.value = op?.dmrId ?? undefined
     } catch {
       // ignore
     } finally {
@@ -70,11 +91,11 @@ async function handleSubmit() {
   isLoading.value = true
   try {
     await api.patch('/user/operator', {
-      city: city.value || undefined,
-      district: district.value || undefined,
-      gridSquare: gridSquare.value?.toUpperCase() || undefined,
-      country: city.value ? 'Türkiye' : undefined,
-      dmrId: dmrId.value || null,
+      city: city.value?.trim() || null,
+      district: district.value?.trim() || null,
+      gridSquare: gridSquare.value?.trim() ? gridSquare.value.trim().toUpperCase() : null,
+      country: city.value?.trim() ? 'Türkiye' : null,
+      dmrId: dmrId.value ?? null,
     })
 
     toast.success(t('profile.profileUpdated'))
@@ -99,40 +120,6 @@ async function handleSubmit() {
 
       <form @submit.prevent="handleSubmit" class="mt-6 space-y-6 pb-6">
         <div class="space-y-2">
-          <Label for="city">{{ t('form.city') }}</Label>
-          <AutocompleteCombobox
-            id="city"
-            v-model="city"
-            :options="cities"
-            :placeholder="isFetchingCities ? t('common.loading') : t('form.cityPlaceholder')"
-            :disabled="isFetchingCities"
-          />
-        </div>
-
-        <div class="space-y-2">
-          <Label for="district">{{ t('form.district') }}</Label>
-          <AutocompleteCombobox
-            id="district"
-            v-model="district"
-            :options="districts"
-            :placeholder="city ? t('form.districtPlaceholder') : t('form.cityPlaceholder')"
-            :disabled="!city"
-          />
-        </div>
-
-        <div class="space-y-2">
-          <Label for="gridSquare">{{ t('profile.locator') }}</Label>
-          <Input
-            id="gridSquare"
-            v-model="gridSquare"
-            type="text"
-            placeholder="KN40ab"
-            maxlength="6"
-            class="uppercase"
-          />
-        </div>
-
-        <div class="space-y-2">
           <Label for="dmrId">{{ t('profile.dmrId') }}</Label>
           <Input
             id="dmrId"
@@ -141,6 +128,14 @@ async function handleSubmit() {
             placeholder="2860001"
           />
           <p class="text-xs text-muted-foreground">{{ t('profile.dmrIdHint') }}</p>
+        </div>
+
+        <div class="space-y-2">
+          <Label>{{ t('profile.qth') }}</Label>
+          <LocatorMapPicker
+            v-model="locatorSelection"
+            :standalone="false"
+          />
         </div>
 
         <div class="flex justify-end gap-3 pt-4">
