@@ -1,0 +1,228 @@
+<script setup lang="ts">
+import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { toast } from 'vue-sonner'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Separator } from '@/components/ui/separator'
+import CertificateTemplateCanvasEditor from '@/components/certificates/CertificateTemplateCanvasEditor.vue'
+import { DEFAULT_SERIAL_ELEMENT } from '@/components/certificates/certificate-template-defaults'
+import type { CertificateTemplateElement } from '@/components/certificates/certificate-template-defaults'
+import { translateError } from '@/i18n'
+import { api, type ApiError } from '@/lib/api'
+
+export interface CertificateTemplate {
+  id: string
+  name: string
+  imagePath: string
+  elements?: unknown[]
+}
+
+const props = defineProps<{
+  open: boolean
+  branchId: string
+  template: CertificateTemplate | null
+}>()
+
+const emit = defineEmits<{
+  'update:open': [value: boolean]
+  updated: []
+}>()
+
+const { t } = useI18n()
+const API_BASE = import.meta.env.VITE_API_URL
+
+const name = ref('')
+const imagePath = ref('')
+const elements = ref<CertificateTemplateElement[]>([])
+const isUploading = ref(false)
+const isLoading = ref(false)
+const fileInputRef = ref<HTMLInputElement>()
+
+watch(
+  () => [props.open, props.template] as const,
+  ([open, template]) => {
+    if (open && template) {
+      name.value = template.name ?? ''
+      imagePath.value = template.imagePath ?? ''
+      const mapped = Array.isArray(template.elements)
+        ? template.elements.map((el: unknown) => {
+            const e = el as Record<string, unknown>
+            const x = Number(e.x) || 0
+            const y = Number(e.y) || 0
+            return {
+              type: (e.type === 'placeholder' ? 'placeholder' : 'static') as 'static' | 'placeholder',
+              content: e.content as string | undefined,
+              placeholderKey: e.placeholderKey as string | undefined,
+              x: x > 100 ? (x / 400) * 100 : x,
+              y: y > 100 ? (y / 300) * 100 : y,
+              fontFamily: (e.fontFamily as string) ?? 'Arial',
+              fontSize: Number(e.fontSize) || 16,
+              color: (e.color as string) ?? '#000000',
+            }
+          })
+        : []
+      const hasSerial = mapped.some(
+        (el) => el.type === 'placeholder' && el.placeholderKey === 'certificate_serial'
+      )
+      elements.value = hasSerial ? mapped : [...mapped, { ...DEFAULT_SERIAL_ELEMENT }]
+    }
+  },
+  { immediate: true }
+)
+
+const triggerFileInput = () => {
+  fileInputRef.value?.click()
+}
+
+const onFileSelected = async (e: Event) => {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+    toast.error(t('error.invalidFileType'))
+    input.value = ''
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    toast.error(t('error.invalidFileType'))
+    input.value = ''
+    return
+  }
+  isUploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await fetch(
+      `${API_BASE}/branches/${props.branchId}/certificate-templates/upload`,
+      {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      }
+    )
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}))
+      toast.error(translateError(err.message || 'error.somethingWentWrong'))
+      input.value = ''
+      return
+    }
+    const data = await response.json()
+    imagePath.value = data.imagePath ?? ''
+  } catch {
+    toast.error(t('error.somethingWentWrong'))
+    input.value = ''
+  } finally {
+    isUploading.value = false
+    input.value = ''
+  }
+}
+
+const handleSubmit = async () => {
+  if (!props.template) return
+  const trimmedName = name.value?.trim()
+  if (!trimmedName) {
+    toast.error(t('error.somethingWentWrong'))
+    return
+  }
+  if (!imagePath.value) {
+    toast.error(t('error.somethingWentWrong'))
+    return
+  }
+  isLoading.value = true
+  try {
+    await api.patch(
+      `/branches/${props.branchId}/certificate-templates/${props.template.id}`,
+      {
+        name: trimmedName,
+        imagePath: imagePath.value,
+        elements: elements.value,
+      }
+    )
+    toast.success(t('certificates.updateSuccess'))
+    emit('updated')
+    emit('update:open', false)
+  } catch (e) {
+    const error = e as ApiError
+    toast.error(translateError(error.message))
+  } finally {
+    isLoading.value = false
+  }
+}
+</script>
+
+<template>
+  <Sheet :open="open" @update:open="emit('update:open', $event)">
+    <SheetContent class="sm:max-w-lg overflow-y-auto px-4 sm:px-6">
+      <SheetHeader>
+        <SheetTitle>{{ t('certificates.edit') }}</SheetTitle>
+        <SheetDescription>{{ t('certificates.editDescription') }}</SheetDescription>
+      </SheetHeader>
+
+      <form v-if="template" @submit.prevent="handleSubmit" class="py-6 px-1 space-y-6">
+        <div class="space-y-2">
+          <Label for="cert-name">{{ t('certificates.name') }}</Label>
+          <Input
+            id="cert-name"
+            v-model="name"
+            type="text"
+            :placeholder="t('certificates.name')"
+            required
+          />
+        </div>
+
+        <div class="space-y-2">
+          <Label>{{ t('certificates.image') }}</Label>
+          <input
+            ref="fileInputRef"
+            type="file"
+            accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+            class="hidden"
+            @change="onFileSelected"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            class="w-full"
+            :disabled="isUploading"
+            @click="triggerFileInput"
+          >
+            {{ isUploading ? t('common.loading') : t('certificates.uploadImage') }}
+          </Button>
+          <p v-if="imagePath" class="text-xs text-muted-foreground truncate">
+            {{ imagePath }}
+          </p>
+        </div>
+
+        <Separator class="my-8" />
+
+        <CertificateTemplateCanvasEditor
+          v-model="elements"
+          :image-path="imagePath"
+          :disabled="isLoading"
+        />
+
+        <div class="flex justify-end gap-3 pt-4">
+          <Button type="button" variant="outline" @click="emit('update:open', false)">
+            {{ t('common.cancel') }}
+          </Button>
+          <Button
+            type="submit"
+            variant="outline"
+            :disabled="isLoading || !name?.trim() || !imagePath"
+          >
+            {{ isLoading ? t('common.loading') : t('common.save') }}
+          </Button>
+        </div>
+      </form>
+    </SheetContent>
+  </Sheet>
+</template>

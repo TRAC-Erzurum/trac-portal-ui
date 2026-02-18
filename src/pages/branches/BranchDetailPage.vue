@@ -3,9 +3,13 @@ import { computed, onMounted, ref, toRaw, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Edit, Mail, MapPin, Phone, Plus, Radio, Search, TowerControl, Trash2, Users } from 'lucide-vue-next'
+import { Award, CalendarRange, Edit, Mail, MapPin, Phone, Plus, Radio, Search, TowerControl, Trash2, Users } from 'lucide-vue-next'
 import EditBranchSheet from '@/components/branches/EditBranchSheet.vue'
 import AddMemberSheet from '@/components/branches/AddMemberSheet.vue'
+import CertificateTemplateCard from '@/components/certificates/CertificateTemplateCard.vue'
+import CreateCertificateTemplateSheet from '@/components/certificates/CreateCertificateTemplateSheet.vue'
+import EditCertificateTemplateSheet from '@/components/certificates/EditCertificateTemplateSheet.vue'
+import type { CertificateTemplate } from '@/components/certificates/EditCertificateTemplateSheet.vue'
 import CreateCommChannelSheet from '@/components/infrastructure/CreateCommChannelSheet.vue'
 import EditCommChannelSheet from '@/components/infrastructure/EditCommChannelSheet.vue'
 import CreateNetSheet from '@/components/nets/CreateNetSheet.vue'
@@ -128,6 +132,14 @@ const isLoadingMoreNets = ref(false)
 const netsSearch = ref('')
 const netsStatusFilter = ref<string>('all')
 const isCreateNetSheetOpen = ref(false)
+const certificateTemplates = ref<CertificateTemplate[]>([])
+const isLoadingCertificateTemplates = ref(false)
+const isCreateCertificateTemplateSheetOpen = ref(false)
+const isEditCertificateTemplateSheetOpen = ref(false)
+const selectedCertificateTemplate = ref<CertificateTemplate | null>(null)
+const showDeleteCertificateTemplateDialog = ref(false)
+const isDeletingCertificateTemplate = ref(false)
+const netsUsingCertificateTemplate = ref<{ id: string; name: string }[]>([])
 const schedulers = ref<any[]>([])
 const isLoadingSchedulers = ref(false)
 const selectedSchedulerId = ref<string | null>(null)
@@ -186,6 +198,9 @@ const mobileFabActions = computed<MobileFabAction[]>(() => {
   if (canManage.value && branch.value.isActive) {
     actions.push({ key: 'createChannel', label: t('communicationChannels.create'), icon: TowerControl as Component })
   }
+  if (canManage.value && branch.value.isActive) {
+    actions.push({ key: 'createCertificateTemplate', label: t('certificates.create'), icon: Award as Component })
+  }
   if (canManageMembers.value && !branch.value.isHeadquarters && isBranchMember.value) {
     actions.push({ key: 'addMember', label: t('branches.addMember'), icon: Plus as Component })
   }
@@ -202,6 +217,7 @@ const handleFabAction = (key: string) => {
     case 'editBranch': openEdit(); break
     case 'deleteBranch': openDeleteDialog(); break
     case 'createChannel': isCreateChannelSheetOpen.value = true; break
+    case 'createCertificateTemplate': isCreateCertificateTemplateSheetOpen.value = true; break
     case 'addMember': showAddMemberSheet.value = true; break
     case 'createNet': isCreateNetSheetOpen.value = true; break
   }
@@ -617,24 +633,86 @@ const handleChannelFilterChange = () => {
   fetchChannels()
 }
 
+const fetchCertificateTemplates = async () => {
+  if (!route.params.id) return
+  isLoadingCertificateTemplates.value = true
+  try {
+    certificateTemplates.value = await api.get<CertificateTemplate[]>(
+      `/branches/${route.params.id}/certificate-templates`
+    )
+  } catch {
+    certificateTemplates.value = []
+  } finally {
+    isLoadingCertificateTemplates.value = false
+  }
+}
+
+const handleCertificateTemplateCreated = async () => {
+  await fetchCertificateTemplates()
+}
+
+const handleCertificateTemplateUpdated = async () => {
+  await fetchCertificateTemplates()
+}
+
+const openEditCertificateTemplate = (template: CertificateTemplate) => {
+  selectedCertificateTemplate.value = template
+  isEditCertificateTemplateSheetOpen.value = true
+}
+
+const openDeleteCertificateTemplateDialog = async (template: CertificateTemplate) => {
+  selectedCertificateTemplate.value = template
+  showDeleteCertificateTemplateDialog.value = true
+  try {
+    netsUsingCertificateTemplate.value = await api.get<{ id: string; name: string }[]>(
+      `/branches/${route.params.id}/certificate-templates/${template.id}/nets-using`
+    )
+  } catch {
+    netsUsingCertificateTemplate.value = []
+  }
+}
+
+const deleteCertificateTemplate = async () => {
+  if (!selectedCertificateTemplate.value || isDeletingCertificateTemplate.value || !route.params.id) return
+  isDeletingCertificateTemplate.value = true
+  try {
+    await api.delete(
+      `/branches/${route.params.id}/certificate-templates/${selectedCertificateTemplate.value.id}?force=true`
+    )
+    toast.success(t('certificates.deleteSuccess'))
+    showDeleteCertificateTemplateDialog.value = false
+    selectedCertificateTemplate.value = null
+    netsUsingCertificateTemplate.value = []
+    await fetchCertificateTemplates()
+  } catch (e) {
+    const err = e as ApiError
+    toast.error(translateError(err.message))
+  } finally {
+    isDeletingCertificateTemplate.value = false
+  }
+}
+
 const fetchNets = async (append = false) => {
   if (!route.params.id) return
-  if (append) {
-    isLoadingMoreNets.value = true
-  } else {
+  if (!append) {
+    netsPage.value = 1
     isLoadingNets.value = true
+  } else {
+    isLoadingMoreNets.value = true
   }
 
   try {
+    const offset = append ? (netsPage.value - 1) * netsPageSize : 0
     const params = new URLSearchParams()
-    params.set('pageNumber', String(netsPage.value))
-    params.set('pageSize', String(netsPageSize))
-    if (netsSearch.value) params.set('search', netsSearch.value)
+    params.set('limit', String(netsPageSize))
+    params.set('offset', String(offset))
+    if (netsSearch.value?.trim()) params.set('search', netsSearch.value.trim())
     if (netsStatusFilter.value !== 'all') params.set('status', netsStatusFilter.value)
 
-    const response = await api.get<any[] | { data: any[]; total: number }>(`/branches/${route.params.id}/nets?${params.toString()}`)
-    const data = Array.isArray(response) ? response : (response?.data ?? [])
-    const total = Array.isArray(response) ? response.length : (response?.total ?? 0)
+    const response = await api.get<any[] | { data: any[]; total: number; limit: number; offset: number }>(`/branches/${route.params.id}/nets?${params.toString()}`)
+    const isPaginated = typeof response === 'object' && response !== null && 'data' in response
+    const data = isPaginated ? (response as { data: any[] }).data : (Array.isArray(response) ? response : [])
+    const total = isPaginated ? (response as { total: number }).total : (Array.isArray(response) ? response.length : 0)
 
     if (append) {
       nets.value = [...nets.value, ...data]
@@ -656,7 +734,7 @@ const fetchNets = async (append = false) => {
 }
 
 const loadMoreNets = () => {
-  netsPage.value++
+  netsPage.value += 1
   fetchNets(true)
 }
 
@@ -666,7 +744,7 @@ const handleNetCreated = async () => {
 }
 
 const fetchSchedulers = async () => {
-  if (!route.params.id) return
+  if (!route.params.id || !canCreateNet.value) return
   isLoadingSchedulers.value = true
   try {
     schedulers.value = await api.get<any[]>(`/net-schedulers?branchId=${route.params.id}`)
@@ -693,42 +771,6 @@ const getNetStatus = (net: any): 'active' | 'pending' | 'completed' | 'cancelled
   return 'pending'
 }
 
-const netStatusOrder = (status: string) => {
-  switch (status) {
-    case 'active': return 0
-    case 'pending': return 1
-    case 'completed': return 2
-    case 'cancelled': return 3
-    default: return 4
-  }
-}
-
-const filteredNets = computed(() => {
-  let list = nets.value
-  const search = netsSearch.value.trim().toLowerCase()
-  if (search) {
-    list = list.filter((net) => {
-      const name = (net.name ?? '').toLowerCase()
-      const callSign = (net.operator?.callSign ?? '').toLowerCase()
-      const branchCallSign = (net.branchCallSign?.callSign ?? '').toLowerCase()
-      return name.includes(search) || callSign.includes(search) || branchCallSign.includes(search)
-    })
-  }
-  const statusFilter = netsStatusFilter.value
-  if (statusFilter !== 'all') {
-    list = list.filter((net) => getNetStatus(net) === statusFilter)
-  }
-  list = [...list].sort((a, b) => {
-    const orderA = netStatusOrder(getNetStatus(a))
-    const orderB = netStatusOrder(getNetStatus(b))
-    if (orderA !== orderB) return orderA - orderB
-    const dateA = a.endedAt || a.startedAt || a.createdAt || ''
-    const dateB = b.endedAt || b.startedAt || b.createdAt || ''
-    return dateB.localeCompare(dateA)
-  })
-  return list
-})
-
 const branchId = computed(() => route.params.id as string)
 const branchChannelFilterKey = computed(() => `branch-detail-channels-${branchId.value}`)
 const branchMembersFilterKey = computed(() => `branch-detail-members-${branchId.value}`)
@@ -737,10 +779,19 @@ usePersistedFilters(branchChannelFilterKey, { channelSearch, channelTypeFilter }
 usePersistedFilters(branchMembersFilterKey, { membersSearch, membersRoleFilter })
 usePersistedFilters(branchNetsFilterKey, { netsSearch, netsStatusFilter })
 
+let netsSearchTimeout: ReturnType<typeof setTimeout> | null = null
+const handleNetsSearchChange = () => {
+  if (netsSearchTimeout) clearTimeout(netsSearchTimeout)
+  netsSearchTimeout = setTimeout(() => fetchNets(), 300)
+}
+const handleNetsFilterChange = () => fetchNets()
+
 watch(membersSearch, handleMembersSearchChange)
 watch(membersRoleFilter, handleMembersFilterChange)
 watch(channelSearch, handleChannelSearchChange)
 watch(channelTypeFilter, handleChannelFilterChange)
+watch(netsSearch, handleNetsSearchChange)
+watch(netsStatusFilter, handleNetsFilterChange)
 
 watch(
   userMembership,
@@ -755,12 +806,20 @@ watch(
   { immediate: true }
 )
 
+watch(
+  canCreateNet,
+  (ok) => {
+    if (ok && route.params.id) fetchSchedulers()
+  },
+  { immediate: true }
+)
+
 onMounted(() => {
   fetchBranch()
   checkMembership()
   fetchChannels()
+  fetchCertificateTemplates()
   fetchNets()
-  fetchSchedulers()
 })
 </script>
 
@@ -1034,33 +1093,79 @@ onMounted(() => {
 
       <section>
         <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
-          <Radio class="h-4 w-4" />
-          {{ t('scheduler.title') }}
+          <Award class="h-4 w-4" />
+          {{ t('certificates.title') }}
         </h3>
-        <div v-if="isLoadingSchedulers" class="py-4 text-sm text-muted-foreground">
-          {{ t('common.loading') }}
+        <div class="flex flex-wrap items-center justify-end gap-2 mb-4">
+          <Button
+            v-if="canManage && branch.isActive"
+            variant="outline"
+            size="sm"
+            @click="isCreateCertificateTemplateSheetOpen = true"
+            class="hidden lg:inline-flex gap-2"
+          >
+            <Plus class="h-4 w-4" />
+            {{ t('certificates.create') }}
+          </Button>
         </div>
-        <div v-else-if="schedulers.length === 0" class="py-4 text-sm text-muted-foreground">
-          {{ t('common.noResults') }}
+        <div v-if="isLoadingCertificateTemplates" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div v-for="i in 6" :key="i" class="h-48 bg-muted rounded-lg animate-pulse" />
+        </div>
+        <div v-else-if="certificateTemplates.length === 0" class="text-center py-8">
+          <Award class="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+          <p class="text-sm text-muted-foreground">{{ t('certificates.noTemplates') }}</p>
         </div>
         <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-          <SchedulerCard
-            v-for="s in schedulers"
-            :key="s.id"
-            :scheduler="s"
-            :show-edit-button="canCreateNet"
-            @edit="openEditScheduler"
+          <CertificateTemplateCard
+            v-for="tpl in certificateTemplates"
+            :key="tpl.id"
+            :template="tpl"
+            :can-manage="canManage"
+            @edit="openEditCertificateTemplate"
+            @delete="openDeleteCertificateTemplateDialog"
           />
         </div>
       </section>
 
-      <Separator class="my-8" />
+      <template v-if="canCreateNet">
+        <Separator class="my-8" />
 
-      <section>
-        <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
-          <Radio class="h-4 w-4" />
-          {{ t('nets.nets') }}
-        </h3>
+        <section aria-labelledby="branch-schedulers-heading">
+          <div class="mb-4">
+            <h3 id="branch-schedulers-heading" class="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <CalendarRange class="h-4 w-4" aria-hidden="true" />
+              {{ t('scheduler.title') }}
+            </h3>
+            <p class="text-xs text-muted-foreground mt-1">{{ t('scheduler.sectionSubtitle') }}</p>
+          </div>
+          <div v-if="isLoadingSchedulers" class="py-4 text-sm text-muted-foreground">
+            {{ t('common.loading') }}
+          </div>
+          <div v-else-if="schedulers.length === 0" class="py-4 text-sm text-muted-foreground">
+            {{ t('common.noResults') }}
+          </div>
+          <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+            <SchedulerCard
+              v-for="s in schedulers"
+              :key="s.id"
+              :scheduler="s"
+              :show-edit-button="canCreateNet"
+              @edit="openEditScheduler"
+            />
+          </div>
+        </section>
+
+        <Separator class="my-8" />
+      </template>
+
+      <section aria-labelledby="branch-nets-heading">
+        <div class="mb-4">
+          <h3 id="branch-nets-heading" class="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <Radio class="h-4 w-4" aria-hidden="true" />
+            {{ t('nets.nets') }}
+          </h3>
+          <p class="text-xs text-muted-foreground mt-1">{{ t('nets.sessionsSectionSubtitle') }}</p>
+        </div>
         <div class="flex flex-col lg:flex-row lg:items-start lg:gap-4 gap-2 mb-4">
           <div class="w-full lg:w-1/2 lg:min-w-0 grid grid-cols-1 lg:grid-cols-[1fr_160px] gap-2 items-center">
             <SearchInput
@@ -1098,16 +1203,16 @@ onMounted(() => {
           <NetCardSkeleton v-for="i in 6" :key="i" />
         </div>
 
-        <div v-else-if="filteredNets.length === 0" class="text-center py-4">
+        <div v-else-if="nets.length === 0" class="text-center py-4">
           <Radio class="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
           <p class="text-sm text-muted-foreground">
-            {{ nets.length === 0 ? t('nets.noNetsInBranch') : t('nets.noResults') }}
+            {{ netsTotal === 0 ? t('nets.noNetsInBranch') : t('nets.noResults') }}
           </p>
         </div>
 
         <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
           <NetCard
-            v-for="net in filteredNets"
+            v-for="net in nets"
             :key="net.id"
             :id="net.id"
             :name="net.name"
@@ -1121,14 +1226,15 @@ onMounted(() => {
             :ended-at="net.endedAt"
             :scheduled-at="net.scheduledAt"
             :estimated-duration-minutes="net.estimatedDurationMinutes"
+            :has-certificate="!!net.certificateTemplateId"
           />
         </div>
 
         <div v-if="!isLoadingNets" class="flex flex-wrap items-center justify-between gap-2 pt-4">
-          <p v-if="netsTotal > 0 || filteredNets.length > 0" class="text-sm text-muted-foreground order-2 lg:order-1">
-            {{ filteredNets.length }}/{{ netsTotal }} {{ t('nets.name') }}
+          <p v-if="netsTotal > 0 || nets.length > 0" class="text-sm text-muted-foreground order-2 lg:order-1">
+            {{ nets.length }}/{{ netsTotal }} {{ t('nets.name') }}
           </p>
-          <div v-if="hasMoreNets && filteredNets.length > 0" class="order-1 lg:order-2 w-full lg:w-auto">
+          <div v-if="hasMoreNets && !isLoadingNets" class="order-1 lg:order-2 w-full lg:w-auto">
             <Button
               variant="outline"
               class="w-full lg:w-auto lg:px-8"
@@ -1205,6 +1311,23 @@ onMounted(() => {
       @created="handleChannelCreated"
     />
 
+    <CreateCertificateTemplateSheet
+      v-if="branch"
+      :open="isCreateCertificateTemplateSheetOpen"
+      :branch-id="branch.id"
+      @update:open="isCreateCertificateTemplateSheetOpen = $event"
+      @created="handleCertificateTemplateCreated"
+    />
+
+    <EditCertificateTemplateSheet
+      v-if="branch && selectedCertificateTemplate"
+      :open="isEditCertificateTemplateSheetOpen"
+      :branch-id="branch.id"
+      :template="selectedCertificateTemplate"
+      @update:open="(v) => { isEditCertificateTemplateSheetOpen = v; if (!v) selectedCertificateTemplate = null }"
+      @updated="handleCertificateTemplateUpdated"
+    />
+
     <CreateNetSheet
       v-if="branch"
       :open="isCreateNetSheetOpen"
@@ -1228,6 +1351,35 @@ onMounted(() => {
       @update:open="isEditChannelSheetOpen = $event"
       @updated="handleChannelUpdated"
     />
+
+    <Dialog :open="showDeleteCertificateTemplateDialog" @update:open="showDeleteCertificateTemplateDialog = $event">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {{ t('certificates.deleteConfirmTitle') }}
+          </DialogTitle>
+          <DialogDescription>
+            <p>{{ t('certificates.deleteConfirmDescription') }}</p>
+            <p v-if="netsUsingCertificateTemplate.length > 0" class="mt-2 text-muted-foreground text-sm">
+              {{ t('certificates.templateInUseDescription', { count: netsUsingCertificateTemplate.length }) }}
+            </p>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="showDeleteCertificateTemplateDialog = false" :disabled="isDeletingCertificateTemplate">
+            {{ t('common.cancel') }}
+          </Button>
+          <Button
+            variant="outline"
+            @click="deleteCertificateTemplate"
+            :disabled="isDeletingCertificateTemplate"
+            class="text-red-600 hover:text-red-700"
+          >
+            {{ isDeletingCertificateTemplate ? t('common.loading') : t('common.delete') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
     <Dialog :open="showDeleteChannelDialog" @update:open="showDeleteChannelDialog = $event">
       <DialogContent>

@@ -39,6 +39,13 @@ interface NetCommunicationChannel {
   simplexFrequency?: string
 }
 
+interface CertificateTemplate {
+  id: string
+  name: string
+  imagePath: string
+  elements: unknown[]
+}
+
 interface Net {
   id: string
   name: string
@@ -52,6 +59,8 @@ interface Net {
   branchId?: string
   branchCallSignId?: string
   branchCallSign?: BranchCallSign
+  certificateTemplateId?: string | null
+  certificateTemplate?: CertificateTemplate | null
   communicationChannels?: NetCommunicationChannel[]
   scheduledAt?: string | null
   estimatedDurationMinutes?: number | null
@@ -83,6 +92,10 @@ const showOperatorDropdown = ref(false)
 const branchCallSigns = ref<BranchCallSign[]>([])
 const selectedCallSignId = ref<string>('')
 const isLoadingCallSigns = ref(false)
+
+const certificateTemplates = ref<CertificateTemplate[]>([])
+const selectedCertificateTemplateId = ref<string>('')
+const isLoadingCertificateTemplates = ref(false)
 
 const branch = computed(() => {
   if (props.net?.branch) {
@@ -166,6 +179,22 @@ const loadChannels = async (branchId: string) => {
     channels.value = []
   } finally {
     isLoadingChannels.value = false
+  }
+}
+
+const loadCertificateTemplates = async (branchId: string) => {
+  if (!branchId) {
+    certificateTemplates.value = []
+    return
+  }
+  isLoadingCertificateTemplates.value = true
+  try {
+    certificateTemplates.value = await api.get<CertificateTemplate[]>(`/branches/${branchId}/certificate-templates`)
+  } catch (error) {
+    console.error('Failed to load certificate templates:', error)
+    certificateTemplates.value = []
+  } finally {
+    isLoadingCertificateTemplates.value = false
   }
 }
 
@@ -297,10 +326,13 @@ watch(() => props.open, async (isOpen) => {
     
     selectedCallSignId.value = props.net.branchCallSignId || ''
     
+    selectedCertificateTemplateId.value = props.net.certificateTemplateId ?? ''
+
     if (props.net.branch?.id) {
       await Promise.all([
         loadBranchCallSigns(props.net.branch.id),
-        loadChannels(props.net.branch.id)
+        loadChannels(props.net.branch.id),
+        loadCertificateTemplates(props.net.branch.id)
       ])
     }
     
@@ -372,6 +404,7 @@ async function handleSubmit() {
       communicationChannels,
       scheduledAt: scheduledAtDate.toISOString(),
       estimatedDurationMinutes: estimatedDurationMinutes.value ?? 30,
+      certificateTemplateId: selectedCertificateTemplateId.value || null,
     })
 
     toast.success(t('netDetail.netUpdated'))
@@ -417,6 +450,21 @@ async function handleSubmit() {
             <SelectContent>
               <SelectItem v-for="cs in branchCallSigns" :key="cs.id" :value="cs.id">
                 {{ cs.callSign }} {{ cs.isDefault ? `(${t('branches.defaultCallSign')})` : '' }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div class="space-y-2">
+          <Label for="certificateTemplate">{{ t('certificates.template') }}</Label>
+          <Select v-model="selectedCertificateTemplateId" :disabled="!branch || isLoadingCertificateTemplates">
+            <SelectTrigger id="certificateTemplate" class="w-full">
+              <SelectValue :placeholder="t('certificates.noTemplate')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">{{ t('certificates.noTemplate') }}</SelectItem>
+              <SelectItem v-for="tpl in certificateTemplates" :key="tpl.id" :value="tpl.id">
+                {{ tpl.name }}
               </SelectItem>
             </SelectContent>
           </Select>

@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Plus } from 'lucide-vue-next'
+import { CalendarRange, Plus, Radio } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import EditNetSchedulerSheet from '@/components/nets/EditNetSchedulerSheet.vue'
@@ -30,6 +30,7 @@ interface Net {
   endedAt: string | null
   attendeeCount: number
   totalDurationMinutes?: number
+  certificateTemplateId?: string | null
   operator: {
     id: string
     callSign: string
@@ -77,27 +78,66 @@ const pageSize = 12
 const hasMore = ref(true)
 const showCreateSheet = ref(false)
 
-const schedulers = ref<{ id: string; name: string; startDate: string; recurrence: string }[]>([])
+const schedulers = ref<{ id: string; name: string; startDate: string; recurrence: string; branch?: { name?: string }; operator?: { callSign?: string } }[]>([])
+const schedulersTotal = ref(0)
 const isLoadingSchedulers = ref(false)
+const isLoadingMoreSchedulers = ref(false)
+const hasMoreSchedulers = ref(false)
+const schedulerPageSize = 12
 const selectedSchedulerId = ref<string | null>(null)
 const isEditSchedulerSheetOpen = ref(false)
 
-const fetchSchedulers = async () => {
-  isLoadingSchedulers.value = true
+interface SchedulerResponse {
+  data: typeof schedulers.value
+  total: number
+  limit: number
+  offset: number
+}
+
+const fetchSchedulers = async (append = false) => {
+  if (!canCreate.value) return
+  if (append) {
+    isLoadingMoreSchedulers.value = true
+  } else {
+    isLoadingSchedulers.value = true
+  }
   try {
     const branchId =
       branchFilter.value === 'selected' && currentBranchId.value
         ? currentBranchId.value
         : undefined
-    schedulers.value = await api.get<any[]>(
-      `/net-schedulers${branchId ? `?branchId=${branchId}` : ''}`
+    const offset = append ? schedulers.value.length : 0
+    const params = new URLSearchParams()
+    if (branchId) params.set('branchId', branchId)
+    if (search.value?.trim()) params.set('search', search.value.trim())
+    params.set('limit', String(schedulerPageSize))
+    params.set('offset', String(offset))
+    const response = await api.get<SchedulerResponse | typeof schedulers.value>(
+      `/net-schedulers?${params.toString()}`
     )
+    const isPaginated = typeof response === 'object' && response !== null && 'data' in response
+    if (isPaginated) {
+      const res = response as SchedulerResponse
+      schedulers.value = append ? [...schedulers.value, ...res.data] : res.data
+      schedulersTotal.value = res.total
+      hasMoreSchedulers.value = schedulers.value.length < res.total
+    } else {
+      const list = response as typeof schedulers.value
+      schedulers.value = append ? [...schedulers.value, ...list] : list
+      schedulersTotal.value = list.length
+      hasMoreSchedulers.value = false
+    }
   } catch {
-    schedulers.value = []
+    if (!append) schedulers.value = []
+    schedulersTotal.value = 0
+    hasMoreSchedulers.value = false
   } finally {
     isLoadingSchedulers.value = false
+    isLoadingMoreSchedulers.value = false
   }
 }
+
+const loadMoreSchedulers = () => fetchSchedulers(true)
 
 const openEditScheduler = (id: string) => {
   selectedSchedulerId.value = id
@@ -199,11 +239,13 @@ const handleSearch = () => {
   }
   searchTimeout = setTimeout(() => {
     fetchNets()
+    fetchSchedulers()
   }, 300)
 }
 
 const handleFilterChange = () => {
   fetchNets()
+  fetchSchedulers()
 }
 
 const loadMore = () => {
@@ -328,75 +370,107 @@ onMounted(async () => {
         </div>
       </div>
 
-      <Separator class="my-8" />
+      <template v-if="canCreate">
+        <Separator class="my-8" />
 
-      <section>
-        <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
-          {{ t('scheduler.title') }}
-        </h3>
-        <div v-if="isLoadingSchedulers" class="py-4 text-sm text-muted-foreground">
-          {{ t('common.loading') }}
+        <!-- Schedulers first (same order as Branch detail: schedules then nets) -->
+        <section aria-labelledby="nets-schedulers-heading">
+          <div class="mb-4">
+            <h3 id="nets-schedulers-heading" class="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <CalendarRange class="h-4 w-4" aria-hidden="true" />
+              {{ t('scheduler.title') }}
+            </h3>
+            <p class="text-xs text-muted-foreground mt-1">{{ t('scheduler.sectionSubtitle') }}</p>
+          </div>
+          <div v-if="isLoadingSchedulers" class="py-4 text-sm text-muted-foreground">
+            {{ t('common.loading') }}
+          </div>
+          <div v-else-if="schedulers.length === 0" class="py-4 text-sm text-muted-foreground">
+            {{ t('common.noResults') }}
+          </div>
+          <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+            <SchedulerCard
+              v-for="s in schedulers"
+              :key="s.id"
+              :scheduler="s"
+              :show-edit-button="canCreate"
+              @edit="openEditScheduler"
+            />
+          </div>
+          <div v-if="!isLoadingSchedulers" class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-4">
+            <p v-if="schedulersTotal > 0 || schedulers.length > 0" class="text-sm text-muted-foreground order-2 lg:order-1">
+              {{ schedulers.length }}/{{ schedulersTotal }} {{ t('scheduler.name') }}
+            </p>
+            <div v-if="hasMoreSchedulers && !isLoadingSchedulers" class="order-1 lg:order-2 w-full lg:w-auto">
+              <Button
+                variant="outline"
+                class="w-full lg:w-auto lg:px-8"
+                :disabled="isLoadingMoreSchedulers"
+                @click="loadMoreSchedulers"
+              >
+                {{ isLoadingMoreSchedulers ? t('common.loading') : t('common.loadMore') }}
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        <Separator class="my-8" />
+      </template>
+
+      <!-- Nets (sessions) second -->
+      <section aria-labelledby="nets-sessions-heading">
+        <div class="mb-4">
+          <h3 id="nets-sessions-heading" class="text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <Radio class="h-4 w-4" aria-hidden="true" />
+            {{ t('nets.nets') }}
+          </h3>
+          <p class="text-xs text-muted-foreground mt-1">{{ t('nets.sessionsSectionSubtitle') }}</p>
         </div>
-        <div v-else-if="schedulers.length === 0" class="py-4 text-sm text-muted-foreground">
-          {{ t('common.noResults') }}
+        <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <NetCardSkeleton v-for="i in 6" :key="i" />
         </div>
-        <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-          <SchedulerCard
-            v-for="s in schedulers"
-            :key="s.id"
-            :scheduler="s"
-            :show-edit-button="canCreate"
-            @edit="openEditScheduler"
+        <div v-else-if="nets.length === 0" class="py-4 text-center">
+          <p class="text-sm text-muted-foreground">{{ t('nets.noResults') }}</p>
+        </div>
+        <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <NetCard
+            v-for="net in nets"
+            :key="net.id"
+            :id="net.id"
+            :name="net.name"
+            :operator-call-sign="net.operator.callSign"
+            :status="getNetStatus(net)"
+            :attendee-count="net.attendeeCount"
+            :duration-minutes="net.totalDurationMinutes"
+            :started-at="net.startedAt"
+            :ended-at="net.endedAt"
+            :scheduled-at="net.scheduledAt"
+            :estimated-duration-minutes="net.estimatedDurationMinutes"
+            :branch-name="net.branch?.name"
+            :branch-call-sign="net.branchCallSign?.callSign"
+            :branch-is-headquarters="net.branch?.isHeadquarters"
+            :show-branch="true"
+            :has-certificate="!!net.certificateTemplateId"
           />
+        </div>
+        <div v-if="!isLoading" class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-4">
+          <p v-if="total > 0 || nets.length > 0" class="text-sm text-muted-foreground order-2 lg:order-1">
+            {{ nets.length }}/{{ total }} {{ t('nets.name') }}
+          </p>
+          <div v-if="hasMore && !isLoading" class="order-1 lg:order-2 w-full lg:w-auto">
+            <Button
+              variant="outline"
+              class="w-full lg:w-auto lg:px-8"
+              :disabled="isLoadingMore"
+              @click="loadMore"
+            >
+              {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
+            </Button>
+          </div>
         </div>
       </section>
 
-      <Separator class="my-8" />
-
-      <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <NetCardSkeleton v-for="i in 6" :key="i" />
-      </div>
-
-      <div v-else-if="nets.length === 0" class="py-4 text-center">
-        <p class="text-sm text-muted-foreground">{{ t('nets.noResults') }}</p>
-      </div>
-
-      <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <NetCard
-          v-for="net in nets"
-          :key="net.id"
-          :id="net.id"
-          :name="net.name"
-          :operator-call-sign="net.operator.callSign"
-          :status="getNetStatus(net)"
-          :attendee-count="net.attendeeCount"
-          :duration-minutes="net.totalDurationMinutes"
-          :started-at="net.startedAt"
-          :ended-at="net.endedAt"
-          :scheduled-at="net.scheduledAt"
-          :estimated-duration-minutes="net.estimatedDurationMinutes"
-          :branch-name="net.branch?.name"
-          :branch-call-sign="net.branchCallSign?.callSign"
-          :branch-is-headquarters="net.branch?.isHeadquarters"
-          :show-branch="true"
-        />
-      </div>
-
-      <div v-if="!isLoading" class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-16 lg:pb-0">
-        <p v-if="!isLoading && (total > 0 || nets.length > 0)" class="text-sm text-muted-foreground order-2 lg:order-1">
-          {{ nets.length }}/{{ total }} {{ t('nets.name') }}
-        </p>
-        <div v-if="hasMore && !isLoading" class="order-1 lg:order-2 w-full lg:w-auto">
-          <Button
-            variant="outline"
-            class="w-full lg:w-auto lg:px-8"
-            :disabled="isLoadingMore"
-            @click="loadMore"
-          >
-            {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
-          </Button>
-        </div>
-      </div>
+      <div class="pb-16 lg:pb-0" aria-hidden="true" />
     </div>
 
     <MobileFab :actions="mobileFabActions" @action="handleFabAction" />

@@ -3,6 +3,7 @@ import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import {
+  Award,
   Clock,
   MapPin,
   TrendingUp,
@@ -15,10 +16,12 @@ import { LMap, LTileLayer } from '@vue-leaflet/vue-leaflet'
 import 'leaflet/dist/leaflet.css'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { api } from '@/lib/api'
+const API_BASE = import.meta.env.VITE_API_URL
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { toast } from 'vue-sonner'
 import { useDateFormat } from '@/composables'
+import { translateError } from '@/i18n'
 import { getReportExportStyles, REPORT_EXPORT_WIDTH } from '@/lib/reportExportStyles'
 import EditAttendeeSheet from '@/components/nets/EditAttendeeSheet.vue'
 import EditNetSheet from '@/components/nets/EditNetSheet.vue'
@@ -89,8 +92,20 @@ interface Net {
     callSign: string
     isDefault: boolean
   }
+  certificateTemplate?: {
+    id: string
+    name: string
+    imagePath?: string
+  } | null
   communicationChannels?: NetCommunicationChannel[]
 }
+
+interface CertificatePreview {
+  templateId: string
+  imagePath: string
+  elements: unknown[]
+}
+
 
 const { t } = useI18n()
 const route = useRoute()
@@ -102,6 +117,7 @@ const net = ref<Net | null>(null)
 const attendees = ref<Attendee[]>([])
 const isLoading = ref(true)
 const isLoadingAttendees = ref(false)
+const canDownloadOthersCertificates = ref(false)
 
 const editingAttendee = ref<Attendee | null>(null)
 const isEditSheetOpen = ref(false)
@@ -110,6 +126,8 @@ const isEditNetSheetOpen = ref(false)
 const exportTemplateRef = ref<InstanceType<typeof ExportReportTemplate> | null>(null)
 const exportAttendees = ref<Attendee[]>([])
 const isExporting = ref(false)
+const certificatePreview = ref<CertificatePreview | null>(null)
+const isLoadingCertificatePreview = ref(false)
 
 const themeStore = useThemeStore()
 const mapRef = ref<{ leafletObject: LeafletMap } | null>(null)
@@ -318,6 +336,15 @@ const updateLeftStatsHeight = () => {
 
 let resizeObserver: ResizeObserver | null = null
 
+watch(
+  () => net.value?.certificateTemplate?.id,
+  (id) => {
+    if (id) fetchCertificatePreview()
+    else certificatePreview.value = null
+  },
+  { immediate: true }
+)
+
 onMounted(() => {
   Promise.all([fetchNet(), fetchAttendees()]).then(async () => {
     if (net.value && netStatus.value === 'completed') {
@@ -375,10 +402,35 @@ const canManageNet = computed(() => {
   return net.value.operator.user?.id === auth.user?.id
 })
 
+const myAttendee = computed(() => {
+  const opId = auth.user?.operator?.id
+  if (!opId || !attendees.value.length) return null
+  return attendees.value.find((a) => a.operatorId === opId) ?? null
+})
+
+const showDownloadMyCertificate = computed(
+  () =>
+    !!net.value?.certificateTemplate &&
+    netStatus.value === 'completed' &&
+    !!myAttendee.value
+)
+
 const fetchNet = async () => {
   try {
     const data = await api.get<Net>(`/net/${route.params.id}`)
     net.value = data
+    if (data.certificateTemplate && data.endedAt) {
+      try {
+        const r = await api.get<{ canDownloadOthers: boolean }>(
+          `/net/${route.params.id}/certificate/can-download-others`
+        )
+        canDownloadOthersCertificates.value = r.canDownloadOthers
+      } catch {
+        canDownloadOthersCertificates.value = false
+      }
+    } else {
+      canDownloadOthersCertificates.value = false
+    }
   } catch (error) {
     router.push('/nets')
   } finally {
@@ -492,6 +544,30 @@ const handleAttendeeAdded = async () => {
   if (net.value) net.value.attendeeCount = attendees.value.length
 }
 
+const certificatePreviewImageUrl = computed(() => {
+  const path = certificatePreview.value?.imagePath ?? net.value?.certificateTemplate?.imagePath
+  if (!path) return ''
+  if (path.startsWith('http')) return path
+  const base = (import.meta.env.VITE_API_URL || '').replace(/\/api$/, '')
+  return `${base}${path}`
+})
+
+const fetchCertificatePreview = async () => {
+  if (!net.value?.certificateTemplate?.id || !route.params.id) {
+    certificatePreview.value = null
+    return
+  }
+  isLoadingCertificatePreview.value = true
+  try {
+    const data = await api.get<CertificatePreview | null>(`/net/${route.params.id}/certificate/preview`)
+    certificatePreview.value = data
+  } catch {
+    certificatePreview.value = null
+  } finally {
+    isLoadingCertificatePreview.value = false
+  }
+}
+
 const getNetDateInfo = () => {
   if (!net.value) return ''
   const { startedAt, endedAt } = net.value
@@ -508,6 +584,53 @@ const formatReadabilitySignal = (a: Attendee) => {
   const s = a.signalStrength
   if (r == null && s == null) return ''
   return `${r ?? '-'}/${s ?? '-'}`
+}
+
+const downloadBlob = (blob: Blob, filename: string) => {
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = filename
+  link.click()
+  URL.revokeObjectURL(link.href)
+}
+
+const exportCertificates = async () => {
+  if (!net.value || isExporting.value) return
+  isExporting.value = true
+  try {
+    const res = await fetch(`${API_BASE}/net/${route.params.id}/certificate/download-all`, { credentials: 'include' })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error(err.message || 'error.serverError')
+    }
+    const blob = await res.blob()
+    const name = (net.value.name || 'net').replace(/[/\\?%*:|"<>]/g, '-')
+    downloadBlob(blob, `${name}-certificates.zip`)
+    toast.success(t('certificates.downloadAllSuccess'))
+  } catch (e: unknown) {
+    const msg = (e instanceof Error ? e.message : null) || 'error.serverError'
+    toast.error(translateError(msg))
+  } finally {
+    isExporting.value = false
+  }
+}
+
+const downloadCertificate = async (attendee: Attendee) => {
+  if (!net.value) return
+  try {
+    const res = await fetch(`${API_BASE}/net/${route.params.id}/certificate/${attendee.id}`, { credentials: 'include' })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error((err as { message?: string }).message || 'error.serverError')
+    }
+    const blob = await res.blob()
+    const name = (attendee.callSign || attendee.id).replace(/[/\\?%*:|"<>]/g, '-')
+    downloadBlob(blob, `${name}-certificate.pdf`)
+    toast.success(t('certificates.downloadSuccess'))
+  } catch (e: unknown) {
+    const msg = (e instanceof Error ? e.message : null) || 'error.serverError'
+    toast.error(translateError(msg))
+  }
 }
 
 const exportToCsv = async () => {
@@ -702,17 +825,33 @@ const fetchComparePrevious = async () => {
         @export-csv="exportToCsv"
         @export-pdf="exportToPdf"
         @export-png="exportToPng"
-      />
-
-      <section
-        v-if="isCompleted"
-        class="rounded-lg border border-border/50 bg-background p-4"
+        @export-certificates="exportCertificates"
       >
-        <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
-          <TrendingUp class="h-4 w-4" />
-          {{ t('netDetail.statsTitle') }}
-        </h3>
-        <div class="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4 lg:items-start">
+        <template v-if="net?.certificateTemplate && (certificatePreviewImageUrl || isLoadingCertificatePreview)" #certificate>
+          <div class="rounded-lg border border-border/50 bg-muted/30 overflow-hidden">
+            <div v-if="isLoadingCertificatePreview" class="aspect-[4/3] max-h-32 flex items-center justify-center">
+              <span class="text-xs text-muted-foreground">{{ t('common.loading') }}</span>
+            </div>
+            <img
+              v-else-if="certificatePreviewImageUrl"
+              :src="certificatePreviewImageUrl"
+              :alt="t('certificates.template')"
+              class="w-full aspect-[4/3] object-contain max-h-32"
+            />
+          </div>
+        </template>
+      </NetHeader>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch lg:grid-rows-1">
+        <section
+          v-if="isCompleted"
+          class="rounded-lg border border-border/50 bg-background p-4 w-full min-w-0"
+        >
+          <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+            <TrendingUp class="h-4 w-4" />
+            {{ t('netDetail.statsTitle') }}
+          </h3>
+          <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-4 sm:items-start">
           <!-- Sol sütun: toplam katılımcı, süre, trend (desktop) / mobilde aynı sıra alt alta -->
           <div ref="leftStatsRef" class="flex flex-col gap-3">
             <div class="p-4 rounded-lg border border-border/50 text-center shrink-0">
@@ -759,7 +898,7 @@ const fetchComparePrevious = async () => {
           <div
             class="min-h-0 flex flex-col lg:overflow-hidden"
             :style="leftStatsHeight ? { '--left-stats-height': leftStatsHeight + 'px' } as Record<string, string> : undefined"
-            :class="leftStatsHeight ? 'lg:max-h-[var(--left-stats-height)] lg:h-[var(--left-stats-height)]' : ''"
+            :class="leftStatsHeight ? 'sm:max-h-[var(--left-stats-height)] sm:h-[var(--left-stats-height)]' : ''"
           >
             <div class="p-4 rounded-lg border border-border/50 flex-1 min-h-0 flex flex-col overflow-hidden">
               <p class="text-xs text-muted-foreground flex items-center gap-2 mb-2 shrink-0">
@@ -863,12 +1002,11 @@ const fetchComparePrevious = async () => {
             </div>
           </div>
         </div>
+        </section>
 
-        <Separator class="my-8" />
-
-        <div
+        <section
           v-if="showMapSection"
-          class="rounded-lg border border-border/50 bg-background p-4"
+          class="rounded-lg border border-border/50 bg-background p-4 w-full min-w-0 flex flex-col"
         >
           <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-2">
             <MapPin class="h-4 w-4" />
@@ -877,12 +1015,12 @@ const fetchComparePrevious = async () => {
           <p class="text-xs text-muted-foreground mb-4">
             {{ t('netDetail.participantsMapDesc') }}
           </p>
-          <div class="rounded-lg overflow-hidden border border-border/50 h-[320px] bg-muted/30">
-            <div v-if="mapLoading" class="h-full flex items-center justify-center text-sm text-muted-foreground">
+          <div class="rounded-lg overflow-hidden border border-border/50 flex-1 min-h-[280px] lg:min-h-0 bg-muted/30">
+            <div v-if="mapLoading" class="h-full min-h-[280px] flex items-center justify-center text-sm text-muted-foreground">
               {{ t('netDetail.mapLoading') }}
             </div>
             <template v-else-if="attendeePoints.length === 0">
-              <div class="h-full flex items-center justify-center text-sm text-muted-foreground">
+              <div class="h-full min-h-[280px] flex items-center justify-center text-sm text-muted-foreground">
                 {{ t('netDetail.mapNoLocations') }}
               </div>
             </template>
@@ -892,7 +1030,7 @@ const fetchComparePrevious = async () => {
               :use-global-leaflet="true"
               :center="MAP_DEFAULT_CENTER"
               :zoom="MAP_DEFAULT_ZOOM"
-              class="h-full w-full rounded-lg"
+              class="h-full w-full rounded-lg min-h-[280px] lg:min-h-0"
               :options="{ zoomControl: true }"
               @ready="onMapReady"
             >
@@ -902,16 +1040,28 @@ const fetchComparePrevious = async () => {
               />
             </LMap>
           </div>
-        </div>
-      </section>
+        </section>
+      </div>
+
+      <Separator class="my-8" />
 
       <div v-if="netStatus !== 'pending' && netStatus !== 'cancelled'" class="border-t border-border/50 pt-6">
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
           <h2 class="text-lg font-semibold flex items-center gap-2">
             <Users class="h-5 w-5" />
             {{ t('netDetail.attendees') }}
             <span class="text-muted-foreground font-normal">({{ attendees.length }})</span>
           </h2>
+          <Button
+            v-if="showDownloadMyCertificate && myAttendee"
+            variant="outline"
+            size="sm"
+            class="gap-2"
+            @click="downloadCertificate(myAttendee)"
+          >
+            <Award class="h-4 w-4" />
+            {{ t('netDetail.downloadMyCertificate') }}
+          </Button>
         </div>
 
         <AddAttendeePanel
@@ -927,8 +1077,12 @@ const fetchComparePrevious = async () => {
           :is-loading="isLoadingAttendees"
           :can-manage="canManageNet"
           :is-active="netStatus === 'active'"
+          :show-certificate-download="!!(net?.certificateTemplate && netStatus === 'completed')"
+          :can-download-others-certificates="canDownloadOthersCertificates"
+          :current-user-operator-id="auth.user?.operator?.id"
           @edit="openEditAttendee"
           @delete="deleteAttendee"
+          @download-certificate="downloadCertificate"
         />
       </div>
     </div>

@@ -51,7 +51,12 @@
     "requestNotFound": "Talep bulunamadı",
     "operatorUsedInScheduler": "Bu operatör en az bir planlayıcıda kullanılıyor. Önce planlayıcıyı güncelleyin.",
     "schedulerStartDateImmutable": "Başlangıç tarihi değiştirilemez. Değiştirmek için planlayıcıyı silip yeniden oluşturun.",
-    "schedulerStartDateNotInPast": "Döngüsel planlayıcı için geçmiş tarih seçilemez."
+    "schedulerStartDateNotInPast": "Döngüsel planlayıcı için geçmiş tarih seçilemez.",
+    "certificateTemplateNotFound": "Sertifika şablonu bulunamadı",
+    "templateInUse": "Bu şablon bir veya daha fazla çevrimde kullanılıyor",
+    "netNotCompleted": "Sertifikalar yalnızca tamamlanmış çevrimler için kullanılabilir",
+    "invalidFileType": "Geçersiz dosya türü. JPG, PNG veya WebP yükleyin.",
+    "noFileUploaded": "Dosya yüklenmedi."
   },
   "auth": {
     "login": "Giriş Yap",
@@ -389,7 +394,10 @@
     "changeAvatar": "Fotoğrafı değiştir",
     "deleteAvatar": "Fotoğrafı sil",
     "invalidFileType": "Geçersiz dosya türü. JPG, PNG veya WebP yükleyin.",
-    "fileTooLarge": "Dosya çok büyük. Maksimum 5MB yüklenebilir."
+    "fileTooLarge": "Dosya çok büyük. Maksimum 5MB yüklenebilir.",
+    "certificatesTitle": "Sertifikalar",
+    "certificatesEmpty": "Henüz sertifika yok",
+    "viewNet": "Çevrime git"
   },
   "memberships": {
     "title": "Şube Üyelikleri",
@@ -523,16 +531,74 @@
     "branchFilterAll": "Tüm şubeler",
     "createNetForBranch": "Bu Şube İçin Çevrim Oluştur",
     "nets": "Çevrimler",
+    "sessionsSectionSubtitle": "Aktif, planlanmış ve geçmiş çevrim oturumları",
     "noNetsInBranch": "Bu şubede henüz çevrim yok",
     "scheduledTime": "Planlanan saat",
     "estimatedDuration": "Tahmini süre",
     "durationTotal": "Toplam süre"
   },
-  "netDetail": {
-    "durationTotal": "Toplam süre"
+  "certificates": {
+    "template": "Sertifika şablonu",
+    "noTemplate": "Sertifika yok",
+    "download": "Sertifika indir",
+    "preview": "Önizleme",
+    "previewFull": "Tam önizleme",
+    "downloadAll": "Sertifikaları indir (ZIP)",
+    "downloadSuccess": "Sertifika indirildi",
+    "downloadAllSuccess": "Sertifikalar indirildi",
+    "title": "Sertifika şablonları",
+    "create": "Sertifika şablonu ekle",
+    "edit": "Sertifika şablonunu düzenle",
+    "createDescription": "Bu şube için sertifika şablonu ekleyin",
+    "editDescription": "Sertifika şablonu bilgilerini güncelleyin",
+    "createSuccess": "Sertifika şablonu eklendi",
+    "updateSuccess": "Sertifika şablonu güncellendi",
+    "deleteSuccess": "Sertifika şablonu silindi",
+    "deleteConfirmTitle": "Sertifika şablonunu sil",
+    "deleteConfirmDescription": "Bu sertifika şablonunu silmek istediğinizden emin misiniz?",
+    "templateInUseDescription": "Bu şablon {count} çevrimde kullanılıyor. Silindiğinde bu çevrimlerden kaldırılacak.",
+    "noTemplates": "Henüz sertifika şablonu yok",
+    "nameEntity": "sertifika şablonu",
+    "name": "Ad",
+    "image": "Arka plan görseli",
+    "uploadImage": "Görsel yükle",
+    "elementsSection": "Metin öğeleri",
+    "elementsHint": "Statik metin veya yer tutucu ekleyin, sonra her biri için konum ve stil ayarlayın.",
+    "addStaticText": "Statik metin ekle",
+    "addPlaceholder": "Yer tutucu ekle",
+    "elementStatic": "Statik metin",
+    "elementPlaceholder": "Yer tutucu",
+    "positionX": "X",
+    "positionY": "Y",
+    "positionHorizontal": "Yatay",
+    "positionVertical": "Dikey",
+    "fontFamily": "Yazı tipi",
+    "fontSize": "Boyut",
+    "color": "Renk",
+    "serialNoFixed": "Sabit",
+    "serialNoCannotDelete": "Sertifika seri numarası varsayılan eklenir ve silinemez.",
+    "placeholdersLabel": "Yer tutucular",
+    "placeholders": {
+      "operator_callsign": "Çağrı işareti",
+      "operator_name": "Operatör adı",
+      "operator_country": "Ülke",
+      "operator_city": "Şehir",
+      "operator_district": "İlçe",
+      "net_name": "Çevrim adı",
+      "net_date": "Çevrim tarihi",
+      "net_operator_callsign": "Çevrim operatörü çağrı işareti",
+      "net_operator_name": "Çevrim operatörü adı",
+      "branch_name": "Şube adı",
+      "branch_callsign": "Şube çağrı işareti",
+      "certificate_serial": "Sertifika seri no",
+      "participant_number": "Katılımcı numarası",
+      "issue_date": "Düzenleme tarihi"
+    }
   },
   "scheduler": {
     "title": "Çevrim Planı",
+    "name": "plan",
+    "sectionSubtitle": "Çevrimleri oluşturan tekrarlayan planlar",
     "create": "Planlayıcı Oluştur",
     "edit": "Planlayıcı Düzenle",
     "editDescription": "Şablon ve zamanlama ayarları",
@@ -633,6 +699,7 @@
     "noBranches": "Şube bulunamadı"
   },
   "netDetail": {
+    "durationTotal": "Toplam süre",
     "start": "Başlat",
     "end": "Bitir",
     "cancel": "İptal",
@@ -669,6 +736,7 @@
     "editNetDescription": "Çevrim bilgilerini güncelleyin",
     "viewReport": "Raporu Görüntüle",
     "export": "Dışa Aktar",
+    "downloadMyCertificate": "Sertifikamı indir",
     "statusPending": "Planlandı",
     "statusActive": "Aktif",
     "statusCompleted": "Tamamlandı",
@@ -790,7 +858,8 @@
     "unknown": "Bilinmiyor",
     "noResults": "Sonuç bulunamadı",
     "error": "Yüklenemedi",
-    "other": "Diğer"
+    "other": "Diğer",
+    "profile": "Profil"
   },
   "communicationChannels": {
     "title": "İletişim Kanalları",

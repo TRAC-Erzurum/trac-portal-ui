@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Building2, CheckCircle2, ChevronRight, Users } from 'lucide-vue-next'
+import { Award, Building2, CheckCircle2, ChevronRight, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useDateFormat } from '@/composables'
 
@@ -26,13 +26,15 @@ interface Props {
   showBranch?: boolean
   scheduledAt?: string | null
   estimatedDurationMinutes?: number | null
+  hasCertificate?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showChevron: true,
   showStatusBadge: false,
   compact: false,
-  showBranch: false
+  showBranch: false,
+  hasCertificate: false
 })
 
 const emit = defineEmits<{
@@ -108,7 +110,13 @@ const scheduledLabel = computed(() => {
 </script>
 
 <template>
-  <div class="w-full text-left p-4 rounded-lg border border-border/50 transition-all flex flex-col">
+  <div class="w-full text-left p-4 rounded-lg border border-border/50 transition-all flex flex-col relative">
+    <Award
+      v-if="hasCertificate"
+      class="absolute top-2.5 right-2.5 h-3.5 w-3.5 text-amber-500 dark:text-amber-400 shrink-0"
+      :title="t('certificates.template')"
+      aria-hidden
+    />
     <div class="flex items-start gap-3 flex-1 min-w-0">
       <div class="mt-0.5 flex-shrink-0" :class="{ 'mt-1': compact }">
         <span v-if="status === 'active'" class="relative flex" :class="compact ? 'h-2.5 w-2.5' : 'h-3 w-3'">

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Building2, Calendar, CalendarRange, Clock, Edit, Repeat } from 'lucide-vue-next'
+import { Award, Building2, Calendar, CalendarRange, Clock, Edit, Repeat } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { useDateFormat } from '@/composables'
@@ -22,6 +22,7 @@ interface Scheduler extends SchedulerForResolve {
   id: string
   branch?: { name?: string; isHeadquarters?: boolean } | null
   branchCallSign?: { callSign?: string } | null
+  certificateTemplateId?: string | null
 }
 
 const props = defineProps<{
@@ -128,7 +129,13 @@ const branchIsHeadquarters = computed(() => props.scheduler.branch?.isHeadquarte
 </script>
 
 <template>
-  <div class="w-full text-left p-4 rounded-lg border border-border/50 transition-all flex flex-col">
+  <div class="w-full text-left p-4 rounded-lg border border-border/50 transition-all flex flex-col relative">
+    <Award
+      v-if="scheduler.certificateTemplateId"
+      class="absolute top-2.5 right-2.5 h-3.5 w-3.5 text-amber-500 dark:text-amber-400 shrink-0"
+      :title="t('certificates.template')"
+      aria-hidden
+    />
     <div class="flex items-start gap-3 flex-1 min-w-0">
       <div class="mt-0.5 flex-shrink-0">
         <Clock class="h-3 w-3 text-blue-600 dark:text-blue-400" aria-hidden="true" />
