@@ -9,6 +9,8 @@ import AddMemberSheet from '@/components/branches/AddMemberSheet.vue'
 import CreateCommChannelSheet from '@/components/infrastructure/CreateCommChannelSheet.vue'
 import EditCommChannelSheet from '@/components/infrastructure/EditCommChannelSheet.vue'
 import CreateNetSheet from '@/components/nets/CreateNetSheet.vue'
+import EditNetSchedulerSheet from '@/components/nets/EditNetSchedulerSheet.vue'
+import SchedulerCard from '@/components/nets/SchedulerCard.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CommunityModule from '@/components/dashboard/CommunityModule.vue'
 import NetsAttendeesTrendWidget from '@/components/dashboard/widgets/NetsAttendeesTrendWidget.vue'
@@ -126,6 +128,10 @@ const isLoadingMoreNets = ref(false)
 const netsSearch = ref('')
 const netsStatusFilter = ref<string>('all')
 const isCreateNetSheetOpen = ref(false)
+const schedulers = ref<any[]>([])
+const isLoadingSchedulers = ref(false)
+const selectedSchedulerId = ref<string | null>(null)
+const isEditSchedulerSheetOpen = ref(false)
 const canManage = computed(() => {
   return authStore.isSuperAdmin
 })
@@ -656,6 +662,28 @@ const loadMoreNets = () => {
 
 const handleNetCreated = async () => {
   await fetchNets()
+  await fetchSchedulers()
+}
+
+const fetchSchedulers = async () => {
+  if (!route.params.id) return
+  isLoadingSchedulers.value = true
+  try {
+    schedulers.value = await api.get<any[]>(`/net-schedulers?branchId=${route.params.id}`)
+  } catch {
+    schedulers.value = []
+  } finally {
+    isLoadingSchedulers.value = false
+  }
+}
+
+const openEditScheduler = (id: string) => {
+  selectedSchedulerId.value = id
+  isEditSchedulerSheetOpen.value = true
+}
+
+const handleSchedulerUpdated = () => {
+  fetchSchedulers()
 }
 
 const getNetStatus = (net: any): 'active' | 'pending' | 'completed' | 'cancelled' => {
@@ -732,6 +760,7 @@ onMounted(() => {
   checkMembership()
   fetchChannels()
   fetchNets()
+  fetchSchedulers()
 })
 </script>
 
@@ -1006,6 +1035,30 @@ onMounted(() => {
       <section>
         <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
           <Radio class="h-4 w-4" />
+          {{ t('scheduler.title') }}
+        </h3>
+        <div v-if="isLoadingSchedulers" class="py-4 text-sm text-muted-foreground">
+          {{ t('common.loading') }}
+        </div>
+        <div v-else-if="schedulers.length === 0" class="py-4 text-sm text-muted-foreground">
+          {{ t('common.noResults') }}
+        </div>
+        <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+          <SchedulerCard
+            v-for="s in schedulers"
+            :key="s.id"
+            :scheduler="s"
+            :show-edit-button="canCreateNet"
+            @edit="openEditScheduler"
+          />
+        </div>
+      </section>
+
+      <Separator class="my-8" />
+
+      <section>
+        <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+          <Radio class="h-4 w-4" />
           {{ t('nets.nets') }}
         </h3>
         <div class="flex flex-col lg:flex-row lg:items-start lg:gap-4 gap-2 mb-4">
@@ -1063,8 +1116,11 @@ onMounted(() => {
             :mode="net.mode"
             :status="getNetStatus(net)"
             :attendee-count="net.attendeeCount"
+            :duration-minutes="net.totalDurationMinutes"
             :started-at="net.startedAt"
             :ended-at="net.endedAt"
+            :scheduled-at="net.scheduledAt"
+            :estimated-duration-minutes="net.estimatedDurationMinutes"
           />
         </div>
 
@@ -1153,8 +1209,15 @@ onMounted(() => {
       v-if="branch"
       :open="isCreateNetSheetOpen"
       :default-branch-id="branch.id"
-      @update:open="isCreateNetSheetOpen = $event"
+      @update:open="(v) => { isCreateNetSheetOpen = v; if (!v) handleNetCreated() }"
       @created="handleNetCreated"
+    />
+
+    <EditNetSchedulerSheet
+      :open="isEditSchedulerSheetOpen"
+      :scheduler-id="selectedSchedulerId"
+      @update:open="(v) => { isEditSchedulerSheetOpen = v; if (!v) handleSchedulerUpdated() }"
+      @updated="handleSchedulerUpdated"
     />
 
     <EditCommChannelSheet

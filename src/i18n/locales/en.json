@@ -48,7 +48,10 @@
     "cannotChangeSuperAdminRole": "System administrator branch role cannot be changed",
     "lastAdminCannotBeDemoted": "The last admin cannot be demoted",
     "membershipNotApproved": "Membership is not approved",
-    "requestNotFound": "Request not found"
+    "requestNotFound": "Request not found",
+    "operatorUsedInScheduler": "This operator is used in at least one scheduler. Update the scheduler first.",
+    "schedulerStartDateImmutable": "Start date cannot be changed. Delete and recreate the scheduler to change it.",
+    "schedulerStartDateNotInPast": "Past date is not allowed for recurring schedulers."
   },
   "auth": {
     "login": "Login",
@@ -466,6 +469,11 @@
     "roleAll": "All",
     "createNet": "New Net",
     "createDescription": "Create a new net",
+    "createType": "Net type",
+    "createModeToday": "Instant",
+    "createModeScheduled": "Scheduled",
+    "nameTemplate": "Net name template",
+    "namePreview": "Preview",
     "createSuccess": "Net created successfully",
     "create": "Create",
     "netName": "Net Name",
@@ -515,7 +523,43 @@
     "branchFilterAll": "All branches",
     "createNetForBranch": "Create Net for This Branch",
     "nets": "Nets",
-    "noNetsInBranch": "No nets in this branch yet"
+    "noNetsInBranch": "No nets in this branch yet",
+    "scheduledTime": "Scheduled time",
+    "estimatedDuration": "Estimated duration",
+    "durationTotal": "Total duration"
+  },
+  "netDetail": {
+    "durationTotal": "Total duration"
+  },
+  "scheduler": {
+    "title": "Net schedule",
+    "create": "Create Scheduler",
+    "edit": "Edit Scheduler",
+    "editDescription": "Template and schedule settings",
+    "recurrence": "Recurrence",
+    "recurrenceLabel": "Recurrence",
+    "oneTime": "One time",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "monthly": "Monthly",
+    "startDate": "Start date",
+    "endDate": "End date",
+    "upcomingNets": "Next planned nets",
+    "plannedNets": "Planned nets",
+    "plannedNetsMoreHint": "First 5 shown · list continues",
+    "addVariable": "Add variable",
+    "allVariablesAdded": "All variables added",
+    "namePlaceholder": {
+      "branch_name": "Branch name",
+      "branch_callsign": "Branch call sign",
+      "day": "Day",
+      "month": "Month",
+      "year": "Year",
+      "day_of_week": "Day of week",
+      "time": "Scheduled time",
+      "operator_callsign": "Operator call sign",
+      "operator_name": "Operator name"
+    }
   },
   "branches": {
     "title": "Branches",

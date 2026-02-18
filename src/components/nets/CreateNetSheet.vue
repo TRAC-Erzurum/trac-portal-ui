@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import NameTemplateInput from '@/components/nets/NameTemplateInput.vue'
 import { translateError } from '@/i18n'
 import { formatCommunicationChannelLabel } from '@/lib/formatters'
 import { api, type ApiError } from '@/lib/api'
@@ -47,7 +48,26 @@ const { t } = useI18n()
 const branchStore = useBranchStore()
 const authStore = useAuthStore()
 
-const name = ref('')
+/** Placeholder keys for name template. */
+const SCHEDULER_PLACEHOLDER_KEYS = [
+  'branch_name',
+  'branch_callsign',
+  'day',
+  'month',
+  'year',
+  'day_of_week',
+  'time',
+  'operator_callsign',
+  'operator_name',
+] as const
+
+const createMode = ref<'today' | 'scheduled'>('today')
+const name = ref('{{branch_callsign}} {{day}} {{month}} {{year}} Çevrimi')
+const scheduledTime = ref('20:00')
+const estimatedDurationMinutes = ref(30)
+const startDate = ref('')
+const recurrence = ref<'one_time' | 'daily' | 'weekly' | 'monthly'>('one_time')
+const endDate = ref('')
 const selectedOperator = ref<Operator | null>(null)
 const isLoading = ref(false)
 
@@ -82,27 +102,56 @@ const isValid = computed(() => {
   const allCheckedRowsFilled = simplexRows.value
     .filter(row => row.checked)
     .every(row => row.value.trim())
-  return (
+  const base =
     name.value.trim() &&
     selectedOperator.value &&
     selectedBranchId.value &&
     selectedCallSignId.value &&
     hasAtLeastOneChannelSelected.value &&
     allCheckedRowsFilled
-  )
+  if (createMode.value === 'today') return base
+  return base && startDate.value.trim().length > 0
 })
 
-const generateDefaultName = () => {
-  const now = new Date()
-  const options: Intl.DateTimeFormatOptions = {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    weekday: 'long'
-  }
-  const dateStr = now.toLocaleDateString('tr-TR', options)
-  return `TRAC ${dateStr} Çevrimi`
-}
+const tomorrowISO = computed(() => {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  return d.toISOString().slice(0, 10)
+})
+const minStartDate = computed(() =>
+  createMode.value === 'scheduled' ? tomorrowISO.value : undefined
+)
+
+const namePreview = computed(() => {
+  const branchId = selectedBranchId.value
+  const branch =
+    availableBranches.value.find(b => b.id === branchId) ??
+    branchStore.approvedBranches.find(b => b.id === branchId) ??
+    (branchStore.currentBranch?.id === branchId ? branchStore.currentBranch : null)
+  const branchName = branch?.name ?? ''
+  const branchCallsign = branchCallSigns.value.find(c => c.id === selectedCallSignId.value)?.callSign ?? ''
+  const dateForPreview = createMode.value === 'today'
+    ? new Date()
+    : startDate.value ? new Date(startDate.value + 'T12:00:00') : null
+  const day = dateForPreview ? String(dateForPreview.getDate()).padStart(2, '0') : ''
+  const month = dateForPreview ? dateForPreview.toLocaleDateString('tr-TR', { month: 'long' }) : ''
+  const year = dateForPreview ? String(dateForPreview.getFullYear()) : ''
+  const dayOfWeek = dateForPreview ? dateForPreview.toLocaleDateString('tr-TR', { weekday: 'long' }) : ''
+  const time = scheduledTime.value || '20:00'
+  const operatorCallsign = selectedOperator.value?.callSign ?? ''
+  const operatorName = selectedOperator.value?.fullName ?? selectedOperator.value?.user?.fullName ?? ''
+  return name.value
+    .replace(/\{\{branch_name\}\}/gi, branchName)
+    .replace(/\{\{branch_callsign\}\}/gi, branchCallsign)
+    .replace(/\{\{day\}\}/g, day)
+    .replace(/\{\{month\}\}/g, month)
+    .replace(/\{\{year\}\}/g, year)
+    .replace(/\{\{day_of_week\}\}/g, dayOfWeek)
+    .replace(/\{\{time\}\}/g, time)
+    .replace(/\{\{operator_callsign\}\}/g, operatorCallsign)
+    .replace(/\{\{operator_name\}\}/g, operatorName)
+    .replace(/\{\{[^}]*\}\}/g, '')
+})
 
 const loadAvailableBranches = async () => {
   try {
@@ -291,9 +340,21 @@ const clearSimplexRow = (index: number) => {
   simplexInputRefs.value[index]?.focus()
 }
 
+watch(createMode, (mode) => {
+  if (mode === 'scheduled' && startDate.value && startDate.value < tomorrowISO.value) {
+    startDate.value = tomorrowISO.value
+  }
+})
+
 watch(() => props.open, async (isOpen) => {
   if (isOpen) {
-    name.value = generateDefaultName()
+    name.value = '{{branch_callsign}} {{day}} {{month}} {{year}} Çevrimi'
+    scheduledTime.value = '20:00'
+    estimatedDurationMinutes.value = 30
+    recurrence.value = 'one_time'
+    endDate.value = ''
+    const today = new Date().toISOString().slice(0, 10)
+    startDate.value = today
     selectedOperator.value = null
     operatorSearch.value = ''
     operatorSuggestions.value = []
@@ -339,24 +400,28 @@ async function handleSubmit() {
   isLoading.value = true
   try {
     const communicationChannels: Array<{ communicationChannelId?: string; isSimplexAdHoc?: boolean; simplexFrequency?: string }> = []
-
     selectedChannelIds.value.forEach(channelId => {
       communicationChannels.push({ communicationChannelId: channelId })
     })
-
     simplexFreqs.forEach(freq => {
-      communicationChannels.push({
-        isSimplexAdHoc: true,
-        simplexFrequency: freq
-      })
+      communicationChannels.push({ isSimplexAdHoc: true, simplexFrequency: freq })
     })
 
-    await api.post('/net', {
+    const isToday = createMode.value === 'today'
+    const startDateValue = isToday ? new Date().toISOString().slice(0, 10) : startDate.value
+    const recurrenceValue = isToday ? 'one_time' : recurrence.value
+
+    await api.post('/net-schedulers', {
       name: name.value.trim(),
       operatorId: selectedOperator.value.id,
       branchId: selectedBranchId.value,
-      branchCallSignId: selectedCallSignId.value,
+      branchCallSignId: selectedCallSignId.value || null,
       communicationChannels,
+      startDate: startDateValue,
+      recurrence: recurrenceValue,
+      endDate: recurrenceValue !== 'one_time' && endDate.value ? endDate.value : null,
+      scheduledTime: scheduledTime.value,
+      estimatedDurationMinutes: estimatedDurationMinutes.value,
     })
 
     toast.success(t('nets.createSuccess'))
@@ -385,7 +450,54 @@ onMounted(() => {
         <SheetDescription>{{ t('nets.createDescription') }}</SheetDescription>
       </SheetHeader>
 
-      <form @submit.prevent="handleSubmit" class="mt-6 space-y-6 py-6 px-1">
+      <form @submit.prevent="handleSubmit" class="mt-2 space-y-4 py-4 px-1">
+        <div class="space-y-2">
+          <Label class="text-sm font-medium text-muted-foreground">{{ t('nets.createType') }}</Label>
+          <div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input v-model="createMode" type="radio" value="today" class="rounded border-input" />
+              <span>{{ t('nets.createModeToday') }}</span>
+            </label>
+            <label class="flex items-center gap-2 cursor-pointer">
+              <input v-model="createMode" type="radio" value="scheduled" class="rounded border-input" />
+              <span>{{ t('nets.createModeScheduled') }}</span>
+            </label>
+          </div>
+        </div>
+
+        <template v-if="createMode === 'scheduled'">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-2">
+              <Label for="startDate">{{ t('scheduler.startDate') }}</Label>
+              <Input
+                id="startDate"
+                v-model="startDate"
+                type="date"
+                :min="minStartDate"
+                class="w-full"
+              />
+            </div>
+            <div class="space-y-2">
+              <Label for="recurrence">{{ t('scheduler.recurrence') }}</Label>
+              <Select v-model="recurrence">
+                <SelectTrigger id="recurrence" class="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="one_time">{{ t('scheduler.oneTime') }}</SelectItem>
+                  <SelectItem value="daily">{{ t('scheduler.daily') }}</SelectItem>
+                  <SelectItem value="weekly">{{ t('scheduler.weekly') }}</SelectItem>
+                  <SelectItem value="monthly">{{ t('scheduler.monthly') }}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div v-if="recurrence !== 'one_time'" class="space-y-2">
+            <Label for="endDate">{{ t('scheduler.endDate') }}</Label>
+            <Input id="endDate" v-model="endDate" type="date" class="w-full" />
+          </div>
+        </template>
+
         <div class="space-y-2">
           <Label for="branch">{{ t('nets.branch') }}</Label>
           <Select v-model="selectedBranchId" :disabled="isLoadingCallSigns">
@@ -419,13 +531,28 @@ onMounted(() => {
         </div>
 
         <div class="space-y-2">
-          <Label for="name">{{ t('nets.netName') }}</Label>
-          <Input
-            id="name"
+          <Label for="name">{{ t('nets.nameTemplate') }}</Label>
+          <NameTemplateInput
             v-model="name"
-            type="text"
-            :placeholder="t('nets.netNamePlaceholder')"
+            :placeholder-keys="SCHEDULER_PLACEHOLDER_KEYS"
           />
+          <p class="text-xs text-muted-foreground break-words whitespace-normal min-w-0">
+            {{ t('nets.namePreview') }}: {{ namePreview }}
+          </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <Label for="scheduledTime">{{ t('nets.scheduledTime') }}</Label>
+            <Input id="scheduledTime" v-model="scheduledTime" type="time" class="w-full" />
+          </div>
+          <div class="space-y-2">
+            <Label for="estimatedDuration">{{ t('nets.estimatedDuration') }}</Label>
+            <div class="flex items-center gap-2">
+              <Input id="estimatedDuration" v-model.number="estimatedDurationMinutes" type="number" min="1" max="480" class="w-full" />
+              <span class="text-sm text-muted-foreground shrink-0">{{ t('nets.minutes') }}</span>
+            </div>
+          </div>
         </div>
 
         <div class="space-y-2">

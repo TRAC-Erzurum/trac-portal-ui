@@ -5,6 +5,8 @@ import { useI18n } from 'vue-i18n'
 import { Plus } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import EditNetSchedulerSheet from '@/components/nets/EditNetSchedulerSheet.vue'
+import SchedulerCard from '@/components/nets/SchedulerCard.vue'
 import {
   Select,
   SelectContent,
@@ -27,6 +29,7 @@ interface Net {
   startedAt: string | null
   endedAt: string | null
   attendeeCount: number
+  totalDurationMinutes?: number
   operator: {
     id: string
     callSign: string
@@ -41,6 +44,8 @@ interface Net {
     callSign: string
     isDefault: boolean
   }
+  scheduledAt?: string | null
+  estimatedDurationMinutes?: number | null
 }
 
 interface Branch {
@@ -71,6 +76,37 @@ const isLoadingBranches = ref(false)
 const pageSize = 12
 const hasMore = ref(true)
 const showCreateSheet = ref(false)
+
+const schedulers = ref<{ id: string; name: string; startDate: string; recurrence: string }[]>([])
+const isLoadingSchedulers = ref(false)
+const selectedSchedulerId = ref<string | null>(null)
+const isEditSchedulerSheetOpen = ref(false)
+
+const fetchSchedulers = async () => {
+  isLoadingSchedulers.value = true
+  try {
+    const branchId =
+      branchFilter.value === 'selected' && currentBranchId.value
+        ? currentBranchId.value
+        : undefined
+    schedulers.value = await api.get<any[]>(
+      `/net-schedulers${branchId ? `?branchId=${branchId}` : ''}`
+    )
+  } catch {
+    schedulers.value = []
+  } finally {
+    isLoadingSchedulers.value = false
+  }
+}
+
+const openEditScheduler = (id: string) => {
+  selectedSchedulerId.value = id
+  isEditSchedulerSheetOpen.value = true
+}
+
+const handleSchedulerUpdated = () => {
+  fetchSchedulers()
+}
 
 const currentBranchId = computed(() => branchStore.currentBranch?.id ?? authStore.user?.currentBranchId ?? availableBranches.value[0]?.id ?? null)
 
@@ -182,8 +218,8 @@ const getNetStatus = (net: Net): 'active' | 'pending' | 'completed' | 'cancelled
 }
 
 const handleNetCreated = () => {
-  showCreateSheet.value = false
   fetchNets()
+  fetchSchedulers()
 }
 
 usePersistedFilters('nets', { search, statusFilter, dateFilter, branchFilter })
@@ -222,14 +258,20 @@ watch(
     }
     applyFiltersFromUrl()
     fetchNets()
+    fetchSchedulers()
   },
   { deep: true }
 )
+
+watch([branchFilter, currentBranchId], () => {
+  fetchSchedulers()
+})
 
 onMounted(async () => {
   await loadBranches()
   applyFiltersFromUrl()
   fetchNets()
+  fetchSchedulers()
 })
 </script>
 
@@ -286,7 +328,30 @@ onMounted(async () => {
         </div>
       </div>
 
-      <Separator />
+      <Separator class="my-8" />
+
+      <section>
+        <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+          {{ t('scheduler.title') }}
+        </h3>
+        <div v-if="isLoadingSchedulers" class="py-4 text-sm text-muted-foreground">
+          {{ t('common.loading') }}
+        </div>
+        <div v-else-if="schedulers.length === 0" class="py-4 text-sm text-muted-foreground">
+          {{ t('common.noResults') }}
+        </div>
+        <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+          <SchedulerCard
+            v-for="s in schedulers"
+            :key="s.id"
+            :scheduler="s"
+            :show-edit-button="canCreate"
+            @edit="openEditScheduler"
+          />
+        </div>
+      </section>
+
+      <Separator class="my-8" />
 
       <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <NetCardSkeleton v-for="i in 6" :key="i" />
@@ -305,8 +370,11 @@ onMounted(async () => {
           :operator-call-sign="net.operator.callSign"
           :status="getNetStatus(net)"
           :attendee-count="net.attendeeCount"
+          :duration-minutes="net.totalDurationMinutes"
           :started-at="net.startedAt"
           :ended-at="net.endedAt"
+          :scheduled-at="net.scheduledAt"
+          :estimated-duration-minutes="net.estimatedDurationMinutes"
           :branch-name="net.branch?.name"
           :branch-call-sign="net.branchCallSign?.callSign"
           :branch-is-headquarters="net.branch?.isHeadquarters"
@@ -333,10 +401,18 @@ onMounted(async () => {
 
     <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
 
-    <CreateNetSheet 
-      v-model:open="showCreateSheet"
+    <CreateNetSheet
+      :open="showCreateSheet"
       :default-branch-id="branchFilter === 'selected' && currentBranchId ? currentBranchId : undefined"
+      @update:open="(v) => { showCreateSheet = v; if (!v) handleNetCreated() }"
       @created="handleNetCreated"
+    />
+
+    <EditNetSchedulerSheet
+      :open="isEditSchedulerSheetOpen"
+      :scheduler-id="selectedSchedulerId"
+      @update:open="(v) => { isEditSchedulerSheetOpen = v; if (!v) handleSchedulerUpdated() }"
+      @updated="handleSchedulerUpdated"
     />
   </AppLayout>
 </template>
