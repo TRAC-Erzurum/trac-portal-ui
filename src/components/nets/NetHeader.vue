@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Building2, ChevronDown, Play, RotateCcw, Square, TowerControl, Users, XCircle, Radio, Clock, Settings, Download, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
+import { Award, Building2, ChevronDown, Play, RotateCcw, Square, TowerControl, Users, XCircle, Radio, Clock, Settings, Download, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { MobileFab } from '@/components/shared'
@@ -51,6 +51,10 @@ interface Net {
     callSign: string
     isDefault: boolean
   }
+  certificateTemplate?: {
+    id: string
+    name: string
+  } | null
   communicationChannels?: NetCommunicationChannel[]
 }
 
@@ -72,6 +76,7 @@ const emit = defineEmits<{
   exportCsv: []
   exportPdf: []
   exportPng: []
+  exportCertificates: []
 }>()
 
 const { t } = useI18n()
@@ -150,6 +155,9 @@ const mobileFabActions = computed<MobileFabAction[]>(() => {
     actions.push({ key: 'exportCsv', label: 'CSV', icon: FileSpreadsheet as Component })
     actions.push({ key: 'exportPdf', label: 'PDF', icon: Printer as Component })
     actions.push({ key: 'exportPng', label: 'PNG', icon: Image as Component })
+    if (props.net.certificateTemplate && netStatus.value === 'completed') {
+      actions.push({ key: 'exportCertificates', label: t('certificates.downloadAll'), icon: Award as Component })
+    }
   }
   
   return actions
@@ -165,6 +173,7 @@ const handleFabAction = (key: string) => {
     case 'exportCsv': emit('exportCsv'); break
     case 'exportPdf': emit('exportPdf'); break
     case 'exportPng': emit('exportPng'); break
+    case 'exportCertificates': emit('exportCertificates'); break
   }
 }
 </script>
@@ -225,8 +234,15 @@ const handleFabAction = (key: string) => {
               </template>
             </span>
           </span>
+          <span v-if="net.certificateTemplate" class="flex items-center gap-2" :title="t('certificates.template')">
+            <Award class="h-4 w-4 shrink-0" />
+            <span class="font-medium text-foreground">{{ net.certificateTemplate.name }}</span>
+          </span>
         </div>
       </div>
+    </div>
+    <div v-if="$slots.certificate" class="hidden lg:block shrink-0 w-52 xl:w-60 min-w-0">
+      <slot name="certificate" />
     </div>
     <div v-if="canManage || (netStatus !== 'pending' && attendeesCount > 0)" class="hidden lg:flex flex-col items-end gap-2 shrink-0 lg:ml-4">
       <Button
@@ -298,6 +314,15 @@ const handleFabAction = (key: string) => {
           <DropdownMenuItem @click="emit('exportPng')" class="gap-2 cursor-pointer" :disabled="isExporting">
             <Image class="h-4 w-4" />
             PNG
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            v-if="net.certificateTemplate && netStatus === 'completed'"
+            @click="emit('exportCertificates')"
+            class="gap-2 cursor-pointer"
+            :disabled="isExporting"
+          >
+            <Award class="h-4 w-4" />
+            {{ t('certificates.downloadAll') }}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

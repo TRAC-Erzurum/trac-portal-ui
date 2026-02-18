@@ -26,12 +26,14 @@ interface ActiveNet {
   attendeeCount: number
   startedAt: string
   durationMinutes: number
+  certificateTemplateId?: string | null
 }
 
 interface PendingNet {
   id: string
   name: string
   operatorCallSign: string
+  certificateTemplateId?: string | null
 }
 
 interface CancelledNet {
@@ -39,6 +41,7 @@ interface CancelledNet {
   name: string
   operatorCallSign: string
   endedAt?: string
+  certificateTemplateId?: string | null
   branch?: { id: string; name: string; isHeadquarters?: boolean }
   branchCallSign?: { id: string; callSign: string }
 }

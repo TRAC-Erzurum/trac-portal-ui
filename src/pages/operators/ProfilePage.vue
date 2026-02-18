@@ -3,12 +3,13 @@ import { ref, computed, onMounted, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Building2, Calendar, ChevronRight, Ear, Key, Mail, Pencil, Radio, Signal, TrendingUp, Users } from 'lucide-vue-next'
+import { Award, Building2, Calendar, ChevronRight, Download, Ear, Key, Mail, Pencil, Radio, Signal, TrendingUp, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BranchMembershipCard from '@/components/shared/BranchMembershipCard.vue'
 import { LocatorMapPreview, MobileFab, SearchInput } from '@/components/shared'
 import type { MobileFabAction } from '@/components/shared'
 import { usePersistedFilters } from '@/composables'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -17,8 +18,13 @@ import EditOperatorAdminSheet from '@/components/operators/EditOperatorAdminShee
 import { useDateFormat } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { UserAvatar } from '@/components/ui/user-avatar'
+import CertificateFilledPreview from '@/components/certificates/CertificateFilledPreview.vue'
+import type { CertificateTemplateElement } from '@/components/certificates/certificate-template-defaults'
 import { api } from '@/lib/api'
 import { formatCallSign } from '@/lib/formatters'
+import { translateError } from '@/i18n'
+
+const API_BASE = import.meta.env.VITE_API_URL
 
 interface Operator {
   id: string
@@ -70,6 +76,21 @@ interface UserBranchMembership {
   }
 }
 
+interface OperatorCertificateItem {
+  attendeeId: string
+  netId: string
+  netName: string
+  netDate: string
+  branchName: string
+  certificateTemplateId: string
+}
+
+interface CertificatePreviewData {
+  imagePath: string
+  elements: CertificateTemplateElement[]
+  placeholders: Record<string, string>
+}
+
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -94,8 +115,17 @@ const netsRoleFilter = ref('all')
 const netsBranchFilter = ref('all')
 const netsPageSize = 12
 const hasMoreNets = ref(true)
+const certificates = ref<OperatorCertificateItem[]>([])
+const isLoadingCertificates = ref(false)
+const certificatePreviews = ref<Record<string, CertificatePreviewData | null>>({})
+const loadingPreviewAttendeeIds = ref<Set<string>>(new Set())
+const certificatePreviewDialogCert = ref<OperatorCertificateItem | null>(null)
 
 const operatorId = computed(() => route.params.id as string)
+
+const isProfileOwner = computed(() =>
+  !!authStore.user?.id && authStore.user.id === operator.value?.user?.id
+)
 
 const canEdit = computed(() => authStore.isAdmin || authStore.isSuperAdmin)
 
@@ -179,6 +209,68 @@ const fetchMemberships = async () => {
     console.error('Failed to fetch memberships:', error)
   } finally {
     isLoadingMemberships.value = false
+  }
+}
+
+const fetchCertificates = async () => {
+  isLoadingCertificates.value = true
+  certificatePreviews.value = {}
+  try {
+    certificates.value = await api.get<OperatorCertificateItem[]>(
+      `/operator/${operatorId.value}/certificates`
+    )
+    fetchCertificatePreviews()
+  } catch {
+    certificates.value = []
+  } finally {
+    isLoadingCertificates.value = false
+  }
+}
+
+const fetchCertificatePreviews = async () => {
+  const list = certificates.value
+  loadingPreviewAttendeeIds.value = new Set(list.map((c) => c.attendeeId))
+  const results = await Promise.allSettled(
+    list.map((cert) =>
+      api.get<CertificatePreviewData | null>(
+        `/net/${cert.netId}/certificate/${cert.attendeeId}/preview-data`
+      )
+    )
+  )
+  const next: Record<string, CertificatePreviewData | null> = {}
+  list.forEach((cert, i) => {
+    const r = results[i]
+    if (r?.status === 'fulfilled' && r.value != null) {
+      next[cert.attendeeId] = r.value
+    } else {
+      next[cert.attendeeId] = null
+    }
+  })
+  certificatePreviews.value = next
+  loadingPreviewAttendeeIds.value = new Set()
+}
+
+const downloadCertificateFromProfile = async (item: OperatorCertificateItem) => {
+  try {
+    const res = await fetch(
+      `${API_BASE}/net/${item.netId}/certificate/${item.attendeeId}`,
+      { credentials: 'include' }
+    )
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      throw new Error((err as { message?: string }).message || 'error.serverError')
+    }
+    const blob = await res.blob()
+    const name = (item.netName || 'certificate').replace(/[/\\?%*:|"<>]/g, '-')
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = `${name}-certificate.pdf`
+    link.click()
+    URL.revokeObjectURL(link.href)
+    toast.success(t('certificates.downloadSuccess'))
+  } catch (e: unknown) {
+    const msg = (e instanceof Error ? e.message : null) || 'error.serverError'
+    toast.error(translateError(msg))
   }
 }
 
@@ -294,6 +386,7 @@ const getProfileNetsStorageKey = () => `trac-filters-profile-nets-${operatorId.v
 onMounted(async () => {
   await fetchOperator()
   fetchStats()
+  fetchCertificates()
   if (operator.value?.user?.id) {
     await fetchMemberships()
     const approved = memberships.value.filter(m => m.status === 'approved' && m.branch)
@@ -549,6 +642,80 @@ onMounted(async () => {
 
         <Separator class="my-8" />
 
+        <section>
+          <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+            <Award class="h-4 w-4" />
+            {{ t('profile.certificatesTitle') }}
+          </h3>
+          <div v-if="isLoadingCertificates" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+            <div v-for="i in 3" :key="i" class="p-4 rounded-lg border border-border/50 space-y-2">
+              <div class="h-5 w-48 bg-muted animate-pulse rounded" />
+              <div class="h-4 w-24 bg-muted animate-pulse rounded" />
+            </div>
+          </div>
+          <div v-else-if="certificates.length === 0" class="py-4 text-center">
+            <p class="text-sm text-muted-foreground">{{ t('profile.certificatesEmpty') }}</p>
+          </div>
+          <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+            <div
+              v-for="cert in certificates"
+              :key="cert.attendeeId"
+              class="flex flex-col rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all overflow-hidden"
+            >
+              <button
+                type="button"
+                class="min-h-[140px] flex items-center justify-center bg-muted/20 w-full cursor-pointer hover:bg-muted/30 transition-colors text-left focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset rounded-t-lg"
+                :aria-label="t('certificates.previewFull')"
+                @click="certificatePreviews[cert.attendeeId] && (certificatePreviewDialogCert = cert)"
+              >
+                <div v-if="loadingPreviewAttendeeIds.has(cert.attendeeId)" class="py-8 px-4">
+                  <span class="text-xs text-muted-foreground">{{ t('common.loading') }}</span>
+                </div>
+                <CertificateFilledPreview
+                  v-else-if="certificatePreviews[cert.attendeeId]"
+                  :image-path="certificatePreviews[cert.attendeeId]!.imagePath"
+                  :elements="certificatePreviews[cert.attendeeId]!.elements"
+                  :placeholders="certificatePreviews[cert.attendeeId]!.placeholders"
+                  :max-height="200"
+                  class="w-full pointer-events-none"
+                />
+                <div v-else class="py-8 px-4 text-center">
+                  <p class="text-xs text-muted-foreground">{{ t('certificates.template') }}</p>
+                </div>
+              </button>
+              <div class="flex flex-col gap-3 p-4">
+                <div class="min-w-0">
+                  <p class="font-medium truncate">{{ cert.netName }}</p>
+                  <p class="text-xs text-muted-foreground mt-0.5">{{ formatNetDate(cert.netDate) }} · {{ cert.branchName }}</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="gap-2"
+                    @click="goToNet(cert.netId)"
+                  >
+                    <ChevronRight class="h-4 w-4" />
+                    {{ t('profile.viewNet') }}
+                  </Button>
+                  <Button
+                    v-if="isProfileOwner"
+                    variant="outline"
+                    size="sm"
+                    class="gap-2"
+                    @click="downloadCertificateFromProfile(cert)"
+                  >
+                    <Download class="h-4 w-4" />
+                    {{ t('certificates.download') }}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <Separator class="my-8" />
+
         <section v-if="hasUserAccount">
           <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
             <Building2 class="h-4 w-4" />
@@ -618,6 +785,21 @@ onMounted(async () => {
         :user-id="operator.user.id"
         :call-sign="formattedCallSign"
       />
+
+      <Dialog :open="!!certificatePreviewDialogCert" @update:open="(v) => !v && (certificatePreviewDialogCert = null)">
+        <DialogContent class="max-w-2xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>{{ certificatePreviewDialogCert?.netName ?? t('certificates.previewFull') }}</DialogTitle>
+          </DialogHeader>
+          <div v-if="certificatePreviewDialogCert && certificatePreviews[certificatePreviewDialogCert.attendeeId]" class="mt-4">
+            <CertificateFilledPreview
+              :image-path="certificatePreviews[certificatePreviewDialogCert.attendeeId]!.imagePath"
+              :elements="certificatePreviews[certificatePreviewDialogCert.attendeeId]!.elements"
+              :placeholders="certificatePreviews[certificatePreviewDialogCert.attendeeId]!.placeholders"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
 
     </div>
   </AppLayout>

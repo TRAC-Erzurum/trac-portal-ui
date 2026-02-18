@@ -23,14 +23,23 @@ const SCHEDULER_PLACEHOLDER_KEYS = [
   'operator_name',
 ] as const
 
+interface CertificateTemplate {
+  id: string
+  name: string
+  imagePath: string
+  elements: unknown[]
+}
+
 interface Scheduler {
   id: string
   name: string
+  branchId?: string
   startDate: string
   recurrence: string
   endDate: string | null
   scheduledTime: string
   estimatedDurationMinutes: number
+  certificateTemplateId?: string | null
   branch?: { name: string }
   branchCallSign?: { callSign?: string } | null
   operator?: { callSign: string; fullName?: string }
@@ -84,21 +93,49 @@ const endDate = ref('')
 const isLoading = ref(false)
 const isLoadingDetail = ref(false)
 
+const certificateTemplates = ref<CertificateTemplate[]>([])
+const selectedCertificateTemplateId = ref<string>('')
+const isLoadingCertificateTemplates = ref(false)
+
 const scheduledTimeDisplay = computed(() => {
   const raw = scheduler.value?.scheduledTime ?? '20:00:00'
   return raw.slice(0, 5)
 })
+
+const loadCertificateTemplates = async (branchId: string) => {
+  if (!branchId) {
+    certificateTemplates.value = []
+    return
+  }
+  isLoadingCertificateTemplates.value = true
+  try {
+    certificateTemplates.value = await api.get<CertificateTemplate[]>(`/branches/${branchId}/certificate-templates`)
+  } catch (error) {
+    console.error('Failed to load certificate templates:', error)
+    certificateTemplates.value = []
+  } finally {
+    isLoadingCertificateTemplates.value = false
+  }
+}
 
 const loadScheduler = async () => {
   if (!props.schedulerId) return
   isLoadingDetail.value = true
   try {
     scheduler.value = await api.get<Scheduler>(`/net-schedulers/${props.schedulerId}`)
-    name.value = scheduler.value.name
+    const s = scheduler.value
+    name.value = s.name
     scheduledTime.value = scheduledTimeDisplay.value
-    estimatedDurationMinutes.value = scheduler.value.estimatedDurationMinutes ?? 30
-    recurrence.value = scheduler.value.recurrence as typeof recurrence.value
-    endDate.value = scheduler.value.endDate ?? ''
+    estimatedDurationMinutes.value = s.estimatedDurationMinutes ?? 30
+    recurrence.value = s.recurrence as typeof recurrence.value
+    endDate.value = s.endDate ?? ''
+    selectedCertificateTemplateId.value = s.certificateTemplateId ?? ''
+    const branchId = s.branchId ?? (s.branch as { id?: string } | undefined)?.id
+    if (branchId) {
+      await loadCertificateTemplates(branchId)
+    } else {
+      certificateTemplates.value = []
+    }
   } catch (e) {
     toast.error(translateError((e as ApiError).message))
   } finally {
@@ -126,6 +163,7 @@ async function handleSubmit() {
       estimatedDurationMinutes: estimatedDurationMinutes.value,
       recurrence: recurrence.value,
       endDate: recurrence.value !== 'one_time' && endDate.value ? endDate.value : null,
+      certificateTemplateId: selectedCertificateTemplateId.value || null,
     })
     toast.success(t('common.save'))
     emit('updated')
@@ -162,6 +200,21 @@ async function handleSubmit() {
             <p class="text-xs text-muted-foreground break-words whitespace-normal min-w-0">
               {{ t('nets.namePreview') }}: {{ namePreview }}
             </p>
+          </div>
+
+          <div class="space-y-2">
+            <Label for="certificateTemplate">{{ t('certificates.template') }}</Label>
+            <Select v-model="selectedCertificateTemplateId" :disabled="isLoadingCertificateTemplates">
+              <SelectTrigger id="certificateTemplate" class="w-full">
+                <SelectValue :placeholder="t('certificates.noTemplate')" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">{{ t('certificates.noTemplate') }}</SelectItem>
+                <SelectItem v-for="tpl in certificateTemplates" :key="tpl.id" :value="tpl.id">
+                  {{ tpl.name }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div class="space-y-2">

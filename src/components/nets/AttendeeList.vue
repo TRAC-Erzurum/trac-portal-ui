@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Users, MapPin, Edit2, Trash2 } from 'lucide-vue-next'
+import { Award, Edit2, MapPin, Trash2, User, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { UserAvatar } from '@/components/ui/user-avatar'
 
@@ -24,13 +24,20 @@ interface Props {
   isLoading: boolean
   canManage: boolean
   isActive: boolean
+  showCertificateDownload?: boolean
+  canDownloadOthersCertificates?: boolean
+  currentUserOperatorId?: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  showCertificateDownload: false,
+  canDownloadOthersCertificates: false
+})
 
 const emit = defineEmits<{
   edit: [attendee: Attendee]
   delete: [attendee: Attendee]
+  downloadCertificate: [attendee: Attendee]
 }>()
 
 const { t } = useI18n()
@@ -78,6 +85,12 @@ const offsetY = computed(() => visibleRange.value.start * ITEM_HEIGHT)
 
 const getAttendeeNumber = (index: number, total: number) => {
   return total - index
+}
+
+const showCertificateDownloadFor = (attendee: Attendee) => {
+  if (!props.showCertificateDownload) return false
+  if (props.canDownloadOthersCertificates) return true
+  return !!props.currentUserOperatorId && attendee.operatorId === props.currentUserOperatorId
 }
 
 const handleScroll = (e: Event) => {
@@ -129,10 +142,8 @@ onUnmounted(() => {
         <div
           v-for="attendee in visibleAttendees"
           :key="attendee.id"
-          class="group flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all"
-          :class="{ 'cursor-pointer': attendee.operatorId }"
+          class="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all"
           :style="{ height: `${ITEM_HEIGHT - 4}px` }"
-          @click="goToProfile(attendee)"
         >
           <div class="relative flex-shrink-0">
             <UserAvatar :picture="attendee.picture" class="h-8 w-8" />
@@ -158,23 +169,47 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <div v-if="canManage && isActive" class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div class="flex items-center gap-1 flex-shrink-0">
             <Button
-              variant="ghost"
+              v-if="attendee.operatorId"
+              variant="outline"
               size="icon"
               class="h-8 w-8"
-              @click.stop="emit('edit', attendee)"
+              :title="t('common.profile')"
+              :aria-label="t('common.profile')"
+              @click="goToProfile(attendee)"
             >
-              <Edit2 class="h-4 w-4" />
+              <User class="h-4 w-4" />
             </Button>
             <Button
-              variant="ghost"
+              v-if="showCertificateDownloadFor(attendee)"
+              variant="outline"
               size="icon"
-              class="h-8 w-8 text-destructive hover:text-destructive"
-              @click.stop="emit('delete', attendee)"
+              class="h-8 w-8"
+              :title="t('certificates.download')"
+              :aria-label="t('certificates.download')"
+              @click="emit('downloadCertificate', attendee)"
             >
-              <Trash2 class="h-4 w-4" />
+              <Award class="h-4 w-4" />
             </Button>
+            <template v-if="canManage && isActive">
+              <Button
+                variant="outline"
+                size="icon"
+                class="h-8 w-8"
+                @click="emit('edit', attendee)"
+              >
+                <Edit2 class="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                class="h-8 w-8 text-destructive hover:text-destructive"
+                @click="emit('delete', attendee)"
+              >
+                <Trash2 class="h-4 w-4" />
+              </Button>
+            </template>
           </div>
         </div>
       </div>
@@ -185,9 +220,7 @@ onUnmounted(() => {
     <div
       v-for="(attendee, index) in attendees"
       :key="attendee.id"
-      class="group flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all"
-      :class="{ 'cursor-pointer': attendee.operatorId }"
-      @click="goToProfile(attendee)"
+      class="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all"
     >
       <div class="relative flex-shrink-0">
         <UserAvatar :picture="attendee.picture" class="h-8 w-8" />
@@ -213,23 +246,47 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div v-if="canManage && isActive" class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div class="flex items-center gap-1 flex-shrink-0">
         <Button
-          variant="ghost"
+          v-if="attendee.operatorId"
+          variant="outline"
           size="icon"
           class="h-8 w-8"
-          @click.stop="emit('edit', attendee)"
+          :title="t('common.profile')"
+          :aria-label="t('common.profile')"
+          @click="goToProfile(attendee)"
         >
-          <Edit2 class="h-4 w-4" />
+          <User class="h-4 w-4" />
         </Button>
         <Button
-          variant="ghost"
+          v-if="showCertificateDownloadFor(attendee)"
+          variant="outline"
           size="icon"
-          class="h-8 w-8 text-destructive hover:text-destructive"
-          @click.stop="emit('delete', attendee)"
+          class="h-8 w-8"
+          :title="t('certificates.download')"
+          :aria-label="t('certificates.download')"
+          @click="emit('downloadCertificate', attendee)"
         >
-          <Trash2 class="h-4 w-4" />
+          <Award class="h-4 w-4" />
         </Button>
+        <template v-if="canManage && isActive">
+          <Button
+            variant="outline"
+            size="icon"
+            class="h-8 w-8"
+            @click="emit('edit', attendee)"
+          >
+            <Edit2 class="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            class="h-8 w-8 text-destructive hover:text-destructive"
+            @click="emit('delete', attendee)"
+          >
+            <Trash2 class="h-4 w-4" />
+          </Button>
+        </template>
       </div>
     </div>
   </div>

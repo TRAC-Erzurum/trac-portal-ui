@@ -11,6 +11,7 @@ interface ActiveNet {
   attendeeCount: number
   startedAt: string
   durationMinutes: number
+  certificateTemplateId?: string | null
   branch?: {
     id: string
     name: string
@@ -26,6 +27,7 @@ interface PendingNet {
   id: string
   name: string
   operatorCallSign: string
+  certificateTemplateId?: string | null
   branch?: {
     id: string
     name: string
@@ -42,6 +44,7 @@ interface CancelledNet {
   name: string
   operatorCallSign: string
   endedAt?: string
+  certificateTemplateId?: string | null
   branch?: {
     id: string
     name: string
@@ -61,6 +64,7 @@ interface DisplayNet {
   attendeeCount?: number
   durationMinutes?: number
   endedAt?: string
+  certificateTemplateId?: string | null
   branch?: {
     id: string
     name: string
@@ -102,6 +106,7 @@ const displayNets = computed<DisplayNet[]>(() => {
       status: 'active',
       attendeeCount: net.attendeeCount,
       durationMinutes: net.durationMinutes,
+      certificateTemplateId: net.certificateTemplateId,
       branch: net.branch,
       branchCallSign: net.branchCallSign,
     })
@@ -114,6 +119,7 @@ const displayNets = computed<DisplayNet[]>(() => {
       name: net.name,
       operatorCallSign: net.operatorCallSign,
       status: 'pending',
+      certificateTemplateId: net.certificateTemplateId,
       branch: net.branch,
       branchCallSign: net.branchCallSign,
     })
@@ -128,6 +134,7 @@ const displayNets = computed<DisplayNet[]>(() => {
       status: 'completed',
       attendeeCount: net.attendeeCount,
       durationMinutes: net.durationMinutes,
+      certificateTemplateId: net.certificateTemplateId,
       branch: net.branch,
       branchCallSign: net.branchCallSign,
     })
@@ -141,6 +148,7 @@ const displayNets = computed<DisplayNet[]>(() => {
       operatorCallSign: net.operatorCallSign,
       status: 'cancelled',
       endedAt: net.endedAt,
+      certificateTemplateId: net.certificateTemplateId,
       branch: net.branch,
       branchCallSign: net.branchCallSign,
     })
@@ -178,6 +186,7 @@ const displayNets = computed<DisplayNet[]>(() => {
           :branch-call-sign="net.branchCallSign?.callSign"
           :branch-is-headquarters="net.branch?.isHeadquarters"
           :show-branch="true"
+          :has-certificate="!!net.certificateTemplateId"
         />
       </div>
 

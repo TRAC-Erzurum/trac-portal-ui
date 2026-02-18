@@ -86,6 +86,16 @@ const channels = ref<CommunicationChannel[]>([])
 const selectedChannelIds = ref<string[]>([])
 const isLoadingChannels = ref(false)
 
+interface CertificateTemplate {
+  id: string
+  name: string
+  imagePath: string
+  elements: unknown[]
+}
+const certificateTemplates = ref<CertificateTemplate[]>([])
+const selectedCertificateTemplateId = ref<string>('')
+const isLoadingCertificateTemplates = ref(false)
+
 interface SimplexRow {
   checked: boolean
   value: string
@@ -207,18 +217,38 @@ const loadChannels = async (branchId: string) => {
   }
 }
 
+const loadCertificateTemplates = async (branchId: string) => {
+  if (!branchId) {
+    certificateTemplates.value = []
+    selectedCertificateTemplateId.value = ''
+    return
+  }
+  isLoadingCertificateTemplates.value = true
+  try {
+    certificateTemplates.value = await api.get<CertificateTemplate[]>(`/branches/${branchId}/certificate-templates`)
+  } catch (error) {
+    console.error('Failed to load certificate templates:', error)
+    certificateTemplates.value = []
+  } finally {
+    isLoadingCertificateTemplates.value = false
+  }
+}
+
 watch(selectedBranchId, async (branchId) => {
   selectedCallSignId.value = ''
   selectedChannelIds.value = []
+  selectedCertificateTemplateId.value = ''
   simplexRows.value = [{ checked: false, value: '' }]
   if (branchId) {
     await Promise.all([
       loadBranchCallSigns(branchId),
-      loadChannels(branchId)
+      loadChannels(branchId),
+      loadCertificateTemplates(branchId)
     ])
   } else {
     branchCallSigns.value = []
     channels.value = []
+    certificateTemplates.value = []
   }
 })
 
@@ -422,6 +452,7 @@ async function handleSubmit() {
       endDate: recurrenceValue !== 'one_time' && endDate.value ? endDate.value : null,
       scheduledTime: scheduledTime.value,
       estimatedDurationMinutes: estimatedDurationMinutes.value,
+      certificateTemplateId: selectedCertificateTemplateId.value || null,
     })
 
     toast.success(t('nets.createSuccess'))
@@ -525,6 +556,21 @@ onMounted(() => {
             <SelectContent>
               <SelectItem v-for="cs in branchCallSigns" :key="cs.id" :value="cs.id">
                 {{ cs.callSign }} {{ cs.isDefault ? `(${t('branches.defaultCallSign')})` : '' }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div class="space-y-2">
+          <Label for="certificateTemplate">{{ t('certificates.template') }}</Label>
+          <Select v-model="selectedCertificateTemplateId" :disabled="!selectedBranchId || isLoadingCertificateTemplates">
+            <SelectTrigger id="certificateTemplate" class="w-full">
+              <SelectValue :placeholder="t('certificates.noTemplate')" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">{{ t('certificates.noTemplate') }}</SelectItem>
+              <SelectItem v-for="tpl in certificateTemplates" :key="tpl.id" :value="tpl.id">
+                {{ tpl.name }}
               </SelectItem>
             </SelectContent>
           </Select>
