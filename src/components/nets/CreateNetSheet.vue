@@ -113,7 +113,6 @@ const isValid = computed(() => {
   return base && startDate.value.trim().length > 0
 })
 
-const todayISO = computed(() => new Date().toISOString().slice(0, 10))
 const tomorrowISO = computed(() => {
   const d = new Date()
   d.setDate(d.getDate() + 1)
