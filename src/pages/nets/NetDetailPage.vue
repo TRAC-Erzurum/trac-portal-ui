@@ -76,6 +76,7 @@ interface Net {
   name: string
   startedAt?: string
   endedAt?: string
+  totalDurationMinutes?: number
   attendeeCount: number
   operator: Operator
   branch?: {
@@ -355,15 +356,17 @@ const maxGeoCount = computed(() => {
 
 const netDurationFormatted = computed(() => {
   const n = net.value
-  if (!n?.startedAt || !n?.endedAt) return '-'
-  const start = new Date(n.startedAt)
-  const end = new Date(n.endedAt)
-  const diffMs = end.getTime() - start.getTime()
-  const totalMinutes = Math.floor(diffMs / 60000)
-  const hours = Math.floor(totalMinutes / 60)
-  const minutes = totalMinutes % 60
-  if (hours > 0) return `${hours} ${t('netDetail.durationHours')} ${minutes} ${t('netDetail.durationMinutesShort')}`
-  return `${minutes} ${t('netDetail.durationMinutesShort')}`
+  if (!n) return '-'
+  const total = n.totalDurationMinutes ?? 0
+  const isActive = n.startedAt != null && n.endedAt == null
+  const minutes = isActive && n.startedAt
+    ? total + Math.round((Date.now() - new Date(n.startedAt).getTime()) / 60000)
+    : total
+  if (minutes <= 0) return '-'
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (hours > 0) return `${hours} ${t('netDetail.durationHours')} ${mins} ${t('netDetail.durationMinutesShort')}`
+  return `${mins} ${t('netDetail.durationMinutesShort')}`
 })
 
 const canManageNet = computed(() => {

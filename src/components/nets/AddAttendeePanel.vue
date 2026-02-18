@@ -262,11 +262,11 @@ const handleEntryKeyDown = (e: KeyboardEvent) => {
   if (e.key === 'Escape') {
     clearEntry()
   } else if (e.key === 'Enter' && !e.shiftKey) {
+    // When a select or combobox dropdown is open, let it handle Enter (select option)
     const target = e.target as HTMLElement
-    if (target.tagName !== 'BUTTON') {
-      e.preventDefault()
-      submitEntry()
-    }
+    if (target.closest('[data-slot="select-content"]') || target.closest('[role="listbox"]')) return
+    e.preventDefault()
+    submitEntry()
   }
 }
 

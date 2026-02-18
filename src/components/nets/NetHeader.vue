@@ -39,6 +39,7 @@ interface Net {
   startedAt?: string
   endedAt?: string
   attendeeCount: number
+  totalDurationMinutes?: number
   operator: Operator
   branch?: {
     id: string
@@ -108,11 +109,18 @@ const dateTimeRange = computed(() => {
 })
 
 const formatDuration = (net: Net) => {
-  const start = new Date(net.startedAt!)
-  const end = net.endedAt ? new Date(net.endedAt) : new Date()
-  const diff = Math.floor((end.getTime() - start.getTime()) / 1000)
-  const hours = Math.floor(diff / 3600)
-  const minutes = Math.floor((diff % 3600) / 60)
+  const totalMinutes =
+    net.totalDurationMinutes != null && net.totalDurationMinutes > 0
+      ? net.totalDurationMinutes
+      : net.startedAt
+        ? Math.floor(
+            ((net.endedAt ? new Date(net.endedAt) : new Date()).getTime() -
+              new Date(net.startedAt).getTime()) /
+              60000,
+          )
+        : 0
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
   if (hours > 0) return `${hours}h ${minutes}m`
   return `${minutes}m`
 }

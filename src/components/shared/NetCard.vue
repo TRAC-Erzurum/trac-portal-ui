@@ -24,6 +24,8 @@ interface Props {
   branchCallSign?: string
   branchIsHeadquarters?: boolean
   showBranch?: boolean
+  scheduledAt?: string | null
+  estimatedDurationMinutes?: number | null
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -97,6 +99,12 @@ const secondaryInfo = computed(() => {
   return props.operatorCallSign
 })
 
+const scheduledLabel = computed(() => {
+  if (!props.scheduledAt) return ''
+  const d = new Date(props.scheduledAt)
+  return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' }) + ' ' + d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+})
+
 </script>
 
 <template>
@@ -166,7 +174,11 @@ const secondaryInfo = computed(() => {
               · {{ formatDateShort(endedAt) }}
             </span>
             <span v-else-if="status === 'pending' && !compact">
-              · {{ t('nets.notStarted') }}
+              <template v-if="scheduledLabel">
+                · {{ t('nets.scheduledTime') }}: {{ scheduledLabel }}
+                <template v-if="estimatedDurationMinutes"> · ~{{ estimatedDurationMinutes }} {{ t('nets.minutes') }}</template>
+              </template>
+              <template v-else>· {{ t('nets.notStarted') }}</template>
             </span>
           </template>
         </div>

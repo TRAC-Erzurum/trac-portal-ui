@@ -53,6 +53,8 @@ interface Net {
   branchCallSignId?: string
   branchCallSign?: BranchCallSign
   communicationChannels?: NetCommunicationChannel[]
+  scheduledAt?: string | null
+  estimatedDurationMinutes?: number | null
 }
 
 const props = defineProps<{
@@ -68,6 +70,8 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const name = ref('')
+const scheduledTime = ref('20:00')
+const estimatedDurationMinutes = ref(30)
 const selectedOperator = ref<Operator | null>(null)
 const isLoading = ref(false)
 
@@ -275,9 +279,19 @@ const clearSimplexRow = (index: number) => {
   simplexInputRefs.value[index]?.focus()
 }
 
+function scheduledAtToTimeStr(iso: string | null | undefined): string {
+  if (!iso) return '20:00'
+  const d = new Date(iso)
+  const h = d.getHours()
+  const m = d.getMinutes()
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+}
+
 watch(() => props.open, async (isOpen) => {
   if (isOpen && props.net) {
     name.value = props.net.name
+    scheduledTime.value = scheduledAtToTimeStr(props.net.scheduledAt)
+    estimatedDurationMinutes.value = props.net.estimatedDurationMinutes ?? 30
     selectedOperator.value = props.net.operator
     operatorSearch.value = getOperatorLabel(props.net.operator)
     
@@ -342,11 +356,22 @@ async function handleSubmit() {
       })
     })
 
+    const baseDate = props.net.scheduledAt
+      ? new Date(props.net.scheduledAt)
+      : new Date()
+    const parts = scheduledTime.value.split(':').map(Number)
+    const h = Number.isFinite(parts[0]) ? (parts[0] as number) : 20
+    const min = Number.isFinite(parts[1]) ? (parts[1] as number) : 0
+    const scheduledAtDate = new Date(baseDate)
+    scheduledAtDate.setHours(h, min, 0, 0)
+
     await api.put(`/net/${props.net.id}`, {
       name: name.value.trim(),
       operatorId: selectedOperator.value.id,
       branchCallSignId: selectedCallSignId.value,
       communicationChannels,
+      scheduledAt: scheduledAtDate.toISOString(),
+      estimatedDurationMinutes: estimatedDurationMinutes.value ?? 30,
     })
 
     toast.success(t('netDetail.netUpdated'))
@@ -405,6 +430,20 @@ async function handleSubmit() {
             type="text"
             :placeholder="t('nets.netNamePlaceholder')"
           />
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <Label for="scheduledTime">{{ t('nets.scheduledTime') }}</Label>
+            <Input id="scheduledTime" v-model="scheduledTime" type="time" class="w-full" />
+          </div>
+          <div class="space-y-2">
+            <Label for="estimatedDuration">{{ t('nets.estimatedDuration') }}</Label>
+            <div class="flex items-center gap-2">
+              <Input id="estimatedDuration" v-model.number="estimatedDurationMinutes" type="number" min="1" max="480" class="w-full" />
+              <span class="text-sm text-muted-foreground shrink-0">{{ t('nets.minutes') }}</span>
+            </div>
+          </div>
         </div>
 
         <div class="space-y-2">

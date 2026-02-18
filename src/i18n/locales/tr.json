@@ -48,7 +48,10 @@
     "cannotChangeSuperAdminRole": "Sistem yöneticisi şube rolü değiştirilemez",
     "lastAdminCannotBeDemoted": "Son yönetici düşürülemez",
     "membershipNotApproved": "Üyelik onaylı değil",
-    "requestNotFound": "Talep bulunamadı"
+    "requestNotFound": "Talep bulunamadı",
+    "operatorUsedInScheduler": "Bu operatör en az bir planlayıcıda kullanılıyor. Önce planlayıcıyı güncelleyin.",
+    "schedulerStartDateImmutable": "Başlangıç tarihi değiştirilemez. Değiştirmek için planlayıcıyı silip yeniden oluşturun.",
+    "schedulerStartDateNotInPast": "Döngüsel planlayıcı için geçmiş tarih seçilemez."
   },
   "auth": {
     "login": "Giriş Yap",
@@ -466,6 +469,11 @@
     "roleAll": "Tümü",
     "createNet": "Yeni Çevrim",
     "createDescription": "Yeni bir çevrim oluşturun",
+    "createType": "Çevrim tipi",
+    "createModeToday": "Anlık",
+    "createModeScheduled": "Planlı",
+    "nameTemplate": "Çevrim adı şablonu",
+    "namePreview": "Önizleme",
     "createSuccess": "Çevrim başarıyla oluşturuldu",
     "create": "Oluştur",
     "netName": "Çevrim Adı",
@@ -515,7 +523,43 @@
     "branchFilterAll": "Tüm şubeler",
     "createNetForBranch": "Bu Şube İçin Çevrim Oluştur",
     "nets": "Çevrimler",
-    "noNetsInBranch": "Bu şubede henüz çevrim yok"
+    "noNetsInBranch": "Bu şubede henüz çevrim yok",
+    "scheduledTime": "Planlanan saat",
+    "estimatedDuration": "Tahmini süre",
+    "durationTotal": "Toplam süre"
+  },
+  "netDetail": {
+    "durationTotal": "Toplam süre"
+  },
+  "scheduler": {
+    "title": "Çevrim Planı",
+    "create": "Planlayıcı Oluştur",
+    "edit": "Planlayıcı Düzenle",
+    "editDescription": "Şablon ve zamanlama ayarları",
+    "recurrence": "Döngü",
+    "recurrenceLabel": "Döngüsü",
+    "oneTime": "Tek seferlik",
+    "daily": "Günlük",
+    "weekly": "Haftalık",
+    "monthly": "Aylık",
+    "startDate": "Başlangıç tarihi",
+    "endDate": "Bitiş tarihi",
+    "upcomingNets": "Sonraki planlanan çevrimler",
+    "plannedNets": "Planlanan çevrimler",
+    "plannedNetsMoreHint": "İlk 5 gösterildi · liste devam ediyor",
+    "addVariable": "Değişken ekle",
+    "allVariablesAdded": "Tüm değişkenler eklendi",
+    "namePlaceholder": {
+      "branch_name": "Şube adı",
+      "branch_callsign": "Şube çağrı işareti",
+      "day": "Gün",
+      "month": "Ay",
+      "year": "Yıl",
+      "day_of_week": "Haftanın günü",
+      "time": "Planlanan saat",
+      "operator_callsign": "Operatör çağrı işareti",
+      "operator_name": "Operatör adı"
+    }
   },
   "branches": {
     "title": "Şubeler",
