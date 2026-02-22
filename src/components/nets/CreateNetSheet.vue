@@ -16,6 +16,7 @@ import { api, type ApiError } from '@/lib/api'
 import { debounce } from '@/lib/utils'
 import { useBranchStore, type Branch } from '@/stores/branch'
 import { useAuthStore } from '@/stores/auth'
+import { useFormValidation } from '@/composables'
 import type { CommunicationChannel } from '@/types/communication-channel'
 
 interface Operator {
@@ -62,7 +63,8 @@ const SCHEDULER_PLACEHOLDER_KEYS = [
 ] as const
 
 const createMode = ref<'today' | 'scheduled'>('today')
-const name = ref('{{branch_callsign}} {{day}} {{month}} {{year}} Çevrimi')
+const nameTemplate = ref('{{branch_callsign}} {{day}} {{month}} {{year}} Çevrimi')
+const namePlain = ref('')
 const scheduledTime = ref('20:00')
 const estimatedDurationMinutes = ref(30)
 const startDate = ref('')
@@ -70,6 +72,7 @@ const recurrence = ref<'one_time' | 'daily' | 'weekly' | 'monthly'>('one_time')
 const endDate = ref('')
 const selectedOperator = ref<Operator | null>(null)
 const isLoading = ref(false)
+const isSubmitted = ref(false)
 
 const operatorSearch = ref('')
 const operatorSuggestions = ref<Operator[]>([])
@@ -102,6 +105,55 @@ interface SimplexRow {
 }
 const simplexRows = ref<SimplexRow[]>([{ checked: false, value: '' }])
 
+// Form validation setup
+const validators = computed(() => ({
+  name: [
+    (value: string) => {
+      const netName = createMode.value === 'today' ? namePlain.value.trim() : nameTemplate.value.trim()
+      return netName ? true : t('form.validation.required')
+    }
+  ],
+  operator: [
+    (value: Operator | null) => selectedOperator.value ? true : t('form.validation.required')
+  ],
+  branch: [
+    (value: string) => selectedBranchId.value ? true : t('form.validation.required')
+  ],
+  callSign: [
+    (value: string) => selectedCallSignId.value ? true : t('form.validation.required')
+  ],
+  startDate: [
+    (value: string) => {
+      if (createMode.value === 'scheduled') {
+        return startDate.value.trim().length > 0 ? true : t('form.validation.required')
+      }
+      return true
+    }
+  ],
+  channels: [
+    (value: any) => {
+      const allCheckedRowsFilled = simplexRows.value
+        .filter(row => row.checked)
+        .every(row => row.value.trim())
+      const hasChannels = selectedChannelIds.value.length > 0 || 
+        simplexRows.value.some(row => row.checked && row.value.trim())
+      return (hasChannels && allCheckedRowsFilled) ? true : t('nets.atLeastOneInfrastructureOrSimplexRequired')
+    }
+  ]
+}))
+
+const { validateForm, getFieldError, shouldShowError, fieldErrors } = useFormValidation(
+  validators.value,
+  {
+    name: namePlain,
+    operator: selectedOperator,
+    branch: selectedBranchId,
+    callSign: selectedCallSignId,
+    startDate: startDate,
+    channels: selectedChannelIds
+  }
+)
+
 const hasAtLeastOneChannelSelected = computed(
   () =>
     selectedChannelIds.value.length > 0 ||
@@ -113,7 +165,7 @@ const isValid = computed(() => {
     .filter(row => row.checked)
     .every(row => row.value.trim())
   const base =
-    name.value.trim() &&
+    (createMode.value === 'today' ? namePlain.value.trim() : nameTemplate.value.trim()) &&
     selectedOperator.value &&
     selectedBranchId.value &&
     selectedCallSignId.value &&
@@ -150,7 +202,8 @@ const namePreview = computed(() => {
   const time = scheduledTime.value || '20:00'
   const operatorCallsign = selectedOperator.value?.callSign ?? ''
   const operatorName = selectedOperator.value?.fullName ?? selectedOperator.value?.user?.fullName ?? ''
-  return name.value
+  const source = createMode.value === 'today' ? namePlain.value : nameTemplate.value
+  return source
     .replace(/\{\{branch_name\}\}/gi, branchName)
     .replace(/\{\{branch_callsign\}\}/gi, branchCallsign)
     .replace(/\{\{day\}\}/g, day)
@@ -378,7 +431,10 @@ watch(createMode, (mode) => {
 
 watch(() => props.open, async (isOpen) => {
   if (isOpen) {
-    name.value = '{{branch_callsign}} {{day}} {{month}} {{year}} Çevrimi'
+    isSubmitted.value = false
+    fieldErrors.value = {}
+    nameTemplate.value = '{{branch_callsign}} {{day}} {{month}} {{year}} Çevrimi'
+    namePlain.value = ''
     scheduledTime.value = '20:00'
     estimatedDurationMinutes.value = 30
     recurrence.value = 'one_time'
@@ -411,7 +467,13 @@ watch(() => props.open, async (isOpen) => {
 })
 
 async function handleSubmit() {
-  if (!isValid.value || !selectedOperator.value || !selectedBranchId.value || !selectedCallSignId.value) return
+  isSubmitted.value = true
+
+  // Validate form
+  const isFormValid = validateForm()
+  if (!isFormValid) {
+    return
+  }
 
   const hasChannels = selectedChannelIds.value.length > 0
   const simplexFreqs = simplexRows.value
@@ -424,6 +486,10 @@ async function handleSubmit() {
   }
   if (simplexFreqs.length !== new Set(simplexFreqs).size) {
     toast.error(t('nets.duplicateFrequency'))
+    return
+  }
+
+  if (!selectedOperator.value || !selectedBranchId.value || !selectedCallSignId.value) {
     return
   }
 
@@ -442,7 +508,7 @@ async function handleSubmit() {
     const recurrenceValue = isToday ? 'one_time' : recurrence.value
 
     await api.post('/net-schedulers', {
-      name: name.value.trim(),
+      name: (isToday ? namePlain.value.trim() : nameTemplate.value.trim()),
       operatorId: selectedOperator.value.id,
       branchId: selectedBranchId.value,
       branchCallSignId: selectedCallSignId.value || null,
@@ -506,7 +572,11 @@ onMounted(() => {
                 type="date"
                 :min="minStartDate"
                 class="w-full"
+                :class="shouldShowError('startDate', isSubmitted) ? 'border-destructive' : ''"
               />
+              <p v-if="shouldShowError('startDate', isSubmitted)" class="text-xs text-destructive">
+                {{ getFieldError('startDate') }}
+              </p>
             </div>
             <div class="space-y-2">
               <Label for="recurrence">{{ t('scheduler.recurrence') }}</Label>
@@ -532,7 +602,7 @@ onMounted(() => {
         <div class="space-y-2">
           <Label for="branch">{{ t('nets.branch') }}</Label>
           <Select v-model="selectedBranchId" :disabled="isLoadingCallSigns">
-            <SelectTrigger id="branch" class="w-full">
+            <SelectTrigger id="branch" class="w-full" :class="shouldShowError('branch', isSubmitted) ? 'border-destructive' : ''">
               <SelectValue :placeholder="t('nets.selectBranch')" />
             </SelectTrigger>
             <SelectContent>
@@ -541,6 +611,9 @@ onMounted(() => {
               </SelectItem>
             </SelectContent>
           </Select>
+          <p v-if="shouldShowError('branch', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('branch') }}
+          </p>
           <p class="text-xs text-amber-600 dark:text-amber-500 flex items-center gap-1">
             <AlertTriangle class="h-3 w-3" />
             {{ t('nets.branchCannotBeChanged') }}
@@ -550,7 +623,7 @@ onMounted(() => {
         <div class="space-y-2">
           <Label for="callSign">{{ t('nets.branchCallSign') }}</Label>
           <Select v-model="selectedCallSignId" :disabled="!selectedBranchId || isLoadingCallSigns">
-            <SelectTrigger id="callSign" class="w-full">
+            <SelectTrigger id="callSign" class="w-full" :class="shouldShowError('callSign', isSubmitted) ? 'border-destructive' : ''">
               <SelectValue :placeholder="t('nets.selectCallSign')" />
             </SelectTrigger>
             <SelectContent>
@@ -559,9 +632,12 @@ onMounted(() => {
               </SelectItem>
             </SelectContent>
           </Select>
+          <p v-if="shouldShowError('callSign', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('callSign') }}
+          </p>
         </div>
 
-        <div class="space-y-2">
+        <div v-if="certificateTemplates.length > 0" class="space-y-2">
           <Label for="certificateTemplate">{{ t('certificates.template') }}</Label>
           <Select v-model="selectedCertificateTemplateId" :disabled="!selectedBranchId || isLoadingCertificateTemplates">
             <SelectTrigger id="certificateTemplate" class="w-full">
@@ -577,11 +653,19 @@ onMounted(() => {
         </div>
 
         <div class="space-y-2">
-          <Label for="name">{{ t('nets.nameTemplate') }}</Label>
-          <NameTemplateInput
-            v-model="name"
-            :placeholder-keys="SCHEDULER_PLACEHOLDER_KEYS"
-          />
+          <Label for="name">Çevrim adı</Label>
+          <template v-if="createMode === 'scheduled'">
+            <NameTemplateInput
+              v-model="nameTemplate"
+              :placeholder-keys="SCHEDULER_PLACEHOLDER_KEYS"
+            />
+          </template>
+          <template v-else>
+            <Input id="name" v-model="namePlain" type="text" class="w-full" :class="shouldShowError('name', isSubmitted) ? 'border-destructive' : ''" />
+          </template>
+          <p v-if="shouldShowError('name', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('name') }}
+          </p>
           <p class="text-xs text-muted-foreground break-words whitespace-normal min-w-0">
             {{ t('nets.namePreview') }}: {{ namePreview }}
           </p>
@@ -611,6 +695,7 @@ onMounted(() => {
               type="text"
               :placeholder="t('nets.searchOperatorPlaceholder')"
               class="pl-9 pr-9"
+              :class="shouldShowError('operator', isSubmitted) ? 'border-destructive' : ''"
               @focus="showOperatorDropdown = operatorSearch.length >= 2"
             />
             <button
@@ -652,7 +737,10 @@ onMounted(() => {
               </template>
             </div>
           </div>
-          <p v-if="operatorSearch && operatorSearch.length < 2" class="text-xs text-muted-foreground">
+          <p v-if="shouldShowError('operator', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('operator') }}
+          </p>
+          <p v-else-if="operatorSearch && operatorSearch.length < 2" class="text-xs text-muted-foreground">
             {{ t('nets.minSearchChars') }}
           </p>
         </div>
@@ -721,8 +809,8 @@ onMounted(() => {
             </div>
             </div>
           </template>
-          <p v-if="!hasAtLeastOneChannelSelected" class="text-xs text-destructive">
-            {{ t('nets.atLeastOneInfrastructureOrSimplexRequired') }}
+          <p v-if="shouldShowError('channels', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('channels') }}
           </p>
         </div>
 
@@ -730,7 +818,7 @@ onMounted(() => {
           <Button type="button" variant="outline" @click="emit('update:open', false)">
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" variant="outline" :disabled="isLoading || !isValid">
+          <Button type="submit" variant="outline" :disabled="isLoading">
             {{ isLoading ? t('common.loading') : t('nets.create') }}
           </Button>
         </div>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
@@ -12,6 +12,7 @@ import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 import { api } from '@/lib/api'
 import type { ApiError } from '@/lib/api'
+import { useFormValidation } from '@/composables'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -21,20 +22,28 @@ const currentPassword = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 const isLoading = ref(false)
-const error = ref('')
+const isSubmitted = ref(false)
+
+const { validateForm, shouldShowError, getFieldError } = useFormValidation(
+  { currentPassword, newPassword, confirmPassword },
+  {
+    currentPassword: [
+      (value: string) => value.trim() ? true : t('form.validation.required')
+    ],
+    newPassword: [
+      (value: string) => value.trim() ? true : t('form.validation.required'),
+      (value: string) => value.length >= 6 ? true : 'Minimum 6 characters'
+    ],
+    confirmPassword: [
+      (value: string) => value.trim() ? true : t('form.validation.required'),
+      (value: string) => value === newPassword.value ? true : 'Passwords do not match'
+    ]
+  }
+)
 
 async function handleSubmit() {
-  error.value = ''
-  
-  if (newPassword.value.length < 6) {
-    error.value = t('admin.passwordTooShort')
-    return
-  }
-  
-  if (newPassword.value !== confirmPassword.value) {
-    error.value = t('admin.passwordMismatch')
-    return
-  }
+  isSubmitted.value = true
+  if (!validateForm()) return
   
   isLoading.value = true
   try {
@@ -49,7 +58,7 @@ async function handleSubmit() {
     router.push('/dashboard')
   } catch (e) {
     const err = e as ApiError
-    error.value = translateError(err.message)
+    toast.error(translateError(err.message))
   } finally {
     isLoading.value = false
   }
@@ -83,8 +92,10 @@ async function handleSubmit() {
             id="currentPassword" 
             v-model="currentPassword"
             :placeholder="t('auth.temporaryPasswordPlaceholder')"
+            :class="shouldShowError('currentPassword', isSubmitted) ? 'border-destructive' : ''"
             required
           />
+          <p v-if="shouldShowError('currentPassword', isSubmitted)" class="text-xs text-destructive">{{ getFieldError('currentPassword') }}</p>
         </div>
 
         <div class="space-y-2">
@@ -93,8 +104,10 @@ async function handleSubmit() {
             id="newPassword" 
             v-model="newPassword"
             :placeholder="t('admin.newPasswordPlaceholder')"
+            :class="shouldShowError('newPassword', isSubmitted) ? 'border-destructive' : ''"
             required
           />
+          <p v-if="shouldShowError('newPassword', isSubmitted)" class="text-xs text-destructive">{{ getFieldError('newPassword') }}</p>
         </div>
         
         <div class="space-y-2">
@@ -103,13 +116,11 @@ async function handleSubmit() {
             id="confirmPassword" 
             v-model="confirmPassword"
             :placeholder="t('admin.confirmPasswordPlaceholder')"
+            :class="shouldShowError('confirmPassword', isSubmitted) ? 'border-destructive' : ''"
             required
           />
+          <p v-if="shouldShowError('confirmPassword', isSubmitted)" class="text-xs text-destructive">{{ getFieldError('confirmPassword') }}</p>
         </div>
-
-        <p v-if="error" class="text-sm text-destructive">
-          {{ error }}
-        </p>
 
         <Button type="submit" class="w-full" :disabled="isLoading">
           {{ isLoading ? t('common.loading') : t('auth.changePassword') }}

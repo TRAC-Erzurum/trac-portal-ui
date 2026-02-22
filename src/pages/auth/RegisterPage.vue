@@ -11,10 +11,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
+import { CallSignInput } from '@/components/ui/call-sign-input'
 import { LocatorMapPicker } from '@/components/shared'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
+import { useFormValidation } from '@/composables'
 
 interface Branch {
   id: string
@@ -41,6 +43,7 @@ const privacyAccepted = ref<boolean>(false)
 const captchaToken = ref('')
 const captchaRef = ref<InstanceType<typeof Captcha>>()
 const isLoading = ref(false)
+const isSubmitted = ref(false)
 const branches = ref<Branch[]>([])
 const branchesLoading = ref(true)
 const selectedBranchIds = ref<string[]>([])
@@ -69,6 +72,35 @@ const locatorSelection = computed({
 
 const headquartersId = computed(() => branches.value.find((b) => b.isHeadquarters)?.id ?? null)
 
+const { validateForm, shouldShowError, getFieldError } = useFormValidation(
+  {
+    email: [
+      (value: string) => (!value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) ? true : t('form.validation.invalid')
+    ],
+    callSign: [
+      (value: string) => value.trim() ? true : t('form.validation.required')
+    ],
+    password: [
+      (value: string) => value.trim() ? true : t('form.validation.required'),
+      (value: string) => value.length >= 6 ? true : 'Minimum 6 characters'
+    ],
+    passwordConfirm: [
+      (value: string) => value.trim() ? true : t('form.validation.required'),
+      (value: string) => value === password.value ? true : 'Passwords do not match'
+    ],
+    privacyAccepted: [
+      (value: boolean) => value ? true : t('form.validation.required')
+    ]
+  },
+  {
+    email,
+    callSign,
+    password,
+    passwordConfirm,
+    privacyAccepted
+  }
+)
+
 function toggleBranch(branchId: string) {
   if (branchId === headquartersId.value) return
   const idx = selectedBranchIds.value.indexOf(branchId)
@@ -79,22 +111,7 @@ function toggleBranch(branchId: string) {
   }
 }
 
-function handleCallSignInput() {
-  callSign.value = callSign.value.toUpperCase()
-}
 
-const isFormValid = computed(() => {
-  const baseValid = email.value.trim() !== '' &&
-         callSign.value.trim() !== '' &&
-         password.value.length >= 6 &&
-         passwordConfirm.value === password.value &&
-         privacyAccepted.value === true &&
-         selectedBranchIds.value.length >= 1
-  if (captchaRef.value?.isEnabled) {
-    return baseValid && captchaToken.value !== ''
-  }
-  return baseValid
-})
 
 async function loadBranches() {
   branchesLoading.value = true
@@ -116,7 +133,11 @@ async function loadBranches() {
 onMounted(loadBranches)
 
 async function handleSubmit() {
-  if (!isFormValid.value) return
+  isSubmitted.value = true
+  
+  if (!validateForm()) return
+  if (selectedBranchIds.value.length < 1) return
+  if (captchaRef.value?.isEnabled && !captchaToken.value) return
 
   isLoading.value = true
   try {
@@ -187,20 +208,21 @@ function handleGoogleLogin() {
               id="email" 
               v-model="email"
               type="email" 
-              :placeholder="t('form.emailPlaceholder')" 
+              :placeholder="t('form.emailPlaceholder')"
+              :class="shouldShowError('email', isSubmitted) ? 'border-destructive' : ''"
               required
             />
+            <p v-if="shouldShowError('email', isSubmitted)" class="text-xs text-destructive">{{ getFieldError('email') }}</p>
           </div>
           <div class="space-y-2">
             <Label for="callSign">{{ t('form.callSign') }} {{ t('form.required') }}</Label>
-            <Input 
+            <CallSignInput 
               id="callSign" 
               v-model="callSign"
-              type="text" 
-              placeholder="TA9XXX"
-              @input="handleCallSignInput"
+              :class="shouldShowError('callSign', isSubmitted) ? 'border-destructive' : ''"
               required
             />
+            <p v-if="shouldShowError('callSign', isSubmitted)" class="text-xs text-destructive">{{ getFieldError('callSign') }}</p>
           </div>
         </div>
 
@@ -210,18 +232,22 @@ function handleGoogleLogin() {
             <PasswordInput 
               id="password" 
               v-model="password"
+              :class="shouldShowError('password', isSubmitted) ? 'border-destructive' : ''"
               placeholder="••••••••" 
               required
             />
+            <p v-if="shouldShowError('password', isSubmitted)" class="text-xs text-destructive">{{ getFieldError('password') }}</p>
           </div>
           <div class="space-y-2">
             <Label for="passwordConfirm">{{ t('form.passwordConfirm') }} {{ t('form.required') }}</Label>
             <PasswordInput 
               id="passwordConfirm" 
               v-model="passwordConfirm"
+              :class="shouldShowError('passwordConfirm', isSubmitted) ? 'border-destructive' : ''"
               placeholder="••••••••" 
               required
             />
+            <p v-if="shouldShowError('passwordConfirm', isSubmitted)" class="text-xs text-destructive">{{ getFieldError('passwordConfirm') }}</p>
           </div>
         </div>
 
@@ -290,7 +316,7 @@ function handleGoogleLogin() {
             id="privacy" 
             type="checkbox"
             v-model="privacyAccepted"
-            class="h-4 w-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
+            :class="['h-4 w-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background', shouldShowError('privacyAccepted', isSubmitted) ? 'border-destructive' : '']"
           />
           <label for="privacy" class="text-sm cursor-pointer select-none">
             {{ t('auth.privacyConsentCheckboxPrefix') }}
@@ -299,9 +325,11 @@ function handleGoogleLogin() {
           </label>
         </div>
 
+        <p v-if="shouldShowError('privacyAccepted', isSubmitted)" class="text-xs text-destructive">{{ getFieldError('privacyAccepted') }}</p>
+
         <Captcha ref="captchaRef" v-model="captchaToken" />
 
-        <Button type="submit" class="w-full" :disabled="!isFormValid || isLoading">
+        <Button type="submit" class="w-full" :disabled="isLoading">
           {{ isLoading ? t('auth.registering') : t('auth.register') }}
         </Button>
       </form>

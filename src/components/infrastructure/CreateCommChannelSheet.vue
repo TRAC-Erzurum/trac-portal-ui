@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useFormValidation } from '@/composables'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { LocationMapPicker, type LocationSelection } from '@/components/shared'
@@ -181,6 +182,19 @@ const dmrRepeaterId = ref<number | undefined>()
 const talkgroups = ref<TalkgroupEntry[]>([])
 
 const isLoading = ref(false)
+const isSubmitted = ref(false)
+
+// Form validation setup
+const validators = computed(() => ({
+  description: [
+    (value: string) => description.value.trim() ? true : t('form.validation.required')
+  ]
+}))
+
+const { validateForm, getFieldError, shouldShowError, fieldErrors } = useFormValidation(
+  validators.value,
+  { description: description }
+)
 
 const isValid = computed(() => {
   if (!type.value) return false
@@ -270,10 +284,22 @@ function removeTalkgroup(index: number) {
 }
 
 watch(() => props.open, (isOpen) => {
-  if (isOpen) resetForm()
+  if (isOpen) {
+    isSubmitted.value = false
+    fieldErrors.value = {}
+    resetForm()
+  }
 })
 
 async function handleSubmit() {
+  isSubmitted.value = true
+
+  // Validate form
+  const isFormValid = validateForm()
+  if (!isFormValid) {
+    return
+  }
+
   if (!isValid.value) return
 
   isLoading.value = true
@@ -421,9 +447,13 @@ async function handleSubmit() {
             rows="3"
             maxlength="500"
             :placeholder="t('communicationChannels.descriptionPlaceholder')"
-            class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+            :class="[
+              'flex w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none',
+              shouldShowError('description', isSubmitted) ? 'border-destructive' : 'border-input'
+            ]"
           />
-          <p class="text-xs text-muted-foreground">{{ description.length }}/500</p>
+          <p v-if="shouldShowError('description', isSubmitted)" class="text-xs text-destructive">{{ getFieldError('description') }}</p>
+          <p v-else class="text-xs text-muted-foreground">{{ description.length }}/500</p>
         </div>
 
         <Separator />
@@ -890,7 +920,7 @@ async function handleSubmit() {
           <Button type="button" variant="outline" @click="emit('update:open', false)">
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" variant="outline" :disabled="isLoading || !isValid">
+          <Button type="submit" variant="outline" :disabled="isLoading">
             {{ isLoading ? t('common.loading') : t('common.save') }}
           </Button>
         </div>

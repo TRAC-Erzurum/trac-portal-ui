@@ -9,6 +9,7 @@ import { AutocompleteCombobox } from '@/components/shared'
 import { api } from '@/lib/api'
 import { toast } from 'vue-sonner'
 import { useQthData } from '@/composables/useQthData'
+import { useFormValidation } from '@/composables'
 
 interface Attendee {
   id: string
@@ -36,6 +37,7 @@ const { t } = useI18n()
 const { cities, getDistricts, loadCities } = useQthData()
 
 const isSubmitting = ref(false)
+const isSubmitted = ref(false)
 const form = ref({
   name: '',
   country: 'Türkiye',
@@ -45,12 +47,29 @@ const form = ref({
   signalStrength: 9
 })
 
+// Form validation setup
+const validators = computed(() => ({
+  name: [
+    (value: string) => {
+      const name = form.value.name?.trim()
+      return name && name.length > 0 ? true : t('form.validation.required')
+    }
+  ]
+}))
+
+const { validateForm, getFieldError, shouldShowError, fieldErrors } = useFormValidation(
+  validators.value,
+  { name: form }
+)
+
 const isInitializing = ref(true)
 
 const districts = computed(() => getDistricts(form.value.city))
 
 watch(() => props.open, async (open) => {
   if (open && props.attendee) {
+    isSubmitted.value = false
+    fieldErrors.value = {}
     isInitializing.value = true
     form.value = {
       name: props.attendee.name || '',
@@ -74,6 +93,14 @@ watch(() => form.value.city, (city, oldCity) => {
 })
 
 const handleSubmit = async () => {
+  isSubmitted.value = true
+
+  // Validate form
+  const isFormValid = validateForm()
+  if (!isFormValid) {
+    return
+  }
+
   isSubmitting.value = true
   try {
     await api.patch(`/net/${props.netId}/attendee/${props.attendee.id}`, {
@@ -111,7 +138,11 @@ const handleSubmit = async () => {
           <Input
             v-model="form.name"
             :placeholder="t('form.fullNamePlaceholder')"
+            :class="shouldShowError('name', isSubmitted) ? 'border-destructive' : ''"
           />
+          <p v-if="shouldShowError('name', isSubmitted)" class="text-xs text-destructive mt-1">
+            {{ getFieldError('name') }}
+          </p>
         </div>
 
         <div>

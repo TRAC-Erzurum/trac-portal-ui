@@ -10,6 +10,7 @@ import NameTemplateInput from '@/components/nets/NameTemplateInput.vue'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
+import { useFormValidation } from '@/composables'
 
 const SCHEDULER_PLACEHOLDER_KEYS = [
   'branch_name',
@@ -92,10 +93,23 @@ const recurrence = ref<'one_time' | 'daily' | 'weekly' | 'monthly'>('one_time')
 const endDate = ref('')
 const isLoading = ref(false)
 const isLoadingDetail = ref(false)
+const isSubmitted = ref(false)
 
 const certificateTemplates = ref<CertificateTemplate[]>([])
 const selectedCertificateTemplateId = ref<string>('')
 const isLoadingCertificateTemplates = ref(false)
+
+// Form validation setup
+const validators = computed(() => ({
+  name: [
+    (value: string) => name.value.trim() ? true : t('form.validation.required')
+  ]
+}))
+
+const { validateForm, getFieldError, shouldShowError, fieldErrors } = useFormValidation(
+  validators.value,
+  { name: name }
+)
 
 const scheduledTimeDisplay = computed(() => {
   const raw = scheduler.value?.scheduledTime ?? '20:00:00'
@@ -145,6 +159,8 @@ const loadScheduler = async () => {
 
 watch([() => props.open, () => props.schedulerId], () => {
   if (props.open && props.schedulerId) {
+    isSubmitted.value = false
+    fieldErrors.value = {}
     loadScheduler()
   } else {
     scheduler.value = null
@@ -154,7 +170,15 @@ watch([() => props.open, () => props.schedulerId], () => {
 const isValid = computed(() => name.value.trim().length > 0)
 
 async function handleSubmit() {
-  if (!props.schedulerId || !isValid.value) return
+  isSubmitted.value = true
+
+  // Validate form
+  const isFormValid = validateForm()
+  if (!isFormValid) {
+    return
+  }
+
+  if (!props.schedulerId) return
   isLoading.value = true
   try {
     await api.patch(`/net-schedulers/${props.schedulerId}`, {
@@ -194,9 +218,14 @@ async function handleSubmit() {
           <div class="space-y-2">
             <Label for="name">{{ t('nets.nameTemplate') }}</Label>
             <NameTemplateInput
+              id="name"
               v-model="name"
               :placeholder-keys="SCHEDULER_PLACEHOLDER_KEYS"
+              :class="shouldShowError('name', isSubmitted) ? 'border-destructive' : ''"
             />
+            <p v-if="shouldShowError('name', isSubmitted)" class="text-xs text-destructive">
+              {{ getFieldError('name') }}
+            </p>
             <p class="text-xs text-muted-foreground break-words whitespace-normal min-w-0">
               {{ t('nets.namePreview') }}: {{ namePreview }}
             </p>
@@ -264,7 +293,7 @@ async function handleSubmit() {
           </div>
 
           <div class="flex gap-2 pt-4">
-            <Button type="submit" variant="outline" :disabled="!isValid || isLoading">
+            <Button type="submit" variant="outline" :disabled="isLoading">
               {{ t('common.save') }}
             </Button>
             <Button type="button" variant="outline" @click="emit('update:open', false)">
