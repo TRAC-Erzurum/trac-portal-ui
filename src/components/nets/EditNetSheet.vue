@@ -13,6 +13,7 @@ import { translateError } from '@/i18n'
 import { formatCommunicationChannelLabel } from '@/lib/formatters'
 import { api, type ApiError } from '@/lib/api'
 import { debounce } from '@/lib/utils'
+import { useFormValidation } from '@/composables'
 import type { Branch } from '@/stores/branch'
 import type { CommunicationChannel } from '@/types/communication-channel'
 
@@ -83,6 +84,7 @@ const scheduledTime = ref('20:00')
 const estimatedDurationMinutes = ref(30)
 const selectedOperator = ref<Operator | null>(null)
 const isLoading = ref(false)
+const isSubmitted = ref(false)
 
 const operatorSearch = ref('')
 const operatorSuggestions = ref<Operator[]>([])
@@ -119,24 +121,38 @@ interface SimplexRow {
 }
 const simplexRows = ref<SimplexRow[]>([{ checked: false, value: '' }])
 
-const hasAtLeastOneChannelSelected = computed(
-  () =>
-    selectedChannelIds.value.length > 0 ||
-    simplexRows.value.some(row => row.checked && row.value.trim())
-)
+// Form validation setup
+const validators = computed(() => ({
+  name: [
+    (_value: string) => name.value.trim() ? true : t('form.validation.required')
+  ],
+  operator: [
+    (_value: Operator | null) => selectedOperator.value ? true : t('form.validation.required')
+  ],
+  callSign: [
+    (_value: string) => selectedCallSignId.value ? true : t('form.validation.required')
+  ],
+  channels: [
+    (_value: any) => {
+      const allCheckedRowsFilled = simplexRows.value
+        .filter(row => row.checked)
+        .every(row => row.value.trim())
+      const hasChannels = selectedChannelIds.value.length > 0 || 
+        simplexRows.value.some(row => row.checked && row.value.trim())
+      return (hasChannels && allCheckedRowsFilled) ? true : t('nets.atLeastOneInfrastructureOrSimplexRequired')
+    }
+  ]
+}))
 
-const isValid = computed(() => {
-  const allCheckedRowsFilled = simplexRows.value
-    .filter(row => row.checked)
-    .every(row => row.value.trim())
-  return (
-    name.value.trim() &&
-    selectedOperator.value &&
-    selectedCallSignId.value &&
-    hasAtLeastOneChannelSelected.value &&
-    allCheckedRowsFilled
-  )
-})
+const { validateForm, getFieldError, shouldShowError, fieldErrors } = useFormValidation(
+  validators.value,
+  {
+    name: name,
+    operator: selectedOperator,
+    callSign: selectedCallSignId,
+    channels: selectedChannelIds
+  }
+)
 
 const getOperatorLabel = (op: Operator) => {
   const displayName = op.user?.fullName || op.fullName
@@ -318,6 +334,8 @@ function scheduledAtToTimeStr(iso: string | null | undefined): string {
 
 watch(() => props.open, async (isOpen) => {
   if (isOpen && props.net) {
+    isSubmitted.value = false
+    fieldErrors.value = {}
     name.value = props.net.name
     scheduledTime.value = scheduledAtToTimeStr(props.net.scheduledAt)
     estimatedDurationMinutes.value = props.net.estimatedDurationMinutes ?? 30
@@ -358,7 +376,13 @@ watch(() => props.open, async (isOpen) => {
 })
 
 async function handleSubmit() {
-  if (!isValid.value || !selectedOperator.value || !selectedCallSignId.value) return
+  isSubmitted.value = true
+
+  // Validate form
+  const isFormValid = validateForm()
+  if (!isFormValid) {
+    return
+  }
 
   const simplexFreqs = simplexRows.value
     .filter(row => row.checked && row.value.trim())
@@ -371,6 +395,10 @@ async function handleSubmit() {
   }
   if (simplexFreqs.length !== new Set(simplexFreqs).size) {
     toast.error(t('nets.duplicateFrequency'))
+    return
+  }
+
+  if (!selectedOperator.value || !selectedCallSignId.value) {
     return
   }
 
@@ -477,7 +505,11 @@ async function handleSubmit() {
             v-model="name"
             type="text"
             :placeholder="t('nets.netNamePlaceholder')"
+            :class="shouldShowError('name', isSubmitted) ? 'border-destructive' : ''"
           />
+          <p v-if="shouldShowError('name', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('name') }}
+          </p>
         </div>
 
         <div class="grid grid-cols-2 gap-4">
@@ -504,6 +536,7 @@ async function handleSubmit() {
               type="text"
               :placeholder="t('nets.searchOperatorPlaceholder')"
               class="pl-9 pr-9"
+              :class="shouldShowError('operator', isSubmitted) ? 'border-destructive' : ''"
               @focus="showOperatorDropdown = operatorSearch.length >= 2"
             />
             <button
@@ -545,7 +578,10 @@ async function handleSubmit() {
               </template>
             </div>
           </div>
-          <p v-if="operatorSearch && operatorSearch.length < 2" class="text-xs text-muted-foreground">
+          <p v-if="shouldShowError('operator', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('operator') }}
+          </p>
+          <p v-else-if="operatorSearch && operatorSearch.length < 2" class="text-xs text-muted-foreground">
             {{ t('nets.minSearchChars') }}
           </p>
         </div>
@@ -614,8 +650,8 @@ async function handleSubmit() {
               </div>
             </div>
           </template>
-          <p v-if="!hasAtLeastOneChannelSelected" class="text-xs text-destructive">
-            {{ t('nets.atLeastOneInfrastructureOrSimplexRequired') }}
+          <p v-if="shouldShowError('channels', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('channels') }}
           </p>
         </div>
 
@@ -623,7 +659,7 @@ async function handleSubmit() {
           <Button type="button" variant="outline" @click="emit('update:open', false)">
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" variant="outline" :disabled="isLoading || !isValid">
+          <Button type="submit" variant="outline" :disabled="isLoading">
             {{ isLoading ? t('common.loading') : t('common.save') }}
           </Button>
         </div>

@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { ChevronDown } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
+import { matchesTurkishSearch } from '@/lib/turkish-search'
 
 const props = withDefaults(
   defineProps<{
@@ -26,8 +27,7 @@ const highlightedIndex = ref(-1)
 
 const filteredOptions = computed(() => {
   if (!query.value.trim()) return props.options
-  const q = query.value.trim().toLowerCase()
-  return props.options.filter((opt) => opt.toLowerCase().includes(q))
+  return props.options.filter((opt) => matchesTurkishSearch(opt, query.value))
 })
 
 const showDropdown = computed(() => isOpen.value && filteredOptions.value.length > 0)

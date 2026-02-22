@@ -4,12 +4,13 @@ import { RouterLink, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { CallSignInput } from '@/components/ui/call-sign-input'
 import AuthLayout from '@/components/layout/AuthLayout.vue'
 import Captcha from '@/components/Captcha.vue'
 import { api, type ApiError } from '@/lib/api'
 import { translateError } from '@/i18n'
+import { useFormValidation } from '@/composables'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -18,9 +19,20 @@ const callSign = ref('')
 const captchaToken = ref('')
 const captchaRef = ref<InstanceType<typeof Captcha>>()
 const isLoading = ref(false)
+const isSubmitted = ref(false)
+
+const { validateForm, shouldShowError, getFieldError } = useFormValidation(
+  {
+    callSign: [
+      (value: string) => value.trim() ? true : t('form.validation.required')
+    ]
+  },
+  { callSign }
+)
 
 async function handleSubmit() {
-  if (!callSign.value.trim()) return
+  isSubmitted.value = true
+  if (!validateForm()) return
   if (captchaRef.value?.isEnabled && !captchaToken.value) return
   
   isLoading.value = true
@@ -57,20 +69,18 @@ async function handleSubmit() {
       <form @submit.prevent="handleSubmit" class="space-y-4">
         <div class="space-y-2">
           <Label for="callSign">{{ t('form.callSign') }}</Label>
-          <Input
+          <CallSignInput
             id="callSign"
             v-model="callSign"
-            type="text"
-            placeholder="TA9XXX"
+            :class="shouldShowError('callSign', isSubmitted) ? 'border-destructive' : ''"
             required
-            class="uppercase"
-            @input="callSign = callSign.toUpperCase()"
           />
+          <p v-if="shouldShowError('callSign', isSubmitted)" class="text-xs text-destructive">{{ getFieldError('callSign') }}</p>
         </div>
 
         <Captcha ref="captchaRef" v-model="captchaToken" />
 
-        <Button type="submit" class="w-full" :disabled="isLoading || !callSign.trim() || (captchaRef?.isEnabled && !captchaToken)">
+        <Button type="submit" class="w-full" :disabled="isLoading">
           {{ isLoading ? t('auth.sendingRequest') : t('auth.sendRequest') }}
         </Button>
 

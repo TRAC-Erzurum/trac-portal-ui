@@ -1,5 +1,6 @@
 export { useAppVersion } from './useAppVersion'
 export { useAvatarUrl, getAvatarUrl, DEFAULT_AVATAR } from './useAvatarUrl'
 export { useDateFormat } from './useDateFormat'
+export { useFormValidation } from './useFormValidation'
 export { usePersistedFilters } from './usePersistedFilters'
 export { useQthData } from './useQthData'

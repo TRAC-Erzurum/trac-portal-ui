@@ -70,6 +70,8 @@ const displayName = computed(() => {
   return selectedUser.value.fullName || selectedUser.value.email
 })
 
+let searchTimeout: ReturnType<typeof setTimeout> | null = null
+
 const searchUsers = async () => {
   if (!searchQuery.value.trim()) {
     searchResults.value = []
@@ -99,7 +101,14 @@ const searchUsers = async () => {
   }
 }
 
-watch(searchQuery, searchUsers)
+watch(searchQuery, () => {
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+  searchTimeout = setTimeout(() => {
+    searchUsers()
+  }, 300)
+})
 
 const selectUser = (result: SearchResult) => {
   selectedUser.value = result

@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { Check, Plus, Search, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { CallSignInput } from '@/components/ui/call-sign-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AutocompleteCombobox } from '@/components/shared'
 import { UserAvatar } from '@/components/ui/user-avatar'
@@ -293,7 +294,7 @@ onUnmounted(() => {
     <div v-if="!selectedEntry" class="space-y-3">
       <div ref="searchContainerRef" class="relative">
         <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
-        <Input
+        <CallSignInput
           v-model="searchQuery"
           :placeholder="t('netDetail.searchOperator')"
           class="pl-9 pr-9"

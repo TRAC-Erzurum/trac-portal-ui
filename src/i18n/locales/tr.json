@@ -113,7 +113,12 @@
     "district": "İlçe",
     "districtPlaceholder": "İlçe seçin",
     "country": "Türkiye",
-    "required": "*"
+    "callSignPlaceholder": "Çağrı işareti girin",
+    "required": "*",
+    "validation": {
+      "required": "Bu alan zorunludur",
+      "invalid": "Geçersiz değer"
+    }
   },
   "brand": {
     "portalTitle": "Radyo Amatörünün Portalı",
@@ -640,7 +645,6 @@
     "typeBranch": "Şube",
     "typeRepresentative": "Temsilcilik",
     "callSigns": "Çağrı İşaretleri",
-    "callSignPlaceholder": "Çağrı işareti girin",
     "defaultCallSign": "Varsayılan",
     "addCallSign": "Ekle",
     "setDefault": "Varsayılan Yap",

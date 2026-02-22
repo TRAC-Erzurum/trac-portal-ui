@@ -23,6 +23,7 @@ import type { CertificateTemplateElement } from '@/components/certificates/certi
 import { api } from '@/lib/api'
 import { formatCallSign } from '@/lib/formatters'
 import { translateError } from '@/i18n'
+import { matchesTurkishSearch } from '@/lib/turkish-search'
 
 const API_BASE = import.meta.env.VITE_API_URL
 
@@ -338,9 +339,8 @@ const filteredMemberships = computed(() => {
   let filtered = memberships.value.filter(m => m.status === 'approved')
 
   if (membershipSearch.value) {
-    const search = membershipSearch.value.toLowerCase()
     filtered = filtered.filter(m =>
-      m.branch.name.toLowerCase().includes(search)
+      matchesTurkishSearch(m.branch.name, membershipSearch.value)
     )
   }
 
@@ -363,9 +363,8 @@ const filteredNets = computed(() => {
   let filtered = recentNets.value
 
   if (netsSearch.value) {
-    const search = netsSearch.value.toLowerCase()
     filtered = filtered.filter(n => 
-      n.name.toLowerCase().includes(search)
+      matchesTurkishSearch(n.name, netsSearch.value)
     )
   }
 

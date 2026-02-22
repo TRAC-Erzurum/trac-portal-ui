@@ -113,7 +113,12 @@
     "district": "District",
     "districtPlaceholder": "Select district",
     "country": "Turkey",
-    "required": "*"
+    "callSignPlaceholder": "Enter call sign",
+    "required": "*",
+    "validation": {
+      "required": "This field is required",
+      "invalid": "Invalid value"
+    }
   },
   "brand": {
     "portalTitle": "Amateur Radio Portal",
@@ -640,7 +645,6 @@
     "typeBranch": "Branch",
     "typeRepresentative": "Representative",
     "callSigns": "Call Signs",
-    "callSignPlaceholder": "Enter call sign",
     "defaultCallSign": "Default",
     "addCallSign": "Add",
     "setDefault": "Set Default",

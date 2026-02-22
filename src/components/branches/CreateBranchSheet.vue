@@ -7,12 +7,13 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { CallSignInput } from '@/components/ui/call-sign-input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { AutocompleteCombobox } from '@/components/shared'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
-import { useQthData } from '@/composables'
+import { useQthData, useFormValidation } from '@/composables'
 
 const props = defineProps<{
   open: boolean
@@ -34,15 +35,32 @@ const phone = ref('')
 const email = ref('')
 const callSigns = ref<Array<{ callSign: string; isDefault: boolean }>>([{ callSign: '', isDefault: true }])
 const isLoading = ref(false)
+const isSubmitted = ref(false)
 
-const isValid = computed(() => {
-  return (
-    name.value.trim() &&
-    callSigns.value.length > 0 &&
-    callSigns.value.every(cs => cs.callSign.trim()) &&
-    (!email.value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value))
-  )
-})
+// Form validation setup
+const validators = computed(() => ({
+  name: [
+    (_value: string) => name.value.trim() ? true : t('form.validation.required')
+  ],
+  callSigns: [
+    (_value: any) => {
+      const allFilled = callSigns.value.length > 0 && callSigns.value.every(cs => cs.callSign.trim())
+      return allFilled ? true : t('form.validation.required')
+    }
+  ],
+  email: [
+    (_value: string) => {
+      if (!email.value) return true
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      return emailRegex.test(email.value) ? true : t('form.validation.invalid')
+    }
+  ]
+}))
+
+const { validateForm, getFieldError, shouldShowError, fieldErrors } = useFormValidation(
+  validators.value,
+  { name: name, email: email, callSigns: callSigns }
+)
 
 const addCallSign = () => {
   callSigns.value.push({ callSign: '', isDefault: false })
@@ -70,6 +88,8 @@ const setDefaultCallSign = (index: number) => {
 
 watch(() => props.open, (isOpen) => {
   if (isOpen) {
+    isSubmitted.value = false
+    fieldErrors.value = {}
     loadCities()
     name.value = ''
     type.value = 'branch'
@@ -82,7 +102,13 @@ watch(() => props.open, (isOpen) => {
 })
 
 async function handleSubmit() {
-  if (!isValid.value) return
+  isSubmitted.value = true
+
+  // Validate form
+  const isFormValid = validateForm()
+  if (!isFormValid) {
+    return
+  }
 
   isLoading.value = true
   try {
@@ -129,8 +155,12 @@ async function handleSubmit() {
             v-model="name"
             type="text"
             :placeholder="t('branches.namePlaceholder')"
+            :class="shouldShowError('name', isSubmitted) ? 'border-destructive' : ''"
             required
           />
+          <p v-if="shouldShowError('name', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('name') }}
+          </p>
         </div>
 
         <div class="space-y-2">
@@ -175,9 +205,8 @@ async function handleSubmit() {
 
           <div v-for="(callSign, index) in callSigns" :key="index" class="flex items-center gap-2">
             <div class="flex-1 relative">
-              <Input
+              <CallSignInput
                 v-model="callSign.callSign"
-                :placeholder="t('branches.callSignPlaceholder')"
                 required
               />
               <button
@@ -210,6 +239,9 @@ async function handleSubmit() {
               <Trash2 class="h-4 w-4" />
             </Button>
           </div>
+          <p v-if="shouldShowError('callSigns', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('callSigns') }}
+          </p>
         </div>
 
         <Separator />
@@ -241,14 +273,18 @@ async function handleSubmit() {
             v-model="email"
             type="email"
             :placeholder="t('branches.emailPlaceholder')"
+            :class="shouldShowError('email', isSubmitted) ? 'border-destructive' : ''"
           />
+          <p v-if="shouldShowError('email', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('email') }}
+          </p>
         </div>
 
         <div class="flex justify-end gap-3 pt-4">
           <Button type="button" variant="outline" @click="emit('update:open', false)">
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" variant="outline" :disabled="isLoading || !isValid">
+          <Button type="submit" variant="outline" :disabled="isLoading">
             {{ isLoading ? t('common.loading') : t('common.save') }}
           </Button>
         </div>

@@ -2,6 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
+import { useFormValidation } from '@/composables'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -201,11 +202,19 @@ const dmrRepeaterId = ref<number | undefined>()
 const talkgroups = ref<TalkgroupEntry[]>([])
 
 const isLoading = ref(false)
+const isSubmitted = ref(false)
 
-const isValid = computed(() => {
-  if (!type.value) return false
-  return true
-})
+// Form validation setup
+const validators = computed(() => ({
+  description: [
+    (_value: string) => description.value.trim() ? true : t('form.validation.required')
+  ]
+}))
+
+const { validateForm, getFieldError, shouldShowError, fieldErrors } = useFormValidation(
+  validators.value,
+  { description: description }
+)
 
 const showDistrictField = computed(() => type.value !== 'echolink')
 
@@ -334,7 +343,11 @@ function removeTalkgroup(index: number) {
 }
 
 watch(() => props.open, (isOpen) => {
-  if (isOpen && props.channel) loadForm()
+  if (isOpen) {
+    isSubmitted.value = false
+    fieldErrors.value = {}
+    if (props.channel) loadForm()
+  }
 }, { immediate: true })
 
 watch(() => props.channel, (channel) => {
@@ -344,7 +357,13 @@ watch(() => props.channel, (channel) => {
 }, { immediate: true })
 
 async function handleSubmit() {
-  if (!isValid.value) return
+  isSubmitted.value = true
+
+  // Validate form
+  const isFormValid = validateForm()
+  if (!isFormValid) {
+    return
+  }
 
   isLoading.value = true
   try {
@@ -500,9 +519,13 @@ async function handleSubmit() {
             rows="3"
             maxlength="500"
             :placeholder="t('communicationChannels.descriptionPlaceholder')"
-            class="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+            :class="[
+              'flex w-full rounded-md border bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none',
+              shouldShowError('description', isSubmitted) ? 'border-destructive' : 'border-input'
+            ]"
           />
-          <p class="text-xs text-muted-foreground">{{ description.length }}/500</p>
+          <p v-if="shouldShowError('description', isSubmitted)" class="text-xs text-destructive">{{ getFieldError('description') }}</p>
+          <p v-else class="text-xs text-muted-foreground">{{ description.length }}/500</p>
         </div>
 
         <Separator />
@@ -969,7 +992,7 @@ async function handleSubmit() {
           <Button type="button" variant="outline" @click="emit('update:open', false)">
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" variant="outline" :disabled="isLoading || !isValid">
+          <Button type="submit" variant="outline" :disabled="isLoading">
             {{ isLoading ? t('common.loading') : t('common.save') }}
           </Button>
         </div>

@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
+import { CallSignInput } from '@/components/ui/call-sign-input'
 import AuthLayout from '@/components/layout/AuthLayout.vue'
 import Captcha from '@/components/Captcha.vue'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
+import { useFormValidation } from '@/composables'
 import type { ApiError } from '@/lib/api'
 
 const { t } = useI18n()
@@ -23,8 +24,35 @@ const password = ref('')
 const captchaToken = ref('')
 const captchaRef = ref<InstanceType<typeof Captcha>>()
 const isLoading = ref(false)
+const isSubmitted = ref(false)
+
+// Form validation setup
+const validators = computed(() => ({
+  callSign: [
+    (_value: string) => callSign.value.trim() ? true : t('form.validation.required')
+  ],
+  password: [
+    (_value: string) => password.value.trim() ? true : t('form.validation.required')
+  ]
+}))
+
+const { validateForm, getFieldError, shouldShowError } = useFormValidation(
+  validators.value,
+  {
+    callSign,
+    password
+  }
+)
 
 async function handleSubmit() {
+  isSubmitted.value = true
+
+  // Validate form
+  const isFormValid = validateForm()
+  if (!isFormValid) {
+    return
+  }
+
   if (captchaRef.value?.isEnabled && !captchaToken.value) {
     toast.error(t('error.pleaseWaitForCaptcha'))
     return
@@ -68,15 +96,15 @@ function handleGoogleLogin() {
       <form @submit.prevent="handleSubmit" class="space-y-4">
         <div class="space-y-2">
           <Label for="callSign">{{ t('form.callSign') }}</Label>
-          <Input 
+          <CallSignInput 
             id="callSign" 
             v-model="callSign"
-            type="text" 
-            placeholder="TA9XXX" 
             required
-            class="uppercase"
-            @input="callSign = callSign.toUpperCase()"
+            :class="shouldShowError('callSign', isSubmitted) ? 'border-destructive' : ''"
           />
+          <p v-if="shouldShowError('callSign', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('callSign') }}
+          </p>
         </div>
         <div class="space-y-2">
           <Label for="password">{{ t('form.password') }}</Label>
@@ -85,7 +113,11 @@ function handleGoogleLogin() {
             v-model="password"
             placeholder="••••••••" 
             required
+            :class="shouldShowError('password', isSubmitted) ? 'border-destructive' : ''"
           />
+          <p v-if="shouldShowError('password', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('password') }}
+          </p>
           <router-link to="/forgot-password" class="text-sm text-primary hover:underline block">
             {{ t('auth.forgotPassword') }}
           </router-link>
@@ -93,7 +125,7 @@ function handleGoogleLogin() {
         
         <Captcha ref="captchaRef" v-model="captchaToken" />
 
-        <Button type="submit" class="w-full" :disabled="isLoading || (captchaRef?.isEnabled && !captchaToken)">
+        <Button type="submit" class="w-full" :disabled="isLoading">
           {{ isLoading ? t('auth.loggingIn') : t('auth.login') }}
         </Button>
       </form>
