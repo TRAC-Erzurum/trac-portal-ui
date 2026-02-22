@@ -124,16 +124,16 @@ const simplexRows = ref<SimplexRow[]>([{ checked: false, value: '' }])
 // Form validation setup
 const validators = computed(() => ({
   name: [
-    (value: string) => name.value.trim() ? true : t('form.validation.required')
+    (_value: string) => name.value.trim() ? true : t('form.validation.required')
   ],
   operator: [
-    (value: Operator | null) => selectedOperator.value ? true : t('form.validation.required')
+    (_value: Operator | null) => selectedOperator.value ? true : t('form.validation.required')
   ],
   callSign: [
-    (value: string) => selectedCallSignId.value ? true : t('form.validation.required')
+    (_value: string) => selectedCallSignId.value ? true : t('form.validation.required')
   ],
   channels: [
-    (value: any) => {
+    (_value: any) => {
       const allCheckedRowsFilled = simplexRows.value
         .filter(row => row.checked)
         .every(row => row.value.trim())
@@ -153,25 +153,6 @@ const { validateForm, getFieldError, shouldShowError, fieldErrors } = useFormVal
     channels: selectedChannelIds
   }
 )
-
-const hasAtLeastOneChannelSelected = computed(
-  () =>
-    selectedChannelIds.value.length > 0 ||
-    simplexRows.value.some(row => row.checked && row.value.trim())
-)
-
-const isValid = computed(() => {
-  const allCheckedRowsFilled = simplexRows.value
-    .filter(row => row.checked)
-    .every(row => row.value.trim())
-  return (
-    name.value.trim() &&
-    selectedOperator.value &&
-    selectedCallSignId.value &&
-    hasAtLeastOneChannelSelected.value &&
-    allCheckedRowsFilled
-  )
-})
 
 const getOperatorLabel = (op: Operator) => {
   const displayName = op.user?.fullName || op.fullName

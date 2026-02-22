@@ -57,32 +57,20 @@ const email = ref('')
 const callSigns = ref<Array<{ id?: string; callSign: string; isDefault: boolean }>>([])
 const isLoading = ref(false)
 const isSubmitted = ref(false)
-const isValid = computed(() => {
-  const hasValidCallSigns = props.branch.isHeadquarters 
-    ? true 
-    : callSigns.value.length > 0 && callSigns.value.every(cs => cs.callSign.trim())
-  
-  return (
-    name.value.trim() &&
-    hasValidCallSigns &&
-    (!email.value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value))
-  )
-})
-
 // Form validation setup
 const validators = computed(() => ({
   name: [
-    (value: string) => name.value.trim() ? true : t('form.validation.required')
+    (_value: string) => name.value.trim() ? true : t('form.validation.required')
   ],
   callSigns: [
-    (value: any) => {
+    (_value: any) => {
       if (props.branch.isHeadquarters) return true
       const allFilled = callSigns.value.length > 0 && callSigns.value.every(cs => cs.callSign.trim())
       return allFilled ? true : t('form.validation.required')
     }
   ],
   email: [
-    (value: string) => {
+    (_value: string) => {
       if (!email.value) return true
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
       return emailRegex.test(email.value) ? true : t('form.validation.invalid')

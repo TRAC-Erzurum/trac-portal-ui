@@ -207,7 +207,7 @@ const isSubmitted = ref(false)
 // Form validation setup
 const validators = computed(() => ({
   description: [
-    (value: string) => description.value.trim() ? true : t('form.validation.required')
+    (_value: string) => description.value.trim() ? true : t('form.validation.required')
   ]
 }))
 
@@ -215,11 +215,6 @@ const { validateForm, getFieldError, shouldShowError, fieldErrors } = useFormVal
   validators.value,
   { description: description }
 )
-
-const isValid = computed(() => {
-  if (!type.value) return false
-  return true
-})
 
 const showDistrictField = computed(() => type.value !== 'echolink')
 

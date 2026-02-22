@@ -187,7 +187,7 @@ const isSubmitted = ref(false)
 // Form validation setup
 const validators = computed(() => ({
   description: [
-    (value: string) => description.value.trim() ? true : t('form.validation.required')
+    (_value: string) => description.value.trim() ? true : t('form.validation.required')
   ]
 }))
 

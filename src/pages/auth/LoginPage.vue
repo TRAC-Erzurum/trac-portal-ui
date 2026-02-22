@@ -4,7 +4,6 @@ import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
 import { CallSignInput } from '@/components/ui/call-sign-input'
@@ -30,14 +29,14 @@ const isSubmitted = ref(false)
 // Form validation setup
 const validators = computed(() => ({
   callSign: [
-    (value: string) => callSign.value.trim() ? true : t('form.validation.required')
+    (_value: string) => callSign.value.trim() ? true : t('form.validation.required')
   ],
   password: [
-    (value: string) => password.value.trim() ? true : t('form.validation.required')
+    (_value: string) => password.value.trim() ? true : t('form.validation.required')
   ]
 }))
 
-const { validateForm, getFieldError, shouldShowError, fieldErrors } = useFormValidation(
+const { validateForm, getFieldError, shouldShowError } = useFormValidation(
   validators.value,
   {
     callSign,

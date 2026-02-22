@@ -50,7 +50,7 @@ const form = ref({
 // Form validation setup
 const validators = computed(() => ({
   name: [
-    (value: string) => {
+    (_value: string) => {
       const name = form.value.name?.trim()
       return name && name.length > 0 ? true : t('form.validation.required')
     }

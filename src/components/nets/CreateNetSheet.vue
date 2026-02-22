@@ -108,22 +108,22 @@ const simplexRows = ref<SimplexRow[]>([{ checked: false, value: '' }])
 // Form validation setup
 const validators = computed(() => ({
   name: [
-    (value: string) => {
+    (_value: string) => {
       const netName = createMode.value === 'today' ? namePlain.value.trim() : nameTemplate.value.trim()
       return netName ? true : t('form.validation.required')
     }
   ],
   operator: [
-    (value: Operator | null) => selectedOperator.value ? true : t('form.validation.required')
+    (_value: Operator | null) => selectedOperator.value ? true : t('form.validation.required')
   ],
   branch: [
-    (value: string) => selectedBranchId.value ? true : t('form.validation.required')
+    (_value: string) => selectedBranchId.value ? true : t('form.validation.required')
   ],
   callSign: [
-    (value: string) => selectedCallSignId.value ? true : t('form.validation.required')
+    (_value: string) => selectedCallSignId.value ? true : t('form.validation.required')
   ],
   startDate: [
-    (value: string) => {
+    (_value: string) => {
       if (createMode.value === 'scheduled') {
         return startDate.value.trim().length > 0 ? true : t('form.validation.required')
       }
@@ -131,7 +131,7 @@ const validators = computed(() => ({
     }
   ],
   channels: [
-    (value: any) => {
+    (_value: any) => {
       const allCheckedRowsFilled = simplexRows.value
         .filter(row => row.checked)
         .every(row => row.value.trim())
@@ -153,27 +153,6 @@ const { validateForm, getFieldError, shouldShowError, fieldErrors } = useFormVal
     channels: selectedChannelIds
   }
 )
-
-const hasAtLeastOneChannelSelected = computed(
-  () =>
-    selectedChannelIds.value.length > 0 ||
-    simplexRows.value.some(row => row.checked && row.value.trim())
-)
-
-const isValid = computed(() => {
-  const allCheckedRowsFilled = simplexRows.value
-    .filter(row => row.checked)
-    .every(row => row.value.trim())
-  const base =
-    (createMode.value === 'today' ? namePlain.value.trim() : nameTemplate.value.trim()) &&
-    selectedOperator.value &&
-    selectedBranchId.value &&
-    selectedCallSignId.value &&
-    hasAtLeastOneChannelSelected.value &&
-    allCheckedRowsFilled
-  if (createMode.value === 'today') return base
-  return base && startDate.value.trim().length > 0
-})
 
 const tomorrowISO = computed(() => {
   const d = new Date()

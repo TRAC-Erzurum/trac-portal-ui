@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
@@ -25,7 +25,6 @@ const isLoading = ref(false)
 const isSubmitted = ref(false)
 
 const { validateForm, shouldShowError, getFieldError } = useFormValidation(
-  { currentPassword, newPassword, confirmPassword },
   {
     currentPassword: [
       (value: string) => value.trim() ? true : t('form.validation.required')
@@ -38,7 +37,8 @@ const { validateForm, shouldShowError, getFieldError } = useFormValidation(
       (value: string) => value.trim() ? true : t('form.validation.required'),
       (value: string) => value === newPassword.value ? true : 'Passwords do not match'
     ]
-  }
+  },
+  { currentPassword, newPassword, confirmPassword }
 )
 
 async function handleSubmit() {

@@ -102,7 +102,7 @@ const isLoadingCertificateTemplates = ref(false)
 // Form validation setup
 const validators = computed(() => ({
   name: [
-    (value: string) => name.value.trim() ? true : t('form.validation.required')
+    (_value: string) => name.value.trim() ? true : t('form.validation.required')
   ]
 }))
 
@@ -166,8 +166,6 @@ watch([() => props.open, () => props.schedulerId], () => {
     scheduler.value = null
   }
 })
-
-const isValid = computed(() => name.value.trim().length > 0)
 
 async function handleSubmit() {
   isSubmitted.value = true

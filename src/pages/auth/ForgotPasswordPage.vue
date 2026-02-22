@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { RouterLink, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { CallSignInput } from '@/components/ui/call-sign-input'
 import AuthLayout from '@/components/layout/AuthLayout.vue'
@@ -23,12 +22,12 @@ const isLoading = ref(false)
 const isSubmitted = ref(false)
 
 const { validateForm, shouldShowError, getFieldError } = useFormValidation(
-  { callSign },
   {
     callSign: [
       (value: string) => value.trim() ? true : t('form.validation.required')
     ]
-  }
+  },
+  { callSign }
 )
 
 async function handleSubmit() {
