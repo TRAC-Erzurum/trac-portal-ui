@@ -63,6 +63,16 @@ const currentPageLabel = computed(() => {
 const showBreadcrumb = computed(() => {
   return breadcrumbItems.value.length > 0
 })
+
+/** Do not repeat label when last item already links to current page (e.g. /communication-channels) */
+const displayCurrentLabel = computed(() => {
+  if (!currentPageLabel.value) return null
+  const items = breadcrumbItems.value
+  if (items.length === 0) return currentPageLabel.value
+  const last = items[items.length - 1]
+  if (last?.to === route.path) return null
+  return currentPageLabel.value
+})
 </script>
 
 <template>
@@ -74,8 +84,11 @@ const showBreadcrumb = computed(() => {
       >
         {{ item.label }}
       </router-link>
-      <ChevronRight class="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+      <ChevronRight
+        v-if="index < breadcrumbItems.length - 1 || displayCurrentLabel"
+        class="h-3 w-3 sm:h-3.5 sm:w-3.5"
+      />
     </template>
-    <span v-if="currentPageLabel" class="text-foreground truncate max-w-[200px] sm:max-w-none">{{ currentPageLabel }}</span>
+    <span v-if="displayCurrentLabel" class="text-foreground truncate max-w-[200px] sm:max-w-none">{{ displayCurrentLabel }}</span>
   </nav>
 </template>

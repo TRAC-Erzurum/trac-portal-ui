@@ -27,7 +27,6 @@ import { AppVersionBox } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
-import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { buildTutorialContent } from '@/lib/tutorial-content'
 import { api } from '@/lib/api'
@@ -43,6 +42,7 @@ import {
 } from '@/lib/maidenhead'
 import type { CommunicationChannel } from '@/types/communication-channel'
 import type { Map as LeafletMap } from 'leaflet'
+import { toast } from 'vue-sonner'
 
 const TURKEY_CENTER: [number, number] = [39.93, 32.85]
 const TURKEY_ZOOM = 6
@@ -81,7 +81,6 @@ const aprsIcon = createChannelIcon('aprs')
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
-const authStore = useAuthStore()
 const themeStore = useThemeStore()
 
 type MapBaseLayer = 'standard' | 'satellite' | 'terrain'
@@ -325,19 +324,6 @@ function syncFromUrl() {
     return
   }
 
-  const userGrid = authStore.user?.operator?.gridSquare?.trim()?.toUpperCase()
-  const userParsed = userGrid ? parseLocatorForMap(userGrid) : null
-  if (userParsed) {
-    const [a, b] = userParsed.bounds
-    center.value = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
-    zoom.value = getZoomForLocatorLength(userParsed.forConversion.length as 2 | 4 | 6 | 8 | 10)
-    selectedLocator.value = userParsed.display
-    selectedLatLng.value = [userParsed.wgs84.lat, userParsed.wgs84.lng]
-    locatorSearchQuery.value = userParsed.display
-    nextTick(() => mapRef.value?.setView(center.value, zoom.value))
-    return
-  }
-
   center.value = TURKEY_CENTER
   zoom.value = TURKEY_ZOOM
   selectedLocator.value = null
@@ -433,6 +419,7 @@ function onMarkerAdd(e: { target: { openPopup?: () => void; on?: (ev: string, fn
 function copyLocator() {
   if (!selectedLocator.value) return
   navigator.clipboard?.writeText(selectedLocator.value)
+  toast.success(t('map.locatorCopied'))
 }
 
 const mapUrl = computed(() =>
@@ -466,18 +453,21 @@ function copyDecimal() {
   const text = popupDecimalDisplay.value
   if (!text) return
   navigator.clipboard?.writeText(text)
+  toast.success(t('map.decimalCopied'))
 }
 
 function copyDMS() {
   const text = popupDMS.value
   if (!text) return
   navigator.clipboard?.writeText(text)
+  toast.success(t('map.dmsCopied'))
 }
 
 function shareMapLink() {
   if (!mapUrl.value) return
   const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}${mapUrl.value}` : mapUrl.value
   navigator.clipboard?.writeText(fullUrl)
+  toast.success(t('map.mapLinkCopied'))
 }
 
 // İlk render ÖNCE URL'den state al ki LMap/LMarker doğru değerle oluşsun; mount sonrası tekrar (fallback)

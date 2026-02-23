@@ -2,7 +2,7 @@
 import { computed, onMounted, provide, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { ClipboardList } from 'lucide-vue-next'
+import { Building2, ClipboardList, TowerControl, Users } from 'lucide-vue-next'
 import Breadcrumb from './Breadcrumb.vue'
 import BottomNav from './BottomNav.vue'
 import HeaderBranchDropdown from './HeaderBranchDropdown.vue'
@@ -11,6 +11,7 @@ import PendingApprovalBanner from './PendingApprovalBanner.vue'
 import Sidebar from './Sidebar.vue'
 import ThemeToggle from './ThemeToggle.vue'
 import UserMenu from './UserMenu.vue'
+import { toast } from 'vue-sonner'
 import { AppVersionBox } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
@@ -27,7 +28,7 @@ defineProps<{
   breadcrumbItems?: BreadcrumbItem[]
 }>()
 
-const sidebarCollapsed = ref(false)
+const sidebarCollapsed = ref(true)
 const logoLoaded = ref(false)
 const authStore = useAuthStore()
 const showPendingBanner = computed(() => authStore.isGuest)
@@ -51,6 +52,26 @@ const fetchPendingRequestsCount = async () => {
 
 const goToRequests = () => {
   router.push('/admin/requests')
+}
+
+function goToBranches() {
+  if (authStore.isGuest) {
+    toast.error(t('error.guestRestriction'))
+    return
+  }
+  router.push('/branches')
+}
+
+function goToOperators() {
+  if (authStore.isGuest) {
+    toast.error(t('error.guestRestriction'))
+    return
+  }
+  router.push('/operators')
+}
+
+function goToCommunicationChannels() {
+  router.push('/communication-channels')
 }
 
 onMounted(fetchPendingRequestsCount)
@@ -86,7 +107,7 @@ provide('refreshPendingRequestsCount', fetchPendingRequestsCount)
         <header class="flex items-center justify-between mb-3 lg:mb-4 gap-4 flex-shrink-0">
           <div class="flex items-center gap-3 min-w-0 flex-1">
             <div class="lg:hidden">
-              <HeaderBranchDropdown />
+              <HeaderBranchDropdown compact />
             </div>
             <div class="hidden lg:block min-w-0 flex-1">
               <h1 v-if="title" class="text-2xl lg:text-3xl font-bold truncate">{{ title }}</h1>
@@ -105,6 +126,38 @@ provide('refreshPendingRequestsCount', fetchPendingRequestsCount)
               <span class="hidden sm:inline">{{ t('admin.pendingRequests') }}</span>
               <span class="tabular-nums">({{ pendingRequestsCount }})</span>
             </Button>
+            <div class="lg:hidden flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                :aria-label="t('nav.branches')"
+                :title="t('nav.branches')"
+                @click="goToBranches"
+              >
+                <Building2 class="h-4 w-4 sm:mr-2" />
+                <span class="hidden sm:inline">{{ t('nav.branches') }}</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                :aria-label="t('nav.operators')"
+                :title="t('nav.operators')"
+                @click="goToOperators"
+              >
+                <Users class="h-4 w-4 sm:mr-2" />
+                <span class="hidden sm:inline">{{ t('nav.operators') }}</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                :aria-label="t('nav.communicationChannels')"
+                :title="t('nav.communicationChannels')"
+                @click="goToCommunicationChannels"
+              >
+                <TowerControl class="h-4 w-4 sm:mr-2" />
+                <span class="hidden sm:inline">{{ t('nav.communicationChannels') }}</span>
+              </Button>
+            </div>
             <UserMenu />
           </div>
         </header>

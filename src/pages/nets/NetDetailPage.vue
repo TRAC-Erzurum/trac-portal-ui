@@ -5,7 +5,12 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   Award,
   Clock,
+  Download,
+  FileSpreadsheet,
+  Image,
   MapPin,
+  Printer,
+  Share2,
   TrendingUp,
   Users,
 } from 'lucide-vue-next'
@@ -25,12 +30,21 @@ import { translateError } from '@/i18n'
 import { getReportExportStyles, REPORT_EXPORT_WIDTH } from '@/lib/reportExportStyles'
 import EditAttendeeSheet from '@/components/nets/EditAttendeeSheet.vue'
 import EditNetSheet from '@/components/nets/EditNetSheet.vue'
+import ShareReportSheet from '@/components/nets/ShareReportSheet.vue'
 import ExportReportTemplate from '@/components/nets/ExportReportTemplate.vue'
 import NetHeader from '@/components/nets/NetHeader.vue'
 import AddAttendeePanel from '@/components/nets/AddAttendeePanel.vue'
 import AttendeeList from '@/components/nets/AttendeeList.vue'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
+import { Button } from '@/components/ui/button'
 import html2canvas from 'html2canvas'
+import QRCode from 'qrcode'
 import type { Map as LeafletMap } from 'leaflet'
 
 // Extend Leaflet with MarkerClusterGroup (side effect)
@@ -126,6 +140,11 @@ const isEditNetSheetOpen = ref(false)
 const exportTemplateRef = ref<InstanceType<typeof ExportReportTemplate> | null>(null)
 const exportAttendees = ref<Attendee[]>([])
 const isExporting = ref(false)
+const isSharing = ref(false)
+const shareDialogOpen = ref(false)
+const shareToken = ref('')
+const shareUrl = ref('')
+const shareQrDataUrl = ref('')
 const certificatePreview = ref<CertificatePreview | null>(null)
 const isLoadingCertificatePreview = ref(false)
 
@@ -345,6 +364,40 @@ watch(
   { immediate: true }
 )
 
+let shareReportEventSource: EventSource | null = null
+
+function connectShareReportSSE() {
+  if (shareReportEventSource) return
+  const url = `${API_BASE}/net/report/share/sse`
+  const es = new EventSource(url)
+  es.onmessage = (e: MessageEvent) => {
+    try {
+      const data = JSON.parse(e.data) as { token?: string }
+      if (data?.token && shareDialogOpen.value && shareToken.value === data.token) {
+        toast.success(t('netDetail.shareLinkOpened'))
+        shareDialogOpen.value = false
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }
+  es.onerror = () => {
+    es.close()
+    shareReportEventSource = null
+  }
+  shareReportEventSource = es
+}
+
+function closeShareReportSSE() {
+  shareReportEventSource?.close()
+  shareReportEventSource = null
+}
+
+watch(shareDialogOpen, (open) => {
+  if (open) connectShareReportSSE()
+  else closeShareReportSSE()
+})
+
 onMounted(() => {
   Promise.all([fetchNet(), fetchAttendees()]).then(async () => {
     if (net.value && netStatus.value === 'completed') {
@@ -361,6 +414,8 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  shareReportEventSource?.close()
+  shareReportEventSource = null
   if (resizeObserver && leftStatsRef.value) {
     resizeObserver.disconnect()
   }
@@ -725,6 +780,41 @@ const exportToPng = async () => {
   }
 }
 
+const generateReportPngBlob = async (): Promise<Blob | null> => {
+  const canvas = await captureReportCanvas()
+  if (!canvas) return null
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob ?? null), 'image/png', 1)
+  })
+}
+
+const openShareFlow = async () => {
+  if (!net.value || isSharing.value || isExporting.value) return
+  isSharing.value = true
+  try {
+    const data = await api.post<{ token: string }>(`/net/${route.params.id}/report/share`)
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : ''
+    const url = `${baseUrl}/share-report/${data.token}`
+    shareToken.value = data.token
+    shareUrl.value = url
+    const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024
+    if (isDesktop) {
+      shareQrDataUrl.value = await QRCode.toDataURL(url, { width: 256, margin: 1 })
+      shareDialogOpen.value = true
+    } else {
+      window.location.href = url
+    }
+  } catch (e: unknown) {
+    if ((e as Error)?.name === 'AbortError') {
+      return
+    }
+    const msg = (e as { message?: string })?.message ?? (e instanceof Error ? e.message : null) ?? 'error.serverError'
+    toast.error(translateError(msg))
+  } finally {
+    isSharing.value = false
+  }
+}
+
 const exportToPdf = async () => {
   if (!net.value) return
   try {
@@ -826,6 +916,7 @@ const fetchComparePrevious = async () => {
         @export-pdf="exportToPdf"
         @export-png="exportToPng"
         @export-certificates="exportCertificates"
+        @share-report="openShareFlow"
       >
         <template v-if="net?.certificateTemplate && (certificatePreviewImageUrl || isLoadingCertificatePreview)" #certificate>
           <div class="rounded-lg border border-border/50 bg-muted/30 overflow-hidden">
@@ -1052,16 +1143,66 @@ const fetchComparePrevious = async () => {
             {{ t('netDetail.attendees') }}
             <span class="text-muted-foreground font-normal">({{ attendees.length }})</span>
           </h2>
-          <Button
-            v-if="showDownloadMyCertificate && myAttendee"
-            variant="outline"
-            size="sm"
-            class="gap-2"
-            @click="downloadCertificate(myAttendee)"
-          >
-            <Award class="h-4 w-4" />
-            {{ t('netDetail.downloadMyCertificate') }}
-          </Button>
+          <div class="flex flex-wrap items-center gap-2 ml-auto">
+            <Button
+              v-if="showDownloadMyCertificate && myAttendee"
+              variant="outline"
+              size="sm"
+              class="gap-2"
+              @click="downloadCertificate(myAttendee)"
+            >
+              <Award class="h-4 w-4" />
+              {{ t('netDetail.downloadMyCertificate') }}
+            </Button>
+            <template v-if="attendees.length > 0">
+              <DropdownMenu>
+                <DropdownMenuTrigger as-child>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="hidden lg:flex"
+                    :disabled="isExporting"
+                  >
+                    <Download class="h-4 w-4 mr-2" />
+                    {{ t('netDetail.export') }}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem @click="exportToCsv" class="gap-2 cursor-pointer">
+                    <FileSpreadsheet class="h-4 w-4" />
+                    CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="exportToPdf" class="gap-2 cursor-pointer" :disabled="isExporting">
+                    <Printer class="h-4 w-4" />
+                    PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem @click="exportToPng" class="gap-2 cursor-pointer" :disabled="isExporting">
+                    <Image class="h-4 w-4" />
+                    PNG
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    v-if="net?.certificateTemplate && netStatus === 'completed'"
+                    @click="exportCertificates"
+                    class="gap-2 cursor-pointer"
+                    :disabled="isExporting"
+                  >
+                    <Award class="h-4 w-4" />
+                    {{ t('certificates.downloadAll') }}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                variant="outline"
+                size="sm"
+                class="gap-2 hidden lg:flex"
+                :disabled="isSharing || isExporting"
+                @click="openShareFlow"
+              >
+                <Share2 class="h-4 w-4" />
+                {{ t('netDetail.share') }}
+              </Button>
+            </template>
+          </div>
         </div>
 
         <AddAttendeePanel
@@ -1116,5 +1257,12 @@ const fetchComparePrevious = async () => {
       :branch-is-headquarters="net.branch?.isHeadquarters"
       :communication-channels="net.communicationChannels"
     />
+
   </AppLayout>
+  <ShareReportSheet
+    :open="shareDialogOpen"
+    :share-url="shareUrl"
+    :share-qr-data-url="shareQrDataUrl"
+    @update:open="shareDialogOpen = $event"
+  />
 </template>

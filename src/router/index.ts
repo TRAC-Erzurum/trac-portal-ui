@@ -122,6 +122,12 @@ const router = createRouter({
       meta: { requiresAuth: false, titleKey: 'map.title' }
     },
     {
+      path: '/share-report/:token',
+      name: 'share-report',
+      component: () => import('@/pages/ShareReportPage.vue'),
+      meta: { requiresAuth: false, titleKey: 'netDetail.shareReport' }
+    },
+    {
       path: '/privacy',
       name: 'privacy',
       component: () => import('@/pages/PrivacyPage.vue'),
