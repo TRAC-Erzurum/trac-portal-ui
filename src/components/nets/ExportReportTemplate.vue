@@ -7,17 +7,16 @@ import { formatCommunicationChannelLabel } from '@/lib/formatters'
 interface Attendee {
   id: string
   callSign: string
-  name?: string
-  city?: string
-  district?: string
-  readability?: number
-  signalStrength?: number
+  name?: string | null
+  city?: string | null
+  district?: string | null
+  readability?: number | null
+  signalStrength?: number | null
   createdAt: string
 }
 
 interface NetCommunicationChannel {
   id: string
-  communicationChannelId?: string
   isSimplexAdHoc?: boolean
   simplexFrequency?: string
   communicationChannel?: {

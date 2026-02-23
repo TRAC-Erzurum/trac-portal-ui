@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Building2, Home, PanelLeft, PanelLeftClose, Radio, Users } from 'lucide-vue-next'
+import { Building2, Home, Map, PanelLeft, PanelLeftClose, Radio, TowerControl, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import HeaderBranchDropdown from './HeaderBranchDropdown.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -16,16 +16,21 @@ const emit = defineEmits<{
   'update:collapsed': [value: boolean]
 }>()
 
+const sidebarHovered = ref(false)
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
+const effectiveExpanded = computed(() => !props.collapsed || sidebarHovered.value)
+
 const navItems = computed(() => [
   { icon: Home, label: t('nav.dashboard'), route: '/dashboard', restricted: false },
   { icon: Radio, label: t('nav.nets'), route: '/nets', restricted: true },
-  { icon: Users, label: t('nav.operators'), route: '/operators', restricted: true },
+  { icon: Map, label: t('nav.map'), route: '/map', restricted: false },
   { icon: Building2, label: t('nav.branches'), route: '/branches', restricted: true },
+  { icon: Users, label: t('nav.operators'), route: '/operators', restricted: true },
+  { icon: TowerControl, label: t('nav.communicationChannels'), route: '/communication-channels', restricted: false },
 ])
 
 function isActive(path: string) {
@@ -54,12 +59,14 @@ function toggleCollapse() {
   <aside
     :class="[
       'hidden lg:flex flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 fixed top-0 left-0 z-40',
-      collapsed ? 'w-16' : 'w-64'
+      effectiveExpanded ? 'w-64' : 'w-16'
     ]"
+    @mouseenter="sidebarHovered = true"
+    @mouseleave="sidebarHovered = false"
   >
     <div
-      v-if="!collapsed"
-      class="h-16 border-b border-sidebar-border flex items-center"
+      v-if="effectiveExpanded"
+      class="h-16 border-b border-sidebar-border flex items-center flex-shrink-0"
     >
       <HeaderBranchDropdown />
     </div>
@@ -72,21 +79,21 @@ function toggleCollapse() {
         @click="handleNavClick(item, $event)"
         :class="[
           'flex items-center gap-3 rounded-md transition-colors cursor-pointer',
-          collapsed ? 'justify-center px-2 py-2' : 'px-3 py-2',
+          effectiveExpanded ? 'px-3 py-2' : 'justify-center px-2 py-2',
           isActive(item.route)
             ? 'bg-sidebar-accent text-sidebar-accent-foreground'
             : isRestricted(item)
               ? 'text-sidebar-foreground/50 hover:bg-sidebar-accent/30'
               : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
         ]"
-        :title="collapsed ? item.label : undefined"
+        :title="!effectiveExpanded ? item.label : undefined"
       >
         <component :is="item.icon" class="h-5 w-5 flex-shrink-0" />
-        <span v-if="!collapsed" class="truncate">{{ item.label }}</span>
+        <span v-if="effectiveExpanded" class="truncate">{{ item.label }}</span>
       </a>
     </nav>
 
-    <div class="p-2 border-t border-sidebar-border">
+    <div class="p-2 border-t border-sidebar-border flex-shrink-0">
       <Button
         variant="ghost"
         size="icon"

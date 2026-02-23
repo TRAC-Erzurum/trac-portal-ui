@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Home, Radio, Users, Building2 } from 'lucide-vue-next'
+import { Home, Map, Radio } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
 
 const { t } = useI18n()
@@ -14,8 +14,7 @@ const authStore = useAuthStore()
 const navItems = computed(() => [
   { icon: Home, label: t('nav.dashboard'), route: '/dashboard', restricted: false },
   { icon: Radio, label: t('nav.nets'), route: '/nets', restricted: true },
-  { icon: Users, label: t('nav.operators'), route: '/operators', restricted: true },
-  { icon: Building2, label: t('nav.branches'), route: '/branches', restricted: true },
+  { icon: Map, label: t('nav.map'), route: '/map', restricted: false },
 ])
 
 function isActive(path: string) {

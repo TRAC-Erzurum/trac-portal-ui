@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Award, Building2, ChevronDown, Play, RotateCcw, Square, TowerControl, Users, XCircle, Radio, Clock, Settings, Download, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
+import { Award, Building2, ChevronDown, Play, RotateCcw, Square, TowerControl, Users, XCircle, Radio, Clock, Settings, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { MobileFab } from '@/components/shared'
@@ -77,6 +77,7 @@ const emit = defineEmits<{
   exportPdf: []
   exportPng: []
   exportCertificates: []
+  shareReport: []
 }>()
 
 const { t } = useI18n()
@@ -170,6 +171,7 @@ const handleFabAction = (key: string) => {
     case 'startWithout': emit('start', false); break
     case 'end': emit('end'); break
     case 'restart': emit('restart'); break
+    case 'shareReport': emit('shareReport'); break
     case 'exportCsv': emit('exportCsv'); break
     case 'exportPdf': emit('exportPdf'); break
     case 'exportPng': emit('exportPng'); break
@@ -295,37 +297,6 @@ const handleFabAction = (key: string) => {
         <RotateCcw class="h-4 w-4 mr-2" />
         {{ netStatus === 'cancelled' ? t('netDetail.undoCancellation') : t('netDetail.restart') }}
       </Button>
-      <DropdownMenu v-if="netStatus !== 'pending' && netStatus !== 'cancelled' && attendeesCount > 0">
-        <DropdownMenuTrigger as-child>
-          <Button variant="outline" size="sm" class="min-w-[10rem]" :disabled="isExporting">
-            <Download class="h-4 w-4 mr-2" />
-            {{ t('netDetail.export') }}
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem @click="emit('exportCsv')" class="gap-2 cursor-pointer">
-            <FileSpreadsheet class="h-4 w-4" />
-            CSV
-          </DropdownMenuItem>
-          <DropdownMenuItem @click="emit('exportPdf')" class="gap-2 cursor-pointer" :disabled="isExporting">
-            <Printer class="h-4 w-4" />
-            PDF
-          </DropdownMenuItem>
-          <DropdownMenuItem @click="emit('exportPng')" class="gap-2 cursor-pointer" :disabled="isExporting">
-            <Image class="h-4 w-4" />
-            PNG
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            v-if="net.certificateTemplate && netStatus === 'completed'"
-            @click="emit('exportCertificates')"
-            class="gap-2 cursor-pointer"
-            :disabled="isExporting"
-          >
-            <Award class="h-4 w-4" />
-            {{ t('certificates.downloadAll') }}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
     </div>
     <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
   </div>

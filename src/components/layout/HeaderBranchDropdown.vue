@@ -15,6 +15,11 @@ import { useBranchStore } from '@/stores/branch'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 
+defineProps<{
+  /** When true, only logo + chevron shown (e.g. mobile header) */
+  compact?: boolean
+}>()
+
 const { t } = useI18n()
 const branchStore = useBranchStore()
 const authStore = useAuthStore()
@@ -51,7 +56,7 @@ onMounted(() => {
   <div v-if="authStore.isAuthenticated && displayBranches.length > 0" class="w-full">
     <div v-if="!branchStore.hasMultipleBranches" class="flex items-center gap-3 px-3 py-2 text-sm">
       <img src="/logo-s.svg" alt="TRAC" class="h-6 w-6 flex-shrink-0" />
-      <span class="font-medium truncate">{{ currentBranchName }}</span>
+      <span v-if="!compact" class="font-medium truncate">{{ currentBranchName }}</span>
     </div>
     
     <DropdownMenu v-else>
@@ -60,7 +65,7 @@ onMounted(() => {
         :disabled="isSwitching"
       >
         <img src="/logo-s.svg" alt="TRAC" class="h-6 w-6 flex-shrink-0" />
-        <span class="truncate flex-1 text-left">{{ currentBranchName }}</span>
+        <span v-if="!compact" class="truncate flex-1 text-left">{{ currentBranchName }}</span>
         <Loader2 v-if="isSwitching" class="h-4 w-4 animate-spin text-muted-foreground flex-shrink-0" />
         <ChevronDown v-else class="h-4 w-4 text-muted-foreground flex-shrink-0" />
       </DropdownMenuTrigger>

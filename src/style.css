@@ -165,6 +165,11 @@
   }
 }
 
+/* Leaflet z-index: harita her zaman sayfa UI'ının (header, FAB, butonlar, sheet, dropdown) altında kalsın */
+.leaflet-container {
+  z-index: 0;
+}
+
 /* Leaflet popup: varsayılan sağ üst kapatma kullanılmıyor, popup içindeki buton kullanılıyor */
 .leaflet-container a.leaflet-popup-close-button {
   display: none;
