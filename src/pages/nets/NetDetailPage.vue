@@ -780,14 +780,6 @@ const exportToPng = async () => {
   }
 }
 
-const generateReportPngBlob = async (): Promise<Blob | null> => {
-  const canvas = await captureReportCanvas()
-  if (!canvas) return null
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => resolve(blob ?? null), 'image/png', 1)
-  })
-}
-
 const openShareFlow = async () => {
   if (!net.value || isSharing.value || isExporting.value) return
   isSharing.value = true

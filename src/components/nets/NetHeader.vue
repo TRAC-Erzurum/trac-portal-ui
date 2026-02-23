@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Award, Building2, ChevronDown, Play, RotateCcw, Share2, Square, TowerControl, Users, XCircle, Radio, Clock, Settings, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
+import { Award, Building2, ChevronDown, Play, RotateCcw, Square, TowerControl, Users, XCircle, Radio, Clock, Settings, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { MobileFab } from '@/components/shared'
