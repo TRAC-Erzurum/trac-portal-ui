@@ -35,12 +35,6 @@ import ExportReportTemplate from '@/components/nets/ExportReportTemplate.vue'
 import NetHeader from '@/components/nets/NetHeader.vue'
 import AddAttendeePanel from '@/components/nets/AddAttendeePanel.vue'
 import AttendeeList from '@/components/nets/AttendeeList.vue'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import html2canvas from 'html2canvas'
