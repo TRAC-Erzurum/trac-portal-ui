@@ -45,6 +45,11 @@ interface SelectedEntry {
   picture?: string | null
 }
 
+type SuggestionItem =
+  | { type: 'enabled'; operator: Operator }
+  | { type: 'disabled'; operator: Operator }
+  | { type: 'create' }
+
 interface Props {
   netId: string
   attendees: Attendee[]
@@ -99,6 +104,21 @@ const canAddNew = computed(() => {
   return !existsInSuggestions
 })
 
+const suggestionItems = computed<SuggestionItem[]>(() => {
+  const items: SuggestionItem[] = enabledSuggestions.value.map((operator) => ({
+    type: 'enabled',
+    operator
+  }))
+  items.push(
+    ...disabledSuggestions.value.map((operator) => ({
+      type: 'disabled' as const,
+      operator
+    }))
+  )
+  if (canAddNew.value) items.push({ type: 'create' })
+  return items
+})
+
 const formatOperatorCallSign = (op: Operator) => {
   const parts = [op.prefix, op.callSign, op.suffix].filter(Boolean)
   return parts.join('/')
@@ -136,6 +156,16 @@ watch(searchQuery, (val) => {
   }
 })
 
+watch(suggestionItems, (items) => {
+  if (!items.length) {
+    selectedIndex.value = 0
+    return
+  }
+  if (selectedIndex.value >= items.length) {
+    selectedIndex.value = items.length - 1
+  }
+})
+
 watch(() => selectedEntry.value?.city, (newCity) => {
   if (isSelectingOperator.value) return
   if (selectedEntry.value && newCity) {
@@ -143,7 +173,7 @@ watch(() => selectedEntry.value?.city, (newCity) => {
   }
 })
 
-const selectOperatorFromSuggestion = (op: Operator) => {
+const selectOperatorFromSuggestion = async (op: Operator) => {
   isSelectingOperator.value = true
   selectedEntry.value = {
     callSign: (op.callSign || '').trim(),
@@ -158,11 +188,11 @@ const selectOperatorFromSuggestion = (op: Operator) => {
   }
   showSuggestions.value = false
 
-  nextTick(() => {
-    isSelectingOperator.value = false
-    const citySelect = entryPanelRef.value?.querySelector('[data-city-select] button') as HTMLElement
-    citySelect?.focus()
-  })
+  await nextTick()
+  isSelectingOperator.value = false
+
+  const citySelect = entryPanelRef.value?.querySelector('[data-city-select] button') as HTMLElement
+  citySelect?.focus()
 }
 
 const createNewEntry = () => {
@@ -235,11 +265,12 @@ const handleSearchKeyDown = (e: KeyboardEvent) => {
     }
     return
   }
-  
+
   if (!showSuggestions.value) return
-  
-  const totalItems = enabledSuggestions.value.length + (canAddNew.value ? 1 : 0)
-  
+
+  const totalItems = suggestionItems.value.length
+  if (totalItems === 0) return
+
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     selectedIndex.value = (selectedIndex.value + 1) % totalItems
@@ -248,12 +279,11 @@ const handleSearchKeyDown = (e: KeyboardEvent) => {
     selectedIndex.value = selectedIndex.value === 0 ? totalItems - 1 : selectedIndex.value - 1
   } else if (e.key === 'Enter') {
     e.preventDefault()
-    if (selectedIndex.value < enabledSuggestions.value.length) {
-      const selectedOp = enabledSuggestions.value[selectedIndex.value]
-      if (selectedOp) {
-        selectOperatorFromSuggestion(selectedOp)
-      }
-    } else if (canAddNew.value) {
+    const item = suggestionItems.value[selectedIndex.value]
+    if (!item) return
+    if (item.type === 'enabled') {
+      selectOperatorFromSuggestion(item.operator)
+    } else if (item.type === 'create') {
       createNewEntry()
     }
   }
@@ -278,14 +308,32 @@ const handleClickOutside = (e: MouseEvent) => {
   }
 }
 
+const handleGlobalEntryHotkeys = (e: KeyboardEvent) => {
+  if (!selectedEntry.value) return
+
+  // Skip if any select/combobox dropdown is open
+  const dropdownOpen = document.querySelector('[data-slot="select-content"]') || document.querySelector('[role="listbox"]')
+  if (dropdownOpen) return
+
+  if (e.key === 'Escape') {
+    e.preventDefault()
+    clearEntry()
+  } else if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
+    submitEntry()
+  }
+}
+
 onMounted(() => {
   loadCities()
   document.addEventListener('click', handleClickOutside)
+  document.addEventListener('keydown', handleGlobalEntryHotkeys, true)
   focusSearchInput()
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
+  document.removeEventListener('keydown', handleGlobalEntryHotkeys, true)
 })
 </script>
 
@@ -319,69 +367,84 @@ onUnmounted(() => {
           </div>
           
           <template v-else>
-            <button
-              v-for="(op, index) in enabledSuggestions"
-              :key="op.id"
-              type="button"
-              @click="selectOperatorFromSuggestion(op)"
-              class="w-full flex items-center gap-3 p-3 text-left transition-colors"
-              :class="{
-                'bg-primary/10': selectedIndex === index,
-                'hover:bg-muted/50': selectedIndex !== index
-              }"
-            >
-              <div class="flex-1 min-w-0">
-                <div class="font-semibold flex items-center gap-2">
-                  {{ formatOperatorCallSign(op) }}
-                  <span
-                    v-if="op.isBranchMember"
-                    class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-primary/20 text-primary"
-                    :title="t('netDetail.branchMemberTooltip')"
-                  >
-                    {{ t('netDetail.branchMember') }}
-                  </span>
+            <template v-if="suggestionItems.length">
+              <div
+                v-for="(item, index) in suggestionItems"
+                :key="item.type === 'create' ? 'create' : `${item.type}-${item.operator.id}`"
+              >
+                <button
+                  v-if="item.type === 'enabled'"
+                  type="button"
+                  @click="selectOperatorFromSuggestion(item.operator)"
+                  class="w-full flex items-center gap-3 p-3 text-left transition-colors"
+                  :class="{
+                    'bg-primary/10': selectedIndex === index,
+                    'hover:bg-muted/50': selectedIndex !== index
+                  }"
+                >
+                  <div class="flex-1 min-w-0">
+                    <div class="font-semibold flex items-center gap-2">
+                      {{ formatOperatorCallSign(item.operator) }}
+                      <span
+                        v-if="item.operator.isBranchMember"
+                        class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-primary/20 text-primary"
+                        :title="t('netDetail.branchMemberTooltip')"
+                      >
+                        {{ t('netDetail.branchMember') }}
+                      </span>
+                    </div>
+                    <div class="text-sm text-muted-foreground truncate">
+                      {{ item.operator.fullName || item.operator.user?.fullName || '-' }}
+                      <span v-if="item.operator.city"> · {{ item.operator.city }}</span>
+                    </div>
+                  </div>
+                </button>
+
+                <div
+                  v-else-if="item.type === 'disabled'"
+                  class="w-full flex items-center gap-3 p-3 text-left transition-colors cursor-not-allowed opacity-60"
+                  :class="{ 'bg-muted/70': selectedIndex === index }"
+                >
+                  <div class="flex-1 min-w-0">
+                    <div class="font-semibold flex items-center gap-2">
+                      {{ formatOperatorCallSign(item.operator) }}
+                      <span
+                        v-if="item.operator.isBranchMember"
+                        class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-primary/20 text-primary"
+                        :title="t('netDetail.branchMemberTooltip')"
+                      >
+                        {{ t('netDetail.branchMember') }}
+                      </span>
+                    </div>
+                    <div class="text-sm text-muted-foreground">{{ t('netDetail.alreadyAdded') }}</div>
+                  </div>
+                  <Check class="h-4 w-4 flex-shrink-0" />
                 </div>
-                <div class="text-sm text-muted-foreground truncate">
-                  {{ op.fullName || op.user?.fullName || '-' }}
-                  <span v-if="op.city"> · {{ op.city }}</span>
-                </div>
+
+                <button
+                  v-else
+                  type="button"
+                  @click="createNewEntry"
+                  class="w-full flex items-center gap-3 p-3 text-left border-t border-border transition-colors"
+                  :class="{
+                    'bg-green-500/10': selectedIndex === index,
+                    'hover:bg-green-500/5': selectedIndex !== index
+                  }"
+                >
+                  <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <Plus class="h-4 w-4 text-green-500" />
+                  </div>
+                  <div class="flex-1">
+                    <div class="font-semibold text-green-500">{{ searchQuery.toUpperCase() }}</div>
+                    <div class="text-sm text-muted-foreground">{{ t('netDetail.createNew') }}</div>
+                  </div>
+                </button>
               </div>
-            </button>
-            
-            <div
-              v-for="op in disabledSuggestions"
-              :key="`disabled-${op.id}`"
-              class="w-full flex items-center gap-3 p-3 text-left opacity-50 cursor-not-allowed"
-            >
-              <div class="flex-1 min-w-0">
-                <div class="font-semibold">{{ formatOperatorCallSign(op) }}</div>
-                <div class="text-sm text-muted-foreground">{{ t('netDetail.alreadyAdded') }}</div>
-              </div>
-              <Check class="h-4 w-4 flex-shrink-0" />
-            </div>
-            
-            <div v-if="enabledSuggestions.length === 0 && disabledSuggestions.length === 0 && !canAddNew" class="p-3 text-center text-muted-foreground">
+            </template>
+
+            <div v-else class="p-3 text-center text-muted-foreground">
               {{ t('operators.noResults') }}
             </div>
-            
-            <button
-              v-if="canAddNew"
-              type="button"
-              @click="createNewEntry"
-              class="w-full flex items-center gap-3 p-3 text-left border-t border-border transition-colors"
-              :class="{
-                'bg-green-500/10': selectedIndex === enabledSuggestions.length,
-                'hover:bg-green-500/5': selectedIndex !== enabledSuggestions.length
-              }"
-            >
-              <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                <Plus class="h-4 w-4 text-green-500" />
-              </div>
-              <div class="flex-1">
-                <div class="font-semibold text-green-500">{{ searchQuery.toUpperCase() }}</div>
-                <div class="text-sm text-muted-foreground">{{ t('netDetail.createNew') }}</div>
-              </div>
-            </button>
           </template>
         </div>
       </div>

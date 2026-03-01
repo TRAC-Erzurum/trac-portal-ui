@@ -27,7 +27,7 @@ const reportData = ref<{
     name: string;
     startedAt?: string;
     endedAt?: string;
-    operator: { callSign: string };
+    operator: { callSign: string; fullName?: string | null };
     branch?: { name: string; isHeadquarters?: boolean };
     branchCallSign?: { callSign: string } | null;
     communicationChannels?: Array<{
@@ -223,6 +223,7 @@ onMounted(async () => {
       ref="exportTemplateRef"
       :net-name="reportData.net.name"
       :operator-call-sign="reportData.net.operator.callSign"
+      :operator-name="reportData.net.operator.fullName"
       :attendees="reportData.attendees"
       :date-info="dateInfo"
       :branch-name="reportData.net.branch?.name"

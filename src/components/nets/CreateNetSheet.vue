@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import NameTemplateInput from '@/components/nets/NameTemplateInput.vue'
-import { translateError } from '@/i18n'
+import { translateError, i18n as i18nInstance } from '@/i18n'
 import { formatCommunicationChannelLabel } from '@/lib/formatters'
 import { api, type ApiError } from '@/lib/api'
 import { debounce } from '@/lib/utils'
@@ -45,7 +45,7 @@ const emit = defineEmits<{
   'created': []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const branchStore = useBranchStore()
 const authStore = useAuthStore()
 
@@ -63,7 +63,13 @@ const SCHEDULER_PLACEHOLDER_KEYS = [
 ] as const
 
 const createMode = ref<'today' | 'scheduled'>('today')
-const nameTemplate = ref('{{branch_callsign}} {{day}} {{month}} {{year}} Çevrimi')
+const nameTemplateDefault = computed(() => {
+  const currentLocale = locale.value ?? i18nInstance.global.locale.value
+  const messages = i18nInstance.global.getLocaleMessage(currentLocale as string) as Record<string, any>
+  const nets = messages?.nets as Record<string, string> | undefined
+  return nets?.nameTemplateDefault ?? ''
+})
+const nameTemplate = ref(nameTemplateDefault.value)
 const namePlain = ref('')
 const scheduledTime = ref('20:00')
 const estimatedDurationMinutes = ref(30)
@@ -135,7 +141,7 @@ const validators = computed(() => ({
       const allCheckedRowsFilled = simplexRows.value
         .filter(row => row.checked)
         .every(row => row.value.trim())
-      const hasChannels = selectedChannelIds.value.length > 0 || 
+      const hasChannels = selectedChannelIds.value.length > 0 ||
         simplexRows.value.some(row => row.checked && row.value.trim())
       return (hasChannels && allCheckedRowsFilled) ? true : t('nets.atLeastOneInfrastructureOrSimplexRequired')
     }
@@ -163,25 +169,31 @@ const minStartDate = computed(() =>
   createMode.value === 'scheduled' ? tomorrowISO.value : undefined
 )
 
-const namePreview = computed(() => {
+const getBranchForTemplate = () => {
   const branchId = selectedBranchId.value
-  const branch =
+  return (
     availableBranches.value.find(b => b.id === branchId) ??
     branchStore.approvedBranches.find(b => b.id === branchId) ??
     (branchStore.currentBranch?.id === branchId ? branchStore.currentBranch : null)
+  )
+}
+
+const formatTemplateString = (source: string, date: Date | null) => {
+  const branch = getBranchForTemplate()
   const branchName = branch?.name ?? ''
-  const branchCallsign = branchCallSigns.value.find(c => c.id === selectedCallSignId.value)?.callSign ?? ''
-  const dateForPreview = createMode.value === 'today'
-    ? new Date()
-    : startDate.value ? new Date(startDate.value + 'T12:00:00') : null
-  const day = dateForPreview ? String(dateForPreview.getDate()).padStart(2, '0') : ''
-  const month = dateForPreview ? dateForPreview.toLocaleDateString('tr-TR', { month: 'long' }) : ''
-  const year = dateForPreview ? String(dateForPreview.getFullYear()) : ''
-  const dayOfWeek = dateForPreview ? dateForPreview.toLocaleDateString('tr-TR', { weekday: 'long' }) : ''
+  const branchCallsign =
+    branchCallSigns.value.find(c => c.id === selectedCallSignId.value)?.callSign ??
+    branchCallSigns.value[0]?.callSign ?? ''
+  const day = date ? String(date.getDate()).padStart(2, '0') : ''
+  const localeCode = locale.value ?? 'tr-TR'
+  const month = date
+    ? date.toLocaleDateString(localeCode, { month: 'long' })
+    : ''
+  const year = date ? String(date.getFullYear()) : ''
+  const dayOfWeek = date ? date.toLocaleDateString(localeCode, { weekday: 'long' }) : ''
   const time = scheduledTime.value || '20:00'
   const operatorCallsign = selectedOperator.value?.callSign ?? ''
   const operatorName = selectedOperator.value?.fullName ?? selectedOperator.value?.user?.fullName ?? ''
-  const source = createMode.value === 'today' ? namePlain.value : nameTemplate.value
   return source
     .replace(/\{\{branch_name\}\}/gi, branchName)
     .replace(/\{\{branch_callsign\}\}/gi, branchCallsign)
@@ -193,7 +205,19 @@ const namePreview = computed(() => {
     .replace(/\{\{operator_callsign\}\}/g, operatorCallsign)
     .replace(/\{\{operator_name\}\}/g, operatorName)
     .replace(/\{\{[^}]*\}\}/g, '')
+}
+
+const namePreview = computed(() => {
+  const dateForPreview = createMode.value === 'today'
+    ? new Date()
+    : startDate.value ? new Date(startDate.value + 'T12:00:00') : null
+  const source = createMode.value === 'today' ? namePlain.value : nameTemplate.value
+  return formatTemplateString(source, dateForPreview)
 })
+
+const updateInstantName = () => {
+  namePlain.value = formatTemplateString(nameTemplate.value, new Date())
+}
 
 const loadAvailableBranches = async () => {
   try {
@@ -214,7 +238,7 @@ const loadBranchCallSigns = async (branchId: string) => {
     selectedCallSignId.value = ''
     return
   }
-  
+
   isLoadingCallSigns.value = true
   try {
     const branch = await api.get<Branch>(`/branches/${branchId}`)
@@ -236,7 +260,7 @@ const loadChannels = async (branchId: string) => {
     selectedChannelIds.value = []
     return
   }
-  
+
   isLoadingChannels.value = true
   try {
     const response = await api.get<{ data: CommunicationChannel[]; total: number }>(`/branches/${branchId}/communication-channel?pageSize=100`)
@@ -281,6 +305,37 @@ watch(selectedBranchId, async (branchId) => {
     branchCallSigns.value = []
     channels.value = []
     certificateTemplates.value = []
+  }
+  if (createMode.value === 'today') {
+    updateInstantName()
+  }
+})
+
+watch(selectedCallSignId, () => {
+  if (createMode.value === 'today') {
+    updateInstantName()
+  }
+})
+
+watch(nameTemplate, () => {
+  if (createMode.value === 'today') {
+    updateInstantName()
+  }
+})
+
+watch(locale, () => {
+  if (createMode.value === 'today') {
+    updateInstantName()
+  }
+})
+
+watch(nameTemplateDefault, (newValue, oldValue) => {
+  if (
+    createMode.value === 'scheduled' &&
+    oldValue &&
+    nameTemplate.value === oldValue
+  ) {
+    nameTemplate.value = newValue
   }
 })
 
@@ -406,13 +461,16 @@ watch(createMode, (mode) => {
   if (mode === 'scheduled' && startDate.value && startDate.value < tomorrowISO.value) {
     startDate.value = tomorrowISO.value
   }
+  if (mode === 'today') {
+    updateInstantName()
+  }
 })
 
 watch(() => props.open, async (isOpen) => {
   if (isOpen) {
     isSubmitted.value = false
     fieldErrors.value = {}
-    nameTemplate.value = '{{branch_callsign}} {{day}} {{month}} {{year}} Çevrimi'
+    nameTemplate.value = nameTemplateDefault.value
     namePlain.value = ''
     scheduledTime.value = '20:00'
     estimatedDurationMinutes.value = 30
@@ -424,9 +482,9 @@ watch(() => props.open, async (isOpen) => {
     operatorSearch.value = ''
     operatorSuggestions.value = []
     simplexRows.value = [{ checked: false, value: '' }]
-    
+
     await loadAvailableBranches()
-    
+
     // Set default branch
     if (props.defaultBranchId) {
       selectedBranchId.value = props.defaultBranchId
@@ -526,7 +584,7 @@ onMounted(() => {
         <SheetDescription>{{ t('nets.createDescription') }}</SheetDescription>
       </SheetHeader>
 
-      <form @submit.prevent="handleSubmit" class="mt-2 space-y-4 py-4 px-1">
+      <form @submit.prevent="handleSubmit" class="space-y-4 py-4 px-1">
         <div class="space-y-2">
           <Label class="text-sm font-medium text-muted-foreground">{{ t('nets.createType') }}</Label>
           <div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
@@ -545,14 +603,8 @@ onMounted(() => {
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div class="space-y-2">
               <Label for="startDate">{{ t('scheduler.startDate') }}</Label>
-              <Input
-                id="startDate"
-                v-model="startDate"
-                type="date"
-                :min="minStartDate"
-                class="w-full"
-                :class="shouldShowError('startDate', isSubmitted) ? 'border-destructive' : ''"
-              />
+              <Input id="startDate" v-model="startDate" type="date" :min="minStartDate" class="w-full"
+                :class="shouldShowError('startDate', isSubmitted) ? 'border-destructive' : ''" />
               <p v-if="shouldShowError('startDate', isSubmitted)" class="text-xs text-destructive">
                 {{ getFieldError('startDate') }}
               </p>
@@ -581,7 +633,8 @@ onMounted(() => {
         <div class="space-y-2">
           <Label for="branch">{{ t('nets.branch') }}</Label>
           <Select v-model="selectedBranchId" :disabled="isLoadingCallSigns">
-            <SelectTrigger id="branch" class="w-full" :class="shouldShowError('branch', isSubmitted) ? 'border-destructive' : ''">
+            <SelectTrigger id="branch" class="w-full"
+              :class="shouldShowError('branch', isSubmitted) ? 'border-destructive' : ''">
               <SelectValue :placeholder="t('nets.selectBranch')" />
             </SelectTrigger>
             <SelectContent>
@@ -602,7 +655,8 @@ onMounted(() => {
         <div class="space-y-2">
           <Label for="callSign">{{ t('nets.branchCallSign') }}</Label>
           <Select v-model="selectedCallSignId" :disabled="!selectedBranchId || isLoadingCallSigns">
-            <SelectTrigger id="callSign" class="w-full" :class="shouldShowError('callSign', isSubmitted) ? 'border-destructive' : ''">
+            <SelectTrigger id="callSign" class="w-full"
+              :class="shouldShowError('callSign', isSubmitted) ? 'border-destructive' : ''">
               <SelectValue :placeholder="t('nets.selectCallSign')" />
             </SelectTrigger>
             <SelectContent>
@@ -618,7 +672,8 @@ onMounted(() => {
 
         <div v-if="certificateTemplates.length > 0" class="space-y-2">
           <Label for="certificateTemplate">{{ t('certificates.template') }}</Label>
-          <Select v-model="selectedCertificateTemplateId" :disabled="!selectedBranchId || isLoadingCertificateTemplates">
+          <Select v-model="selectedCertificateTemplateId"
+            :disabled="!selectedBranchId || isLoadingCertificateTemplates">
             <SelectTrigger id="certificateTemplate" class="w-full">
               <SelectValue :placeholder="t('certificates.noTemplate')" />
             </SelectTrigger>
@@ -634,18 +689,17 @@ onMounted(() => {
         <div class="space-y-2">
           <Label for="name">Çevrim adı</Label>
           <template v-if="createMode === 'scheduled'">
-            <NameTemplateInput
-              v-model="nameTemplate"
-              :placeholder-keys="SCHEDULER_PLACEHOLDER_KEYS"
-            />
+            <NameTemplateInput v-model="nameTemplate" :placeholder-keys="SCHEDULER_PLACEHOLDER_KEYS" />
           </template>
           <template v-else>
-            <Input id="name" v-model="namePlain" type="text" class="w-full" :class="shouldShowError('name', isSubmitted) ? 'border-destructive' : ''" />
+            <Input id="name" v-model="namePlain" type="text" class="w-full"
+              :class="shouldShowError('name', isSubmitted) ? 'border-destructive' : ''" />
           </template>
           <p v-if="shouldShowError('name', isSubmitted)" class="text-xs text-destructive">
             {{ getFieldError('name') }}
           </p>
-          <p class="text-xs text-muted-foreground break-words whitespace-normal min-w-0">
+          <p v-if="createMode === 'scheduled'"
+            class="text-xs text-muted-foreground break-words whitespace-normal min-w-0">
             {{ t('nets.namePreview') }}: {{ namePreview }}
           </p>
         </div>
@@ -658,7 +712,8 @@ onMounted(() => {
           <div class="space-y-2">
             <Label for="estimatedDuration">{{ t('nets.estimatedDuration') }}</Label>
             <div class="flex items-center gap-2">
-              <Input id="estimatedDuration" v-model.number="estimatedDurationMinutes" type="number" min="1" max="480" class="w-full" />
+              <Input id="estimatedDuration" v-model.number="estimatedDurationMinutes" type="number" min="1" max="480"
+                class="w-full" />
               <span class="text-sm text-muted-foreground shrink-0">{{ t('nets.minutes') }}</span>
             </div>
           </div>
@@ -668,40 +723,23 @@ onMounted(() => {
           <Label for="operator">{{ t('nets.operator') }}</Label>
           <div class="relative">
             <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              id="operator"
-              v-model="operatorSearch"
-              type="text"
-              :placeholder="t('nets.searchOperatorPlaceholder')"
-              class="pl-9 pr-9"
-              :class="shouldShowError('operator', isSubmitted) ? 'border-destructive' : ''"
-              @focus="showOperatorDropdown = operatorSearch.length >= 2"
-            />
-            <button
-              v-if="operatorSearch"
-              type="button"
+            <Input id="operator" v-model="operatorSearch" type="text" :placeholder="t('nets.searchOperatorPlaceholder')"
+              class="pl-9 pr-9" :class="shouldShowError('operator', isSubmitted) ? 'border-destructive' : ''"
+              @focus="showOperatorDropdown = operatorSearch.length >= 2" />
+            <button v-if="operatorSearch" type="button"
               class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              :aria-label="t('common.clear')"
-              @click="clearOperator"
-            >
+              :aria-label="t('common.clear')" @click="clearOperator">
               <X class="h-4 w-4" />
             </button>
-            
-            <div
-              v-if="showOperatorDropdown && (operatorSuggestions.length > 0 || isSearchingOperators)"
-              class="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto"
-            >
+
+            <div v-if="showOperatorDropdown && (operatorSuggestions.length > 0 || isSearchingOperators)"
+              class="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
               <div v-if="isSearchingOperators" class="p-3 text-center text-sm text-muted-foreground">
                 {{ t('common.loading') }}
               </div>
               <template v-else>
-                <button
-                  v-for="op in operatorSuggestions"
-                  :key="op.id"
-                  type="button"
-                  @click="selectOperator(op)"
-                  class="w-full flex items-center gap-2 p-3 text-left hover:bg-muted/50 transition-colors"
-                >
+                <button v-for="op in operatorSuggestions" :key="op.id" type="button" @click="selectOperator(op)"
+                  class="w-full flex items-center gap-2 p-3 text-left hover:bg-muted/50 transition-colors">
                   <div class="flex-1 min-w-0">
                     <div class="font-medium">{{ op.callSign }}</div>
                     <div v-if="op.user?.fullName || op.fullName" class="text-sm text-muted-foreground truncate">
@@ -736,56 +774,37 @@ onMounted(() => {
               {{ t('nets.noInfrastructureAvailable') }}
             </p>
             <div v-else-if="channels.length > 0" class="space-y-2">
-              <label
-                v-for="ch in channels"
-                :key="ch.id"
-                class="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5 -mx-2 -my-1.5"
-              >
-                <input
-                  type="checkbox"
-                  :checked="selectedChannelIds.includes(ch.id)"
+              <label v-for="ch in channels" :key="ch.id"
+                class="flex items-center gap-2 cursor-pointer hover:bg-muted/50 rounded px-2 py-1.5 -mx-2 -my-1.5">
+                <input type="checkbox" :checked="selectedChannelIds.includes(ch.id)"
                   class="h-4 w-4 shrink-0 rounded border border-input bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  @change="toggleChannel(ch.id, $event)"
-                />
-                <span class="font-medium text-sm">{{ formatCommunicationChannelLabel({ communicationChannel: ch }) }}</span>
-                <span class="text-xs text-muted-foreground ml-auto">{{ t(`communicationChannels.types.${ch.type}`) }}</span>
+                  @change="toggleChannel(ch.id, $event)" />
+                <span class="font-medium text-sm">{{ formatCommunicationChannelLabel({ communicationChannel: ch })
+                  }}</span>
+                <span class="text-xs text-muted-foreground ml-auto">{{ t(`communicationChannels.types.${ch.type}`)
+                  }}</span>
               </label>
             </div>
             <div class="space-y-2">
-              <div
-                v-for="(row, i) in simplexRows"
-                :key="i"
-                :ref="(el) => setSimplexRowRef(i, el)"
-                class="flex items-center gap-2 hover:bg-muted/50 rounded px-2 py-1 -mx-2 -my-1"
-              >
-              <input
-                type="checkbox"
-                :checked="row.checked"
-                class="h-4 w-4 shrink-0 rounded border border-input bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                @change="(e: Event) => setSimplexRowChecked(i, (e.target as HTMLInputElement).checked)"
-              />
-              <div class="relative z-[1] flex-1 min-w-0 min-w-[6rem] cursor-text">
-                <input
-                  type="text"
-                  :value="row.value"
-                  class="border-input h-8 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 pr-8 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
-                  :class="{ 'border-destructive': row.checked && !row.value.trim() }"
-                  @input="(e: Event) => setSimplexRowValue(i, (e.target as HTMLInputElement).value)"
-                  @focus="setSimplexRowChecked(i, true)"
-                  @blur="handleSimplexBlur(i)"
-                />
-                <button
-                  v-if="row.value"
-                  type="button"
-                  class="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  :aria-label="t('common.clear')"
-                  @click.stop="clearSimplexRow(i)"
-                >
-                  <X class="h-3.5 w-3.5" />
-                </button>
+              <div v-for="(row, i) in simplexRows" :key="i" :ref="(el) => setSimplexRowRef(i, el)"
+                class="flex items-center gap-2 hover:bg-muted/50 rounded px-2 py-1 -mx-2 -my-1">
+                <input type="checkbox" :checked="row.checked"
+                  class="h-4 w-4 shrink-0 rounded border border-input bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  @change="(e: Event) => setSimplexRowChecked(i, (e.target as HTMLInputElement).checked)" />
+                <div class="relative z-[1] flex-1 min-w-0 min-w-[6rem] cursor-text">
+                  <input type="text" :value="row.value"
+                    class="border-input h-8 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 pr-8 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
+                    :class="{ 'border-destructive': row.checked && !row.value.trim() }"
+                    @input="(e: Event) => setSimplexRowValue(i, (e.target as HTMLInputElement).value)"
+                    @focus="setSimplexRowChecked(i, true)" @blur="handleSimplexBlur(i)" />
+                  <button v-if="row.value" type="button"
+                    class="absolute right-1.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    :aria-label="t('common.clear')" @click.stop="clearSimplexRow(i)">
+                    <X class="h-3.5 w-3.5" />
+                  </button>
+                </div>
+                <span class="text-xs text-muted-foreground ml-auto shrink-0">{{ t('nets.simplexLabel') }}</span>
               </div>
-              <span class="text-xs text-muted-foreground ml-auto shrink-0">{{ t('nets.simplexLabel') }}</span>
-            </div>
             </div>
           </template>
           <p v-if="shouldShowError('channels', isSubmitted)" class="text-xs text-destructive">

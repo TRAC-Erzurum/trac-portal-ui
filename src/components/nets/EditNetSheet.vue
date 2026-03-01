@@ -110,6 +110,7 @@ const branch = computed(() => {
   }
   return null
 })
+const branchDisplayName = ref('')
 
 const channels = ref<CommunicationChannel[]>([])
 const selectedChannelIds = ref<string[]>([])
@@ -341,6 +342,7 @@ watch(() => props.open, async (isOpen) => {
     estimatedDurationMinutes.value = props.net.estimatedDurationMinutes ?? 30
     selectedOperator.value = props.net.operator
     operatorSearch.value = getOperatorLabel(props.net.operator)
+    branchDisplayName.value = props.net.branch?.name || ''
     
     selectedCallSignId.value = props.net.branchCallSignId || ''
     
@@ -455,12 +457,12 @@ async function handleSubmit() {
         <SheetDescription>{{ t('netDetail.editNetDescription') }}</SheetDescription>
       </SheetHeader>
 
-      <form @submit.prevent="handleSubmit" class="mt-6 space-y-6 py-6 px-1">
+      <form @submit.prevent="handleSubmit" class="space-y-6 px-1">
         <div class="space-y-2">
           <Label for="branch">{{ t('nets.branch') }}</Label>
           <Input
             id="branch"
-            :value="branch?.name || ''"
+            v-model="branchDisplayName"
             type="text"
             readonly
             disabled
@@ -483,7 +485,7 @@ async function handleSubmit() {
           </Select>
         </div>
 
-        <div class="space-y-2">
+        <div v-if="certificateTemplates.length > 0" class="space-y-2">
           <Label for="certificateTemplate">{{ t('certificates.template') }}</Label>
           <Select v-model="selectedCertificateTemplateId" :disabled="!branch || isLoadingCertificateTemplates">
             <SelectTrigger id="certificateTemplate" class="w-full">

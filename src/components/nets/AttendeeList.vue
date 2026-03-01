@@ -23,7 +23,6 @@ interface Props {
   attendees: Attendee[]
   isLoading: boolean
   canManage: boolean
-  isActive: boolean
   showCertificateDownload?: boolean
   canDownloadOthersCertificates?: boolean
   currentUserOperatorId?: string
@@ -192,7 +191,7 @@ onUnmounted(() => {
             >
               <Award class="h-4 w-4" />
             </Button>
-            <template v-if="canManage && isActive">
+            <template v-if="canManage">
               <Button
                 variant="outline"
                 size="icon"
@@ -269,7 +268,7 @@ onUnmounted(() => {
         >
           <Award class="h-4 w-4" />
         </Button>
-        <template v-if="canManage && isActive">
+        <template v-if="canManage">
           <Button
             variant="outline"
             size="icon"

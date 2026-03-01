@@ -118,7 +118,7 @@ async function handleSubmit() {
         <SheetDescription>{{ t('profile.editOperatorDesc') }}</SheetDescription>
       </SheetHeader>
 
-      <form @submit.prevent="handleSubmit" class="mt-6 space-y-6 pb-6">
+      <form @submit.prevent="handleSubmit" class="space-y-6 pb-6">
         <div class="space-y-2">
           <Label for="dmrId">{{ t('profile.dmrId') }}</Label>
           <Input

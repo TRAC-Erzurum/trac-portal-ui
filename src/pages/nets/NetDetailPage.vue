@@ -5,9 +5,9 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   Award,
   Clock,
-  Download,
   FileSpreadsheet,
   Image,
+  Plus,
   MapPin,
   Printer,
   Share2,
@@ -35,12 +35,6 @@ import ExportReportTemplate from '@/components/nets/ExportReportTemplate.vue'
 import NetHeader from '@/components/nets/NetHeader.vue'
 import AddAttendeePanel from '@/components/nets/AddAttendeePanel.vue'
 import AttendeeList from '@/components/nets/AttendeeList.vue'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import html2canvas from 'html2canvas'
@@ -147,6 +141,7 @@ const shareUrl = ref('')
 const shareQrDataUrl = ref('')
 const certificatePreview = ref<CertificatePreview | null>(null)
 const isLoadingCertificatePreview = ref(false)
+const showAddAttendeeForm = ref(false)
 
 const themeStore = useThemeStore()
 const mapRef = ref<{ leafletObject: LeafletMap } | null>(null)
@@ -457,6 +452,14 @@ const canManageNet = computed(() => {
   return net.value.operator.user?.id === auth.user?.id
 })
 
+watch(netStatus, (status) => {
+  if (status === 'active') {
+    showAddAttendeeForm.value = true
+  } else if (status === 'completed') {
+    showAddAttendeeForm.value = false
+  }
+})
+
 const myAttendee = computed(() => {
   const opId = auth.user?.operator?.id
   if (!opId || !attendees.value.length) return null
@@ -551,16 +554,6 @@ const endNet = async () => {
   }
 }
 
-const restartNet = async () => {
-  try {
-    await api.patch(`/net/${route.params.id}/restart`)
-    await fetchNet()
-    toast.success(t('netDetail.netRestarted'))
-  } catch (error) {
-    toast.error(t('error.serverError'))
-  }
-}
-
 const openEditNet = () => {
   isEditNetSheetOpen.value = true
 }
@@ -583,7 +576,7 @@ const handleAttendeeUpdated = async () => {
 
 const deleteAttendee = async (attendee: Attendee) => {
   if (!confirm(t('netDetail.confirmDelete', { callSign: attendee.callSign }))) return
-  
+
   try {
     await api.delete(`/net/${route.params.id}/attendee/${attendee.id}`)
     await fetchAttendees()
@@ -597,6 +590,9 @@ const deleteAttendee = async (attendee: Attendee) => {
 const handleAttendeeAdded = async () => {
   await fetchAttendees()
   if (net.value) net.value.attendeeCount = attendees.value.length
+  if (netStatus.value === 'completed') {
+    showAddAttendeeForm.value = false
+  }
 }
 
 const certificatePreviewImageUrl = computed(() => {
@@ -721,6 +717,15 @@ const escapeHtml = (s: string) => String(s)
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;')
 
+const prepareReportCanvas = async (): Promise<HTMLCanvasElement | null> => {
+  if (!net.value) return null
+  const sorted = await api.get<Attendee[]>(`/net/${route.params.id}/attendee?sort=ASC`)
+  exportAttendees.value = sorted
+  await nextTick()
+  await new Promise(r => requestAnimationFrame(r))
+  return captureReportCanvas()
+}
+
 const captureReportCanvas = async (): Promise<HTMLCanvasElement | null> => {
   const templateEl = exportTemplateRef.value?.templateRef ?? null
   if (!templateEl || !net.value) return null
@@ -735,7 +740,7 @@ const captureReportCanvas = async (): Promise<HTMLCanvasElement | null> => {
     await new Promise(r => requestAnimationFrame(r))
     const canvas = await html2canvas(templateEl, {
       backgroundColor: '#ffffff',
-      onclone (clonedDoc, clonedNode) {
+      onclone(clonedDoc, clonedNode) {
         const head = clonedDoc.querySelector('head')
         if (head) {
           head.querySelectorAll('link[rel="stylesheet"], style').forEach(el => el.remove())
@@ -759,11 +764,7 @@ const exportToPng = async () => {
   if (!net.value || isExporting.value) return
   isExporting.value = true
   try {
-    const sorted = await api.get<Attendee[]>(`/net/${route.params.id}/attendee?sort=ASC`)
-    exportAttendees.value = sorted
-    await nextTick()
-    await new Promise(r => requestAnimationFrame(r))
-    const canvas = await captureReportCanvas()
+    const canvas = await prepareReportCanvas()
     if (canvas) {
       const link = document.createElement('a')
       link.href = canvas.toDataURL('image/png')
@@ -808,54 +809,28 @@ const openShareFlow = async () => {
 }
 
 const exportToPdf = async () => {
-  if (!net.value) return
+  if (!net.value || isExporting.value) return
+  isExporting.value = true
   try {
-    const sorted = await api.get<Attendee[]>(`/net/${route.params.id}/attendee?sort=ASC`)
-    const dateInfo = getNetDateInfo()
-    const qth = (a: Attendee) => [a.district, a.city].filter(Boolean).join(', ') || '-'
-    const rs = (a: Attendee) => {
-      const r = a.readability; const s = a.signalStrength
-      if (r == null && s == null) return ''
-      return `${r ?? '-'}/${s ?? '-'}`
+    const canvas = await prepareReportCanvas()
+    if (!canvas) {
+      toast.error(t('error.serverError'))
+      return
     }
-    const rows = sorted.map((a, i) => `
-      <tr>
-        <td style="border:1px solid #d4d4d8;padding:6px 12px">${i + 1}</td>
-        <td style="border:1px solid #d4d4d8;padding:6px 12px;font-weight:600">${escapeHtml(a.callSign)}</td>
-        <td style="border:1px solid #d4d4d8;padding:6px 12px">${escapeHtml(a.name || '-')}</td>
-        <td style="border:1px solid #d4d4d8;padding:6px 12px">${escapeHtml(qth(a))}</td>
-        <td style="border:1px solid #d4d4d8;padding:6px 12px;text-align:center">${escapeHtml(rs(a))}</td>
-        <td style="border:1px solid #d4d4d8;padding:6px 12px">${escapeHtml(formatDateTime(a.createdAt))}</td>
-      </tr>`).join('')
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(net.value.name)}</title>
-<style>body{font-family:'Rajdhani',sans-serif;padding:2rem;color:#000;background:#fff}
-table{border-collapse:collapse;width:100%;font-size:14px}
-th{background:#f4f4f5;border:1px solid #d4d4d8;padding:6px 12px;text-align:left;font-weight:600}
-tfoot td{background:#fafafa;border:1px solid #d4d4d8;padding:6px 12px}
-h1{text-align:center;font-size:1.5rem;margin-bottom:2rem}</style></head><body>
-<h1>${escapeHtml(net.value.name)}</h1>
-<table>
-<thead><tr>
-<th>#</th><th>${escapeHtml(t('operators.callSign'))}</th><th>${escapeHtml(t('operators.name'))}</th>
-<th>${escapeHtml(t('operators.qth'))}</th><th>${escapeHtml(t('operators.signal'))}</th><th>${escapeHtml(t('netReport.joinTime'))}</th>
-</tr></thead>
-<tbody>${rows}</tbody>
-<tfoot>
-<tr><td colspan="5" style="text-align:right;font-weight:600">${escapeHtml(t('netReport.totalAttendees'))}:</td><td style="font-weight:600">${sorted.length}</td></tr>
-<tr><td colspan="5" style="text-align:right;font-weight:600">${escapeHtml(t('netReport.operator'))}:</td><td>${escapeHtml(net.value.operator.callSign)}</td></tr>
-<tr><td colspan="5" style="text-align:right;font-weight:600">${escapeHtml(t('netReport.date'))}:</td><td>${escapeHtml(dateInfo)}</td></tr>
-</tfoot>
-</table></body></html>`
+    const img = canvas.toDataURL('image/png')
     const win = window.open('', '_blank')
     if (win) {
-      win.document.write(html)
+      const title = escapeHtml(net.value.name)
+      win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>body{margin:0;padding:24px;display:flex;justify-content:center;background:#fff}</style></head><body><img src="${img}" style="width:${REPORT_EXPORT_WIDTH}px;max-width:100%;display:block;" /></body></html>`)
       win.document.close()
       win.focus()
-      win.print()
-      win.close()
+    } else {
+      toast.error(t('error.serverError'))
     }
   } catch {
     toast.error(t('error.serverError'))
+  } finally {
+    isExporting.value = false
   }
 }
 
@@ -894,203 +869,157 @@ const fetchComparePrevious = async () => {
     </div>
 
     <div v-else-if="net" class="space-y-6">
-      <NetHeader
-        :net="net"
-        :can-manage="canManageNet"
-        :is-admin="auth.isAdmin || auth.isSuperAdmin"
-        :attendees-count="attendees.length"
-        :is-exporting="isExporting"
-        @start="startNet"
-        @end="endNet"
-        @restart="restartNet"
-        @edit="openEditNet"
-        @export-csv="exportToCsv"
-        @export-pdf="exportToPdf"
-        @export-png="exportToPng"
-        @export-certificates="exportCertificates"
-        @share-report="openShareFlow"
-      >
-        <template v-if="net?.certificateTemplate && (certificatePreviewImageUrl || isLoadingCertificatePreview)" #certificate>
+      <NetHeader :net="net" :can-manage="canManageNet" :is-admin="auth.isAdmin || auth.isSuperAdmin"
+        :attendees-count="attendees.length" :is-exporting="isExporting" @start="startNet" @end="endNet"
+        @edit="openEditNet" @export-csv="exportToCsv" @export-pdf="exportToPdf"
+        @export-png="exportToPng" @export-certificates="exportCertificates" @share-report="openShareFlow">
+        <template v-if="net?.certificateTemplate && (certificatePreviewImageUrl || isLoadingCertificatePreview)"
+          #certificate>
           <div class="rounded-lg border border-border/50 bg-muted/30 overflow-hidden">
             <div v-if="isLoadingCertificatePreview" class="aspect-[4/3] max-h-32 flex items-center justify-center">
               <span class="text-xs text-muted-foreground">{{ t('common.loading') }}</span>
             </div>
-            <img
-              v-else-if="certificatePreviewImageUrl"
-              :src="certificatePreviewImageUrl"
-              :alt="t('certificates.template')"
-              class="w-full aspect-[4/3] object-contain max-h-32"
-            />
+            <img v-else-if="certificatePreviewImageUrl" :src="certificatePreviewImageUrl"
+              :alt="t('certificates.template')" class="w-full aspect-[4/3] object-contain max-h-32" />
           </div>
         </template>
       </NetHeader>
 
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch lg:grid-rows-1">
-        <section
-          v-if="isCompleted"
-          class="rounded-lg border border-border/50 bg-background p-4 w-full min-w-0"
-        >
+        <section v-if="isCompleted" class="rounded-lg border border-border/50 bg-background p-4 w-full min-w-0">
           <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
             <TrendingUp class="h-4 w-4" />
             {{ t('netDetail.statsTitle') }}
           </h3>
           <div class="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-4 sm:items-start">
-          <!-- Sol sütun: toplam katılımcı, süre, trend (desktop) / mobilde aynı sıra alt alta -->
-          <div ref="leftStatsRef" class="flex flex-col gap-3">
-            <div class="p-4 rounded-lg border border-border/50 text-center shrink-0">
-              <div class="flex items-center justify-center gap-1.5 text-2xl font-bold">
-                <Users class="h-5 w-5 text-muted-foreground" />
-                {{ attendees.length }}
+            <!-- Sol sütun: toplam katılımcı, süre, trend (desktop) / mobilde aynı sıra alt alta -->
+            <div ref="leftStatsRef" class="flex flex-col gap-3">
+              <div class="p-4 rounded-lg border border-border/50 text-center shrink-0">
+                <div class="flex items-center justify-center gap-1.5 text-2xl font-bold">
+                  <Users class="h-5 w-5 text-muted-foreground" />
+                  {{ attendees.length }}
+                </div>
+                <p class="text-xs text-muted-foreground mt-1">{{ t('netReport.totalAttendees') }}</p>
               </div>
-              <p class="text-xs text-muted-foreground mt-1">{{ t('netReport.totalAttendees') }}</p>
-            </div>
-            <div class="p-4 rounded-lg border border-border/50 text-center shrink-0">
-              <div class="flex items-center justify-center gap-1.5 text-2xl font-bold">
-                <Clock class="h-5 w-5 text-muted-foreground" />
-                {{ netDurationFormatted }}
+              <div class="p-4 rounded-lg border border-border/50 text-center shrink-0">
+                <div class="flex items-center justify-center gap-1.5 text-2xl font-bold">
+                  <Clock class="h-5 w-5 text-muted-foreground" />
+                  {{ netDurationFormatted }}
+                </div>
+                <p class="text-xs text-muted-foreground mt-1">{{ t('netDetail.duration') }}</p>
               </div>
-              <p class="text-xs text-muted-foreground mt-1">{{ t('netDetail.duration') }}</p>
-            </div>
-            <div
-              v-if="comparePrevious !== null && !isLoadingCompare"
-              class="p-4 rounded-lg border border-border/50 text-center shrink-0"
-            >
-              <div class="flex items-center justify-center gap-1.5 text-xl font-bold flex-wrap">
-                <TrendingUp class="h-5 w-5 text-muted-foreground shrink-0" />
-                <span v-if="comparePrevious.deltaAttendeeCount > 0" class="text-green-600 dark:text-green-400">+{{ comparePrevious.deltaAttendeeCount }}</span>
-                <span v-else-if="comparePrevious.deltaAttendeeCount < 0" class="text-red-600 dark:text-red-400">{{ comparePrevious.deltaAttendeeCount }}</span>
-                <span v-else class="text-muted-foreground">0</span>
-                <span class="text-muted-foreground font-normal">{{ t('netDetail.trendAttendees') }}</span>
-                <span class="text-muted-foreground">·</span>
-                <span v-if="comparePrevious.deltaDurationMinutes > 0" class="text-green-600 dark:text-green-400">+{{ comparePrevious.deltaDurationMinutes }}</span>
-                <span v-else-if="comparePrevious.deltaDurationMinutes < 0" class="text-red-600 dark:text-red-400">{{ comparePrevious.deltaDurationMinutes }}</span>
-                <span v-else class="text-muted-foreground">0</span>
-                <span class="text-muted-foreground font-normal">{{ t('netDetail.durationMinutesShort') }}</span>
+              <div v-if="comparePrevious !== null && !isLoadingCompare"
+                class="p-4 rounded-lg border border-border/50 text-center shrink-0">
+                <div class="flex items-center justify-center gap-1.5 text-xl font-bold flex-wrap">
+                  <TrendingUp class="h-5 w-5 text-muted-foreground shrink-0" />
+                  <span v-if="comparePrevious.deltaAttendeeCount > 0" class="text-green-600 dark:text-green-400">+{{
+                    comparePrevious.deltaAttendeeCount }}</span>
+                  <span v-else-if="comparePrevious.deltaAttendeeCount < 0" class="text-red-600 dark:text-red-400">{{
+                    comparePrevious.deltaAttendeeCount }}</span>
+                  <span v-else class="text-muted-foreground">0</span>
+                  <span class="text-muted-foreground font-normal">{{ t('netDetail.trendAttendees') }}</span>
+                  <span class="text-muted-foreground">·</span>
+                  <span v-if="comparePrevious.deltaDurationMinutes > 0" class="text-green-600 dark:text-green-400">+{{
+                    comparePrevious.deltaDurationMinutes }}</span>
+                  <span v-else-if="comparePrevious.deltaDurationMinutes < 0" class="text-red-600 dark:text-red-400">{{
+                    comparePrevious.deltaDurationMinutes }}</span>
+                  <span v-else class="text-muted-foreground">0</span>
+                  <span class="text-muted-foreground font-normal">{{ t('netDetail.durationMinutesShort') }}</span>
+                </div>
+                <p class="text-xs text-muted-foreground mt-1">{{ t('netDetail.trendVsPrevious') }}</p>
               </div>
-              <p class="text-xs text-muted-foreground mt-1">{{ t('netDetail.trendVsPrevious') }}</p>
-            </div>
-            <div
-              v-else-if="isLoadingCompare"
-              class="p-4 rounded-lg border border-border/50 text-center shrink-0"
-            >
-              <div class="h-8 bg-muted animate-pulse rounded mx-auto w-24" />
-              <p class="text-xs text-muted-foreground mt-1">{{ t('netDetail.trendVsPrevious') }}</p>
-            </div>
-          </div>
-          <!-- Sağ sütun: coğrafi dağılım, desktop'ta soldaki üç kutunun yüksekliği ile sınırlı, kendi içinde scroll -->
-          <div
-            class="min-h-0 flex flex-col lg:overflow-hidden"
-            :style="leftStatsHeight ? { '--left-stats-height': leftStatsHeight + 'px' } as Record<string, string> : undefined"
-            :class="leftStatsHeight ? 'sm:max-h-[var(--left-stats-height)] sm:h-[var(--left-stats-height)]' : ''"
-          >
-            <div class="p-4 rounded-lg border border-border/50 flex-1 min-h-0 flex flex-col overflow-hidden">
-              <p class="text-xs text-muted-foreground flex items-center gap-2 mb-2 shrink-0">
-                <MapPin class="h-4 w-4" />
-                {{ t('netDetail.geographicSpread') }}
-              </p>
-              <div class="flex gap-1 mb-2 shrink-0">
-                <button
-                  type="button"
-                  class="px-2 py-1 text-xs rounded-md border transition-colors"
-                  :class="geographicTab === 'country' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
-                  @click="geographicTab = 'country'"
-                >
-                  {{ t('dashboard.stats.countries') }}
-                </button>
-                <button
-                  type="button"
-                  class="px-2 py-1 text-xs rounded-md border transition-colors"
-                  :class="geographicTab === 'city' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
-                  @click="geographicTab = 'city'"
-                >
-                  {{ t('dashboard.stats.cities') }}
-                </button>
-                <button
-                  type="button"
-                  class="px-2 py-1 text-xs rounded-md border transition-colors"
-                  :class="geographicTab === 'district' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
-                  @click="geographicTab = 'district'"
-                >
-                  {{ t('dashboard.stats.districts') }}
-                </button>
+              <div v-else-if="isLoadingCompare" class="p-4 rounded-lg border border-border/50 text-center shrink-0">
+                <div class="h-8 bg-muted animate-pulse rounded mx-auto w-24" />
+                <p class="text-xs text-muted-foreground mt-1">{{ t('netDetail.trendVsPrevious') }}</p>
               </div>
-              <div class="flex-1 min-h-0 overflow-y-auto space-y-1.5">
-                <template v-if="geographicTab === 'country'">
-                  <div
-                    v-for="(item, i) in geographicDistribution.byCountry"
-                    :key="item.label"
-                    class="flex items-center gap-2"
-                  >
-                    <span class="text-xs text-muted-foreground w-5">{{ i + 1 }}.</span>
-                    <div class="flex-1 min-w-0">
-                      <div class="flex justify-between gap-2">
-                        <span class="font-medium truncate text-sm">{{ item.label }}</span>
-                        <span class="text-xs text-muted-foreground shrink-0">{{ item.count }}</span>
-                      </div>
-                      <div class="h-1 rounded-full bg-muted mt-0.5 overflow-hidden">
-                        <div
-                          class="h-full rounded-full bg-primary/30"
-                          :style="{ width: `${(item.count / maxGeoCount) * 100}%` }"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </template>
-                <template v-else-if="geographicTab === 'city'">
-                  <div
-                    v-for="(item, i) in geographicDistribution.byCity"
-                    :key="item.label"
-                    class="flex items-center gap-2"
-                  >
-                    <span class="text-xs text-muted-foreground w-5">{{ i + 1 }}.</span>
-                    <div class="flex-1 min-w-0">
-                      <div class="flex justify-between gap-2">
-                        <span class="font-medium truncate text-sm">{{ item.label }}</span>
-                        <span class="text-xs text-muted-foreground shrink-0">{{ item.count }}</span>
-                      </div>
-                      <div class="h-1 rounded-full bg-muted mt-0.5 overflow-hidden">
-                        <div
-                          class="h-full rounded-full bg-primary/30"
-                          :style="{ width: `${(item.count / maxGeoCount) * 100}%` }"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </template>
-                <template v-else>
-                  <div
-                    v-for="(item, i) in geographicDistribution.byDistrict"
-                    :key="item.label"
-                    class="flex items-center gap-2"
-                  >
-                    <span class="text-xs text-muted-foreground w-5">{{ i + 1 }}.</span>
-                    <div class="flex-1 min-w-0">
-                      <div class="flex justify-between gap-2">
-                        <span class="font-medium truncate text-sm">{{ item.label }}</span>
-                        <span class="text-xs text-muted-foreground shrink-0">{{ item.count }}</span>
-                      </div>
-                      <div class="h-1 rounded-full bg-muted mt-0.5 overflow-hidden">
-                        <div
-                          class="h-full rounded-full bg-primary/30"
-                          :style="{ width: `${(item.count / maxGeoCount) * 100}%` }"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </template>
-                <p v-if="(geographicTab === 'country' ? geographicDistribution.byCountry : geographicTab === 'city' ? geographicDistribution.byCity : geographicDistribution.byDistrict).length === 0" class="text-xs text-muted-foreground py-2">
-                  {{ t('dashboard.noStats') }}
+            </div>
+            <!-- Sağ sütun: coğrafi dağılım, desktop'ta soldaki üç kutunun yüksekliği ile sınırlı, kendi içinde scroll -->
+            <div class="min-h-0 flex flex-col lg:overflow-hidden"
+              :style="leftStatsHeight ? { '--left-stats-height': leftStatsHeight + 'px' } as Record<string, string> : undefined"
+              :class="leftStatsHeight ? 'sm:max-h-[var(--left-stats-height)] sm:h-[var(--left-stats-height)]' : ''">
+              <div class="p-4 rounded-lg border border-border/50 flex-1 min-h-0 flex flex-col overflow-hidden">
+                <p class="text-xs text-muted-foreground flex items-center gap-2 mb-2 shrink-0">
+                  <MapPin class="h-4 w-4" />
+                  {{ t('netDetail.geographicSpread') }}
                 </p>
+                <div class="flex gap-1 mb-2 shrink-0">
+                  <button type="button" class="px-2 py-1 text-xs rounded-md border transition-colors"
+                    :class="geographicTab === 'country' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
+                    @click="geographicTab = 'country'">
+                    {{ t('dashboard.stats.countries') }}
+                  </button>
+                  <button type="button" class="px-2 py-1 text-xs rounded-md border transition-colors"
+                    :class="geographicTab === 'city' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
+                    @click="geographicTab = 'city'">
+                    {{ t('dashboard.stats.cities') }}
+                  </button>
+                  <button type="button" class="px-2 py-1 text-xs rounded-md border transition-colors"
+                    :class="geographicTab === 'district' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
+                    @click="geographicTab = 'district'">
+                    {{ t('dashboard.stats.districts') }}
+                  </button>
+                </div>
+                <div class="flex-1 min-h-0 overflow-y-auto space-y-1.5">
+                  <template v-if="geographicTab === 'country'">
+                    <div v-for="(item, i) in geographicDistribution.byCountry" :key="item.label"
+                      class="flex items-center gap-2">
+                      <span class="text-xs text-muted-foreground w-5">{{ i + 1 }}.</span>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex justify-between gap-2">
+                          <span class="font-medium truncate text-sm">{{ item.label }}</span>
+                          <span class="text-xs text-muted-foreground shrink-0">{{ item.count }}</span>
+                        </div>
+                        <div class="h-1 rounded-full bg-muted mt-0.5 overflow-hidden">
+                          <div class="h-full rounded-full bg-primary/30"
+                            :style="{ width: `${(item.count / maxGeoCount) * 100}%` }" />
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                  <template v-else-if="geographicTab === 'city'">
+                    <div v-for="(item, i) in geographicDistribution.byCity" :key="item.label"
+                      class="flex items-center gap-2">
+                      <span class="text-xs text-muted-foreground w-5">{{ i + 1 }}.</span>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex justify-between gap-2">
+                          <span class="font-medium truncate text-sm">{{ item.label }}</span>
+                          <span class="text-xs text-muted-foreground shrink-0">{{ item.count }}</span>
+                        </div>
+                        <div class="h-1 rounded-full bg-muted mt-0.5 overflow-hidden">
+                          <div class="h-full rounded-full bg-primary/30"
+                            :style="{ width: `${(item.count / maxGeoCount) * 100}%` }" />
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <div v-for="(item, i) in geographicDistribution.byDistrict" :key="item.label"
+                      class="flex items-center gap-2">
+                      <span class="text-xs text-muted-foreground w-5">{{ i + 1 }}.</span>
+                      <div class="flex-1 min-w-0">
+                        <div class="flex justify-between gap-2">
+                          <span class="font-medium truncate text-sm">{{ item.label }}</span>
+                          <span class="text-xs text-muted-foreground shrink-0">{{ item.count }}</span>
+                        </div>
+                        <div class="h-1 rounded-full bg-muted mt-0.5 overflow-hidden">
+                          <div class="h-full rounded-full bg-primary/30"
+                            :style="{ width: `${(item.count / maxGeoCount) * 100}%` }" />
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                  <p v-if="(geographicTab === 'country' ? geographicDistribution.byCountry : geographicTab === 'city' ? geographicDistribution.byCity : geographicDistribution.byDistrict).length === 0"
+                    class="text-xs text-muted-foreground py-2">
+                    {{ t('dashboard.noStats') }}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
         </section>
 
-        <section
-          v-if="showMapSection"
-          class="rounded-lg border border-border/50 bg-background p-4 w-full min-w-0 flex flex-col"
-        >
+        <section v-if="showMapSection"
+          class="rounded-lg border border-border/50 bg-background p-4 w-full min-w-0 flex flex-col">
           <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-2">
             <MapPin class="h-4 w-4" />
             {{ t('netDetail.participantsMap') }}
@@ -1099,7 +1028,8 @@ const fetchComparePrevious = async () => {
             {{ t('netDetail.participantsMapDesc') }}
           </p>
           <div class="rounded-lg overflow-hidden border border-border/50 flex-1 min-h-[280px] lg:min-h-0 bg-muted/30">
-            <div v-if="mapLoading" class="h-full min-h-[280px] flex items-center justify-center text-sm text-muted-foreground">
+            <div v-if="mapLoading"
+              class="h-full min-h-[280px] flex items-center justify-center text-sm text-muted-foreground">
               {{ t('netDetail.mapLoading') }}
             </div>
             <template v-else-if="attendeePoints.length === 0">
@@ -1107,20 +1037,10 @@ const fetchComparePrevious = async () => {
                 {{ t('netDetail.mapNoLocations') }}
               </div>
             </template>
-            <LMap
-              v-else
-              ref="mapRef"
-              :use-global-leaflet="true"
-              :center="MAP_DEFAULT_CENTER"
-              :zoom="MAP_DEFAULT_ZOOM"
-              class="h-full w-full rounded-lg min-h-[280px] lg:min-h-0"
-              :options="{ zoomControl: true }"
-              @ready="onMapReady"
-            >
-              <LTileLayer
-                :url="tileLayerUrl"
-                :attribution="tileLayerAttribution"
-              />
+            <LMap v-else ref="mapRef" :use-global-leaflet="true" :center="MAP_DEFAULT_CENTER" :zoom="MAP_DEFAULT_ZOOM"
+              class="h-full w-full rounded-lg min-h-[280px] lg:min-h-0" :options="{ zoomControl: true }"
+              @ready="onMapReady">
+              <LTileLayer :url="tileLayerUrl" :attribution="tileLayerAttribution" />
             </LMap>
           </div>
         </section>
@@ -1137,124 +1057,75 @@ const fetchComparePrevious = async () => {
           </h2>
           <div class="flex flex-wrap items-center gap-2 ml-auto">
             <Button
-              v-if="showDownloadMyCertificate && myAttendee"
-              variant="outline"
+              v-if="canManageNet && netStatus === 'completed' && !showAddAttendeeForm"
               size="sm"
+              variant="outline"
               class="gap-2"
-              @click="downloadCertificate(myAttendee)"
+              @click="showAddAttendeeForm = true"
             >
+              <Plus class="h-4 w-4" />
+              {{ t('netDetail.addAttendee') }}
+            </Button>
+            <Button v-if="showDownloadMyCertificate && myAttendee" variant="outline" size="sm" class="gap-2"
+              @click="downloadCertificate(myAttendee)">
               <Award class="h-4 w-4" />
               {{ t('netDetail.downloadMyCertificate') }}
             </Button>
             <template v-if="attendees.length > 0">
-              <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    class="hidden lg:flex"
-                    :disabled="isExporting"
-                  >
-                    <Download class="h-4 w-4 mr-2" />
-                    {{ t('netDetail.export') }}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem @click="exportToCsv" class="gap-2 cursor-pointer">
-                    <FileSpreadsheet class="h-4 w-4" />
-                    CSV
-                  </DropdownMenuItem>
-                  <DropdownMenuItem @click="exportToPdf" class="gap-2 cursor-pointer" :disabled="isExporting">
-                    <Printer class="h-4 w-4" />
-                    PDF
-                  </DropdownMenuItem>
-                  <DropdownMenuItem @click="exportToPng" class="gap-2 cursor-pointer" :disabled="isExporting">
+              <div class="hidden lg:flex items-center gap-2">
+                <Button variant="outline" size="sm" class="p-2 h-8 w-8" :disabled="isExporting" @click="exportToCsv"
+                  :title="t('netDetail.exportCsvTooltip')" :aria-label="t('netDetail.exportCsvTooltip')">
+                  <FileSpreadsheet class="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="sm" class="p-2 h-8 w-8" :disabled="isExporting" @click="exportToPdf"
+                  :title="t('netDetail.exportPdfTooltip')" :aria-label="t('netDetail.exportPdfTooltip')">
+                  <Printer class="h-4 w-4" />
+                </Button>
+                <div class="flex items-center gap-1">
+                  <Button variant="outline" size="sm" class="p-2 h-8 w-8" :disabled="isExporting" @click="exportToPng"
+                    :title="t('netDetail.exportPngTooltip')" :aria-label="t('netDetail.exportPngTooltip')">
                     <Image class="h-4 w-4" />
-                    PNG
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    v-if="net?.certificateTemplate && netStatus === 'completed'"
-                    @click="exportCertificates"
-                    class="gap-2 cursor-pointer"
-                    :disabled="isExporting"
-                  >
+                  </Button>
+                  <Button variant="outline" size="sm" class="p-2 h-8 w-8" :disabled="isSharing || isExporting" @click="openShareFlow"
+                    :title="t('netDetail.shareReportAsPng')" :aria-label="t('netDetail.shareReportAsPng')">
+                    <Share2 class="h-4 w-4" />
+                  </Button>
+                </div>
+                <template v-if="net?.certificateTemplate && netStatus === 'completed'">
+                  <Button variant="outline" size="sm" class="p-2 h-8 w-8" :disabled="isExporting" @click="exportCertificates"
+                    title="Download All Certificates" aria-label="Download All Certificates">
                     <Award class="h-4 w-4" />
-                    {{ t('certificates.downloadAll') }}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              <Button
-                variant="outline"
-                size="sm"
-                class="gap-2 hidden lg:flex"
-                :disabled="isSharing || isExporting"
-                @click="openShareFlow"
-              >
-                <Share2 class="h-4 w-4" />
-                {{ t('netDetail.share') }}
-              </Button>
+                  </Button>
+                </template>
+              </div>
             </template>
           </div>
         </div>
 
-        <AddAttendeePanel
-          v-if="canManageNet && netStatus === 'active'"
-          :net-id="(route.params.id as string)"
-          :attendees="attendees"
-          :priority-branch-id="net?.branch?.id"
-          @attendee-added="handleAttendeeAdded"
-        />
+        <AddAttendeePanel v-if="canManageNet && (netStatus === 'active' || (netStatus === 'completed' && showAddAttendeeForm))" :net-id="(route.params.id as string)"
+          :attendees="attendees" :priority-branch-id="net?.branch?.id" @attendee-added="handleAttendeeAdded" />
 
-        <AttendeeList
-          :attendees="attendees"
-          :is-loading="isLoadingAttendees"
-          :can-manage="canManageNet"
-          :is-active="netStatus === 'active'"
+        <AttendeeList :attendees="attendees" :is-loading="isLoadingAttendees" :can-manage="canManageNet"
           :show-certificate-download="!!(net?.certificateTemplate && netStatus === 'completed')"
           :can-download-others-certificates="canDownloadOthersCertificates"
-          :current-user-operator-id="auth.user?.operator?.id"
-          @edit="openEditAttendee"
-          @delete="deleteAttendee"
-          @download-certificate="downloadCertificate"
-        />
+          :current-user-operator-id="auth.user?.operator?.id" @edit="openEditAttendee" @delete="deleteAttendee"
+          @download-certificate="downloadCertificate" />
       </div>
     </div>
 
-    <EditAttendeeSheet
-      v-if="editingAttendee"
-      :open="isEditSheetOpen"
-      :attendee="editingAttendee"
-      :net-id="(route.params.id as string)"
-      @update:open="isEditSheetOpen = $event"
-      @updated="handleAttendeeUpdated"
-    />
+    <EditAttendeeSheet v-if="editingAttendee" :open="isEditSheetOpen" :attendee="editingAttendee"
+      :net-id="(route.params.id as string)" @update:open="isEditSheetOpen = $event" @updated="handleAttendeeUpdated" />
 
-    <EditNetSheet
-      v-if="net"
-      :open="isEditNetSheetOpen"
-      :net="net as any"
-      @update:open="isEditNetSheetOpen = $event"
-      @updated="handleNetUpdated"
-    />
+    <EditNetSheet v-if="net" :open="isEditNetSheetOpen" :net="net as any" @update:open="isEditNetSheetOpen = $event"
+      @updated="handleNetUpdated" />
 
-    <ExportReportTemplate
-      v-if="net"
-      ref="exportTemplateRef"
-      :net-name="net.name"
-      :operator-call-sign="net.operator.callSign"
-      :attendees="exportAttendees"
-      :date-info="getNetDateInfo()"
-      :branch-name="net.branch?.name"
-      :branch-call-sign="net.branchCallSign?.callSign"
-      :branch-is-headquarters="net.branch?.isHeadquarters"
-      :communication-channels="net.communicationChannels"
-    />
+    <ExportReportTemplate v-if="net" ref="exportTemplateRef" :net-name="net.name"
+      :operator-call-sign="net.operator.callSign" :operator-name="net.operator.fullName"
+      :attendees="exportAttendees" :date-info="getNetDateInfo()" :branch-name="net.branch?.name"
+      :branch-call-sign="net.branchCallSign?.callSign" :branch-is-headquarters="net.branch?.isHeadquarters"
+      :communication-channels="net.communicationChannels" />
 
   </AppLayout>
-  <ShareReportSheet
-    :open="shareDialogOpen"
-    :share-url="shareUrl"
-    :share-qr-data-url="shareQrDataUrl"
-    @update:open="shareDialogOpen = $event"
-  />
+  <ShareReportSheet :open="shareDialogOpen" :share-url="shareUrl" :share-qr-data-url="shareQrDataUrl"
+    @update:open="shareDialogOpen = $event" />
 </template>

@@ -212,7 +212,7 @@ async function handleSubmit() {
       </div>
 
       <template v-else-if="scheduler">
-        <form @submit.prevent="handleSubmit" class="mt-4 space-y-6 py-2 px-1">
+        <form @submit.prevent="handleSubmit" class="space-y-6 py-2 px-1">
           <div class="space-y-2">
             <Label for="name">{{ t('nets.nameTemplate') }}</Label>
             <NameTemplateInput
@@ -229,7 +229,7 @@ async function handleSubmit() {
             </p>
           </div>
 
-          <div class="space-y-2">
+          <div v-if="certificateTemplates.length > 0" class="space-y-2">
             <Label for="certificateTemplate">{{ t('certificates.template') }}</Label>
             <Select v-model="selectedCertificateTemplateId" :disabled="isLoadingCertificateTemplates">
               <SelectTrigger id="certificateTemplate" class="w-full">
