@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Award, Building2, ChevronDown, Play, RotateCcw, Square, TowerControl, Users, XCircle, Radio, Clock, Settings, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
+import { Award, Building2, ChevronDown, Play, Square, TowerControl, Users, XCircle, Radio, Clock, Settings, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { MobileFab } from '@/components/shared'
@@ -71,7 +71,6 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   start: [addOperatorAsAttendee: boolean]
   end: []
-  restart: []
   edit: []
   exportCsv: []
   exportPdf: []
@@ -145,17 +144,10 @@ const mobileFabActions = computed<MobileFabAction[]>(() => {
   if (props.canManage && netStatus.value === 'active') {
     actions.push({ key: 'end', label: t('netDetail.end'), icon: Square as Component })
   }
-  if (props.canManage && (netStatus.value === 'completed' || netStatus.value === 'cancelled') && props.isAdmin) {
-    actions.push({
-      key: 'restart',
-      label: netStatus.value === 'cancelled' ? t('netDetail.undoCancellation') : t('netDetail.restart'),
-      icon: RotateCcw as Component,
-    })
-  }
   if (netStatus.value !== 'pending' && netStatus.value !== 'cancelled' && props.attendeesCount > 0) {
-    actions.push({ key: 'exportCsv', label: 'CSV', icon: FileSpreadsheet as Component })
-    actions.push({ key: 'exportPdf', label: 'PDF', icon: Printer as Component })
-    actions.push({ key: 'exportPng', label: 'PNG', icon: Image as Component })
+  actions.push({ key: 'exportCsv', label: t('netDetail.exportCsvTooltip'), icon: FileSpreadsheet as Component })
+  actions.push({ key: 'exportPdf', label: t('netDetail.exportPdfTooltip'), icon: Printer as Component })
+  actions.push({ key: 'exportPng', label: t('netDetail.exportPngTooltip'), icon: Image as Component })
     if (props.net.certificateTemplate && netStatus.value === 'completed') {
       actions.push({ key: 'exportCertificates', label: t('certificates.downloadAll'), icon: Award as Component })
     }
@@ -170,7 +162,6 @@ const handleFabAction = (key: string) => {
     case 'startWith': emit('start', true); break
     case 'startWithout': emit('start', false); break
     case 'end': emit('end'); break
-    case 'restart': emit('restart'); break
     case 'shareReport': emit('shareReport'); break
     case 'exportCsv': emit('exportCsv'); break
     case 'exportPdf': emit('exportPdf'); break
@@ -286,16 +277,6 @@ const handleFabAction = (key: string) => {
         <XCircle v-if="netStatus === 'pending'" class="h-4 w-4 mr-2" />
         <Square v-else class="h-4 w-4 mr-2" fill="currentColor" />
         {{ netStatus === 'pending' ? t('netDetail.cancel') : t('netDetail.end') }}
-      </Button>
-      <Button
-        v-if="canManage && (netStatus === 'completed' || netStatus === 'cancelled') && isAdmin"
-        variant="outline"
-        size="sm"
-        class="min-w-[10rem]"
-        @click="emit('restart')"
-      >
-        <RotateCcw class="h-4 w-4 mr-2" />
-        {{ netStatus === 'cancelled' ? t('netDetail.undoCancellation') : t('netDetail.restart') }}
       </Button>
     </div>
     <MobileFab :actions="mobileFabActions" @action="handleFabAction" />

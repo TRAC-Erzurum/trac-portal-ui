@@ -63,6 +63,8 @@ const getActivityText = (activity: Activity) => {
   switch (type) {
     case 'net.created':
       return t('dashboard.activityNetCreated', { actor: actorCallSign, name: netName })
+    case 'net.created_from_scheduler':
+      return t('dashboard.activityNetCreated', { actor: actorCallSign, name: netName })
     case 'net.started':
       return t('dashboard.activityNetStarted', { actor: actorCallSign, name: netName })
     case 'net.ended':

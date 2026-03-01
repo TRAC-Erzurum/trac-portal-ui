@@ -397,7 +397,7 @@ async function handleSubmit() {
         <SheetDescription>{{ t('communicationChannels.createDescription') }}</SheetDescription>
       </SheetHeader>
 
-      <form @submit.prevent="handleSubmit" class="mt-6 space-y-6">
+      <form @submit.prevent="handleSubmit" class="space-y-6">
         <div class="space-y-3">
           <Label>{{ t('communicationChannels.type') }} <span class="text-destructive">*</span></Label>
           <div class="grid grid-cols-2 gap-2">

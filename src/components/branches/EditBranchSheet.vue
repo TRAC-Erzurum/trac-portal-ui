@@ -178,7 +178,7 @@ async function handleSubmit() {
         <SheetDescription>{{ t('branches.editDescription') }}</SheetDescription>
       </SheetHeader>
 
-      <form @submit.prevent="handleSubmit" class="mt-6 space-y-6">
+      <form @submit.prevent="handleSubmit" class="space-y-6">
         <div class="space-y-2">
           <Label for="name">{{ t('branches.name') }} <span class="text-destructive">*</span></Label>
           <Input
