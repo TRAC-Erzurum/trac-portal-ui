@@ -1259,7 +1259,7 @@ onMounted(() => {
     />
 
     <AddMemberSheet
-      v-if="branch"
+      v-if="branch && showAddMemberSheet"
       :open="showAddMemberSheet"
       :branch-id="branch.id"
       @update:open="showAddMemberSheet = $event"

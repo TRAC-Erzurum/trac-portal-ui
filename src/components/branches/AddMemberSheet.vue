@@ -32,6 +32,11 @@ interface Operator {
   }
 }
 
+interface PaginatedResponse<T> {
+  data: T[]
+  total: number
+}
+
 interface SearchResult {
   userId: string
   operatorId: string
@@ -80,8 +85,8 @@ const searchUsers = async () => {
 
   isSearching.value = true
   try {
-    const operators = await api.get<Operator[]>(`/operator/search?q=${encodeURIComponent(searchQuery.value)}`)
-    searchResults.value = operators
+    const response = await api.get<PaginatedResponse<Operator>>(`/operator?search=${encodeURIComponent(searchQuery.value)}`)
+    searchResults.value = (response.data || [])
       .filter(op => op.user?.id)
       .map(op => ({
         userId: op.user!.id,
@@ -90,7 +95,7 @@ const searchUsers = async () => {
         prefix: op.prefix,
         suffix: op.suffix,
         email: op.user!.email,
-        fullName: op.user!.fullName,
+        fullName: op.user!.fullName || op.fullName || '',
         picture: op.user!.picture
       }))
   } catch (error) {
@@ -164,10 +169,7 @@ const handleOpenChange = (open: boolean) => {
         <div v-if="!selectedUser" class="space-y-4">
           <div class="space-y-2">
             <Label>{{ t('branches.searchUser') }}</Label>
-            <SearchInput
-              v-model="searchQuery"
-              :placeholder="t('branches.searchUserPlaceholder')"
-            />
+            <SearchInput v-model="searchQuery" :placeholder="t('branches.searchUserPlaceholder')" />
           </div>
 
           <div v-if="isSearching" class="space-y-2">
@@ -183,17 +185,16 @@ const handleOpenChange = (open: boolean) => {
           </div>
 
           <div v-else-if="searchResults.length > 0" class="space-y-2 max-h-64 overflow-y-auto">
-            <button
-              v-for="result in searchResults"
-              :key="result.userId"
-              @click="selectUser(result)"
-              class="w-full p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all text-left"
-            >
+            <button v-for="result in searchResults" :key="result.userId" @click="selectUser(result)"
+              class="w-full p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all text-left">
               <div class="flex items-center gap-3">
                 <UserAvatar :picture="result.picture" class="h-10 w-10" />
                 <div class="flex-1 min-w-0">
                   <p class="font-medium truncate">
-                    {{ result.callSign ? formatCallSign({ callSign: result.callSign, prefix: result.prefix, suffix: result.suffix }) : result.fullName || result.email }}
+                    {{ result.callSign ? formatCallSign({
+                      callSign: result.callSign, prefix: result.prefix, suffix:
+                        result.suffix
+                    }) : result.fullName || result.email }}
                   </p>
                   <p class="text-sm text-muted-foreground truncate">{{ result.email }}</p>
                 </div>
@@ -216,12 +217,7 @@ const handleOpenChange = (open: boolean) => {
               </div>
             </div>
 
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              @click="selectedUser = null"
-              class="w-full"
-            >
+            <Button variant="ghost" size="sm" @click="selectedUser = null" class="w-full">
               {{ t('common.change') }}
             </Button>
           </div>
@@ -247,10 +243,7 @@ const handleOpenChange = (open: boolean) => {
         <Button variant="outline" @click="emit('update:open', false)">
           {{ t('common.cancel') }}
         </Button>
-        <Button 
-          @click="handleAdd" 
-          :disabled="!selectedUser || isAdding"
-        >
+        <Button @click="handleAdd" :disabled="!selectedUser || isAdding">
           <UserPlus class="h-4 w-4 mr-2" />
           {{ t('common.add') }}
         </Button>
