@@ -234,6 +234,26 @@
     "addressCollapseA11y": "Tam adresi gizle",
     "searchPlaceholder": "QTH locator ara"
   },
+  "mapSearch": {
+    "searchTab": "Ara",
+    "measureTab": "Ölçüm",
+    "searchPlaceholder": "İl, ilçe, sokak, yer adı ara...",
+    "searchHint": "İl, ilçe, mahalle, sokak veya yer adı ile arama yapabilirsiniz.",
+    "noResults": "Sonuç bulunamadı",
+    "measureHint": "İki nokta seçerek kuş uçuşu mesafe ve rakım farkını ölçün.",
+    "searchOrClickMap": "Yer ara veya haritaya tıklayın...",
+    "pointA": "Nokta A",
+    "pointB": "Nokta B",
+    "select": "Seç",
+    "selecting": "Seçiliyor...",
+    "notSelected": "Henüz seçilmedi",
+    "clickMapToSelect": "Haritaya tıklayarak veya arama yaparak seçin",
+    "birdDistance": "Kuş Uçuşu Mesafe",
+    "elevationDiff": "Rakım Farkı",
+    "clearMeasurement": "Ölçümü Temizle",
+    "openSearch": "Arama ve Ölçüm",
+    "measureFromHere": "Buradan ölçüm başlat"
+  },
   "account": {
     "viewProfile": "Profilinizi Görüntüleyin",
     "viewProfileDesc": "Çevrim istatistiklerinizi, son çevrimlerinizi ve daha fazlasını profil sayfanızda görün."
