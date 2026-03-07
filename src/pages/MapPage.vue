@@ -4,8 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
   ArrowLeft,
-  ChevronDown,
-  ChevronUp,
   Clock,
   Compass,
   Copy,
@@ -14,19 +12,29 @@ import {
   Layers,
   MapPin,
   Mountain,
+  Ruler,
   Search,
   Share2,
   X
 } from 'lucide-vue-next'
 import L from 'leaflet'
-import { LMap, LTileLayer, LMarker, LPopup } from '@vue-leaflet/vue-leaflet'
+import { LMap, LTileLayer, LMarker, LPopup, LPolyline } from '@vue-leaflet/vue-leaflet'
 import 'leaflet/dist/leaflet.css'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
+import 'leaflet.markercluster'
 import LangToggle from '@/components/layout/LangToggle.vue'
 import ThemeToggle from '@/components/layout/ThemeToggle.vue'
 import { AppVersionBox } from '@/components/shared'
+import MapSearchPanel from '@/components/shared/MapSearchPanel.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { useThemeStore } from '@/stores/theme'
 import { buildTutorialContent } from '@/lib/tutorial-content'
 import { api } from '@/lib/api'
@@ -52,31 +60,48 @@ const SEARCH_DEBOUNCE_MS = 400
 const LOCATOR_SEARCH_MIN_LEN = 2
 const LOCATOR_SEARCH_MAX_LEN = 10
 
-/** Röle: CommunicationChannelCard / EditCommChannelSheet ile aynı — TowerControl, mavi (blue-500/600) */
+/** Röle: küçük kule ikonu, 16x16 — yakınlaştırınca görünür */
 const REPEATER_ICON_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v18"/><path d="M19 3v18"/><path d="M5 7h14"/><path d="M5 11h14"/><path d="M12 3v4"/><path d="M12 15v6"/></svg>'
-/** APRS: CommunicationChannelCard / EditCommChannelSheet ile aynı — Navigation (paper plane), turuncu (orange-500/600) */
+  '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.9 16.1C1 12.2 1 5.8 4.9 1.9"/><path d="M7.8 4.7a6.14 6.14 0 0 0-.8 7.5"/><path d="M16.2 4.7a6.14 6.14 0 0 1 .8 7.5"/><path d="M19.1 1.9a10.56 10.56 0 0 1 0 14.2"/><circle cx="12" cy="9" r="2"/><path d="M12 11v7"/></svg>'
+/** APRS: küçük navigasyon ikonu, 14x14 */
 const APRS_ICON_SVG =
-  '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>'
+  '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>'
 
 const CHANNEL_ICON_STYLES = {
-  repeater: { bg: '#dbeafe', icon: '#2563eb' },
-  aprs: { bg: '#ffedd5', icon: '#ea580c' },
+  repeater: { bg: '#eff6ff', border: '#93c5fd', icon: '#2563eb' },
+  aprs: { bg: '#fff7ed', border: '#fdba74', icon: '#ea580c' },
 } as const
 
 function createChannelIcon(type: 'repeater' | 'aprs'): L.DivIcon {
   const svg = type === 'aprs' ? APRS_ICON_SVG : REPEATER_ICON_SVG
-  const { bg, icon } = CHANNEL_ICON_STYLES[type]
+  const { bg, border, icon } = CHANNEL_ICON_STYLES[type]
   return L.divIcon({
     className: 'channel-marker-icon',
-    html: `<div class="flex items-center justify-center w-8 h-8 rounded-md border border-background/80 shadow-sm" style="background-color:${bg};color:${icon}">${svg}</div>`,
-    iconSize: [32, 32],
-    iconAnchor: [16, 16],
+    html: `<div class="channel-marker-dot" style="background:${bg};border-color:${border};color:${icon}">${svg}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
   })
 }
 
 const repeaterIcon = createChannelIcon('repeater')
 const aprsIcon = createChannelIcon('aprs')
+
+/** Cluster ikon fabrikası: röle sayısını gösteren yuvarlak badge */
+function createClusterIcon(cluster: any): L.DivIcon {
+  const count = cluster.getChildCount()
+  let sizeClass = 'channel-cluster-small'
+  let size = 36
+  if (count >= 50) { sizeClass = 'channel-cluster-large'; size = 48 }
+  else if (count >= 10) { sizeClass = 'channel-cluster-medium'; size = 42 }
+  return L.divIcon({
+    html: `<div class="channel-cluster ${sizeClass}"><span>${count}</span></div>`,
+    className: 'channel-cluster-icon',
+    iconSize: [size, size],
+  })
+}
+
+// ---- Programmatic cluster layer ----
+let channelClusterGroup: any = null
 
 const { t } = useI18n()
 const route = useRoute()
@@ -173,10 +198,126 @@ const addressLoading = ref(false)
 const addressCache = new Map<string, { country: string; province: string; district: string; displayName?: string }>()
 const addressExpanded = ref(false)
 const elevationLoading = ref(false)
+const coordModeDMS = ref(false)
 const elevationCache = new Map<string, number>()
 const mouseMapLatLng = ref<[number, number] | null>(null)
 const locatorSearchQuery = ref('')
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
+
+/* ---- Search panel state ---- */
+const searchPanelRef = ref<InstanceType<typeof MapSearchPanel> | null>(null)
+const mobileSearchPanelRef = ref<InstanceType<typeof MapSearchPanel> | null>(null)
+const mobileSheetOpen = ref(false)
+const desktopPanelOpen = ref(false)
+const mapSelectingPoint = ref<'A' | 'B' | null>(null)
+
+function openSearchPanel() {
+  if (window.innerWidth >= 1024) {
+    desktopPanelOpen.value = true
+  } else {
+    mobileSheetOpen.value = true
+  }
+}
+
+// When sidebar opens/closes, Leaflet must recalculate container size
+watch(desktopPanelOpen, () => {
+  // Wait for the CSS transition to finish (300ms open / 200ms close)
+  setTimeout(() => mapRef.value?.invalidateSize(), 350)
+})
+
+/** Custom circle-with-letter DivIcon for A/B measurement markers */
+function createPointIcon(letter: string, color: string): L.DivIcon {
+  return L.divIcon({
+    className: 'measurement-marker-icon',
+    html: `<div class="flex items-center justify-center w-7 h-7 rounded-full border-2 shadow-md text-xs font-bold" style="background-color:${color};border-color:white;color:white">${letter}</div>`,
+    iconSize: [28, 28],
+    iconAnchor: [14, 14],
+  })
+}
+const pointAIcon = createPointIcon('A', '#2563eb')
+const pointBIcon = createPointIcon('B', '#dc2626')
+
+/** Computed measurement marker positions (reactive from search panel) */
+const measurePointA = computed(() => {
+  const p = searchPanelRef.value?.pointA
+  return p ? [p.lat, p.lng] as [number, number] : null
+})
+const measurePointB = computed(() => {
+  const p = searchPanelRef.value?.pointB
+  return p ? [p.lat, p.lng] as [number, number] : null
+})
+const measureLine = computed(() => {
+  if (!measurePointA.value || !measurePointB.value) return null
+  return [measurePointA.value, measurePointB.value]
+})
+
+/** Ölçüm markerına tıklanınca o konumda popup aç */
+function openPopupAtMeasurePoint(latlng: [number, number]) {
+  const [lat, lng] = latlng
+  const locator = nativeWGS84ToMaidenhead({ lat, lng }, 10)
+  selectedLatLng.value = [lat, lng]
+  selectedLocator.value = locator
+  locatorSearchQuery.value = locator
+  locatorSetByClick.value = true
+  router.replace({ name: 'map', query: { locator } })
+}
+
+function handleSearchGoTo(lat: number, lng: number, _label: string) {
+  center.value = [lat, lng]
+  zoom.value = 14
+  const locator = nativeWGS84ToMaidenhead({ lat, lng }, 10)
+  selectedLatLng.value = [lat, lng]
+  selectedLocator.value = locator
+  locatorSearchQuery.value = locator
+  locatorSetByClick.value = true
+  router.replace({ name: 'map', query: { locator } })
+  nextTick(() => mapRef.value?.setView(center.value, zoom.value))
+  // Close mobile sheet after navigation
+  mobileSheetOpen.value = false
+}
+
+/** Popup'taki ölçüm butonu: A noktasını seç, panel aç, popup kapat */
+function startMeasureFromPopup() {
+  const ll = selectedLatLng.value
+  if (!ll) return
+  const lat = ll[0]
+  const lng = ll[1]
+  const label = popupAddressDisplay.value || `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+
+  // Popup'u kapat
+  clearSelection()
+
+  const isMobile = window.innerWidth < 1024
+
+  if (!isMobile) {
+    // Desktop: sidebar aç, ölçüm tabına geç, A noktasını set et
+    desktopPanelOpen.value = true
+    nextTick(() => {
+      const panel = searchPanelRef.value
+      if (panel) {
+        panel.activeTab = 'measure'
+        panel.setMeasurementPoint(lat, lng, label, 'A')
+      }
+    })
+  } else {
+    // Mobil: gizli desktop panel üzerinde de set et (harita markerları için)
+    if (searchPanelRef.value) {
+      searchPanelRef.value.activeTab = 'measure'
+      searchPanelRef.value.setMeasurementPoint(lat, lng, label, 'A')
+    }
+    // Sheet'i aç
+    mobileSheetOpen.value = true
+    nextTick(() => {
+      nextTick(() => {
+        const panel = mobileSearchPanelRef.value
+        if (panel) {
+          panel.activeTab = 'measure'
+          panel.setMeasurementPoint(lat, lng, label, 'A')
+        }
+      })
+    })
+  }
+}
 
 const channelsWithLocation = ref<CommunicationChannel[]>([])
 async function fetchChannelsWithLocation() {
@@ -197,8 +338,62 @@ async function fetchChannelsWithLocation() {
   }
 }
 
-function channelMarkerIcon(channel: CommunicationChannel): L.Icon {
-  return (channel.type === 'aprs' ? aprsIcon : repeaterIcon) as L.Icon
+function channelMarkerIcon(channel: CommunicationChannel): L.DivIcon {
+  return channel.type === 'aprs' ? aprsIcon : repeaterIcon
+}
+
+const escapeHtml = (s: string) => String(s)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+function buildChannelPopupHtml(ch: CommunicationChannel): string {
+  const name = escapeHtml(
+    ch.description?.trim() ||
+    ch.location?.trim() ||
+    formatCommunicationChannelLabel({ communicationChannel: ch }) ||
+    t('communicationChannels.types.' + ch.type)
+  )
+  const typeName = escapeHtml(t('communicationChannels.types.' + ch.type))
+  const location = ch.location ? `<span class="block mt-0.5">${escapeHtml(ch.location)}</span>` : ''
+  const tutorial = getChannelTutorial(ch)
+  const howTo = escapeHtml(t('communicationChannels.howToConnect'))
+  return `<div class="channel-popup min-w-[16rem] max-w-[20rem] rounded-md border border-border bg-background py-2 px-3 shadow-sm">
+    <div class="font-medium text-sm mb-1">${name}</div>
+    <div class="text-xs text-muted-foreground mb-2">${typeName}${location}</div>
+    <hr class="my-2 border-border" />
+    <p class="text-xs font-medium text-muted-foreground mb-1">${howTo}</p>
+    <div class="text-xs whitespace-pre-line leading-snug">${escapeHtml(tutorial.content)}</div>
+  </div>`
+}
+
+function updateChannelCluster() {
+  const map = mapRef.value
+  if (!map) return
+  if (channelClusterGroup) {
+    map.removeLayer(channelClusterGroup)
+    channelClusterGroup = null
+  }
+  if (!channelsWithLocation.value.length) return
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- leaflet.markercluster extends L at runtime
+  const markerClusterGroupFn = (L as any).markerClusterGroup
+  if (!markerClusterGroupFn) return
+  const group = markerClusterGroupFn({
+    chunkedLoading: true,
+    maxClusterRadius: 55,
+    iconCreateFunction: createClusterIcon,
+    spiderfyOnMaxZoom: true,
+    showCoverageOnHover: false,
+    disableClusteringAtZoom: 14,
+  })
+  for (const ch of channelsWithLocation.value) {
+    const lat = Number(ch.latitude)
+    const lng = Number(ch.longitude)
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue
+    const marker = L.marker([lat, lng], { icon: channelMarkerIcon(ch) })
+    marker.bindPopup(buildChannelPopupHtml(ch), { closeButton: true })
+    group.addLayer(marker)
+  }
+  group.addTo(map)
+  channelClusterGroup = group
 }
 
 function getChannelTutorial(channel: CommunicationChannel): { title: string; content: string } {
@@ -343,16 +538,13 @@ function syncFromUrl() {
 function onMapReady(map: LeafletMap) {
   mapRef.value = map
   map.setView(center.value, zoom.value)
+  nextTick(updateChannelCluster)
 
-  // Popup: marker gecikmeli mount oluyor; 3 saniye boyunca her 150ms dene
+  // Popup: marker gecikmeli mount olabilir; birkaç kez dene
   if (selectedLatLng.value) {
     openPopupIfReady()
-    let n = 0
-    const tid = setInterval(() => {
-      openPopupIfReady()
-      n++
-      if (n >= 20) clearInterval(tid)
-    }, 150)
+    setTimeout(openPopupIfReady, 200)
+    setTimeout(openPopupIfReady, 600)
   }
 
   map.on('mousemove', (e: { latlng: { lat: number; lng: number } }) => {
@@ -363,6 +555,25 @@ function onMapReady(map: LeafletMap) {
   })
   map.on('click', (e: { latlng: { lat: number; lng: number } }) => {
     const { lat, lng } = e.latlng
+    // If in measurement point selection mode, delegate to search panel
+    const selecting = mapSelectingPoint.value || searchPanelRef.value?.selectingPoint
+    if (selecting) {
+      // Panel may be unmounted (mobile sheet closed), so re-open first and set point
+      mapSelectingPoint.value = null
+      if (window.innerWidth < 1024) {
+        // Mobile: open sheet, then set point on panel once mounted
+        mobileSheetOpen.value = true
+        nextTick(() => {
+          nextTick(() => {
+            const panel = mobileSearchPanelRef.value || searchPanelRef.value
+            if (panel) panel.setMeasurementPoint(lat, lng, '', selecting)
+          })
+        })
+      } else {
+        searchPanelRef.value?.setMeasurementPoint(lat, lng, '', selecting)
+      }
+      return
+    }
     const locator = nativeWGS84ToMaidenhead({ lat, lng }, 10)
     selectedLatLng.value = [lat, lng]
     selectedLocator.value = locator
@@ -409,10 +620,15 @@ function goToLocatorFromSearch(raw: string) {
 }
 
 /** Marker haritaya eklendiği anda popup aç; popup kapanınca pin ve query temizle. */
-function onMarkerAdd(e: { target: { openPopup?: () => void; on?: (ev: string, fn: () => void) => void } }) {
-  const open = () => e.target.openPopup?.()
-  nextTick(open)
-  setTimeout(open, 80)
+function onMarkerAdd(e: { target: { openPopup?: () => void; on?: (ev: string, fn: () => void) => void; getPopup?: () => { options?: Record<string, unknown> } } }) {
+  nextTick(() => {
+    e.target.openPopup?.()
+    // İlk açılıştan sonra autoPan kapat ki async içerik güncellenince harita titresin
+    setTimeout(() => {
+      const popup = e.target.getPopup?.()
+      if (popup?.options) popup.options.autoPan = false
+    }, 300)
+  })
   e.target.on?.('popupclose', clearSelection)
 }
 
@@ -463,6 +679,18 @@ function copyDMS() {
   toast.success(t('map.dmsCopied'))
 }
 
+function toggleCoordMode() {
+  coordModeDMS.value = !coordModeDMS.value
+}
+
+function copyActiveCoord() {
+  if (coordModeDMS.value) {
+    copyDMS()
+  } else {
+    copyDecimal()
+  }
+}
+
 function shareMapLink() {
   if (!mapUrl.value) return
   const fullUrl = typeof window !== 'undefined' ? `${window.location.origin}${mapUrl.value}` : mapUrl.value
@@ -474,7 +702,7 @@ function shareMapLink() {
 syncFromUrl()
 onMounted(() => {
   setTimeout(syncFromUrl, 0)
-  fetchChannelsWithLocation()
+  fetchChannelsWithLocation().then(() => nextTick(updateChannelCluster))
 })
 
 // Geri/ileri veya harita tıklayınca URL değişir; state'i güncelle (parseLocatorForMap ile 2/4/6/8 destek)
@@ -526,7 +754,6 @@ function openPopupIfReady() {
 watch(selectedLatLng, (latlng) => {
   if (!latlng) return
   nextTick(openPopupIfReady)
-  ;[150, 400, 800, 1500].forEach((ms) => setTimeout(openPopupIfReady, ms))
 })
 watch(() => markerRef.value?.leafletObject, (obj) => {
   if (obj && selectedLatLng.value) nextTick(() => obj.openPopup?.())
@@ -597,7 +824,50 @@ watch(selectedLatLng, (latlng) => {
       </Button>
     </div>
 
-    <div class="flex-1 min-h-0 pt-14 relative">
+    <div class="flex-1 min-h-0 pt-14 relative flex">
+      <!-- Desktop sidebar (lg+) -->
+      <Transition
+        enter-active-class="transition-all duration-300 ease-out"
+        enter-from-class="-translate-x-full opacity-0"
+        enter-to-class="translate-x-0 opacity-100"
+        leave-active-class="transition-all duration-200 ease-in"
+        leave-from-class="translate-x-0 opacity-100"
+        leave-to-class="-translate-x-full opacity-0"
+      >
+        <aside
+          v-if="desktopPanelOpen"
+          class="hidden lg:flex flex-col w-80 shrink-0 border-r border-border bg-background z-[500] relative"
+        >
+          <div class="absolute top-2 right-2 z-10">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              @click="desktopPanelOpen = false"
+            >
+              <X class="h-4 w-4" />
+            </Button>
+          </div>
+          <MapSearchPanel
+            ref="searchPanelRef"
+            :visible="desktopPanelOpen"
+            @go-to="handleSearchGoTo"
+            @select-point="(w: 'A' | 'B') => { mapSelectingPoint = w }"
+          />
+        </aside>
+      </Transition>
+
+      <div class="flex-1 min-h-0 relative">
+      <!-- Open button (only when sidebar/sheet is closed) -->
+      <Button
+        v-if="!desktopPanelOpen && !mobileSheetOpen"
+        variant="outline"
+        size="icon-sm"
+        class="absolute top-3 left-3 z-[500] bg-background/90 border border-border/50 shadow-sm"
+        :aria-label="t('mapSearch.openSearch')"
+        @click="openSearchPanel"
+      >
+        <Search class="h-4 w-4" />
+      </Button>
       <!-- Alt orta: QTH bilgisi (fare üzerindeyken) + search box, ikisi de transparan -->
       <div
         class="absolute left-1/2 -translate-x-1/2 bottom-4 z-[500] flex items-center gap-2 px-2"
@@ -660,144 +930,150 @@ watch(selectedLatLng, (latlng) => {
           :attribution="undefined"
           :z-index="650"
         />
-        <!-- İletişim kanalları (lat/lng olan röle ve APRS) -->
-        <template v-for="ch in channelsWithLocation" :key="ch.id">
-          <LMarker
-            :lat-lng="[Number(ch.latitude!), Number(ch.longitude!)]"
-            :icon="channelMarkerIcon(ch)"
-          >
-            <LPopup :options="{ closeButton: true }">
-              <div class="channel-popup min-w-[16rem] max-w-[20rem] rounded-md border border-border bg-background py-2 px-3 shadow-sm">
-                <div class="font-medium text-sm mb-1">
-                  {{ ch.description?.trim() || ch.location?.trim() || formatCommunicationChannelLabel({ communicationChannel: ch }) || t('communicationChannels.types.' + ch.type) }}
-                </div>
-                <div class="text-xs text-muted-foreground mb-2">
-                  {{ t('communicationChannels.types.' + ch.type) }}
-                  <span v-if="ch.location" class="block mt-0.5">{{ ch.location }}</span>
-                </div>
-                <Separator class="my-2" />
-                <p class="text-xs font-medium text-muted-foreground mb-1">{{ t('communicationChannels.howToConnect') }}</p>
-                <div class="text-xs whitespace-pre-line leading-snug">{{ getChannelTutorial(ch).content }}</div>
-              </div>
-            </LPopup>
-          </LMarker>
-        </template>
+        <!-- İletişim kanalları: programmatic cluster layer ile ekleniyor (onMapReady + updateChannelCluster) -->
         <LMarker
           v-if="selectedLatLng"
           ref="markerRef"
           :lat-lng="selectedLatLng"
           @add="onMarkerAdd"
         >
-          <LPopup :options="{ closeButton: false }">
-            <div class="min-w-[14rem] rounded-md border border-border bg-background py-2 px-3 shadow-sm">
-              <!-- QTH locator -->
-              <div class="flex items-center gap-2">
-                <Crosshair class="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                <span class="font-mono text-sm font-medium min-w-0 flex-1 truncate">{{ selectedLocator }}</span>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  class="shrink-0"
-                  :aria-label="t('map.copyLocatorA11y')"
-                  @click="copyLocator"
-                >
-                  <Copy class="h-4 w-4" aria-hidden="true" />
+          <LPopup :options="{ closeButton: false, autoPan: true, autoPanPadding: [40, 40], className: 'compact-popup' }">
+            <!-- Desktop popup (transparent until hover) -->
+            <div class="hidden md:block w-[15rem] rounded-md border border-border/40 py-1.5 px-2.5 shadow-sm popup-desktop-fade">
+              <!-- QTH locator + copy -->
+              <div class="flex items-center gap-1.5">
+                <Crosshair class="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span class="font-mono text-xs font-medium min-w-0 flex-1 truncate">{{ selectedLocator }}</span>
+                <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6" :aria-label="t('map.copyLocatorA11y')" @click="copyLocator">
+                  <Copy class="h-3 w-3" aria-hidden="true" />
                 </Button>
               </div>
-              <Separator class="my-2" />
-              <!-- İlçe, il, ülke + isteğe bağlı tam adres -->
-              <div class="text-xs">
-                <div class="flex items-center gap-2">
-                  <Globe class="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                  <span v-if="addressLoading" class="text-muted-foreground">{{ t('common.loading') }}</span>
-                  <span v-else-if="popupAddressDisplay" class="font-medium min-w-0 flex-1 break-words">{{ popupAddressDisplay }}</span>
-                  <span v-else class="text-muted-foreground">—</span>
-                  <Button
-                    v-if="addressPlace?.displayName && !addressLoading"
-                    variant="outline"
-                    size="icon-sm"
-                    class="shrink-0"
-                    :aria-label="addressExpanded ? t('map.addressCollapseA11y') : t('map.addressExpandA11y')"
-                    @click="addressExpanded = !addressExpanded"
-                  >
-                    <ChevronDown v-if="!addressExpanded" class="h-4 w-4" aria-hidden="true" />
-                    <ChevronUp v-else class="h-4 w-4" aria-hidden="true" />
-                  </Button>
-                </div>
-                <p
-                  v-if="addressExpanded && addressPlace?.displayName"
-                  class="mt-1.5 pl-6 text-muted-foreground break-words leading-snug"
-                >
-                  {{ addressPlace.displayName }}
-                </p>
-              </div>
-              <!-- Tahmini GMT -->
-              <div v-if="popupUtcOffset" class="flex items-center gap-2 text-xs mt-2">
-                <Clock class="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                <span class="font-medium">{{ popupUtcOffset }}</span>
-              </div>
-              <Separator class="my-2" />
-              <!-- Decimal koordinat -->
-              <div class="flex items-center gap-2">
-                <MapPin class="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                <span class="text-sm font-medium tabular-nums break-all min-w-0 flex-1">{{ popupDecimalDisplay }}</span>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  class="shrink-0"
-                  :aria-label="t('map.copyDecimalA11y')"
-                  @click="copyDecimal"
-                >
-                  <Copy class="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </div>
-              <!-- DMS koordinat -->
-              <div class="flex items-center gap-2 mt-1.5">
-                <Compass class="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                <span class="text-sm font-medium tabular-nums break-all min-w-0 flex-1">{{ popupDMS }}</span>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  class="shrink-0"
-                  :aria-label="t('map.copyDMSA11y')"
-                  @click="copyDMS"
-                >
-                  <Copy class="h-4 w-4" aria-hidden="true" />
-                </Button>
-              </div>
-              <!-- Yükseklik -->
-              <div class="flex items-center gap-2 text-xs mt-2">
-                <Mountain class="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                <span v-if="elevationLoading" class="text-muted-foreground">{{ t('common.loading') }}</span>
-                <span v-else-if="popupElevationDisplay" class="font-medium tabular-nums">{{ popupElevationDisplay }}</span>
+              <!-- Adres -->
+              <div class="flex items-center gap-1.5 mt-1 text-[11px] leading-tight">
+                <Globe class="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span v-if="addressLoading" class="text-muted-foreground">{{ t('common.loading') }}</span>
+                <span v-else-if="popupAddressDisplay" class="font-medium min-w-0 flex-1 truncate" :title="addressPlace?.displayName">{{ popupAddressDisplay }}</span>
                 <span v-else class="text-muted-foreground">—</span>
               </div>
-              <Separator class="my-2" />
-              <!-- Share sola, kapat sağa -->
-              <div class="flex justify-between items-center">
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  class="shrink-0"
-                  :aria-label="t('map.shareMapA11y')"
-                  @click="shareMapLink"
-                >
-                  <Share2 class="h-4 w-4" aria-hidden="true" />
+              <!-- Koordinat (tıkla → decimal/DMS geçişi) + kopyala -->
+              <div class="flex items-center gap-1.5 mt-1 cursor-pointer" @click="toggleCoordMode">
+                <MapPin v-if="!coordModeDMS" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <Compass v-else class="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span class="text-xs font-medium tabular-nums min-w-0 flex-1 truncate">{{ coordModeDMS ? popupDMS : popupDecimalDisplay }}</span>
+                <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6" @click.stop="copyActiveCoord">
+                  <Copy class="h-3 w-3" aria-hidden="true" />
                 </Button>
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  class="shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30"
-                  :aria-label="t('common.close')"
-                  @click="clearSelection"
-                >
-                  <X class="h-4 w-4" aria-hidden="true" />
+              </div>
+              <!-- Timezone + Yükseklik aynı satır -->
+              <div class="flex items-center gap-3 mt-1 text-[11px] leading-tight">
+                <div v-if="popupUtcOffset" class="flex items-center gap-1">
+                  <Clock class="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <span class="font-medium">{{ popupUtcOffset }}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <Mountain class="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <span v-if="elevationLoading" class="text-muted-foreground">…</span>
+                  <span v-else-if="popupElevationDisplay" class="font-medium tabular-nums">{{ popupElevationDisplay }}</span>
+                  <span v-else class="text-muted-foreground">—</span>
+                </div>
+              </div>
+              <Separator class="my-1.5" />
+              <!-- Aksiyon butonları -->
+              <div class="flex justify-between items-center">
+                <div class="flex items-center gap-1">
+                  <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6" :aria-label="t('map.measureFromHere')" :title="t('map.measureFromHere')" @click="startMeasureFromPopup">
+                    <Ruler class="h-3.5 w-3.5" aria-hidden="true" />
+                  </Button>
+                  <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6" :aria-label="t('map.shareMapA11y')" @click="shareMapLink">
+                    <Share2 class="h-3.5 w-3.5" aria-hidden="true" />
+                  </Button>
+                </div>
+                <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10" :aria-label="t('common.close')" @click="clearSelection">
+                  <X class="h-3.5 w-3.5" aria-hidden="true" />
+                </Button>
+              </div>
+            </div>
+            <!-- Mobile popup -->
+            <div class="md:hidden w-[13rem] rounded-md border border-border bg-background py-1.5 px-2 shadow-sm">
+              <!-- QTH locator -->
+              <div class="flex items-center gap-1.5">
+                <Crosshair class="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span class="font-mono text-[11px] font-medium min-w-0 flex-1 truncate">{{ selectedLocator }}</span>
+              </div>
+              <!-- Adres -->
+              <div v-if="popupAddressDisplay" class="flex items-center gap-1.5 mt-0.5">
+                <Globe class="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span class="text-[11px] text-muted-foreground min-w-0 flex-1 truncate">{{ popupAddressDisplay }}</span>
+              </div>
+              <!-- Koordinat (tıkla → geçiş) -->
+              <div class="flex items-center gap-1.5 mt-0.5 cursor-pointer" @click="toggleCoordMode">
+                <MapPin v-if="!coordModeDMS" class="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <Compass v-else class="h-3 w-3 shrink-0 text-muted-foreground" aria-hidden="true" />
+                <span class="text-[11px] font-mono tabular-nums min-w-0 flex-1 truncate">{{ coordModeDMS ? popupDMS : popupDecimalDisplay }}</span>
+              </div>
+              <!-- Timezone + Yükseklik aynı satır -->
+              <div class="flex items-center gap-2 mt-0.5 text-[10px] leading-tight">
+                <div v-if="popupUtcOffset" class="flex items-center gap-0.5">
+                  <Clock class="h-2.5 w-2.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <span class="font-medium">{{ popupUtcOffset }}</span>
+                </div>
+                <div class="flex items-center gap-0.5">
+                  <Mountain class="h-2.5 w-2.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+                  <span v-if="elevationLoading" class="text-muted-foreground">…</span>
+                  <span v-else-if="popupElevationDisplay" class="font-medium tabular-nums">{{ popupElevationDisplay }}</span>
+                  <span v-else class="text-muted-foreground">—</span>
+                </div>
+              </div>
+              <Separator class="my-1" />
+              <!-- Aksiyon butonları -->
+              <div class="flex justify-between items-center">
+                <div class="flex items-center gap-0.5">
+                  <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6" :aria-label="t('map.measureFromHere')" @click="startMeasureFromPopup">
+                    <Ruler class="h-3 w-3" aria-hidden="true" />
+                  </Button>
+                  <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6" :aria-label="t('map.copyLocatorA11y')" @click="copyLocator">
+                    <Copy class="h-3 w-3" aria-hidden="true" />
+                  </Button>
+                  <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6" :aria-label="t('map.shareMapA11y')" @click="shareMapLink">
+                    <Share2 class="h-3 w-3" aria-hidden="true" />
+                  </Button>
+                </div>
+                <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10" :aria-label="t('common.close')" @click="clearSelection">
+                  <X class="h-3 w-3" aria-hidden="true" />
                 </Button>
               </div>
             </div>
           </LPopup>
         </LMarker>
+        <!-- Measurement markers A/B -->
+        <LMarker v-if="measurePointA" :lat-lng="measurePointA" :icon="(pointAIcon as any)" @click="openPopupAtMeasurePoint(measurePointA!)" />
+        <LMarker v-if="measurePointB" :lat-lng="measurePointB" :icon="(pointBIcon as any)" @click="openPopupAtMeasurePoint(measurePointB!)" />
+        <!-- Measurement line between A and B -->
+        <LPolyline
+          v-if="measureLine"
+          :lat-lngs="measureLine"
+          :options="{ color: '#2563eb', weight: 2, dashArray: '8, 6', opacity: 0.8 }"
+        />
       </LMap>
+      </div><!-- /map inner -->
+
+
+
+      <!-- Mobile Sheet -->
+      <Sheet v-model:open="mobileSheetOpen">
+        <SheetContent side="bottom" class="h-[85vh] flex flex-col p-0 rounded-t-xl">
+          <SheetHeader class="px-4 pt-4 pb-0 shrink-0">
+            <SheetTitle>{{ t('mapSearch.openSearch') }}</SheetTitle>
+          </SheetHeader>
+          <MapSearchPanel
+            :ref="(el: any) => { mobileSearchPanelRef = el; if (!desktopPanelOpen) searchPanelRef = el }"
+            :visible="mobileSheetOpen"
+            @go-to="handleSearchGoTo"
+            @close="mobileSheetOpen = false"
+            @select-point="(w: 'A' | 'B') => { mapSelectingPoint = w }"
+          />
+        </SheetContent>
+      </Sheet>
     </div>
 
     <footer class="flex-shrink-0 border-t border-border/20 bg-background/95 safe-area-inset">
@@ -813,3 +1089,62 @@ watch(selectedLatLng, (latlng) => {
     </footer>
   </div>
 </template>
+
+<style>
+/* Leaflet popup chrome: minimal */
+.compact-popup .leaflet-popup-content-wrapper {
+  padding: 0 !important;
+  border-radius: 0.375rem !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.compact-popup .leaflet-popup-content {
+  margin: 0 !important;
+  min-width: 0 !important;
+}
+.compact-popup .leaflet-popup-tip-container {
+  margin-top: -1px;
+}
+
+/* Desktop: popup saydam arka plan, hover'da opak */
+@media (min-width: 768px) {
+  .popup-desktop-fade {
+    background: color-mix(in srgb, var(--background) 55%, transparent) !important;
+    backdrop-filter: blur(2px);
+    border-color: color-mix(in srgb, var(--border) 45%, transparent) !important;
+    transition: background 0.2s ease, backdrop-filter 0.2s ease, border-color 0.2s ease;
+  }
+  .popup-desktop-fade * {
+    transition: opacity 0.2s ease;
+    opacity: 0.7;
+  }
+  .popup-desktop-fade:hover {
+    background: color-mix(in srgb, var(--background) 95%, transparent) !important;
+    backdrop-filter: blur(0);
+    border-color: var(--border) !important;
+  }
+  .popup-desktop-fade:hover * {
+    opacity: 1;
+  }
+  /* Tip (ok) da saydam olsun */
+  .compact-popup .leaflet-popup-tip {
+    background: color-mix(in srgb, var(--background) 55%, transparent) !important;
+    border: 1px solid color-mix(in srgb, var(--border) 45%, transparent) !important;
+    box-shadow: none !important;
+    transition: background 0.2s ease, border-color 0.2s ease;
+  }
+  .compact-popup:hover .leaflet-popup-tip {
+    background: color-mix(in srgb, var(--background) 95%, transparent) !important;
+    border-color: var(--border) !important;
+  }
+}
+
+/* Mobile: tip opak */
+@media (max-width: 767px) {
+  .compact-popup .leaflet-popup-tip {
+    background: var(--background) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: none !important;
+  }
+}
+</style>

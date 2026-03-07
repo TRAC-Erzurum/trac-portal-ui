@@ -175,6 +175,22 @@
   display: none;
 }
 
+/* Leaflet popup: content margin sıfırla */
+.leaflet-popup-content {
+  margin: 0 !important;
+}
+
+/* Desktop: popup hover edilmediği sürece yarı-saydam */
+@media (min-width: 768px) {
+  .leaflet-popup {
+    opacity: 0.45;
+    transition: opacity 0.2s ease;
+  }
+  .leaflet-popup:hover {
+    opacity: 1;
+  }
+}
+
 /* Leaflet popup: theme-aware in dark mode (popup is injected by Leaflet, not in component tree) */
 .dark .leaflet-popup-content-wrapper,
 .dark .leaflet-popup-tip {
@@ -195,6 +211,82 @@
 .leaflet-marker-icon.channel-marker-icon {
   background: transparent !important;
   border: none !important;
+}
+
+/* Röle/APRS marker: zarif yuvarlak nokta */
+.channel-marker-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.15);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.channel-marker-dot:hover {
+  transform: scale(1.15);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+}
+
+/* Cluster ikonları */
+.leaflet-marker-icon.channel-cluster-icon {
+  background: transparent !important;
+  border: none !important;
+}
+.channel-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 600;
+  color: #1e40af;
+  box-shadow: 0 1px 6px rgb(0 0 0 / 0.18);
+  transition: transform 0.15s ease;
+}
+.channel-cluster:hover {
+  transform: scale(1.1);
+}
+.channel-cluster span {
+  line-height: 1;
+}
+.channel-cluster-small {
+  width: 36px;
+  height: 36px;
+  font-size: 13px;
+  background: rgba(219, 234, 254, 0.9);
+  border: 2px solid rgba(147, 197, 253, 0.8);
+}
+.channel-cluster-medium {
+  width: 42px;
+  height: 42px;
+  font-size: 14px;
+  background: rgba(191, 219, 254, 0.9);
+  border: 2px solid rgba(96, 165, 250, 0.8);
+}
+.channel-cluster-large {
+  width: 48px;
+  height: 48px;
+  font-size: 15px;
+  background: rgba(147, 197, 253, 0.9);
+  border: 2px solid rgba(59, 130, 246, 0.8);
+}
+/* Dark mode cluster renkleri */
+.dark .channel-cluster {
+  color: #bfdbfe;
+}
+.dark .channel-cluster-small {
+  background: rgba(30, 58, 138, 0.75);
+  border-color: rgba(59, 130, 246, 0.6);
+}
+.dark .channel-cluster-medium {
+  background: rgba(30, 64, 175, 0.8);
+  border-color: rgba(96, 165, 250, 0.6);
+}
+.dark .channel-cluster-large {
+  background: rgba(37, 99, 235, 0.8);
+  border-color: rgba(147, 197, 253, 0.6);
 }
 
 /* Çevrim detay haritası: katılımcı marker (çağrı işareti etiketi) */

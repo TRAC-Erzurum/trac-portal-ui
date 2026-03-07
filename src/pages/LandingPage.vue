@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { ArrowRight, MapPin, Radio, Signal, Users, Waves } from 'lucide-vue-next'
+import { ArrowRight, Map, MapPin, Radio, Signal, Users, Waves } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import LangToggle from '@/components/layout/LangToggle.vue'
 import ThemeToggle from '@/components/layout/ThemeToggle.vue'
@@ -20,6 +20,10 @@ const { t } = useI18n()
           <img src="/logo-s.svg" alt="TRAC" class="h-10 w-auto" />
         </router-link>
         <nav class="flex items-center gap-2" :aria-label="t('landing.footer.ariaMainNav')">
+          <Button variant="outline" size="sm" @click="$router.push('/map')">
+            <Map class="size-4 mr-1" />
+            {{ t('nav.map') }}
+          </Button>
           <Button variant="outline" size="sm" @click="$router.push('/register')">
             {{ t('auth.register') }}
           </Button>

@@ -234,6 +234,26 @@
     "addressCollapseA11y": "Hide full address",
     "searchPlaceholder": "Search QTH locator"
   },
+  "mapSearch": {
+    "searchTab": "Search",
+    "measureTab": "Measure",
+    "searchPlaceholder": "Search city, district, street, place...",
+    "searchHint": "Search by city, district, neighborhood, street or place name.",
+    "noResults": "No results found",
+    "measureHint": "Select two points to measure bird's-eye distance and elevation difference.",
+    "searchOrClickMap": "Search place or click on map...",
+    "pointA": "Point A",
+    "pointB": "Point B",
+    "select": "Select",
+    "selecting": "Selecting...",
+    "notSelected": "Not selected yet",
+    "clickMapToSelect": "Click on map or search to select",
+    "birdDistance": "Bird's-eye Distance",
+    "elevationDiff": "Elevation Difference",
+    "clearMeasurement": "Clear Measurement",
+    "openSearch": "Search & Measure",
+    "measureFromHere": "Measure from here"
+  },
   "account": {
     "viewProfile": "View Your Profile",
     "viewProfileDesc": "View your net statistics, recent nets and more on your profile page."
