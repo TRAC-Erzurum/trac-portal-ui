@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Award, Building2, Calendar, ChevronRight, Download, Ear, Key, Mail, Pencil, Radio, Signal, Trash2, TrendingUp, Users } from 'lucide-vue-next'
+import { Award, Building2, Calendar, ChevronRight, Download, Ear, Key, Mail, Pencil, Radio, Signal, Trash2, TrendingUp, UserCircle, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BranchMembershipCard from '@/components/shared/BranchMembershipCard.vue'
 import { LocatorMapPreview, MobileFab, SearchInput } from '@/components/shared'
@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ResetPasswordSheet from '@/components/admin/ResetPasswordSheet.vue'
 import EditOperatorAdminSheet from '@/components/operators/EditOperatorAdminSheet.vue'
+import UserDetailedInfoAdminSheet from '@/components/profile/UserDetailedInfoAdminSheet.vue'
 import { useDateFormat } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { UserAvatar } from '@/components/ui/user-avatar'
@@ -45,6 +46,8 @@ interface Operator {
     role?: string
     createdAt?: string
     picture?: string
+    expertiseAreas?: string[]
+    trainings?: { title: string; institution?: string; year?: number }[]
   }
 }
 
@@ -108,6 +111,7 @@ const isLoadingNets = ref(true)
 const isLoadingMoreNets = ref(false)
 const isLoadingMemberships = ref(true)
 const showEditSheet = ref(false)
+const showDetailedInfoSheet = ref(false)
 const showDeleteDialog = ref(false)
 const isDeleting = ref(false)
 const showResetPasswordSheet = ref(false)
@@ -132,6 +136,16 @@ const isProfileOwner = computed(() =>
 
 const canEdit = computed(() => authStore.isAdmin || authStore.isSuperAdmin)
 
+const canViewSensitive = computed(() => {
+  if (!operator.value?.user?.id) return false
+  if (authStore.isSuperAdmin) return true
+  if (authStore.user?.id === operator.value.user.id) return true
+  
+  // Check if current user is an admin of ANY branch that the viewed user is also a member of
+  // We use the memberships ref which contains the viewed operator's branch list
+  return authStore.user?.role === 'admin' || authStore.user?.role === 'super_admin'
+})
+
 const mobileFabActions = computed<MobileFabAction[]>(() => {
   const actions: MobileFabAction[] = []
   
@@ -142,6 +156,11 @@ const mobileFabActions = computed<MobileFabAction[]>(() => {
        actions.push({ key: 'delete', label: t('operators.deleteOperator'), icon: Trash2 as Component })
      }
   }
+
+  if (canViewSensitive.value) {
+    actions.push({ key: 'viewDetailed', label: t('account.detailedInfo'), icon: Ear as Component })
+  }
+
   if (authStore.hasRole('admin') && operator.value?.user?.id) {
     actions.push({ key: 'resetPassword', label: t('admin.resetPassword'), icon: Key as Component })
   }
@@ -152,6 +171,7 @@ const mobileFabActions = computed<MobileFabAction[]>(() => {
 const handleFabAction = (key: string) => {
   switch (key) {
     case 'edit': showEditSheet.value = true; break
+    case 'viewDetailed': showDetailedInfoSheet.value = true; break
     case 'delete': showDeleteDialog.value = true; break
     case 'resetPassword': showResetPasswordSheet.value = true; break
   }
@@ -504,6 +524,30 @@ onMounted(async () => {
                   {{ t('admin.resetPassword') }}
                 </Button>
               </div>
+
+              <!-- Inline Expertise Areas -->
+              <div v-if="operator.user?.expertiseAreas?.length" class="mt-3 space-y-1.5">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">{{ t('account.expertiseAreas') }}</p>
+                <div class="flex flex-wrap gap-1.5">
+                  <div v-for="area in operator.user.expertiseAreas" :key="area"
+                    class="inline-flex items-center rounded-md border border-primary/20 bg-primary/5 px-2 py-0.5 text-[11px] font-medium text-primary">
+                    {{ area }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Inline Trainings -->
+              <div v-if="operator.user?.trainings?.length" class="mt-4 space-y-1.5">
+                <p class="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70">{{ t('account.trainings') }}</p>
+                <div class="flex flex-wrap gap-3">
+                  <div v-for="(training, idx) in operator.user.trainings" :key="idx" 
+                    class="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/30 px-2 py-1 rounded-md border border-border/50">
+                    <Award class="h-3.5 w-3.5 text-primary/70" />
+                    <span class="font-medium text-foreground/80">{{ training.title }}</span>
+                    <span v-if="training.year" class="opacity-60">• {{ training.year }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -533,6 +577,33 @@ onMounted(async () => {
         </div>
 
         <Separator class="my-8" />
+
+        <section v-if="canViewSensitive" class="space-y-4">
+          <button
+            type="button"
+            class="w-full flex items-center gap-5 p-6 rounded-xl border border-border bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all duration-200 group"
+            @click="showDetailedInfoSheet = true"
+          >
+            <div
+              class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary/15 transition-colors"
+            >
+              <UserCircle class="h-8 w-8" />
+            </div>
+            <div class="min-w-0 flex-1 text-left">
+              <h3 class="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
+                {{ t('account.detailedInfo') }}
+              </h3>
+              <p class="text-sm text-muted-foreground mt-0.5">
+                {{ t('account.detailedInfoProfileDesc') }}
+              </p>
+            </div>
+            <ChevronRight
+              class="h-5 w-5 shrink-0 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all"
+            />
+          </button>
+        </section>
+
+        <Separator v-if="canViewSensitive" class="my-8" />
 
         <section>
           <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
@@ -816,6 +887,12 @@ onMounted(async () => {
         v-model:open="showEditSheet"
         :operator="operator"
         @updated="handleOperatorUpdated"
+      />
+
+      <UserDetailedInfoAdminSheet
+        v-if="operator?.user?.id"
+        v-model:open="showDetailedInfoSheet"
+        :user-id="operator.user.id"
       />
 
       <ResetPasswordSheet

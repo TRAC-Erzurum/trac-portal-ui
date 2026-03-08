@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { api } from '@/lib/api'
+import { useCookieConsentStore } from '@/stores/cookieConsent'
 
 interface CityData {
   name: string
@@ -37,6 +38,8 @@ function loadFromCache(): CityData[] | null {
 }
 
 function saveToCache(data: CityData[]) {
+  const cookieStore = useCookieConsentStore()
+  if (!cookieStore.isAllAllowed) return
   try {
     const cacheData: CacheData = {
       data,
