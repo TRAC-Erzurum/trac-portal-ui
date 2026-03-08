@@ -53,7 +53,7 @@
   "form": {
     "callSign": "Çağrı İşareti",
     "email": "E-posta",
-    "emailPlaceholder": "ornek@email.com",
+    "emailPlaceholder": "ornek{'@'}email.com",
     "password": "Parola",
     "passwordConfirm": "Parola Tekrar",
     "fullName": "Ad Soyad",
@@ -115,8 +115,42 @@
     }
   },
   "privacy": {
-    "title": "KVKK ve GDPR Aydınlatma Metni",
-    "placeholder": "Bu sayfa KVKK aydınlatma metni içerecektir."
+    "title": "Gizlilik Politikası (KVKK ve GDPR)",
+    "intro": "TRAC Portal (\"Platform\"), Amatör Telsiz Operatörleri (\"Ham\") için gönüllüler tarafından geliştirilmiş bir topluluk aracıdır. Gizliliğinize saygı duyuyor ve kişisel verilerinizi uluslararası standartlar (GDPR) ve yerel düzenlemeler (KVKK) uyarınca korumayı taahhüt ediyoruz.",
+    "sections": {
+      "data": {
+        "title": "Veri Toplama ve Konum Hassasiyeti",
+        "identity": "Kullanıcı Kimliği: Tam ad, e-posta adresi ve profil resmi (Google gibi SSO sağlayıcıları aracılığıyla).",
+        "radio": "Amatör Telsiz Verileri: Çağrı işaretleri (zorunlu), ön ek/son ek, ülke, il ve ilçe bilgileri.",
+        "location": "Konum Hassasiyeti (Grid Square): Platformda QTH Lokatör (Grid Square) sistemi kullanılmaktadır. Bu veri, harita arayüzlerinde telsiz yayılımını ve üye dağılımını görselleştirmek için kullanılır. GPS koordinatlarının aksine, Grid Square bilgisi genel bir coğrafi alanı temsil eder (genellikle 1×2 derece veya daha küçük alt kareler); bu da tam ev adresinizi ifşa etmeden topluluk için teknik fayda sağlar.",
+        "tech": "Teknik Meta Veriler: Tarayıcı türleri, oturum çerezleri ve IP Adresleri."
+      },
+      "retention": {
+        "title": "Veri Saklama ve IP Günlükleri",
+        "security": "Güvenlik Kayıtları: Yetkisiz erişimi önlemek ve platform bütünlüğünü sağlamak amacıyla, IP adresleri ve ilgili zaman damgaları kaydedilmektedir.",
+        "period": "Saklama Süresi: Teknik günlükler (loglar), yasal bir zorunluluk veya aktif bir soruşturma olmadıkça 2 yıl süreyle saklanır ve bu sürenin sonunda otomatik olarak silinir."
+      },
+      "purpose": {
+        "title": "İşleme Amacı",
+        "auth": "Kimlik Doğrulama: Güvenli platform erişimi.",
+        "stats": "Kayıt ve İstatistik: Telsiz kayıtlarını dijitalleştirmek ve sertifikalar oluşturmak.",
+        "mapping": "Yayılım Haritalama: Topluluğun sinyal erişim mesafelerini anlamasına yardımcı olmak için Grid Square verilerini kullanmak."
+      },
+      "visibility": {
+        "title": "Görünürlük ve Paylaşım",
+        "internal": "Platform İçi Görünürlük: Çağrı işaretleri, isimler ve Grid Square bilgileri giriş yapmış üyeler tarafından görülebilir.",
+        "thirdParty": "Üçüncü Taraf Paylaşımı: Veriler satılmaz. Yalnızca telekomünikasyon yasaları (örneğin BTK düzenlemeleri) veya yasal zorunluluklar gerektirdiğinde paylaşılır."
+      },
+      "rights": {
+        "title": "Veri Sahibi Hakları (KVKK/GDPR)",
+        "deletion": "Hesap Silme: Talebiniz üzerine profiliniz ve kişisel tanımlayıcılarınız silinecektir.",
+        "integrity": "Geçmiş Kayıtların Bütünlüğü: Telsiz geçmişinin doğruluğunu korumak amacıyla, çevrim katılımlarınız kayıtlarda kalmaya devam edecek ancak hesabınız silindiğinde bu veriler anonim hale getirilecektir."
+      },
+      "contact": {
+        "title": "İletişim",
+        "text": "Gizlilikle ilgili her türlü sorunuz için TRAC Erzurum Şubesi ile erztrac{'@'}gmail.com adresinden iletişime geçebilirsiniz."
+      }
+    }
   },
   "notFound": {
     "title": "Sayfa Bulunamadı",
@@ -181,7 +215,6 @@
     "activityAvatarChanged": "{callSign} profil fotoğrafını değiştirdi",
     "unknownOperator": "bilinmeyen operatör",
     "aMember": "bir üye",
-    "unknownOperator": "bilinmeyen operatör",
     "mapPreview": "QTH",
     "mapPreviewNoQth": "Haritayı görmek için QTH bilginizi girin",
     "mapPickerSelectHint": "QTH / konum seçmek için haritaya tıklayın (il ve ilçe otomatik doldurulur)",
@@ -198,6 +231,7 @@
       "trendUp": "önceki döneme göre artış",
       "trendDown": "önceki döneme göre azalış",
       "noComparison": "karşılaştırma yok",
+      "trendBreakdown": "Çevrimler %{nets}, girişler %{checkIns}, katılımcılar %{participants}",
       "trendOnlyWithPeriod": "Trend için 7 gün veya 30 gün seçin.",
       "busiestTime": "Yoğun saatler",
       "geography": "Coğrafi dağılım",
@@ -213,6 +247,15 @@
       "lastMonth": "Geçen ay",
       "participated": "Katıldığım",
       "byDay": "Gün",
+      "days": {
+        "0": "Pazar",
+        "1": "Pazartesi",
+        "2": "Salı",
+        "3": "Çarşamba",
+        "4": "Perşembe",
+        "5": "Cuma",
+        "6": "Cumartesi"
+      },
       "byHour": "Saat",
       "countries": "Ülkeler",
       "cities": "İller",
@@ -230,6 +273,9 @@
     "copyDMSA11y": "Derece dakika saniye kopyala",
     "shareMapA11y": "Harita linkini paylaş",
     "showOnMap": "Haritada göster",
+    "layerStandard": "Standart Harita",
+    "layerSatellite": "Uydu Görünümü",
+    "layerTerrain": "Arazi Görünümü",
     "addressExpandA11y": "Tam adresi göster",
     "addressCollapseA11y": "Tam adresi gizle",
     "searchPlaceholder": "QTH locator ara"
