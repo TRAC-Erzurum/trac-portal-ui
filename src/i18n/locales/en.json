@@ -345,7 +345,26 @@
     "membershipAll": "All",
     "membershipRegistered": "Registered",
     "membershipUnregistered": "Unregistered",
-    "roleAll": "All Roles"
+    "roleAll": "All Roles",
+    "import": "Import",
+    "importTitle": "Import Operators",
+    "importDescription": "Select a CSV file and map the columns.",
+    "importNotice": "Records with existing call signs will be skipped.",
+    "selectFile": "Select File (.csv)",
+    "columnMapping": "Column Mapping",
+    "preview": "Preview (First 5 Rows)",
+    "importing": "Importing...",
+    "importSuccess": "Operators imported successfully",
+    "fields": {
+      "callSign": "Call Sign",
+      "fullName": "Full Name",
+      "city": "City",
+      "district": "District",
+      "country": "Country",
+      "gridSquare": "Locator",
+      "prefix": "Prefix",
+      "suffix": "Suffix"
+    }
   },
   "nets": {
     "name": "net",
@@ -550,6 +569,7 @@
     "noAttendees": "No attendees yet",
     "attendeeUpdated": "Attendee updated",
     "attendeeDeleted": "Attendee deleted",
+    "confirmDelete": "Are you sure you want to delete {callSign}?",
     "startWithOperator": "Start with operator as first attendee",
     "startWithoutOperator": "Start without adding operator",
     "netStarted": "Net started",
@@ -632,6 +652,7 @@
   },
   "common": {
     "loadMore": "Load more",
+    "select": "Select",
     "clear": "Clear",
     "loading": "Loading...",
     "save": "Save",
@@ -649,6 +670,8 @@
     "inactive": "Inactive",
     "unknown": "Unknown",
     "noResults": "No results found",
+    "search": "Search...",
+    "clearSearch": "Clear search",
     "error": "Failed to load",
     "other": "Other",
     "profile": "Profile"
@@ -677,6 +700,32 @@
     "filterAllCities": "All Cities",
     "filterAllDistricts": "All Districts",
     "howToConnect": "How to Connect?",
+    "tutorials": {
+      "vhf_uhf_repeater": {
+        "title": "Connection Instructions",
+        "step1Body": "Enter the transmit (TX) or receive (RX) frequency.",
+        "step2ToneBody": "Set the CTCSS or DCS tone if required.",
+        "step3OffsetBody": "Enter the offset value if needed.",
+        "step4TestBody": "Test the connection and ensure you receive a signal."
+      },
+      "echolink": {
+        "title": "EchoLink Connection",
+        "step1Body": "Open the EchoLink software.",
+        "step2Body": "Enter the node number or name.",
+        "connectHintNodeAndName": "Connect using node [[node]] name [[name]].",
+        "connectHintNodeOnly": "Connect using node [[node]].",
+        "connectHintNameOnly": "Connect using name [[name]].",
+        "step3ConnectBody": "Follow prompts while the connection is being made.",
+        "step4Body": "Ensure the connection is successful."
+      },
+      "aprs": {
+        "title": "APRS Instructions",
+        "step1FreqBody": "Enter the APRS frequency.",
+        "step2IgateBody": "If configured as an IGate, check the settings.",
+        "step3PathBody": "Enter the digipeater path (e.g. WIDE1-1).",
+        "step4Body": "Test your device and send APRS data."
+      }
+    },
     "type": "Communication Channel Type",
     "description": "Description",
     "descriptionPlaceholder": "Brief description (max 500 characters)",

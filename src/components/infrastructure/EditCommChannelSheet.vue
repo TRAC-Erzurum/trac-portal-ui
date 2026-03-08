@@ -206,9 +206,7 @@ const isSubmitted = ref(false)
 
 // Form validation setup
 const validators = computed(() => ({
-  description: [
-    (_value: string) => description.value.trim() ? true : t('form.validation.required')
-  ]
+  description: []
 }))
 
 const { validateForm, getFieldError, shouldShowError, fieldErrors } = useFormValidation(
