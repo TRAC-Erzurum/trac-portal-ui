@@ -53,7 +53,7 @@
   "form": {
     "callSign": "Call Sign",
     "email": "Email",
-    "emailPlaceholder": "example@email.com",
+    "emailPlaceholder": "example{'@'}email.com",
     "password": "Password",
     "passwordConfirm": "Confirm Password",
     "fullName": "Full Name",
@@ -116,7 +116,41 @@
   },
   "privacy": {
     "title": "Privacy Policy (KVKK & GDPR)",
-    "placeholder": "This page will contain the privacy policy."
+    "intro": "The TRAC Portal (\"the Platform\") is a community-driven tool designed for Amateur Radio Operators (\"Hams\"). We respect your privacy and are committed to protecting your personal data in accordance with international standards (GDPR) and local regulations (KVKK).",
+    "sections": {
+      "data": {
+        "title": "Data Collection & Location Precision",
+        "identity": "User Identity: Full name, email address, and profile picture (via SSO providers like Google).",
+        "radio": "Amateur Radio Data: Callsigns (mandatory), prefix/suffix, country, city, and district.",
+        "location": "Location Precision (Grid Squares): We utilize the QTH Locator (Grid Square) system. This data is used to visualize radio propagation and member distribution on map interfaces. Unlike GPS coordinates, Grid Squares represent a general geographic area (typically 1×2 degrees or smaller sub-squares), ensuring community utility without revealing precise residential addresses.",
+        "tech": "Technical Metadata: Browser types, session cookies, and IP Addresses."
+      },
+      "retention": {
+        "title": "Data Retention & IP Logging",
+        "security": "Security Logs: For the purposes of preventing unauthorized access and ensuring platform integrity, IP addresses and associated timestamps are logged.",
+        "period": "Retention Period: Technical logs are retained for a period of 2 years, after which they are automatically purged, unless a longer retention period is required by legal mandate or active investigation."
+      },
+      "purpose": {
+        "title": "Purpose of Processing",
+        "auth": "Authentication: Secure platform access.",
+        "stats": "Logging & Statistics: Digitalizing radio check-in logs and generating certificates.",
+        "mapping": "Propagation Mapping: Using Grid Squares to help the community understand signal reach."
+      },
+      "visibility": {
+        "title": "Visibility & Sharing",
+        "internal": "Internal Visibility: Callsigns, names, and Grid Squares are visible to logged-in members.",
+        "thirdParty": "Third-Party Sharing: Data is not sold. It is only shared if required by telecommunications laws (e.g., BTK regulations) or legal mandates."
+      },
+      "rights": {
+        "title": "Data Subject Rights (GDPR/KVKK)",
+        "deletion": "Account Deletion: Profiles and personal identifiers will be deleted upon request.",
+        "integrity": "Historical Log Integrity: To preserve the accuracy of radio history, your participation in \"Nets\" will remain in the logs but will be anonymized once your account is deleted."
+      },
+      "contact": {
+        "title": "Contact",
+        "text": "For any privacy-related inquiries, you can contact the TRAC Erzurum Branch via erztrac{'@'}gmail.com."
+      }
+    }
   },
   "notFound": {
     "title": "Page Not Found",
@@ -181,7 +215,6 @@
     "activityAvatarChanged": "{callSign} changed profile picture",
     "unknownOperator": "unknown operator",
     "aMember": "a member",
-    "unknownOperator": "unknown operator",
     "mapPreview": "QTH",
     "mapPreviewNoQth": "Enter your QTH to see the map",
     "mapPickerSelectHint": "Click on the map to select QTH / location (city and district will be filled automatically)",
@@ -198,6 +231,7 @@
       "trendUp": "up from previous period",
       "trendDown": "down from previous period",
       "noComparison": "no comparison",
+      "trendBreakdown": "Nets %{nets}, check-ins %{checkIns}, participants %{participants}",
       "trendOnlyWithPeriod": "Select 7 or 30 days to see trend.",
       "busiestTime": "Busiest times",
       "geography": "Geographic distribution",
@@ -213,6 +247,15 @@
       "lastMonth": "Last month",
       "participated": "Participated",
       "byDay": "Day",
+      "days": {
+        "0": "Sunday",
+        "1": "Monday",
+        "2": "Tuesday",
+        "3": "Wednesday",
+        "4": "Thursday",
+        "5": "Friday",
+        "6": "Saturday"
+      },
       "byHour": "Hour",
       "countries": "Countries",
       "cities": "Cities",
@@ -230,6 +273,9 @@
     "copyDMSA11y": "Copy degrees minutes seconds",
     "shareMapA11y": "Share map link",
     "showOnMap": "Show on map",
+    "layerStandard": "Standard Map",
+    "layerSatellite": "Satellite View",
+    "layerTerrain": "Terrain View",
     "addressExpandA11y": "Show full address",
     "addressCollapseA11y": "Hide full address",
     "searchPlaceholder": "Search QTH locator"
