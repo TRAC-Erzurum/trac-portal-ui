@@ -1,14 +1,20 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { toast } from 'vue-sonner'
+import { Trash2, Upload } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { OperatorCard, OperatorCardSkeleton, SearchInput } from '@/components/shared'
+import ImportOperatorsSheet from '@/components/operators/ImportOperatorsSheet.vue'
 import { usePersistedFilters } from '@/composables'
 import { api } from '@/lib/api'
+import { useAuthStore } from '@/stores/auth'
 import { type UserRole } from '@/lib/ui-helpers'
+import { translateError } from '@/i18n'
 
 interface Operator {
   id: string
@@ -22,6 +28,7 @@ interface Operator {
   attendedCount: number
   managedCount: number
   user?: {
+    id?: string
     fullName?: string
     role?: UserRole
     picture?: string
@@ -34,6 +41,7 @@ interface OperatorsResponse {
 }
 
 const { t, locale } = useI18n()
+const authStore = useAuthStore()
 
 type MembershipFilter = 'all' | 'registered' | 'unregistered'
 
@@ -41,11 +49,16 @@ const operators = ref<Operator[]>([])
 const total = ref(0)
 const isLoading = ref(true)
 const isLoadingMore = ref(false)
+const isImportSheetOpen = ref(false)
 const search = ref('')
 const membershipFilter = ref<MembershipFilter>('all')
 const page = ref(1)
 const pageSize = 12
 const hasMore = ref(true)
+
+const showDeleteDialog = ref(false)
+const operatorToDelete = ref<Operator | null>(null)
+const isDeleting = ref(false)
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -78,6 +91,29 @@ const fetchOperators = async (append = false) => {
   } finally {
     isLoading.value = false
     isLoadingMore.value = false
+  }
+}
+
+const handleDeleteClick = (op: Operator) => {
+  operatorToDelete.value = op
+  showDeleteDialog.value = true
+}
+
+const confirmDelete = async () => {
+  if (!operatorToDelete.value) return
+  isDeleting.value = true
+  try {
+    await api.delete(`/operator/${operatorToDelete.value.id}`)
+    toast.success(t('operators.deleteOperatorSuccess'))
+    operators.value = operators.value.filter(op => op.id !== operatorToDelete.value?.id)
+    total.value--
+  } catch (error: any) {
+    console.error('Failed to delete operator:', error)
+    toast.error(translateError(error.message || 'error.serverError'))
+  } finally {
+    isDeleting.value = false
+    showDeleteDialog.value = false
+    operatorToDelete.value = null
   }
 }
 
@@ -132,6 +168,15 @@ onMounted(() => {
           </Select>
         </div>
         <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
+          <Button
+            v-if="authStore.isAdmin"
+            variant="outline"
+            size="sm"
+            @click="isImportSheetOpen = true"
+          >
+            <Upload class="h-4 w-4 mr-2" />
+            {{ t('operators.import') }}
+          </Button>
         </div>
       </div>
 
@@ -162,6 +207,8 @@ onMounted(() => {
           :user-full-name="op.user?.fullName"
           :user-picture="op.user?.picture"
           :global-role="op.user?.role"
+          :show-delete="authStore.isAdmin && !op.user?.id && op.attendedCount === 0 && op.managedCount === 0"
+          @delete="handleDeleteClick(op)"
         />
       </div>
 
@@ -181,5 +228,30 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <Dialog v-model:open="showDeleteDialog">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{{ t('operators.deleteOperator') }}</DialogTitle>
+          <DialogDescription>
+            {{ t('operators.deleteOperatorConfirm') }}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter class="gap-2 sm:gap-0">
+          <Button variant="ghost" @click="showDeleteDialog = false" :disabled="isDeleting">
+            {{ t('common.cancel') }}
+          </Button>
+          <Button variant="destructive" @click="confirmDelete" :disabled="isDeleting">
+            <Trash2 v-if="!isDeleting" class="h-4 w-4 mr-2" />
+            {{ isDeleting ? t('common.loading') : t('common.delete') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <ImportOperatorsSheet
+      v-model:open="isImportSheetOpen"
+      @imported="fetchOperators"
+    />
   </AppLayout>
 </template>

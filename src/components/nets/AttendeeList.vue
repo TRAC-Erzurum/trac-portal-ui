@@ -2,9 +2,10 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Award, Edit2, MapPin, Trash2, User, Users } from 'lucide-vue-next'
+import { Award, Edit2, MapPin, Search, Trash2, User, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { UserAvatar } from '@/components/ui/user-avatar'
+import { SearchInput } from '@/components/shared'
 
 interface Attendee {
   id: string
@@ -42,6 +43,22 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const router = useRouter()
 
+const searchQuery = ref('')
+
+const filteredAttendees = computed(() => {
+  if (!searchQuery.value) return props.attendees
+  
+  const query = searchQuery.value.toLocaleLowerCase('tr-TR').trim()
+  return props.attendees.filter(a => {
+    return (
+      a.callSign.toLocaleLowerCase('tr-TR').includes(query) ||
+      (a.name && a.name.toLocaleLowerCase('tr-TR').includes(query)) ||
+      (a.city && a.city.toLocaleLowerCase('tr-TR').includes(query)) ||
+      (a.district && a.district.toLocaleLowerCase('tr-TR').includes(query))
+    )
+  })
+})
+
 const goToProfile = (attendee: Attendee) => {
   if (attendee.operatorId) {
     router.push(`/operators/${attendee.operatorId}`)
@@ -56,25 +73,25 @@ const containerRef = ref<HTMLElement | null>(null)
 const scrollTop = ref(0)
 const containerHeight = ref(600)
 
-const useVirtualScroll = computed(() => props.attendees.length > VIRTUAL_THRESHOLD)
+const useVirtualScroll = computed(() => filteredAttendees.value.length > VIRTUAL_THRESHOLD)
 
-const totalHeight = computed(() => props.attendees.length * ITEM_HEIGHT)
+const totalHeight = computed(() => filteredAttendees.value.length * ITEM_HEIGHT)
 
 const visibleRange = computed(() => {
   if (!useVirtualScroll.value) {
-    return { start: 0, end: props.attendees.length }
+    return { start: 0, end: filteredAttendees.value.length }
   }
 
   const start = Math.max(0, Math.floor(scrollTop.value / ITEM_HEIGHT) - BUFFER_SIZE)
   const visibleCount = Math.ceil(containerHeight.value / ITEM_HEIGHT) + BUFFER_SIZE * 2
-  const end = Math.min(props.attendees.length, start + visibleCount)
+  const end = Math.min(filteredAttendees.value.length, start + visibleCount)
 
   return { start, end }
 })
 
 const visibleAttendees = computed(() => {
   const { start, end } = visibleRange.value
-  return props.attendees.slice(start, end).map((attendee, i) => ({
+  return filteredAttendees.value.slice(start, end).map((attendee, i) => ({
     ...attendee,
     originalIndex: start + i
   }))
@@ -82,8 +99,12 @@ const visibleAttendees = computed(() => {
 
 const offsetY = computed(() => visibleRange.value.start * ITEM_HEIGHT)
 
-const getAttendeeNumber = (index: number, total: number) => {
-  return total - index
+const getAttendeeNumber = (index: number) => {
+  return props.attendees.length - index
+}
+
+const findOriginalIndex = (attendee: Attendee) => {
+  return props.attendees.findIndex(a => a.id === attendee.id)
 }
 
 const showCertificateDownloadFor = (attendee: Attendee) => {
@@ -103,7 +124,7 @@ const updateContainerHeight = () => {
   }
 }
 
-watch(() => props.attendees.length, () => {
+watch(() => [props.attendees.length, searchQuery.value], () => {
   if (containerRef.value) {
     containerRef.value.scrollTop = 0
     scrollTop.value = 0
@@ -121,13 +142,27 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <div v-if="!isLoading" class="mb-4">
+    <div class="sm:max-w-[50%]">
+      <SearchInput
+        v-model="searchQuery"
+        :placeholder="t('common.search')"
+      />
+    </div>
+  </div>
+
   <div v-if="isLoading" class="space-y-2">
     <div v-for="i in 5" :key="i" class="h-16 bg-muted/30 rounded-lg animate-pulse" />
   </div>
 
-  <div v-else-if="attendees.length === 0" class="text-center py-4 text-muted-foreground">
-    <Users class="h-8 w-8 mx-auto mb-2 opacity-30" />
-    <p class="text-sm">{{ t('netDetail.noAttendees') }}</p>
+  <div v-else-if="filteredAttendees.length === 0" class="text-center py-8 text-muted-foreground border border-dashed rounded-lg bg-muted/10">
+    <Search v-if="searchQuery" class="h-8 w-8 mx-auto mb-2 opacity-20" />
+    <Users v-else class="h-8 w-8 mx-auto mb-2 opacity-30" />
+    <p v-if="searchQuery" class="text-sm">{{ t('common.noResults') }}</p>
+    <p v-else class="text-sm">{{ t('netDetail.noAttendees') }}</p>
+    <Button v-if="searchQuery" variant="link" size="sm" @click="searchQuery = ''" class="mt-2">
+      {{ t('common.clearSearch') }}
+    </Button>
   </div>
 
   <div
@@ -147,7 +182,7 @@ onUnmounted(() => {
           <div class="relative flex-shrink-0">
             <UserAvatar :picture="attendee.picture" class="h-8 w-8" />
             <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-600 dark:text-zinc-300 ring-2 ring-background">
-              {{ getAttendeeNumber(attendee.originalIndex, attendees.length) }}
+              {{ getAttendeeNumber(findOriginalIndex(attendee)) }}
             </span>
           </div>
 
@@ -217,14 +252,14 @@ onUnmounted(() => {
 
   <div v-else class="space-y-1">
     <div
-      v-for="(attendee, index) in attendees"
+      v-for="attendee in filteredAttendees"
       :key="attendee.id"
       class="flex items-center gap-3 p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all"
     >
       <div class="relative flex-shrink-0">
         <UserAvatar :picture="attendee.picture" class="h-8 w-8" />
         <span class="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-zinc-600 dark:text-zinc-300 ring-2 ring-background">
-          {{ getAttendeeNumber(index, attendees.length) }}
+          {{ getAttendeeNumber(findOriginalIndex(attendee)) }}
         </span>
       </div>
 

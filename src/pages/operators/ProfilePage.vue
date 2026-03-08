@@ -3,13 +3,13 @@ import { ref, computed, onMounted, watch, type Component } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Award, Building2, Calendar, ChevronRight, Download, Ear, Key, Mail, Pencil, Radio, Signal, TrendingUp, Users } from 'lucide-vue-next'
+import { Award, Building2, Calendar, ChevronRight, Download, Ear, Key, Mail, Pencil, Radio, Signal, Trash2, TrendingUp, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BranchMembershipCard from '@/components/shared/BranchMembershipCard.vue'
 import { LocatorMapPreview, MobileFab, SearchInput } from '@/components/shared'
 import type { MobileFabAction } from '@/components/shared'
 import { usePersistedFilters } from '@/composables'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -108,6 +108,8 @@ const isLoadingNets = ref(true)
 const isLoadingMoreNets = ref(false)
 const isLoadingMemberships = ref(true)
 const showEditSheet = ref(false)
+const showDeleteDialog = ref(false)
+const isDeleting = ref(false)
 const showResetPasswordSheet = ref(false)
 const membershipSearch = ref('')
 const membershipRoleFilter = ref('all')
@@ -135,6 +137,10 @@ const mobileFabActions = computed<MobileFabAction[]>(() => {
   
   if (canEdit.value) {
     actions.push({ key: 'edit', label: t('profile.editOperatorAction'), icon: Pencil as Component })
+    
+    if (!hasUserAccount.value && (stats.value?.attendedNets === 0) && (stats.value?.managedNets === 0)) {
+       actions.push({ key: 'delete', label: t('operators.deleteOperator'), icon: Trash2 as Component, variant: 'destructive' })
+    }
   }
   if (authStore.hasRole('admin') && operator.value?.user?.id) {
     actions.push({ key: 'resetPassword', label: t('admin.resetPassword'), icon: Key as Component })
@@ -146,6 +152,7 @@ const mobileFabActions = computed<MobileFabAction[]>(() => {
 const handleFabAction = (key: string) => {
   switch (key) {
     case 'edit': showEditSheet.value = true; break
+    case 'delete': showDeleteDialog.value = true; break
     case 'resetPassword': showResetPasswordSheet.value = true; break
   }
 }
@@ -327,6 +334,26 @@ const handleEditClick = () => {
   showEditSheet.value = true
 }
 
+const handleDeleteClick = () => {
+  showDeleteDialog.value = true
+}
+
+const confirmDelete = async () => {
+  if (!operator.value) return
+  isDeleting.value = true
+  try {
+    await api.delete(`/operator/${operator.value.id}`)
+    toast.success(t('operators.deleteOperatorSuccess'))
+    router.push('/operators')
+  } catch (error: any) {
+    console.error('Failed to delete operator:', error)
+    toast.error(translateError(error.message || 'error.serverError'))
+  } finally {
+    isDeleting.value = false
+    showDeleteDialog.value = false
+  }
+}
+
 const handleOperatorUpdated = () => {
   fetchOperator()
 }
@@ -431,16 +458,29 @@ onMounted(async () => {
                   <h1 class="text-2xl font-bold">{{ formattedCallSign }}</h1>
                   <p class="text-lg text-muted-foreground">{{ displayName }}</p>
                 </div>
-                <Button
-                  v-if="canEdit"
-                  variant="outline"
-                  size="sm"
-                  class="hidden lg:inline-flex shrink-0 min-w-[10rem]"
-                  @click="handleEditClick"
-                >
-                  <Pencil class="h-4 w-4 mr-2" />
-                  {{ t('common.edit') }}
-                </Button>
+                <div class="flex flex-wrap items-center gap-2 shrink-0">
+                  <Button
+                    v-if="canEdit && !hasUserAccount && (stats?.attendedNets === 0) && (stats?.managedNets === 0)"
+                    variant="outline"
+                    size="sm"
+                    class="hidden lg:inline-flex shrink-0 min-w-[10rem] text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                    :disabled="isDeleting"
+                    @click="handleDeleteClick"
+                  >
+                    <Trash2 class="h-4 w-4 mr-2" />
+                    {{ t('common.delete') }}
+                  </Button>
+                  <Button
+                    v-if="canEdit"
+                    variant="outline"
+                    size="sm"
+                    class="hidden lg:inline-flex shrink-0 min-w-[10rem]"
+                    @click="handleEditClick"
+                  >
+                    <Pencil class="h-4 w-4 mr-2" />
+                    {{ t('common.edit') }}
+                  </Button>
+                </div>
               </div>
               <div class="flex flex-wrap items-start justify-between gap-3 text-sm text-muted-foreground">
                 <div class="flex min-w-0 flex-1 flex-col gap-y-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
@@ -784,6 +824,26 @@ onMounted(async () => {
         :user-id="operator.user.id"
         :call-sign="formattedCallSign"
       />
+
+      <Dialog v-model:open="showDeleteDialog">
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{{ t('operators.deleteOperator') }}</DialogTitle>
+            <DialogDescription>
+              {{ t('operators.deleteOperatorConfirm') }}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter class="gap-2 sm:gap-0">
+            <Button variant="ghost" @click="showDeleteDialog = false" :disabled="isDeleting">
+              {{ t('common.cancel') }}
+            </Button>
+            <Button variant="destructive" @click="confirmDelete" :disabled="isDeleting">
+              <Trash2 v-if="!isDeleting" class="h-4 w-4 mr-2" />
+              {{ isDeleting ? t('common.loading') : t('common.delete') }}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog :open="!!certificatePreviewDialogCert" @update:open="(v) => !v && (certificatePreviewDialogCert = null)">
         <DialogContent class="max-w-2xl max-h-[90vh] overflow-auto">

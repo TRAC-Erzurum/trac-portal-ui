@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ChevronRight, Radio, Users } from 'lucide-vue-next'
+import { ChevronRight, Radio, Trash2, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { useI18n } from 'vue-i18n'
@@ -24,14 +24,19 @@ interface Props {
   userPicture?: string
   globalRole?: string
   showChevron?: boolean
+  showDelete?: boolean
+  isDeleting?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  showChevron: true
+  showChevron: true,
+  showDelete: false,
+  isDeleting: false
 })
 
 const emit = defineEmits<{
   click: [id: string]
+  delete: [id: string]
 }>()
 
 const { t } = useI18n()
@@ -106,6 +111,17 @@ const mapLocatorUrl = computed(() => {
       >
         {{ t('map.showOnMap') }}
       </a>
+      <Button
+        v-if="showDelete"
+        variant="outline"
+        size="sm"
+        class="h-7 px-2 text-[10px] text-destructive hover:text-destructive-foreground hover:bg-destructive"
+        :disabled="isDeleting"
+        @click.stop="emit('delete', props.id)"
+      >
+        <Trash2 class="h-3 w-3 mr-1.5" />
+        {{ isDeleting ? t('common.loading') : t('common.delete') }}
+      </Button>
       <Button v-if="showChevron" variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="goToDetail">
         <ChevronRight class="h-3.5 w-3.5 mr-1.5" />
         {{ t('common.detail') }}

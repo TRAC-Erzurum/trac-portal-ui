@@ -345,7 +345,29 @@
     "membershipAll": "Tümü",
     "membershipRegistered": "Kayıtlı",
     "membershipUnregistered": "Kayıtsız",
-    "roleAll": "Tüm Roller"
+    "roleAll": "Tüm Roller",
+    "deleteOperator": "Operatörü Sil",
+    "deleteOperatorConfirm": "Bu operatörü silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+    "deleteOperatorSuccess": "Operatör başarıyla silindi",
+    "import": "İçe Aktar",
+    "importTitle": "Operatörleri İçe Aktar",
+    "importDescription": "CSV dosyasını seçin ve sütunları eşleştirin.",
+    "importNotice": "Mevcut çağrı işaretleri olan kayıtlar atlanacaktır.",
+    "selectFile": "Dosya Seç (.csv)",
+    "columnMapping": "Sütun Eşleştirme",
+    "preview": "Önizleme (İlk 5 Satır)",
+    "importing": "İçe aktarılıyor...",
+    "importSuccess": "Operatörler başarıyla içe aktarıldı",
+    "fields": {
+      "callSign": "Çağrı İşareti",
+      "fullName": "Ad Soyad",
+      "city": "İl",
+      "district": "İlçe",
+      "country": "Ülke",
+      "gridSquare": "Locator",
+      "prefix": "Ön Ek",
+      "suffix": "Son Ek"
+    }
   },
   "nets": {
     "name": "çevrim",
@@ -550,6 +572,7 @@
     "noAttendees": "Henüz katılımcı yok",
     "attendeeUpdated": "Katılımcı güncellendi",
     "attendeeDeleted": "Katılımcı silindi",
+    "confirmDelete": "{callSign} isimli katılımcıyı silmek istediğinizden emin misiniz?",
     "startWithOperator": "Operatörü ekleyerek başlat",
     "startWithoutOperator": "Operatörü eklemeden başlat",
     "netStarted": "Çevrim başlatıldı",
@@ -632,6 +655,7 @@
   },
   "common": {
     "loadMore": "Daha fazla yükle",
+    "select": "Seçin",
     "or": "veya",
     "clear": "Temizle",
     "loading": "Yükleniyor...",
@@ -650,6 +674,8 @@
     "inactive": "Pasif",
     "unknown": "Bilinmiyor",
     "noResults": "Sonuç bulunamadı",
+    "search": "Ara...",
+    "clearSearch": "Aramayı temizle",
     "error": "Yüklenemedi",
     "other": "Diğer",
     "profile": "Profil"
@@ -678,6 +704,32 @@
     "filterAllCities": "Tüm İller",
     "filterAllDistricts": "Tüm İlçeler",
     "howToConnect": "Nasıl Bağlanırım?",
+    "tutorials": {
+      "vhf_uhf_repeater": {
+        "title": "Bağlantı Talimatları",
+        "step1Body": "Verici (TX) veya alıcı (RX) frekansını girin.",
+        "step2ToneBody": "Gerekliyse CTCSS veya DCS tonunu ayarlayın.",
+        "step3OffsetBody": "Offset gerekli ise offset değerini girin.",
+        "step4TestBody": "Bağlantıyı test edin ve sinyal aldığınızdan emin olun."
+      },
+      "echolink": {
+        "title": "EchoLink Bağlantısı",
+        "step1Body": "EchoLink yazılımını açın.",
+        "step2Body": "Node numarası veya adını girin.",
+        "connectHintNodeAndName": "Node [[node]] ad [[name]] ile bağlanın.",
+        "connectHintNodeOnly": "Node [[node]] ile bağlanın.",
+        "connectHintNameOnly": "Ad [[name]] ile bağlanın.",
+        "step3ConnectBody": "Bağlantı kurulurken talimatları izleyin.",
+        "step4Body": "Bağlantı başarılı olduğundan emin olun."
+      },
+      "aprs": {
+        "title": "APRS Talimatları",
+        "step1FreqBody": "APRS frekansını girin.",
+        "step2IgateBody": "IGate olarak yapılandırılmışsa ayarları kontrol edin.",
+        "step3PathBody": "Digipeater yolu girin (örn. WIDE1-1).",
+        "step4Body": "Cihazınızı test edin ve APRS verisi gönderin."
+      }
+    },
     "type": "İletişim Kanalı Türü",
     "description": "Açıklama",
     "descriptionPlaceholder": "Kısa açıklama girin (en fazla 500 karakter)",

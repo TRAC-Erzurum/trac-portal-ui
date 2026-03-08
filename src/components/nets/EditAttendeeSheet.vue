@@ -66,24 +66,24 @@ const isInitializing = ref(true)
 
 const districts = computed(() => getDistricts(form.value.city))
 
-watch(() => props.open, async (open) => {
-  if (open && props.attendee) {
+watch(() => [props.open, props.attendee] as const, async ([open, attendee]) => {
+  if (open && attendee) {
     isSubmitted.value = false
     fieldErrors.value = {}
     isInitializing.value = true
     form.value = {
-      name: props.attendee.name || '',
-      country: props.attendee.country || 'Türkiye',
-      city: props.attendee.city?.trim() || '',
-      district: props.attendee.district?.trim() || '',
-      readability: props.attendee.readability || 5,
-      signalStrength: props.attendee.signalStrength || 9
+      name: attendee.name || '',
+      country: attendee.country || 'Türkiye',
+      city: attendee.city?.trim() || '',
+      district: attendee.district?.trim() || '',
+      readability: attendee.readability || 5,
+      signalStrength: attendee.signalStrength || 9
     }
     
     await loadCities()
     isInitializing.value = false
   }
-})
+}, { immediate: true, deep: true })
 
 watch(() => form.value.city, (city, oldCity) => {
   if (isInitializing.value) return
