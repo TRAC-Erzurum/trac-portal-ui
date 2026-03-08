@@ -138,9 +138,9 @@ const mobileFabActions = computed<MobileFabAction[]>(() => {
   if (canEdit.value) {
     actions.push({ key: 'edit', label: t('profile.editOperatorAction'), icon: Pencil as Component })
     
-    if (!hasUserAccount.value && (stats.value?.attendedNets === 0) && (stats.value?.managedNets === 0)) {
-       actions.push({ key: 'delete', label: t('operators.deleteOperator'), icon: Trash2 as Component, variant: 'destructive' })
-    }
+     if (!hasUserAccount.value && (stats.value?.attendedNets === 0) && (stats.value?.managedNets === 0)) {
+       actions.push({ key: 'delete', label: t('operators.deleteOperator'), icon: Trash2 as Component })
+     }
   }
   if (authStore.hasRole('admin') && operator.value?.user?.id) {
     actions.push({ key: 'resetPassword', label: t('admin.resetPassword'), icon: Key as Component })

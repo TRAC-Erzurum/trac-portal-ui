@@ -77,13 +77,15 @@ function parseCSVHeaders(file: File) {
     if (lines.length === 0) return
 
     // Simple CSV split (not handling escaped commas for header discovery)
-    const firstLine = lines[0]
-    headers.value = firstLine.split(',').map(h => h.trim().replace(/^["']|["']$/g, ''))
-    
-    // Parse preview rows
-    previewRows.value = lines.slice(1, 6).map(line => 
-      line.split(',').map(cell => cell.trim().replace(/^["']|["']$/g, ''))
-    )
+      const firstLine = lines[0] ?? ''
+      headers.value = firstLine
+        ? firstLine.split(',').map(h => h.trim().replace(/^['"]|['"]$/g, ''))
+        : []
+
+      // Parse preview rows (up to 5)
+      previewRows.value = lines.slice(1, 6).map(line =>
+        line.split(',').map(cell => cell.trim().replace(/^['"]|['"]$/g, ''))
+      )
 
     // Auto-mapping attempt
     headers.value.forEach(header => {
@@ -148,7 +150,9 @@ function getMappedValue(rowIndex: number, field: string) {
   const header = mapping.value[field]
   if (!header) return '-'
   const headerIndex = headers.value.indexOf(header)
-  return previewRows.value[rowIndex][headerIndex] || '-'
+  const row = previewRows.value[rowIndex]
+  if (!row || headerIndex < 0) return '-'
+  return row[headerIndex] ?? '-'
 }
 </script>
 
@@ -233,7 +237,7 @@ function getMappedValue(rowIndex: number, field: string) {
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(row, idx) in previewRows" :key="idx" class="hover:bg-muted/50 transition-colors">
+                <tr v-for="(_, idx) in previewRows" :key="idx" class="hover:bg-muted/50 transition-colors">
                   <td v-for="field in fields" :key="field" class="px-2 py-2 border-b">
                     {{ getMappedValue(idx, field) }}
                   </td>
