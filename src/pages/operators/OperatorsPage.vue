@@ -2,7 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Trash2, Upload } from 'lucide-vue-next'
+import { ChevronDown, Trash2, Upload } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -167,11 +167,12 @@ onMounted(() => {
             </SelectContent>
           </Select>
         </div>
-        <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
+        <div class="trac-top-actions">
           <Button
             v-if="authStore.isAdmin"
             variant="outline"
             size="sm"
+            class="trac-page-action-btn"
             @click="isImportSheetOpen = true"
           >
             <Upload class="h-4 w-4 mr-2" />
@@ -219,10 +220,11 @@ onMounted(() => {
         <div v-if="hasMore && !isLoading" class="order-1 lg:order-2 w-full lg:w-auto">
           <Button
             variant="outline"
-            class="w-full lg:w-auto lg:px-8"
+            class="trac-load-more-btn"
             :disabled="isLoadingMore"
             @click="loadMore"
           >
+            <ChevronDown v-if="!isLoadingMore" class="h-4 w-4 mr-2" />
             {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
           </Button>
         </div>
@@ -238,10 +240,10 @@ onMounted(() => {
           </DialogDescription>
         </DialogHeader>
         <DialogFooter class="gap-2 sm:gap-0">
-          <Button variant="ghost" @click="showDeleteDialog = false" :disabled="isDeleting">
+          <Button variant="outline" @click="showDeleteDialog = false" :disabled="isDeleting">
             {{ t('common.cancel') }}
           </Button>
-          <Button variant="destructive" @click="confirmDelete" :disabled="isDeleting">
+          <Button variant="destructive" class="trac-btn-destructive-outlined" @click="confirmDelete" :disabled="isDeleting">
             <Trash2 v-if="!isDeleting" class="h-4 w-4 mr-2" />
             {{ isDeleting ? t('common.loading') : t('common.delete') }}
           </Button>

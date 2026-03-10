@@ -165,6 +165,60 @@
   }
 }
 
+@layer components {
+  .trac-sheet-actions {
+    @apply flex flex-row justify-end gap-3 pt-4;
+  }
+
+  .trac-sheet-btn {
+    @apply min-w-24;
+  }
+
+  .trac-card-action-btn {
+    @apply inline-flex shrink-0 justify-center gap-2 w-auto;
+  }
+
+  .trac-mobile-action-row {
+    @apply flex w-full flex-wrap items-center justify-end gap-2;
+  }
+
+  .trac-page-action-btn {
+    @apply w-auto justify-center gap-2;
+  }
+
+  .trac-btn-destructive-outlined {
+    @apply border-destructive/50 text-destructive hover:bg-destructive/10 hover:border-destructive/70;
+  }
+
+  .trac-btn-icon-destructive {
+    @apply text-destructive hover:text-destructive hover:bg-destructive/10;
+  }
+
+  .trac-load-more-btn {
+    @apply w-full sm:w-auto sm:min-w-36;
+  }
+
+  .trac-top-actions {
+    @apply w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0;
+  }
+
+  .trac-icon-btn-xs {
+    @apply shrink-0 h-6 w-6;
+  }
+
+  .trac-avatar-overlay-btn {
+    @apply text-white hover:bg-white/20;
+  }
+
+  .trac-avatar-overlay-btn-danger {
+    @apply text-white hover:bg-red-500/50;
+  }
+
+  .trac-chip-remove-btn {
+    @apply h-5 w-5 text-muted-foreground hover:text-destructive;
+  }
+}
+
 /* Leaflet z-index: harita her zaman sayfa UI'ının (header, FAB, butonlar, sheet, dropdown) altında kalsın */
 .leaflet-container {
   z-index: 0;

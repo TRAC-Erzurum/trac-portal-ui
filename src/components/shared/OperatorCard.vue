@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ChevronRight, Radio, Trash2, Users } from 'lucide-vue-next'
+import { ChevronRight, MapPin, Radio, Trash2, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { useI18n } from 'vue-i18n'
@@ -100,29 +100,36 @@ const mapLocatorUrl = computed(() => {
         </p>
       </div>
     </div>
-    <div v-if="showChevron || $slots.actions || mapLocatorUrl" class="mt-auto flex flex-wrap items-center justify-end gap-1 pt-1.5 pb-0 border-t border-border/30">
+    <div v-if="showChevron || $slots.actions || mapLocatorUrl" class="mt-auto flex flex-wrap items-center justify-end gap-1.5 pt-2 pb-0 border-t border-border/30">
       <slot name="actions" />
-      <a
+      <Button
         v-if="mapLocatorUrl"
-        :href="mapLocatorUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="text-xs text-muted-foreground hover:text-primary hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded px-2 py-1"
+        as-child
+        variant="outline"
+        size="sm"
+        class="h-7 px-2 text-[10px]"
       >
-        {{ t('map.showOnMap') }}
-      </a>
+        <a
+          :href="mapLocatorUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <MapPin class="h-3.5 w-3.5 mr-1.5" />
+          {{ t('map.showOnMap') }}
+        </a>
+      </Button>
       <Button
         v-if="showDelete"
         variant="outline"
         size="sm"
-        class="h-7 px-2 text-[10px] text-destructive hover:text-destructive-foreground hover:bg-destructive"
+        class="h-7 px-2 text-[10px] trac-btn-destructive-outlined"
         :disabled="isDeleting"
         @click.stop="emit('delete', props.id)"
       >
         <Trash2 class="h-3 w-3 mr-1.5" />
         {{ isDeleting ? t('common.loading') : t('common.delete') }}
       </Button>
-      <Button v-if="showChevron" variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="goToDetail">
+      <Button v-if="showChevron" variant="outline" size="sm" class="h-7 px-2 text-[10px]" @click="goToDetail">
         <ChevronRight class="h-3.5 w-3.5 mr-1.5" />
         {{ t('common.detail') }}
       </Button>

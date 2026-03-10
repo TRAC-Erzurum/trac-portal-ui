@@ -469,7 +469,7 @@ onUnmounted(() => {
             </div>
           </div>
         </div>
-        <Button variant="ghost" size="icon" class="h-8 w-8" @click="clearEntry" :title="'ESC'" aria-label="Clear">
+        <Button variant="ghost" size="icon-sm" @click="clearEntry" :title="'ESC'" aria-label="Clear">
           <X class="h-4 w-4" />
         </Button>
       </div>

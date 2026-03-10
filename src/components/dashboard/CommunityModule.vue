@@ -207,7 +207,7 @@ const setPeriod = (p: Period) => {
             :key="p"
             type="button"
             class="px-2 py-1 text-xs rounded-md border transition-colors"
-            :class="period === p ? 'border-primary bg-primary/10 text-primary' : 'border-border hover:bg-muted/30'"
+            :class="period === p ? 'border-primary text-primary' : 'border-border hover:bg-muted/30'"
             @click="setPeriod(p)"
           >
             {{ periodLabel(p) }}

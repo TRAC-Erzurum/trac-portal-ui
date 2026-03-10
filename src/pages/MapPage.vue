@@ -90,7 +90,6 @@ function createChannelIcon(type: 'repeater' | 'aprs'): L.DivIcon {
 const repeaterIcon = createChannelIcon('repeater')
 const aprsIcon = createChannelIcon('aprs')
 
-/** Cluster ikon fabrikası: röle sayısını gösteren yuvarlak badge */
 function createClusterIcon(cluster: any): L.DivIcon {
   const count = cluster.getChildCount()
   let sizeClass = 'channel-cluster-small'
@@ -948,7 +947,7 @@ watch(selectedLatLng, (latlng) => {
               <div class="flex items-center gap-1.5">
                 <Crosshair class="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <span class="font-mono text-xs font-medium min-w-0 flex-1 truncate">{{ selectedLocator }}</span>
-                <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6" :aria-label="t('map.copyLocatorA11y')" @click="copyLocator">
+                <Button variant="ghost" size="icon-sm" class="trac-icon-btn-xs" :aria-label="t('map.copyLocatorA11y')" @click="copyLocator">
                   <Copy class="h-3 w-3" aria-hidden="true" />
                 </Button>
               </div>
@@ -964,7 +963,7 @@ watch(selectedLatLng, (latlng) => {
                 <MapPin v-if="!coordModeDMS" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <Compass v-else class="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <span class="text-xs font-medium tabular-nums min-w-0 flex-1 truncate">{{ coordModeDMS ? popupDMS : popupDecimalDisplay }}</span>
-                <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6" @click.stop="copyActiveCoord">
+                <Button variant="ghost" size="icon-sm" class="trac-icon-btn-xs" @click.stop="copyActiveCoord">
                   <Copy class="h-3 w-3" aria-hidden="true" />
                 </Button>
               </div>
@@ -985,14 +984,14 @@ watch(selectedLatLng, (latlng) => {
               <!-- Aksiyon butonları -->
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-1">
-                  <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6" :aria-label="t('map.measureFromHere')" :title="t('map.measureFromHere')" @click="startMeasureFromPopup">
+                  <Button variant="ghost" size="icon-sm" class="trac-icon-btn-xs" :aria-label="t('map.measureFromHere')" :title="t('map.measureFromHere')" @click="startMeasureFromPopup">
                     <Ruler class="h-3.5 w-3.5" aria-hidden="true" />
                   </Button>
-                  <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6" :aria-label="t('map.shareMapA11y')" @click="shareMapLink">
+                  <Button variant="ghost" size="icon-sm" class="trac-icon-btn-xs" :aria-label="t('map.shareMapA11y')" @click="shareMapLink">
                     <Share2 class="h-3.5 w-3.5" aria-hidden="true" />
                   </Button>
                 </div>
-                <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10" :aria-label="t('common.close')" @click="clearSelection">
+                <Button variant="ghost" size="icon-sm" class="trac-icon-btn-xs trac-btn-icon-destructive" :aria-label="t('common.close')" @click="clearSelection">
                   <X class="h-3.5 w-3.5" aria-hidden="true" />
                 </Button>
               </div>
@@ -1032,17 +1031,17 @@ watch(selectedLatLng, (latlng) => {
               <!-- Aksiyon butonları -->
               <div class="flex justify-between items-center">
                 <div class="flex items-center gap-0.5">
-                  <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6" :aria-label="t('map.measureFromHere')" @click="startMeasureFromPopup">
+                  <Button variant="ghost" size="icon-sm" class="trac-icon-btn-xs" :aria-label="t('map.measureFromHere')" @click="startMeasureFromPopup">
                     <Ruler class="h-3 w-3" aria-hidden="true" />
                   </Button>
-                  <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6" :aria-label="t('map.copyLocatorA11y')" @click="copyLocator">
+                  <Button variant="ghost" size="icon-sm" class="trac-icon-btn-xs" :aria-label="t('map.copyLocatorA11y')" @click="copyLocator">
                     <Copy class="h-3 w-3" aria-hidden="true" />
                   </Button>
-                  <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6" :aria-label="t('map.shareMapA11y')" @click="shareMapLink">
+                  <Button variant="ghost" size="icon-sm" class="trac-icon-btn-xs" :aria-label="t('map.shareMapA11y')" @click="shareMapLink">
                     <Share2 class="h-3 w-3" aria-hidden="true" />
                   </Button>
                 </div>
-                <Button variant="ghost" size="icon-sm" class="shrink-0 h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10" :aria-label="t('common.close')" @click="clearSelection">
+                <Button variant="ghost" size="icon-sm" class="trac-icon-btn-xs trac-btn-icon-destructive" :aria-label="t('common.close')" @click="clearSelection">
                   <X class="h-3 w-3" aria-hidden="true" />
                 </Button>
               </div>

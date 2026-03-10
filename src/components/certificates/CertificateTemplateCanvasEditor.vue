@@ -282,8 +282,8 @@ const previewLabel = (el: CertificateTemplateElement) => {
             v-if="!isSerialElement(el)"
             type="button"
             variant="outline"
-            size="sm"
-            class="h-8 w-8 p-0 shrink-0 text-muted-foreground hover:text-destructive"
+            size="icon-sm"
+            class="shrink-0 text-muted-foreground hover:text-destructive"
             :disabled="disabled"
             @click.stop="removeElement(idx)"
           >

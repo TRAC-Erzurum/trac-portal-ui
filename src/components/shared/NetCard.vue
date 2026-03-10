@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { RouterLink } from 'vue-router'
 import { Award, Building2, CheckCircle2, ChevronRight, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useDateFormat } from '@/composables'
@@ -42,12 +42,8 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const router = useRouter()
 
-const goToDetail = () => {
-  emit('click', props.id)
-  router.push(`/nets/${props.id}`)
-}
+const netDetailLink = computed(() => `/nets/${props.id}`)
 const { formatDateShort } = useDateFormat()
 
 const statusBadgeClasses = computed(() => {
@@ -196,13 +192,15 @@ const scheduledLabel = computed(() => {
       <slot name="actions" />
       <Button
         v-if="showChevron && !compact"
-        variant="ghost"
+        as-child
+        variant="outline"
         size="sm"
-        class="h-7 px-2 text-xs"
-        @click="goToDetail"
+        class="h-7 px-2 text-[10px]"
       >
-        <ChevronRight class="h-3.5 w-3.5 mr-1.5" />
-        {{ t('common.detail') }}
+        <RouterLink :to="netDetailLink" @click="emit('click', props.id)">
+          <ChevronRight class="h-3.5 w-3.5 mr-1.5" />
+          {{ t('common.detail') }}
+        </RouterLink>
       </Button>
     </div>
   </div>

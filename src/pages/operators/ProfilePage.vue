@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, type Component } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Award, Building2, Calendar, ChevronRight, Download, Ear, Key, Mail, Pencil, Radio, Signal, Trash2, TrendingUp, UserCircle, Users } from 'lucide-vue-next'
+import { Award, Building2, Calendar, ChevronDown, ChevronRight, Download, Ear, Key, Mail, Pencil, Radio, Signal, Trash2, TrendingUp, UserCircle, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import BranchMembershipCard from '@/components/shared/BranchMembershipCard.vue'
-import { LocatorMapPreview, MobileFab, SearchInput } from '@/components/shared'
-import type { MobileFabAction } from '@/components/shared'
+import { LocatorMapPreview, SearchInput } from '@/components/shared'
 import { usePersistedFilters } from '@/composables'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -151,37 +150,6 @@ const canViewSensitive = computed(() => {
 
   return isBranchAdmin
 })
-
-const mobileFabActions = computed<MobileFabAction[]>(() => {
-  const actions: MobileFabAction[] = []
-  
-  if (canEdit.value) {
-    actions.push({ key: 'edit', label: t('profile.editOperatorAction'), icon: Pencil as Component })
-    
-     if (!hasUserAccount.value && (stats.value?.attendedNets === 0) && (stats.value?.managedNets === 0)) {
-       actions.push({ key: 'delete', label: t('operators.deleteOperator'), icon: Trash2 as Component })
-     }
-  }
-
-  if (canViewSensitive.value) {
-    actions.push({ key: 'viewDetailed', label: t('account.detailedInfo'), icon: Ear as Component })
-  }
-
-  if (authStore.hasRole('admin') && operator.value?.user?.id) {
-    actions.push({ key: 'resetPassword', label: t('admin.resetPassword'), icon: Key as Component })
-  }
-  
-  return actions
-})
-
-const handleFabAction = (key: string) => {
-  switch (key) {
-    case 'edit': showEditSheet.value = true; break
-    case 'viewDetailed': showDetailedInfoSheet.value = true; break
-    case 'delete': showDeleteDialog.value = true; break
-    case 'resetPassword': showResetPasswordSheet.value = true; break
-  }
-}
 
 const hasUserAccount = computed(() => !!operator.value?.user?.id)
 
@@ -489,9 +457,11 @@ onMounted(async () => {
                     v-if="canEdit && !hasUserAccount && (stats?.attendedNets === 0) && (stats?.managedNets === 0)"
                     variant="outline"
                     size="sm"
-                    class="hidden lg:inline-flex shrink-0 min-w-[10rem] text-destructive hover:text-destructive-foreground hover:bg-destructive"
+                    class="trac-card-action-btn trac-btn-destructive-outlined"
                     :disabled="isDeleting"
                     @click="handleDeleteClick"
+                    :title="t('operators.deleteOperator')"
+                    :aria-label="t('operators.deleteOperator')"
                   >
                     <Trash2 class="h-4 w-4 mr-2" />
                     {{ t('common.delete') }}
@@ -500,8 +470,10 @@ onMounted(async () => {
                     v-if="canEdit"
                     variant="outline"
                     size="sm"
-                    class="hidden lg:inline-flex shrink-0 min-w-[10rem]"
+                    class="trac-card-action-btn"
                     @click="handleEditClick"
+                    :title="t('common.edit')"
+                    :aria-label="t('common.edit')"
                   >
                     <Pencil class="h-4 w-4 mr-2" />
                     {{ t('common.edit') }}
@@ -523,8 +495,10 @@ onMounted(async () => {
                   v-if="authStore.hasRole('admin') && operator.user?.id"
                   variant="outline"
                   size="sm"
-                  class="hidden lg:inline-flex shrink-0 min-w-[10rem] text-foreground"
+                  class="trac-card-action-btn text-foreground"
                   @click="showResetPasswordSheet = true"
+                  :title="t('admin.resetPassword')"
+                  :aria-label="t('admin.resetPassword')"
                 >
                   <Key class="h-4 w-4 mr-2" />
                   {{ t('admin.resetPassword') }}
@@ -567,8 +541,10 @@ onMounted(async () => {
                 v-if="canEdit"
                 variant="outline"
                 size="sm"
-                class="hidden lg:inline-flex min-w-[10rem] shrink-0"
+                class="trac-card-action-btn"
                 @click="showEditSheet = true"
+                :title="t('common.edit')"
+                :aria-label="t('common.edit')"
               >
                 <Pencil class="h-4 w-4 mr-2" />
                 {{ t('common.edit') }}
@@ -699,7 +675,7 @@ onMounted(async () => {
                 </SelectContent>
               </Select>
             </div>
-            <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
+            <div class="trac-top-actions">
             </div>
           </div>
 
@@ -746,10 +722,11 @@ onMounted(async () => {
             <div v-if="hasMoreNets && filteredNets.length > 0" class="order-1 lg:order-2 w-full lg:w-auto">
               <Button
                 variant="outline"
-                class="w-full lg:w-auto lg:px-8"
+                class="trac-load-more-btn"
                 :disabled="isLoadingMoreNets"
                 @click="loadMoreNets"
               >
+                <ChevronDown v-if="!isLoadingMoreNets" class="h-4 w-4 mr-2" />
                 {{ isLoadingMoreNets ? t('common.loading') : t('common.loadMore') }}
               </Button>
             </div>
@@ -857,7 +834,7 @@ onMounted(async () => {
                 </SelectContent>
               </Select>
             </div>
-            <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
+            <div class="trac-top-actions">
             </div>
           </div>
 
@@ -885,8 +862,6 @@ onMounted(async () => {
           </p>
         </section>
       </template>
-
-      <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
 
       <EditOperatorAdminSheet
         v-if="operator"
@@ -917,10 +892,10 @@ onMounted(async () => {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter class="gap-2 sm:gap-0">
-            <Button variant="ghost" @click="showDeleteDialog = false" :disabled="isDeleting">
+            <Button variant="outline" @click="showDeleteDialog = false" :disabled="isDeleting">
               {{ t('common.cancel') }}
             </Button>
-            <Button variant="destructive" @click="confirmDelete" :disabled="isDeleting">
+            <Button variant="destructive" class="trac-btn-destructive-outlined" @click="confirmDelete" :disabled="isDeleting">
               <Trash2 v-if="!isDeleting" class="h-4 w-4 mr-2" />
               {{ isDeleting ? t('common.loading') : t('common.delete') }}
             </Button>

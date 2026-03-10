@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Plus, Trash2, X } from 'lucide-vue-next'
+import { Check, Plus, Trash2, X } from 'lucide-vue-next'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -102,9 +102,9 @@ async function handleSubmit() {
             <div v-for="(area, idx) in expertiseAreas" :key="idx"
               class="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold bg-secondary text-secondary-foreground gap-1 px-3 py-1">
               {{ area }}
-              <button type="button" @click="removeExpertise(idx)" class="hover:text-destructive">
+              <Button type="button" variant="ghost" size="icon-sm" @click="removeExpertise(idx)" class="trac-chip-remove-btn">
                 <X class="h-3 w-3" />
-              </button>
+              </Button>
             </div>
             <p v-if="!expertiseAreas.length" class="text-sm text-muted-foreground italic px-1">
               {{ t('account.expertiseEmpty') }}
@@ -130,8 +130,8 @@ async function handleSubmit() {
           <div class="space-y-4">
             <div v-for="(training, index) in trainings" :key="index"
               class="space-y-3 p-4 border rounded-lg relative bg-muted/20">
-              <Button type="button" variant="ghost" size="icon" @click="removeTraining(index)"
-                class="absolute top-2 right-2 text-destructive">
+              <Button type="button" variant="ghost" size="icon-sm" @click="removeTraining(index)"
+                class="absolute top-2 right-2 trac-btn-icon-destructive">
                 <Trash2 class="w-4 h-4" />
               </Button>
 
@@ -161,11 +161,13 @@ async function handleSubmit() {
           </div>
         </div>
 
-        <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end border-t pt-6">
-          <Button type="button" variant="outline" :disabled="isLoading" @click="emit('update:open', false)">
+        <div class="trac-sheet-actions border-t pt-6">
+          <Button type="button" variant="outline" class="trac-sheet-btn" :disabled="isLoading" @click="emit('update:open', false)">
+            <X class="h-4 w-4 mr-2" />
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" :disabled="isLoading">
+          <Button type="submit" class="trac-sheet-btn" :disabled="isLoading">
+            <Check class="h-4 w-4 mr-2" />
             <span v-if="isLoading">{{ t('common.saving') }}...</span>
             <span v-else>{{ t('common.save') }}</span>
           </Button>

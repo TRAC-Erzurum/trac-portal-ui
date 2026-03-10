@@ -83,103 +83,77 @@ provide('refreshPendingRequestsCount', fetchPendingRequestsCount)
 
 <template>
   <div class="min-h-screen flex flex-col bg-background relative overflow-hidden">
-    <img
-      v-show="logoLoaded"
-      src="/logo-s.svg"
-      alt=""
-      aria-hidden="true"
-      @load="logoLoaded = true"
+    <img v-show="logoLoaded" src="/logo-s.svg" alt="" aria-hidden="true" @load="logoLoaded = true"
       @error="logoLoaded = false"
-      class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vh] h-[80vh] object-contain opacity-[0.03] pointer-events-none select-none"
-    />
-    
+      class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80vh] h-[80vh] object-contain opacity-[0.03] pointer-events-none select-none" />
+
     <Sidebar v-model:collapsed="sidebarCollapsed" />
-    
-    <div
-      :class="[
-        'relative flex flex-col flex-1 min-h-0 transition-all duration-300',
-        sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
-      ]"
-    >
+
+    <div :class="[
+      'relative flex flex-col flex-1 min-h-0 transition-all duration-300',
+      sidebarCollapsed ? 'lg:ml-16' : 'lg:ml-64'
+    ]">
       <PendingApprovalBanner v-if="showPendingBanner" />
       <main class="relative flex flex-col flex-1 min-h-0 pb-16 lg:pb-0">
-      <div class="p-6 lg:p-8 flex flex-col flex-1 min-h-0">
-        <header class="flex items-center justify-between mb-3 lg:mb-4 gap-4 flex-shrink-0">
-          <div class="flex items-center gap-3 min-w-0 flex-1">
-            <div class="lg:hidden">
-              <HeaderBranchDropdown compact />
+        <div class="p-6 lg:p-8 flex flex-col flex-1 min-h-0">
+          <header class="flex items-center justify-between mb-3 lg:mb-4 gap-4 flex-shrink-0">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
+              <div class="lg:hidden">
+                <HeaderBranchDropdown compact />
+              </div>
+              <div class="hidden lg:block min-w-0 flex-1">
+                <h1 v-if="title" class="text-2xl lg:text-3xl font-bold truncate">{{ title }}</h1>
+                <slot v-else name="title" />
+              </div>
             </div>
-            <div class="hidden lg:block min-w-0 flex-1">
-              <h1 v-if="title" class="text-2xl lg:text-3xl font-bold truncate">{{ title }}</h1>
-              <slot v-else name="title" />
-            </div>
-          </div>
-          <div class="flex items-center gap-2 flex-shrink-0">
-            <Button
-              v-if="showRequestsButton"
-              variant="outline"
-              size="sm"
-              class="border-amber-500/50 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1.5"
-              @click="goToRequests"
-            >
-              <ClipboardList class="h-4 w-4" />
-              <span class="hidden sm:inline">{{ t('admin.pendingRequests') }}</span>
-              <span class="tabular-nums">({{ pendingRequestsCount }})</span>
-            </Button>
-            <div class="lg:hidden flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                :aria-label="t('nav.branches')"
-                :title="t('nav.branches')"
-                @click="goToBranches"
-              >
-                <Building2 class="h-4 w-4 sm:mr-2" />
-                <span class="hidden sm:inline">{{ t('nav.branches') }}</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                :aria-label="t('nav.operators')"
-                :title="t('nav.operators')"
-                @click="goToOperators"
-              >
-                <Users class="h-4 w-4 sm:mr-2" />
-                <span class="hidden sm:inline">{{ t('nav.operators') }}</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                :aria-label="t('nav.communicationChannels')"
-                :title="t('nav.communicationChannels')"
-                @click="goToCommunicationChannels"
-              >
-                <TowerControl class="h-4 w-4 sm:mr-2" />
-                <span class="hidden sm:inline">{{ t('nav.communicationChannels') }}</span>
-              </Button>
-            </div>
-            <UserMenu />
-          </div>
-        </header>
-
-        <Breadcrumb :items="breadcrumbItems" :current-label="breadcrumbLabel" class="flex-shrink-0" />
-        
-        <div class="flex-1">
-          <slot />
-        </div>
-
-        <footer class="border-t border-border/20 mt-6 pt-4 flex-shrink-0">
-          <div class="flex justify-between items-center text-xs text-muted-foreground/80 gap-2 flex-wrap">
-            <p class="shrink-0">© {{ new Date().getFullYear() }} {{ t('brand.erzurumBranch') }}</p>
             <div class="flex items-center gap-2 flex-shrink-0">
-              <ThemeToggle />
-              <LangToggle />
-              <AppVersionBox />
-              <span>73!</span>
+              <Button v-if="showRequestsButton" variant="outline" size="sm"
+                class="border-amber-500/50 bg-amber-500/5 hover:bg-amber-500/10 text-amber-700 dark:text-amber-400 gap-1.5"
+                @click="goToRequests">
+                <ClipboardList class="h-4 w-4" />
+                <span class="hidden sm:inline">{{ t('admin.pendingRequests') }}</span>
+                <span class="tabular-nums">({{ pendingRequestsCount }})</span>
+              </Button>
+              <div class="lg:hidden flex items-center gap-2">
+                <Button variant="outline" size="sm" :aria-label="t('nav.branches')" :title="t('nav.branches')"
+                  @click="goToBranches">
+                  <Building2 class="h-4 w-4 sm:mr-2" />
+                  <span class="hidden sm:inline">{{ t('nav.branches') }}</span>
+                </Button>
+                <Button variant="outline" size="sm" :aria-label="t('nav.operators')" :title="t('nav.operators')"
+                  @click="goToOperators">
+                  <Users class="h-4 w-4 sm:mr-2" />
+                  <span class="hidden sm:inline">{{ t('nav.operators') }}</span>
+                </Button>
+                <Button variant="outline" size="sm" :aria-label="t('nav.communicationChannels')"
+                  :title="t('nav.communicationChannels')" @click="goToCommunicationChannels">
+                  <TowerControl class="h-4 w-4 sm:mr-2" />
+                  <span class="hidden sm:inline">{{ t('nav.communicationChannels') }}</span>
+                </Button>
+              </div>
+              <UserMenu />
             </div>
+          </header>
+
+          <Breadcrumb :items="breadcrumbItems" :current-label="breadcrumbLabel" class="flex-shrink-0" />
+
+          <div class="flex-1">
+            <slot />
           </div>
-        </footer>
-      </div>
+
+          <footer class="border-t border-border/20 mt-6 pt-4 flex-shrink-0">
+            <div class="flex justify-between items-center text-xs text-muted-foreground/80 gap-2 flex-wrap">
+              <AppVersionBox />
+              <p class="shrink-0">© {{ new Date().getFullYear() }} YM9KE
+              </p>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <ThemeToggle />
+                <LangToggle />
+                <span>73!</span>
+              </div>
+            </div>
+          </footer>
+        </div>
       </main>
     </div>
 

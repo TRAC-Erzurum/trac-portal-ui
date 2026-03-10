@@ -94,7 +94,7 @@ const typeLabel = computed(() => {
     </div>
     <div class="mt-auto flex items-center justify-end gap-1 pt-1.5 pb-0 border-t border-border/30">
       <slot name="actions" />
-      <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="goToDetail">
+      <Button variant="outline" size="sm" class="h-7 px-2 text-[10px]" @click="goToDetail">
         <ChevronRight class="h-3.5 w-3.5 mr-1.5" />
         {{ t('common.detail') }}
       </Button>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { Radio, UserPlus, Activity as ActivityIcon } from 'lucide-vue-next'
+import { ChevronDown, Radio, UserPlus, Activity as ActivityIcon } from 'lucide-vue-next'
+import { Button } from '@/components/ui/button'
 
 interface Activity {
   id: string
@@ -135,14 +136,17 @@ const getActivityText = (activity: Activity) => {
         </div>
       </div>
       
-      <button
+      <Button
         v-if="hasMore"
-        class="text-xs text-muted-foreground hover:text-foreground mt-3 transition-colors shrink-0"
+        variant="outline"
+        size="sm"
+        class="trac-load-more-btn mt-3 shrink-0"
         :disabled="isLoadingMore"
         @click="emit('loadMore')"
       >
+        <ChevronDown v-if="!isLoadingMore" class="h-4 w-4 mr-2" />
         {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
-      </button>
+      </Button>
     </template>
   </section>
 </template>

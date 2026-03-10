@@ -43,12 +43,12 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const router = useRouter()
 
-const searchQuery = ref('')
+const localSearchQuery = ref('')
 
 const filteredAttendees = computed(() => {
-  if (!searchQuery.value) return props.attendees
+  if (!localSearchQuery.value) return props.attendees
   
-  const query = searchQuery.value.toLocaleLowerCase('tr-TR').trim()
+  const query = localSearchQuery.value.toLocaleLowerCase('tr-TR').trim()
   return props.attendees.filter(a => {
     return (
       a.callSign.toLocaleLowerCase('tr-TR').includes(query) ||
@@ -124,7 +124,7 @@ const updateContainerHeight = () => {
   }
 }
 
-watch(() => [props.attendees.length, searchQuery.value], () => {
+watch(() => [props.attendees.length, localSearchQuery.value], () => {
   if (containerRef.value) {
     containerRef.value.scrollTop = 0
     scrollTop.value = 0
@@ -143,11 +143,16 @@ onUnmounted(() => {
 
 <template>
   <div v-if="!isLoading" class="mb-4">
-    <div class="sm:max-w-[50%]">
-      <SearchInput
-        v-model="searchQuery"
-        :placeholder="t('common.search')"
-      />
+    <div class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+      <div class="w-full lg:max-w-[50%]">
+        <SearchInput
+          v-model="localSearchQuery"
+          :placeholder="t('common.search')"
+        />
+      </div>
+      <div class="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
+        <slot name="actions" />
+      </div>
     </div>
   </div>
 
@@ -156,11 +161,11 @@ onUnmounted(() => {
   </div>
 
   <div v-else-if="filteredAttendees.length === 0" class="text-center py-8 text-muted-foreground border border-dashed rounded-lg bg-muted/10">
-    <Search v-if="searchQuery" class="h-8 w-8 mx-auto mb-2 opacity-20" />
+    <Search v-if="localSearchQuery" class="h-8 w-8 mx-auto mb-2 opacity-20" />
     <Users v-else class="h-8 w-8 mx-auto mb-2 opacity-30" />
-    <p v-if="searchQuery" class="text-sm">{{ t('common.noResults') }}</p>
+    <p v-if="localSearchQuery" class="text-sm">{{ t('common.noResults') }}</p>
     <p v-else class="text-sm">{{ t('netDetail.noAttendees') }}</p>
-    <Button v-if="searchQuery" variant="link" size="sm" @click="searchQuery = ''" class="mt-2">
+    <Button v-if="localSearchQuery" variant="link" size="sm" @click="localSearchQuery = ''" class="mt-2">
       {{ t('common.clearSearch') }}
     </Button>
   </div>
@@ -203,47 +208,60 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <div class="flex items-center gap-1 flex-shrink-0">
-            <Button
-              v-if="attendee.operatorId"
-              variant="outline"
-              size="icon"
-              class="h-8 w-8"
-              :title="t('common.profile')"
-              :aria-label="t('common.profile')"
-              @click="goToProfile(attendee)"
+          <div class="flex items-center gap-2 flex-shrink-0">
+            <div
+              v-if="attendee.operatorId || showCertificateDownloadFor(attendee)"
+              class="inline-flex items-center rounded-md border border-border/50 p-0.5"
             >
-              <User class="h-4 w-4" />
-            </Button>
-            <Button
-              v-if="showCertificateDownloadFor(attendee)"
-              variant="outline"
-              size="icon"
-              class="h-8 w-8"
-              :title="t('certificates.download')"
-              :aria-label="t('certificates.download')"
-              @click="emit('downloadCertificate', attendee)"
+              <Button
+                v-if="attendee.operatorId"
+                variant="outline"
+                size="icon-sm"
+                class="!border-0 shadow-none"
+                :title="t('common.profile')"
+                :aria-label="t('common.profile')"
+                @click="goToProfile(attendee)"
+              >
+                <User class="h-4 w-4" />
+              </Button>
+              <Button
+                v-if="showCertificateDownloadFor(attendee)"
+                variant="outline"
+                size="icon-sm"
+                class="!border-0 shadow-none"
+                :title="t('certificates.download')"
+                :aria-label="t('certificates.download')"
+                @click="emit('downloadCertificate', attendee)"
+              >
+                <Award class="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div
+              v-if="canManage"
+              class="inline-flex items-center rounded-md border border-border/50 p-0.5"
             >
-              <Award class="h-4 w-4" />
-            </Button>
-            <template v-if="canManage">
               <Button
                 variant="outline"
-                size="icon"
-                class="h-8 w-8"
+                size="icon-sm"
+                class="!border-0 shadow-none"
+                :title="t('common.edit')"
+                :aria-label="t('common.edit')"
                 @click="emit('edit', attendee)"
               >
                 <Edit2 class="h-4 w-4" />
               </Button>
               <Button
                 variant="outline"
-                size="icon"
-                class="h-8 w-8 text-destructive hover:text-destructive"
+                size="icon-sm"
+                class="trac-btn-icon-destructive !border-0 shadow-none"
+                :title="t('common.delete')"
+                :aria-label="t('common.delete')"
                 @click="emit('delete', attendee)"
               >
                 <Trash2 class="h-4 w-4" />
               </Button>
-            </template>
+            </div>
           </div>
         </div>
       </div>
@@ -280,47 +298,60 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <div class="flex items-center gap-1 flex-shrink-0">
-        <Button
-          v-if="attendee.operatorId"
-          variant="outline"
-          size="icon"
-          class="h-8 w-8"
-          :title="t('common.profile')"
-          :aria-label="t('common.profile')"
-          @click="goToProfile(attendee)"
+      <div class="flex items-center gap-2 flex-shrink-0">
+        <div
+          v-if="attendee.operatorId || showCertificateDownloadFor(attendee)"
+          class="inline-flex items-center rounded-md border border-border/50 p-0.5"
         >
-          <User class="h-4 w-4" />
-        </Button>
-        <Button
-          v-if="showCertificateDownloadFor(attendee)"
-          variant="outline"
-          size="icon"
-          class="h-8 w-8"
-          :title="t('certificates.download')"
-          :aria-label="t('certificates.download')"
-          @click="emit('downloadCertificate', attendee)"
+          <Button
+            v-if="attendee.operatorId"
+            variant="outline"
+            size="icon-sm"
+            class="!border-0 shadow-none"
+            :title="t('common.profile')"
+            :aria-label="t('common.profile')"
+            @click="goToProfile(attendee)"
+          >
+            <User class="h-4 w-4" />
+          </Button>
+          <Button
+            v-if="showCertificateDownloadFor(attendee)"
+            variant="outline"
+            size="icon-sm"
+            class="!border-0 shadow-none"
+            :title="t('certificates.download')"
+            :aria-label="t('certificates.download')"
+            @click="emit('downloadCertificate', attendee)"
+          >
+            <Award class="h-4 w-4" />
+          </Button>
+        </div>
+
+        <div
+          v-if="canManage"
+          class="inline-flex items-center rounded-md border border-border/50 p-0.5"
         >
-          <Award class="h-4 w-4" />
-        </Button>
-        <template v-if="canManage">
           <Button
             variant="outline"
-            size="icon"
-            class="h-8 w-8"
+            size="icon-sm"
+            class="!border-0 shadow-none"
+            :title="t('common.edit')"
+            :aria-label="t('common.edit')"
             @click="emit('edit', attendee)"
           >
             <Edit2 class="h-4 w-4" />
           </Button>
           <Button
             variant="outline"
-            size="icon"
-            class="h-8 w-8 text-destructive hover:text-destructive"
+            size="icon-sm"
+            class="trac-btn-icon-destructive !border-0 shadow-none"
+            :title="t('common.delete')"
+            :aria-label="t('common.delete')"
             @click="emit('delete', attendee)"
           >
             <Trash2 class="h-4 w-4" />
           </Button>
-        </template>
+        </div>
       </div>
     </div>
   </div>

@@ -2,8 +2,8 @@
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { UserPlus } from 'lucide-vue-next'
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { UserPlus, X } from 'lucide-vue-next'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { SearchInput } from '@/components/shared'
@@ -217,7 +217,7 @@ const handleOpenChange = (open: boolean) => {
               </div>
             </div>
 
-            <Button variant="ghost" size="sm" @click="selectedUser = null" class="w-full">
+            <Button variant="outline" size="sm" @click="selectedUser = null" class="w-full">
               {{ t('common.change') }}
             </Button>
           </div>
@@ -239,15 +239,16 @@ const handleOpenChange = (open: boolean) => {
         </div>
       </div>
 
-      <SheetFooter>
-        <Button variant="outline" @click="emit('update:open', false)">
+      <div class="trac-sheet-actions">
+        <Button variant="outline" class="trac-sheet-btn" @click="emit('update:open', false)">
+          <X class="h-4 w-4 mr-2" />
           {{ t('common.cancel') }}
         </Button>
-        <Button @click="handleAdd" :disabled="!selectedUser || isAdding">
+        <Button class="trac-sheet-btn" @click="handleAdd" :disabled="!selectedUser || isAdding">
           <UserPlus class="h-4 w-4 mr-2" />
           {{ t('common.add') }}
         </Button>
-      </SheetFooter>
+      </div>
     </SheetContent>
   </Sheet>
 </template>

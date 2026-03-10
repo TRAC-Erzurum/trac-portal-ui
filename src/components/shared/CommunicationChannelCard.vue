@@ -361,7 +361,7 @@ const showActions = computed(() => c.value.isActive || props.canManage)
     <div v-if="showActions" class="mt-auto flex items-center justify-between gap-2 flex-wrap pt-1.5 pb-0 border-t border-border/30">
       <Button
         v-if="c.isActive"
-        variant="ghost"
+        variant="outline"
         size="icon"
         class="h-7 w-7 shrink-0"
         :title="t('communicationChannels.howToConnect')"
@@ -371,12 +371,12 @@ const showActions = computed(() => c.value.isActive || props.canManage)
       </Button>
       <div v-else class="w-7" aria-hidden="true" />
       <div v-if="canManage" class="flex items-center justify-end gap-1 flex-wrap">
-        <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click.stop="emit('edit', c)">
+        <Button variant="outline" size="sm" class="h-7 px-2 text-xs" @click.stop="emit('edit', c)">
           <Edit class="h-3.5 w-3.5 mr-1.5" />
           {{ t('common.edit') }}
         </Button>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
           class="h-7 px-2 text-xs"
           @click.stop="emit('toggleStatus', c)"
@@ -386,9 +386,9 @@ const showActions = computed(() => c.value.isActive || props.canManage)
           {{ c.isActive ? t('communicationChannels.deactivate') : t('communicationChannels.activate') }}
         </Button>
         <Button
-          variant="ghost"
+          variant="outline"
           size="sm"
-          class="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+          class="h-7 px-2 text-xs trac-btn-destructive-outlined"
           @click.stop="emit('delete', c)"
         >
           <Trash2 class="h-3.5 w-3.5 mr-1.5" />

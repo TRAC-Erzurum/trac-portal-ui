@@ -49,7 +49,7 @@ onMounted(fetchData)
         <button
           type="button"
           class="px-2 py-1 text-xs rounded border transition-colors"
-          :class="activeTab === 'countries' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
+          :class="activeTab === 'countries' ? 'border-primary text-primary' : 'border-border hover:bg-muted/30'"
           @click="activeTab = 'countries'"
         >
           {{ t('dashboard.stats.countries') }}
@@ -57,7 +57,7 @@ onMounted(fetchData)
         <button
           type="button"
           class="px-2 py-1 text-xs rounded border transition-colors"
-          :class="activeTab === 'cities' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
+          :class="activeTab === 'cities' ? 'border-primary text-primary' : 'border-border hover:bg-muted/30'"
           @click="activeTab = 'cities'"
         >
           {{ t('dashboard.stats.cities') }}
@@ -65,7 +65,7 @@ onMounted(fetchData)
         <button
           type="button"
           class="px-2 py-1 text-xs rounded border transition-colors"
-          :class="activeTab === 'districts' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
+          :class="activeTab === 'districts' ? 'border-primary text-primary' : 'border-border hover:bg-muted/30'"
           @click="activeTab = 'districts'"
         >
           {{ t('dashboard.stats.districts') }}

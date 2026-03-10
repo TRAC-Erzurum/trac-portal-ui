@@ -2,7 +2,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Upload, FileType, CheckCheck, Loader2 } from 'lucide-vue-next'
+import { Upload, FileType, CheckCheck, Loader2, X } from 'lucide-vue-next'
 import {
   Sheet,
   SheetContent,
@@ -248,17 +248,19 @@ function getMappedValue(rowIndex: number, field: string) {
         </div>
       </div>
 
-      <SheetFooter class="px-6 py-4 border-t">
-        <div class="flex justify-end gap-3 w-full">
-          <Button type="button" variant="outline" @click="emit('update:open', false)" :disabled="isLoading">
+      <SheetFooter class="px-6 py-4 border-t trac-sheet-actions">
+        <div class="flex w-full justify-end gap-3">
+          <Button type="button" variant="outline" class="trac-sheet-btn" @click="emit('update:open', false)" :disabled="isLoading">
+            <X class="h-4 w-4 mr-2" />
             {{ t('common.cancel') }}
           </Button>
           <Button 
-            variant="outline"
+            class="trac-sheet-btn"
             :disabled="!isFileSelected || !isCallSignMapped || isLoading"
             @click="handleImport"
           >
             <Loader2 v-if="isLoading" class="mr-2 h-4 w-4 animate-spin" />
+            <Upload v-else class="mr-2 h-4 w-4" />
             {{ isLoading ? t('common.loading') : t('operators.import') }}
           </Button>
         </div>

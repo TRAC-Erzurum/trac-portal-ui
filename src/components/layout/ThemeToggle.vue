@@ -23,7 +23,7 @@ const currentLabel = computed(() => t(`theme.${themeStore.mode}`))
 </script>
 
 <template>
-  <Button variant="ghost" size="icon" @click="cycleTheme" :title="currentLabel" :aria-label="currentLabel">
+  <Button variant="ghost" size="icon-sm" @click="cycleTheme" :title="currentLabel" :aria-label="currentLabel">
     <Monitor v-if="themeStore.mode === 'system'" class="h-4 w-4" />
     <Moon v-else-if="themeStore.mode === 'dark'" class="h-4 w-4" />
     <Sun v-else class="h-4 w-4" />

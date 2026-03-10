@@ -182,7 +182,7 @@ const { t } = useI18n()
               <Button
                 variant="outline"
                 size="sm"
-                class="w-fit border-primary text-primary hover:bg-primary/10 hover:text-primary"
+                class="w-fit border-primary text-primary hover:text-primary"
                 @click="$router.push('/map')"
               >
                 <ArrowRight class="h-3.5 w-3.5 mr-2" aria-hidden="true" />
@@ -206,7 +206,7 @@ const { t } = useI18n()
               <Button
                 variant="outline"
                 size="sm"
-                class="w-fit border-primary text-primary hover:bg-primary/10 hover:text-primary"
+                class="w-fit border-primary text-primary hover:text-primary"
                 @click="$router.push('/communication-channels')"
               >
                 <ArrowRight class="h-3.5 w-3.5 mr-2" aria-hidden="true" />

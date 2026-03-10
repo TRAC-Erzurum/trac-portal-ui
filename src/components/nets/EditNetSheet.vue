@@ -657,11 +657,13 @@ async function handleSubmit() {
           </p>
         </div>
 
-        <div class="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" @click="emit('update:open', false)">
+        <div class="trac-sheet-actions">
+          <Button type="button" variant="outline" class="trac-sheet-btn" @click="emit('update:open', false)">
+            <X class="h-4 w-4 mr-2" />
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" variant="outline" :disabled="isLoading">
+          <Button type="submit" class="trac-sheet-btn" :disabled="isLoading">
+            <Check class="h-4 w-4 mr-2" />
             {{ isLoading ? t('common.loading') : t('common.save') }}
           </Button>
         </div>

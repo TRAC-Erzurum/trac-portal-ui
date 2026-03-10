@@ -25,7 +25,7 @@ const { t } = useI18n()
           <Button
             variant="outline"
             size="sm"
-            class="border-primary text-primary hover:bg-primary/10 hover:text-primary"
+            class="border-primary text-primary hover:text-primary"
             @click="$router.push('/login')"
           >
             {{ t('auth.login') }}

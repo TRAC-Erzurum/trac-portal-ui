@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
+import { Check, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -87,15 +88,17 @@ const handleSubmit = async () => {
         </div>
       </div>
 
-      <div class="flex justify-end gap-2 pt-2">
-        <Button variant="outline" @click="open = false">
+      <div class="trac-sheet-actions">
+        <Button variant="outline" class="trac-sheet-btn" @click="open = false">
+          <X class="h-4 w-4 mr-2" />
           {{ t('common.cancel') }}
         </Button>
         <Button 
-          variant="outline" 
+          class="trac-sheet-btn"
           @click="handleSubmit" 
           :disabled="isResetting || !newPassword || !confirmPassword"
         >
+          <Check class="h-4 w-4 mr-2" />
           {{ isResetting ? t('common.loading') : t('admin.resetPassword') }}
         </Button>
       </div>

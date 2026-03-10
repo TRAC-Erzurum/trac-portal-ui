@@ -2,7 +2,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Plus, Trash2 } from 'lucide-vue-next'
+import { Check, Plus, Trash2, X } from 'lucide-vue-next'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -113,12 +113,12 @@ async function handleSubmit() {
                 placeholder="+90 (5xx) xxx xx xx"
                 @input="phoneNumbers[index] = ($event.target as HTMLInputElement).value.replace(/[^\d+()\s-]/g, '')"
               />
-              <Button type="button" variant="ghost" size="icon" @click="removePhone(index)" class="text-destructive shrink-0">
+              <Button type="button" variant="ghost" size="icon-sm" @click="removePhone(index)" class="trac-btn-icon-destructive shrink-0">
                 <Trash2 class="w-4 h-4" />
               </Button>
             </div>
 
-            <Button type="button" variant="outline" class="w-full border-dashed py-6 hover:bg-primary/5 hover:text-primary hover:border-primary/50 transition-all" @click="addPhone">
+            <Button type="button" variant="outline" class="w-full border-dashed py-6 hover:text-primary hover:border-primary/50 transition-all" @click="addPhone">
               <Plus class="w-4 h-4 mr-2" />
               {{ t('account.addPhone') }}
             </Button>
@@ -131,7 +131,7 @@ async function handleSubmit() {
           
           <div class="space-y-4">
             <div v-for="(addr, index) in addresses" :key="index" class="space-y-4 p-4 border rounded-lg relative bg-muted/20">
-              <Button type="button" variant="ghost" size="icon" @click="removeAddress(index)" class="absolute top-2 right-2 text-destructive">
+              <Button type="button" variant="ghost" size="icon-sm" @click="removeAddress(index)" class="absolute top-2 right-2 trac-btn-icon-destructive">
                 <Trash2 class="w-4 h-4" />
               </Button>
               
@@ -171,18 +171,20 @@ async function handleSubmit() {
               </div>
             </div>
 
-            <Button type="button" variant="outline" class="w-full border-dashed py-8 hover:bg-primary/5 hover:text-primary hover:border-primary/50 transition-all" @click="addAddress">
+            <Button type="button" variant="outline" class="w-full border-dashed py-8 hover:text-primary hover:border-primary/50 transition-all" @click="addAddress">
               <Plus class="w-4 h-4 mr-2" />
               {{ t('account.addAddress') }}
             </Button>
           </div>
         </div>
 
-        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 border-t bg-background sticky bottom-0 z-10 -mx-4 px-4 pb-2 mt-auto">
-          <Button type="button" variant="ghost" @click="emit('update:open', false)">
+        <div class="trac-sheet-actions border-t bg-background sticky bottom-0 z-10 -mx-4 px-4 pb-2 mt-auto pt-6">
+          <Button type="button" variant="outline" class="trac-sheet-btn" @click="emit('update:open', false)">
+            <X class="h-4 w-4 mr-2" />
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" :loading="isLoading">
+          <Button type="submit" class="trac-sheet-btn" :loading="isLoading">
+            <Check class="h-4 w-4 mr-2" />
             {{ t('common.save') }}
           </Button>
         </div>

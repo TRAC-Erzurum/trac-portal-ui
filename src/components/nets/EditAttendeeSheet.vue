@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { Check, X } from 'lucide-vue-next'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -193,11 +194,13 @@ const handleSubmit = async () => {
           </div>
         </div>
 
-        <div class="flex justify-end gap-2 pt-4">
-          <Button type="button" variant="outline" @click="emit('update:open', false)">
+        <div class="trac-sheet-actions">
+          <Button type="button" variant="outline" class="trac-sheet-btn" @click="emit('update:open', false)">
+            <X class="h-4 w-4 mr-2" />
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" variant="outline" :disabled="isSubmitting">
+          <Button type="submit" class="trac-sheet-btn" :disabled="isSubmitting">
+            <Check class="h-4 w-4 mr-2" />
             {{ t('common.save') }}
           </Button>
         </div>

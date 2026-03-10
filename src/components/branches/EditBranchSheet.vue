@@ -2,7 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Plus, Trash2, Star } from 'lucide-vue-next'
+import { Check, Plus, Trash2, Star, X } from 'lucide-vue-next'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -266,7 +266,6 @@ async function handleSubmit() {
               size="icon"
               @click="removeCallSign(index)"
               :disabled="callSigns.length === 1"
-              class="h-9 w-9"
             >
               <Trash2 class="h-4 w-4" />
             </Button>
@@ -313,11 +312,13 @@ async function handleSubmit() {
           </span>
         </div>
 
-        <div class="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" @click="emit('update:open', false)">
+        <div class="trac-sheet-actions">
+          <Button type="button" variant="outline" class="trac-sheet-btn" @click="emit('update:open', false)">
+            <X class="h-4 w-4 mr-2" />
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" variant="outline" :disabled="isLoading">
+          <Button type="submit" class="trac-sheet-btn" :disabled="isLoading">
+            <Check class="h-4 w-4 mr-2" />
             {{ isLoading ? t('common.loading') : t('common.save') }}
           </Button>
         </div>

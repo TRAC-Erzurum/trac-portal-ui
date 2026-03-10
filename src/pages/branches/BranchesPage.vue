@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, type Component } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Plus } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -7,8 +7,7 @@ import { Separator } from '@/components/ui/separator'
 import { Checkbox } from '@/components/ui/checkbox'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CreateBranchSheet from '@/components/branches/CreateBranchSheet.vue'
-import { BranchCard, BranchCardSkeleton, MobileFab, SearchInput } from '@/components/shared'
-import type { MobileFabAction } from '@/components/shared'
+import { BranchCard, BranchCardSkeleton, SearchInput } from '@/components/shared'
 import { usePersistedFilters } from '@/composables'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
@@ -56,15 +55,6 @@ let searchTimeout: ReturnType<typeof setTimeout> | null = null
 const canCreate = computed(() => {
   return authStore.isSuperAdmin
 })
-
-const mobileFabActions = computed<MobileFabAction[]>(() => {
-  if (!canCreate.value) return []
-  return [{ key: 'create', label: t('branches.create'), icon: Plus as Component }]
-})
-
-const handleFabAction = (key: string) => {
-  if (key === 'create') showCreateSheet.value = true
-}
 
 const fetchBranches = async (append = false) => {
   if (append) {
@@ -162,8 +152,8 @@ onMounted(() => {
             </span>
           </div>
         </div>
-        <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
-          <Button v-if="canCreate" variant="outline" @click="showCreateSheet = true" class="hidden lg:inline-flex gap-2">
+        <div class="trac-top-actions">
+          <Button v-if="canCreate" variant="outline" @click="showCreateSheet = true" class="trac-page-action-btn">
             <Plus class="h-4 w-4" />
             {{ t('branches.create') }}
           </Button>
@@ -200,17 +190,16 @@ onMounted(() => {
         <div v-if="hasMore && !isLoading" class="order-1 lg:order-2 w-full lg:w-auto">
           <Button
             variant="outline"
-            class="w-full lg:w-auto lg:px-8"
+            class="trac-load-more-btn"
             :disabled="isLoadingMore"
             @click="loadMore"
           >
+            <ChevronDown v-if="!isLoadingMore" class="h-4 w-4 mr-2" />
             {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
           </Button>
         </div>
       </div>
     </div>
-
-    <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
 
     <CreateBranchSheet 
       v-model:open="showCreateSheet"
