@@ -524,12 +524,11 @@ fetchChannels()
             {{ t('common.cancel') }}
           </Button>
           <Button
-            variant="outline"
+            variant="destructive"
             @click="deleteChannel"
             :disabled="isDeleting || activeNetsCount > 0"
-            class="text-red-600 hover:text-red-700"
           >
-            <span v-if="isDeleting">{{ t('common.saving') }}...</span>
+            <span v-if="isDeleting">{{ t('common.saving') }}</span>
             <span v-else>{{ t('common.delete') }}</span>
           </Button>
         </DialogFooter>
