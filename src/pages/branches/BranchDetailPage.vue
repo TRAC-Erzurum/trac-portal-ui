@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, toRaw, watch, type Component } from 'vue'
+import { computed, onMounted, ref, toRaw, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Award, CalendarRange, Edit, Mail, MapPin, Phone, Plus, Radio, Search, TowerControl, Trash2, Users } from 'lucide-vue-next'
+import { Award, CalendarRange, Check, ChevronDown, Edit, Mail, MapPin, Phone, Plus, Radio, Search, TowerControl, Trash2, Users, X } from 'lucide-vue-next'
 import EditBranchSheet from '@/components/branches/EditBranchSheet.vue'
 import AddMemberSheet from '@/components/branches/AddMemberSheet.vue'
 import CertificateTemplateCard from '@/components/certificates/CertificateTemplateCard.vue'
@@ -18,8 +18,7 @@ import SchedulerCard from '@/components/nets/SchedulerCard.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CommunityModule from '@/components/dashboard/CommunityModule.vue'
 import NetsAttendeesTrendWidget from '@/components/dashboard/widgets/NetsAttendeesTrendWidget.vue'
-import { CommunicationChannelCard, CommunicationChannelCardSkeleton, MemberCard, MobileFab, NetCard, NetCardSkeleton, SearchInput } from '@/components/shared'
-import type { MobileFabAction } from '@/components/shared'
+import { CommunicationChannelCard, CommunicationChannelCardSkeleton, MemberCard, NetCard, NetCardSkeleton, SearchInput } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -178,50 +177,6 @@ const canCreateNet = computed(() => {
          userMembership.value?.role === 'president' ||
          userMembership.value?.role === 'volunteer'
 })
-
-const mobileFabActions = computed<MobileFabAction[]>(() => {
-  if (!branch.value) return []
-  const actions: MobileFabAction[] = []
-  
-  // Header management actions
-  if (canJoin.value && branch.value.isActive) {
-    actions.push({ key: 'joinBranch', label: t('branches.joinBranch'), icon: Users as Component })
-  }
-  if (canManage.value && branch.value.isActive) {
-    actions.push({ key: 'editBranch', label: t('branches.edit'), icon: Edit as Component })
-  }
-  if (canManage.value && branch.value.isActive && !branch.value.isHeadquarters) {
-    actions.push({ key: 'deleteBranch', label: t('common.delete'), icon: Trash2 as Component })
-  }
-  
-  // Section create actions
-  if (canManage.value && branch.value.isActive) {
-    actions.push({ key: 'createChannel', label: t('communicationChannels.create'), icon: TowerControl as Component })
-  }
-  if (canManage.value && branch.value.isActive) {
-    actions.push({ key: 'createCertificateTemplate', label: t('certificates.create'), icon: Award as Component })
-  }
-  if (canManageMembers.value && !branch.value.isHeadquarters && isBranchMember.value) {
-    actions.push({ key: 'addMember', label: t('branches.addMember'), icon: Plus as Component })
-  }
-  if (canCreateNet.value && branch.value.isActive) {
-    actions.push({ key: 'createNet', label: t('nets.createNet'), icon: Radio as Component })
-  }
-  
-  return actions
-})
-
-const handleFabAction = (key: string) => {
-  switch (key) {
-    case 'joinBranch': joinBranch(); break
-    case 'editBranch': openEdit(); break
-    case 'deleteBranch': openDeleteDialog(); break
-    case 'createChannel': isCreateChannelSheetOpen.value = true; break
-    case 'createCertificateTemplate': isCreateCertificateTemplateSheetOpen.value = true; break
-    case 'addMember': showAddMemberSheet.value = true; break
-    case 'createNet': isCreateNetSheetOpen.value = true; break
-  }
-}
 
 const canRemoveMember = (member: BranchMember) => {
   if (!canManageMembers.value) return false
@@ -877,8 +832,8 @@ onMounted(() => {
             </span>
           </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2 shrink-0 sm:ml-4">
-          <Button v-if="canJoin && branch.isActive" @click="joinBranch" :disabled="isJoining" variant="outline" size="sm" class="hidden lg:inline-flex min-w-[10rem]">
+        <div class="trac-mobile-action-row shrink-0 sm:ml-4">
+          <Button v-if="canJoin && branch.isActive" @click="joinBranch" :disabled="isJoining" variant="outline" size="sm" class="trac-card-action-btn" :title="t('branches.joinBranch')" :aria-label="t('branches.joinBranch')">
             <Users class="h-4 w-4 mr-2" />
             {{ t('branches.joinBranch') }}
           </Button>
@@ -895,7 +850,7 @@ onMounted(() => {
           </div>
           <template v-if="canManage">
             <template v-if="branch.isActive">
-              <Button variant="outline" size="sm" class="hidden lg:inline-flex min-w-[10rem]" @click="openEdit">
+              <Button variant="outline" size="sm" class="trac-card-action-btn" @click="openEdit" :title="t('branches.edit')" :aria-label="t('branches.edit')">
                 <Edit class="h-4 w-4 mr-2" />
                 {{ t('branches.edit') }}
               </Button>
@@ -903,8 +858,10 @@ onMounted(() => {
                 v-if="!branch.isHeadquarters"
                 variant="outline"
                 size="sm"
-                class="hidden lg:inline-flex min-w-[10rem] text-red-600 hover:text-red-700"
+                class="trac-card-action-btn"
                 @click="openDeleteDialog"
+                :title="t('common.delete')"
+                :aria-label="t('common.delete')"
               >
                 <Trash2 class="h-4 w-4 mr-2" />
                 {{ t('common.delete') }}
@@ -956,13 +913,15 @@ onMounted(() => {
               </SelectContent>
             </Select>
           </div>
-          <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
+          <div class="trac-top-actions">
             <Button
               v-if="canManage && branch.isActive"
               variant="outline"
               size="sm"
               @click="isCreateChannelSheetOpen = true"
-              class="hidden lg:inline-flex gap-2"
+              class="trac-page-action-btn"
+              :title="t('communicationChannels.create')"
+              :aria-label="t('communicationChannels.create')"
             >
               <Plus class="h-4 w-4" />
               {{ t('communicationChannels.create') }}
@@ -995,7 +954,8 @@ onMounted(() => {
             {{ channels.length }}/{{ channelsTotal }} {{ t('communicationChannels.nameEntity') }}
           </p>
           <div v-if="hasMoreChannels" class="order-1 lg:order-2 w-full lg:w-auto">
-            <Button variant="outline" class="w-full lg:w-auto lg:px-8" :disabled="isLoadingMoreChannels" @click="loadMoreChannels">
+            <Button variant="outline" class="trac-load-more-btn" :disabled="isLoadingMoreChannels" @click="loadMoreChannels">
+              <ChevronDown v-if="!isLoadingMoreChannels" class="h-4 w-4 mr-2" />
               {{ isLoadingMoreChannels ? t('common.loading') : t('common.loadMore') }}
             </Button>
           </div>
@@ -1033,13 +993,15 @@ onMounted(() => {
                 </SelectContent>
               </Select>
             </div>
-            <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
+            <div class="trac-top-actions">
               <Button
                 v-if="canManageMembers && !branch.isHeadquarters"
                 variant="outline"
                 size="sm"
                 @click="showAddMemberSheet = true"
-                class="hidden lg:inline-flex gap-2"
+                  class="trac-card-action-btn"
+                  :title="t('branches.addMember')"
+                  :aria-label="t('branches.addMember')"
               >
                 <Plus class="h-4 w-4" />
                 {{ t('branches.addMember') }}
@@ -1078,10 +1040,11 @@ onMounted(() => {
             <div v-if="hasMoreMembers" class="order-1 lg:order-2 w-full lg:w-auto">
               <Button
                 variant="outline"
-                class="w-full lg:w-auto lg:px-8"
+                class="trac-load-more-btn"
                 :disabled="isLoadingMoreMembers"
                 @click="loadMoreMembers"
               >
+                <ChevronDown v-if="!isLoadingMoreMembers" class="h-4 w-4 mr-2" />
                 {{ isLoadingMoreMembers ? t('common.loading') : t('common.loadMore') }}
               </Button>
             </div>
@@ -1102,7 +1065,9 @@ onMounted(() => {
             variant="outline"
             size="sm"
             @click="isCreateCertificateTemplateSheetOpen = true"
-            class="hidden lg:inline-flex gap-2"
+            class="trac-card-action-btn"
+            :title="t('certificates.create')"
+            :aria-label="t('certificates.create')"
           >
             <Plus class="h-4 w-4" />
             {{ t('certificates.create') }}
@@ -1185,13 +1150,15 @@ onMounted(() => {
               </SelectContent>
             </Select>
           </div>
-          <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
+          <div class="trac-top-actions">
             <Button
               v-if="canCreateNet && branch.isActive"
               variant="outline"
               size="sm"
               @click="isCreateNetSheetOpen = true"
-              class="hidden lg:inline-flex gap-2"
+              class="trac-card-action-btn"
+              :title="t('nets.createNet')"
+              :aria-label="t('nets.createNet')"
             >
               <Plus class="h-4 w-4" />
               {{ t('nets.createNet') }}
@@ -1237,18 +1204,17 @@ onMounted(() => {
           <div v-if="hasMoreNets && !isLoadingNets" class="order-1 lg:order-2 w-full lg:w-auto">
             <Button
               variant="outline"
-              class="w-full lg:w-auto lg:px-8"
+              class="trac-load-more-btn"
               :disabled="isLoadingMoreNets"
               @click="loadMoreNets"
             >
+              <ChevronDown v-if="!isLoadingMoreNets" class="h-4 w-4 mr-2" />
               {{ isLoadingMoreNets ? t('common.loading') : t('common.loadMore') }}
             </Button>
           </div>
         </div>
       </section>
     </div>
-
-    <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
 
     <EditBranchSheet
       v-if="branch"
@@ -1288,14 +1254,16 @@ onMounted(() => {
         </div>
         <DialogFooter>
           <Button variant="outline" @click="showDeleteDialog = false" :disabled="isDeleting">
+            <X class="h-4 w-4" />
             {{ t('common.cancel') }}
           </Button>
           <Button 
             variant="outline" 
             @click="deleteBranch"
             :disabled="isDeleting || (deleteBranchNameConfirm.trim() !== branch?.name?.trim())"
-            class="text-red-600 hover:text-red-700"
+            class="trac-btn-destructive-outlined"
           >
+            <Trash2 class="h-4 w-4" />
             {{ isDeleting ? t('common.loading') : t('branches.delete') }}
           </Button>
         </DialogFooter>
@@ -1367,14 +1335,16 @@ onMounted(() => {
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" @click="showDeleteCertificateTemplateDialog = false" :disabled="isDeletingCertificateTemplate">
+            <X class="h-4 w-4" />
             {{ t('common.cancel') }}
           </Button>
           <Button
             variant="outline"
             @click="deleteCertificateTemplate"
             :disabled="isDeletingCertificateTemplate"
-            class="text-red-600 hover:text-red-700"
+            class="trac-btn-destructive-outlined"
           >
+            <Trash2 class="h-4 w-4" />
             {{ isDeletingCertificateTemplate ? t('common.loading') : t('common.delete') }}
           </Button>
         </DialogFooter>
@@ -1401,14 +1371,16 @@ onMounted(() => {
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" @click="showDeleteChannelDialog = false" :disabled="isDeletingChannel">
+            <X class="h-4 w-4" />
             {{ t('common.cancel') }}
           </Button>
           <Button 
             variant="outline" 
             @click="deleteChannel"
             :disabled="isDeletingChannel || activeNetsCount > 0"
-            class="text-red-600 hover:text-red-700"
+            class="trac-btn-destructive-outlined"
           >
+            <Trash2 class="h-4 w-4" />
             {{ isDeletingChannel ? t('common.loading') : t('common.delete') }}
           </Button>
         </DialogFooter>
@@ -1435,6 +1407,7 @@ onMounted(() => {
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" @click="showDeactivateChannelDialog = false" :disabled="isDeactivatingChannel">
+            <X class="h-4 w-4" />
             {{ t('common.cancel') }}
           </Button>
           <Button 
@@ -1443,6 +1416,7 @@ onMounted(() => {
             :disabled="isDeactivatingChannel"
             class="text-amber-600 hover:text-amber-700"
           >
+            <Check class="h-4 w-4" />
             {{ isDeactivatingChannel ? t('common.loading') : t('communicationChannels.deactivate') }}
           </Button>
         </DialogFooter>
@@ -1478,14 +1452,16 @@ onMounted(() => {
         </DialogHeader>
         <DialogFooter>
           <Button variant="outline" @click="showRemoveMemberDialog = false" :disabled="isRemovingMember">
+            <X class="h-4 w-4" />
             {{ t('common.cancel') }}
           </Button>
           <Button
             variant="outline"
             @click="confirmRemoveMember"
             :disabled="isRemovingMember"
-            class="text-red-600 hover:text-red-700"
+            class="trac-btn-destructive-outlined"
           >
+            <Trash2 class="h-4 w-4" />
             {{ isRemovingMember ? t('common.loading') : t('branches.removeMember') }}
           </Button>
         </DialogFooter>

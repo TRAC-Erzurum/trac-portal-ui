@@ -944,17 +944,17 @@ const fetchComparePrevious = async () => {
                 </p>
                 <div class="flex gap-1 mb-2 shrink-0">
                   <button type="button" class="px-2 py-1 text-xs rounded-md border transition-colors"
-                    :class="geographicTab === 'country' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
+                    :class="geographicTab === 'country' ? 'border-primary text-primary' : 'border-border hover:bg-muted/30'"
                     @click="geographicTab = 'country'">
                     {{ t('dashboard.stats.countries') }}
                   </button>
                   <button type="button" class="px-2 py-1 text-xs rounded-md border transition-colors"
-                    :class="geographicTab === 'city' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
+                    :class="geographicTab === 'city' ? 'border-primary text-primary' : 'border-border hover:bg-muted/30'"
                     @click="geographicTab = 'city'">
                     {{ t('dashboard.stats.cities') }}
                   </button>
                   <button type="button" class="px-2 py-1 text-xs rounded-md border transition-colors"
-                    :class="geographicTab === 'district' ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
+                    :class="geographicTab === 'district' ? 'border-primary text-primary' : 'border-border hover:bg-muted/30'"
                     @click="geographicTab = 'district'">
                     {{ t('dashboard.stats.districts') }}
                   </button>
@@ -1049,57 +1049,12 @@ const fetchComparePrevious = async () => {
       <Separator class="my-8" />
 
       <div v-if="netStatus !== 'pending' && netStatus !== 'cancelled'" class="border-t border-border/50 pt-6">
-        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div class="mb-4">
           <h2 class="text-lg font-semibold flex items-center gap-2">
             <Users class="h-5 w-5" />
             {{ t('netDetail.attendees') }}
             <span class="text-muted-foreground font-normal">({{ attendees.length }})</span>
           </h2>
-          <div class="flex flex-wrap items-center gap-2 ml-auto">
-            <Button
-              v-if="canManageNet && netStatus === 'completed' && !showAddAttendeeForm"
-              size="sm"
-              variant="outline"
-              class="gap-2"
-              @click="showAddAttendeeForm = true"
-            >
-              <Plus class="h-4 w-4" />
-              {{ t('netDetail.addAttendee') }}
-            </Button>
-            <Button v-if="showDownloadMyCertificate && myAttendee" variant="outline" size="sm" class="gap-2"
-              @click="downloadCertificate(myAttendee)">
-              <Award class="h-4 w-4" />
-              {{ t('netDetail.downloadMyCertificate') }}
-            </Button>
-            <template v-if="attendees.length > 0">
-              <div class="hidden lg:flex items-center gap-2">
-                <Button variant="outline" size="sm" class="p-2 h-8 w-8" :disabled="isExporting" @click="exportToCsv"
-                  :title="t('netDetail.exportCsvTooltip')" :aria-label="t('netDetail.exportCsvTooltip')">
-                  <FileSpreadsheet class="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="sm" class="p-2 h-8 w-8" :disabled="isExporting" @click="exportToPdf"
-                  :title="t('netDetail.exportPdfTooltip')" :aria-label="t('netDetail.exportPdfTooltip')">
-                  <Printer class="h-4 w-4" />
-                </Button>
-                <div class="flex items-center gap-1">
-                  <Button variant="outline" size="sm" class="p-2 h-8 w-8" :disabled="isExporting" @click="exportToPng"
-                    :title="t('netDetail.exportPngTooltip')" :aria-label="t('netDetail.exportPngTooltip')">
-                    <Image class="h-4 w-4" />
-                  </Button>
-                  <Button variant="outline" size="sm" class="p-2 h-8 w-8" :disabled="isSharing || isExporting" @click="openShareFlow"
-                    :title="t('netDetail.shareReportAsPng')" :aria-label="t('netDetail.shareReportAsPng')">
-                    <Share2 class="h-4 w-4" />
-                  </Button>
-                </div>
-                <template v-if="net?.certificateTemplate && netStatus === 'completed'">
-                  <Button variant="outline" size="sm" class="p-2 h-8 w-8" :disabled="isExporting" @click="exportCertificates"
-                    title="Download All Certificates" aria-label="Download All Certificates">
-                    <Award class="h-4 w-4" />
-                  </Button>
-                </template>
-              </div>
-            </template>
-          </div>
         </div>
 
         <AddAttendeePanel v-if="canManageNet && (netStatus === 'active' || (netStatus === 'completed' && showAddAttendeeForm))" :net-id="(route.params.id as string)"
@@ -1109,7 +1064,104 @@ const fetchComparePrevious = async () => {
           :show-certificate-download="!!(net?.certificateTemplate && netStatus === 'completed')"
           :can-download-others-certificates="canDownloadOthersCertificates"
           :current-user-operator-id="auth.user?.operator?.id" @edit="openEditAttendee" @delete="deleteAttendee"
-          @download-certificate="downloadCertificate" />
+          @download-certificate="downloadCertificate"
+        >
+          <template #actions>
+            <div v-if="canManageNet && netStatus === 'completed' && !showAddAttendeeForm" class="w-full sm:w-auto">
+              <Button
+                size="sm"
+                variant="outline"
+                class="w-full gap-2 justify-center sm:w-auto"
+                @click="showAddAttendeeForm = true"
+              >
+                <Plus class="h-4 w-4" />
+                {{ t('netDetail.addAttendee') }}
+              </Button>
+            </div>
+
+            <div v-if="showDownloadMyCertificate && myAttendee" class="w-full sm:w-auto">
+              <Button
+                variant="outline"
+                size="sm"
+                class="w-full gap-2 justify-center sm:w-auto"
+                @click="downloadCertificate(myAttendee)"
+              >
+                <Award class="h-4 w-4" />
+                {{ t('netDetail.downloadMyCertificate') }}
+              </Button>
+            </div>
+
+            <template v-if="attendees.length > 0">
+              <div class="grid w-full grid-cols-2 gap-2 sm:w-auto sm:grid-cols-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="w-full gap-2 justify-center"
+                  :disabled="isExporting"
+                  @click="exportToCsv"
+                  :title="t('netDetail.exportCsvTooltip')"
+                  :aria-label="t('netDetail.exportCsvTooltip')"
+                >
+                  <FileSpreadsheet class="h-4 w-4" />
+                  CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="w-full gap-2 justify-center"
+                  :disabled="isExporting"
+                  @click="exportToPdf"
+                  :title="t('netDetail.exportPdfTooltip')"
+                  :aria-label="t('netDetail.exportPdfTooltip')"
+                >
+                  <Printer class="h-4 w-4" />
+                  PDF
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="w-full gap-2 justify-center"
+                  :disabled="isExporting"
+                  @click="exportToPng"
+                  :title="t('netDetail.exportPngTooltip')"
+                  :aria-label="t('netDetail.exportPngTooltip')"
+                >
+                  <Image class="h-4 w-4" />
+                  PNG
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="w-full gap-2 justify-center"
+                  :disabled="isSharing || isExporting"
+                  @click="openShareFlow"
+                  :title="t('netDetail.shareReportAsPng')"
+                  :aria-label="t('netDetail.shareReportAsPng')"
+                >
+                  <Share2 class="h-4 w-4" />
+                  {{ t('netDetail.share') }}
+                </Button>
+              </div>
+
+              <template v-if="net?.certificateTemplate && netStatus === 'completed'">
+                <div class="w-full sm:w-auto">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    class="w-full gap-2 justify-center sm:w-auto"
+                    :disabled="isExporting"
+                    @click="exportCertificates"
+                    :title="t('certificates.downloadAll')"
+                    :aria-label="t('certificates.downloadAll')"
+                  >
+                    <Award class="h-4 w-4" />
+                    {{ t('certificates.downloadAll') }}
+                  </Button>
+                </div>
+              </template>
+            </template>
+          </template>
+        </AttendeeList>
       </div>
     </div>
 

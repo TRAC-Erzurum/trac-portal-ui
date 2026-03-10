@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
+import { Check, X } from 'lucide-vue-next'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -104,11 +105,13 @@ async function handleSubmit() {
           />
         </div>
 
-        <div class="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" @click="emit('update:open', false)">
+        <div class="trac-sheet-actions">
+          <Button type="button" variant="outline" class="trac-sheet-btn" @click="emit('update:open', false)">
+            <X class="h-4 w-4 mr-2" />
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" variant="outline" :disabled="!canSubmit || isLoading">
+          <Button type="submit" class="trac-sheet-btn" :disabled="!canSubmit || isLoading">
+            <Check class="h-4 w-4 mr-2" />
             {{ isLoading ? t('common.loading') : t('profile.changePassword') }}
           </Button>
         </div>

@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
+import { Check, X } from 'lucide-vue-next'
 import {
   Sheet,
   SheetContent,
@@ -210,15 +211,17 @@ const handleSubmit = async () => {
           :disabled="isLoading"
         />
 
-        <div class="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" @click="emit('update:open', false)">
+        <div class="trac-sheet-actions">
+          <Button type="button" variant="outline" class="trac-sheet-btn" @click="emit('update:open', false)">
+            <X class="h-4 w-4 mr-2" />
             {{ t('common.cancel') }}
           </Button>
           <Button
             type="submit"
-            variant="outline"
+            class="trac-sheet-btn"
             :disabled="isLoading || !name?.trim() || !imagePath"
           >
+            <Check class="h-4 w-4 mr-2" />
             {{ isLoading ? t('common.loading') : t('common.save') }}
           </Button>
         </div>

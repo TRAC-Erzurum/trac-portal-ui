@@ -1,11 +1,9 @@
 <script setup lang="ts">
-import { computed, type Component } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Award, Building2, ChevronDown, Play, Square, TowerControl, Users, XCircle, Radio, Clock, Settings, Printer, Image, FileSpreadsheet } from 'lucide-vue-next'
+import { Award, Building2, ChevronDown, Play, Square, TowerControl, Users, XCircle, Radio, Clock, Settings } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { MobileFab } from '@/components/shared'
-import type { MobileFabAction } from '@/components/shared'
 import { useDateFormat } from '@/composables'
 import { formatCommunicationChannelLabel } from '@/lib/formatters'
 
@@ -130,45 +128,6 @@ const formatDuration = (net: Net) => {
   return `${minutes}m`
 }
 
-const mobileFabActions = computed<MobileFabAction[]>(() => {
-  const actions: MobileFabAction[] = []
-  
-  if (props.canManage && netStatus.value !== 'cancelled') {
-    actions.push({ key: 'edit', label: t('common.edit'), icon: Settings as Component })
-  }
-  if (props.canManage && netStatus.value === 'pending') {
-    actions.push({ key: 'startWith', label: t('netDetail.startWithOperator'), icon: Play as Component })
-    actions.push({ key: 'startWithout', label: t('netDetail.startWithoutOperator'), icon: Play as Component })
-    actions.push({ key: 'end', label: t('netDetail.cancel'), icon: XCircle as Component })
-  }
-  if (props.canManage && netStatus.value === 'active') {
-    actions.push({ key: 'end', label: t('netDetail.end'), icon: Square as Component })
-  }
-  if (netStatus.value !== 'pending' && netStatus.value !== 'cancelled' && props.attendeesCount > 0) {
-  actions.push({ key: 'exportCsv', label: t('netDetail.exportCsvTooltip'), icon: FileSpreadsheet as Component })
-  actions.push({ key: 'exportPdf', label: t('netDetail.exportPdfTooltip'), icon: Printer as Component })
-  actions.push({ key: 'exportPng', label: t('netDetail.exportPngTooltip'), icon: Image as Component })
-    if (props.net.certificateTemplate && netStatus.value === 'completed') {
-      actions.push({ key: 'exportCertificates', label: t('certificates.downloadAll'), icon: Award as Component })
-    }
-  }
-  
-  return actions
-})
-
-const handleFabAction = (key: string) => {
-  switch (key) {
-    case 'edit': emit('edit'); break
-    case 'startWith': emit('start', true); break
-    case 'startWithout': emit('start', false); break
-    case 'end': emit('end'); break
-    case 'shareReport': emit('shareReport'); break
-    case 'exportCsv': emit('exportCsv'); break
-    case 'exportPdf': emit('exportPdf'); break
-    case 'exportPng': emit('exportPng'); break
-    case 'exportCertificates': emit('exportCertificates'); break
-  }
-}
 </script>
 
 <template>
@@ -237,20 +196,22 @@ const handleFabAction = (key: string) => {
     <div v-if="$slots.certificate" class="hidden lg:block shrink-0 w-52 xl:w-60 min-w-0">
       <slot name="certificate" />
     </div>
-    <div v-if="canManage || (netStatus !== 'pending' && attendeesCount > 0)" class="hidden lg:flex flex-col items-end gap-2 shrink-0 lg:ml-4">
+    <div v-if="canManage || (netStatus !== 'pending' && attendeesCount > 0)" class="trac-mobile-action-row shrink-0 sm:ml-4">
       <Button
         v-if="canManage && netStatus !== 'cancelled'"
         variant="outline"
         size="sm"
-        class="min-w-[10rem]"
+        class="trac-card-action-btn"
         @click="emit('edit')"
+        :title="t('common.edit')"
+        :aria-label="t('common.edit')"
       >
         <Settings class="h-4 w-4 mr-2" />
         {{ t('common.edit') }}
       </Button>
       <DropdownMenu v-if="canManage && netStatus === 'pending' && !net.endedAt">
         <DropdownMenuTrigger as-child>
-          <Button variant="outline" size="sm" class="min-w-[10rem]">
+          <Button variant="outline" size="sm" class="trac-card-action-btn">
             <Play class="h-4 w-4 mr-2" fill="currentColor" />
             {{ t('netDetail.start') }}
             <ChevronDown class="h-4 w-4 ml-2 shrink-0 opacity-70" />
@@ -271,14 +232,15 @@ const handleFabAction = (key: string) => {
         v-if="canManage && (netStatus === 'pending' || netStatus === 'active') && !net.endedAt"
         variant="outline"
         size="sm"
-        class="min-w-[10rem]"
+        class="trac-card-action-btn"
         @click="emit('end')"
+        :title="netStatus === 'pending' ? t('netDetail.cancel') : t('netDetail.end')"
+        :aria-label="netStatus === 'pending' ? t('netDetail.cancel') : t('netDetail.end')"
       >
         <XCircle v-if="netStatus === 'pending'" class="h-4 w-4 mr-2" />
         <Square v-else class="h-4 w-4 mr-2" fill="currentColor" />
         {{ netStatus === 'pending' ? t('netDetail.cancel') : t('netDetail.end') }}
       </Button>
     </div>
-    <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
   </div>
 </template>

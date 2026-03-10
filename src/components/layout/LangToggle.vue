@@ -28,7 +28,7 @@ const currentLabel = computed(() => t(`locale.${localeStore.mode}`))
 </script>
 
 <template>
-  <Button variant="ghost" size="icon" @click="cycleLocale" :title="currentLabel" :aria-label="currentLabel">
+  <Button variant="ghost" size="icon-sm" @click="cycleLocale" :title="currentLabel" :aria-label="currentLabel">
     <Globe v-if="currentLocale?.isSystem" class="h-4 w-4" />
     <span v-else class="text-xs font-semibold" aria-hidden="true">{{ currentLocale?.label }}</span>
   </Button>

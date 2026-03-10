@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, toRaw, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { TowerControl } from 'lucide-vue-next'
+import { ChevronDown, TowerControl } from 'lucide-vue-next'
 import EditCommChannelSheet from '@/components/infrastructure/EditCommChannelSheet.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import PublicPageLayout from '@/components/layout/PublicPageLayout.vue'
@@ -344,7 +344,7 @@ fetchChannels()
             </Select>
           </div>
         </div>
-        <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
+        <div class="trac-top-actions">
         </div>
       </div>
 
@@ -376,10 +376,11 @@ fetchChannels()
         <div v-if="hasMore && !isLoading && cityFilter === 'all' && districtFilter === 'all'" class="order-1 lg:order-2 w-full lg:w-auto">
           <Button
             variant="outline"
-            class="w-full lg:w-auto lg:px-8"
+            class="trac-load-more-btn"
             :disabled="isLoadingMore"
             @click="loadMore"
           >
+            <ChevronDown v-if="!isLoadingMore" class="h-4 w-4 mr-2" />
             {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
           </Button>
         </div>
@@ -451,7 +452,7 @@ fetchChannels()
             </Select>
           </div>
         </div>
-        <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
+        <div class="trac-top-actions">
         </div>
       </div>
 
@@ -486,10 +487,11 @@ fetchChannels()
         <div v-if="hasMore && !isLoading && cityFilter === 'all' && districtFilter === 'all'" class="order-1 lg:order-2 w-full lg:w-auto">
           <Button
             variant="outline"
-            class="w-full lg:w-auto lg:px-8"
+            class="trac-load-more-btn"
             :disabled="isLoadingMore"
             @click="loadMore"
           >
+            <ChevronDown v-if="!isLoadingMore" class="h-4 w-4 mr-2" />
             {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
           </Button>
         </div>
@@ -525,6 +527,7 @@ fetchChannels()
           </Button>
           <Button
             variant="destructive"
+            class="trac-btn-destructive-outlined"
             @click="deleteChannel"
             :disabled="isDeleting || activeNetsCount > 0"
           >

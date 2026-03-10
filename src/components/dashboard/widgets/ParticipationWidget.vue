@@ -58,7 +58,7 @@ watch(period, fetchData)
           :key="p"
           type="button"
           class="px-2 py-1 text-xs rounded border transition-colors"
-          :class="period === p ? 'border-primary bg-primary/10' : 'border-border hover:bg-muted/30'"
+          :class="period === p ? 'border-primary text-primary' : 'border-border hover:bg-muted/30'"
           @click="period = p"
         >
           {{ periodLabel(p) }}

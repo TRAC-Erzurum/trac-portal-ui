@@ -175,25 +175,27 @@ const branchIsHeadquarters = computed(() => props.scheduler.branch?.isHeadquarte
         </div>
       </div>
     </div>
-    <div v-if="showEditButton" class="mt-auto flex items-center justify-end gap-1 pt-1.5 pb-0 border-t border-border/30">
+    <div v-if="showEditButton" class="mt-auto pt-2 pb-0 border-t border-border/30">
+      <div class="trac-mobile-action-row">
       <Button
-        variant="ghost"
+        variant="outline"
         size="sm"
-        class="h-7 px-2 text-xs"
+        class="trac-page-action-btn"
         @click="plannedSheetOpen = true"
       >
         <Calendar class="h-3.5 w-3.5 mr-1.5" />
         {{ t('scheduler.plannedNets') }}
       </Button>
       <Button
-        variant="ghost"
+        variant="outline"
         size="sm"
-        class="h-7 px-2 text-xs"
+        class="trac-page-action-btn"
         @click="emit('edit', scheduler.id)"
       >
         <Edit class="h-3.5 w-3.5 mr-1.5" />
         {{ t('common.edit') }}
       </Button>
+      </div>
     </div>
   </div>
 

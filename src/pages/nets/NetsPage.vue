@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch, type Component } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { CalendarRange, Plus, Radio } from 'lucide-vue-next'
+import { CalendarRange, ChevronDown, Plus, Radio } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import EditNetSchedulerSheet from '@/components/nets/EditNetSchedulerSheet.vue'
@@ -16,8 +16,7 @@ import {
 } from '@/components/ui/select'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CreateNetSheet from '@/components/nets/CreateNetSheet.vue'
-import { MobileFab, NetCard, NetCardSkeleton, SearchInput } from '@/components/shared'
-import type { MobileFabAction } from '@/components/shared'
+import { NetCard, NetCardSkeleton, SearchInput } from '@/components/shared'
 import { usePersistedFilters } from '@/composables'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
@@ -160,15 +159,6 @@ let searchTimeout: ReturnType<typeof setTimeout> | null = null
 const canCreate = computed(() => {
   return authStore.hasRole('member')
 })
-
-const mobileFabActions = computed<MobileFabAction[]>(() => {
-  if (!canCreate.value) return []
-  return [{ key: 'create', label: t('nets.createNet'), icon: Plus as Component }]
-})
-
-const handleFabAction = (key: string) => {
-  if (key === 'create') showCreateSheet.value = true
-}
 
 interface NetResponse {
   data: Net[]
@@ -362,8 +352,8 @@ onMounted(async () => {
             </Select>
           </div>
         </div>
-        <div class="w-full lg:w-1/2 flex flex-wrap items-center justify-end gap-2 lg:pt-0">
-          <Button v-if="canCreate" variant="outline" @click="showCreateSheet = true" class="hidden lg:inline-flex gap-2">
+        <div class="trac-top-actions">
+          <Button v-if="canCreate" variant="outline" @click="showCreateSheet = true" class="trac-page-action-btn">
             <Plus class="h-4 w-4" />
             {{ t('nets.createNet') }}
           </Button>
@@ -404,10 +394,11 @@ onMounted(async () => {
             <div v-if="hasMoreSchedulers && !isLoadingSchedulers" class="order-1 lg:order-2 w-full lg:w-auto">
               <Button
                 variant="outline"
-                class="w-full lg:w-auto lg:px-8"
+                class="trac-load-more-btn"
                 :disabled="isLoadingMoreSchedulers"
                 @click="loadMoreSchedulers"
               >
+                <ChevronDown v-if="!isLoadingMoreSchedulers" class="h-4 w-4 mr-2" />
                 {{ isLoadingMoreSchedulers ? t('common.loading') : t('common.loadMore') }}
               </Button>
             </div>
@@ -460,10 +451,11 @@ onMounted(async () => {
           <div v-if="hasMore && !isLoading" class="order-1 lg:order-2 w-full lg:w-auto">
             <Button
               variant="outline"
-              class="w-full lg:w-auto lg:px-8"
+              class="trac-load-more-btn"
               :disabled="isLoadingMore"
               @click="loadMore"
             >
+              <ChevronDown v-if="!isLoadingMore" class="h-4 w-4 mr-2" />
               {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
             </Button>
           </div>
@@ -472,8 +464,6 @@ onMounted(async () => {
 
       <div class="pb-16 lg:pb-0" aria-hidden="true" />
     </div>
-
-    <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
 
     <CreateNetSheet
       :open="showCreateSheet"

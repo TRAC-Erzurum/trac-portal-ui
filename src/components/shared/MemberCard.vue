@@ -125,9 +125,9 @@ const goToDetail = () => {
       </Select>
       <Button
         v-if="canManage && canRemove"
-        variant="ghost"
+        variant="outline"
         size="sm"
-        class="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+        class="h-7 px-2 text-xs trac-btn-destructive-outlined"
         @click="handleRemove"
       >
         <Trash2 class="h-3.5 w-3.5 mr-1.5" />
@@ -135,7 +135,7 @@ const goToDetail = () => {
       </Button>
       <Button
         v-if="operatorId || user?.operator?.id"
-        variant="ghost"
+        variant="outline"
         size="sm"
         class="h-7 px-2 text-xs"
         @click="goToDetail"

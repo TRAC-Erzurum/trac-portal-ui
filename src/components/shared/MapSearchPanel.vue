@@ -539,7 +539,7 @@ defineExpose({
           <Button
             variant="outline"
             size="sm"
-            class="w-full text-destructive hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30"
+            class="w-full trac-btn-destructive-outlined"
             @click="clearMeasurement"
           >
             <Trash2 class="h-4 w-4 mr-2" />

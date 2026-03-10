@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch, type Component } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
@@ -13,8 +13,6 @@ import EditEmergencyContactsSheet from '@/components/profile/EditEmergencyContac
 import EditExpertiseSheet from '@/components/profile/EditExpertiseSheet.vue'
 import { Button } from '@/components/ui/button'
 import { UserAvatar } from '@/components/ui/user-avatar'
-import { MobileFab } from '@/components/shared'
-import type { MobileFabAction } from '@/components/shared'
 import { useDateFormat } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
@@ -95,28 +93,6 @@ function onLocatorMapClick() {
 }
 
 const memberSince = computed(() => formatDateLong(profile.value?.createdAt))
-
-const mobileFabActions = computed<MobileFabAction[]>(() => {
-  return [
-    { key: 'editPersonal', label: t('account.personalInfo'), icon: Pencil as Component },
-    { key: 'editContact', label: t('account.contactInfo'), icon: Phone as Component },
-    { key: 'editEmergency', label: t('account.emergencyContacts'), icon: HeartPulse as Component },
-    { key: 'editExpertise', label: t('account.editExpertise'), icon: GraduationCap as Component },
-    { key: 'changePassword', label: t('profile.changePassword'), icon: Key as Component },
-    { key: 'editOperator', label: t('profile.editOperatorAction'), icon: Pencil as Component },
-  ]
-})
-
-const handleFabAction = (key: string) => {
-  switch (key) {
-    case 'editPersonal': showEditPersonalBasics.value = true; break
-    case 'editContact': showEditContact.value = true; break
-    case 'editEmergency': showEditEmergency.value = true; break
-    case 'editExpertise': showEditExpertise.value = true; break
-    case 'changePassword': showChangePassword.value = true; break
-    case 'editOperator': showEditOperator.value = true; break
-  }
-}
 
 async function fetchProfile() {
   isLoading.value = true
@@ -259,14 +235,14 @@ watch(
                 <div v-if="isUploadingAvatar"
                   class="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 <template v-else>
-                  <button @click="triggerFileInput" class="p-1.5 rounded-full hover:bg-white/20 transition-colors"
-                    :title="t('profile.changeAvatar')">
+                  <Button variant="ghost" size="icon-sm" @click="triggerFileInput" class="trac-avatar-overlay-btn"
+                    :title="t('profile.changeAvatar')" :aria-label="t('profile.changeAvatar')">
                     <Camera class="h-4 w-4 text-white" />
-                  </button>
-                  <button v-if="profile.picture" @click="deleteAvatar"
-                    class="p-1.5 rounded-full hover:bg-red-500/50 transition-colors" :title="t('profile.deleteAvatar')">
+                  </Button>
+                  <Button v-if="profile.picture" variant="ghost" size="icon-sm" @click="deleteAvatar"
+                    class="trac-avatar-overlay-btn-danger" :title="t('profile.deleteAvatar')" :aria-label="t('profile.deleteAvatar')">
                     <Trash2 class="h-4 w-4 text-white" />
-                  </button>
+                  </Button>
                 </template>
               </div>
               <input ref="fileInputRef" type="file" accept="image/jpeg,image/png,image/webp" class="hidden"
@@ -275,14 +251,7 @@ watch(
             <div class="min-w-0 flex-1 space-y-3">
               <div class="flex flex-wrap items-start justify-between gap-3">
                 <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2">
-                    <h2 class="text-2xl font-bold">{{ formattedCallSign }}</h2>
-                    <Button variant="ghost" size="icon"
-                      class="hidden sm:flex h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
-                      @click="showChangePassword = true" :title="t('profile.changePassword')">
-                      <Key class="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <h2 class="text-2xl font-bold">{{ formattedCallSign }}</h2>
                   <p v-if="profile.fullName" class="text-lg text-muted-foreground">{{ profile.fullName }}</p>
                 </div>
               </div>
@@ -307,17 +276,36 @@ watch(
           </div>
 
           <div class="min-w-0 space-y-3">
-            <div class="flex flex-wrap items-center justify-end gap-2">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div class="min-w-0 flex-1">
                 <p class="text-xs text-muted-foreground">{{ t('profile.dmrId') }}</p>
                 <div class="flex items-center justify-between gap-2">
                   <p class="text-sm font-medium font-mono">{{ profile.operator?.dmrId || '-' }}</p>
-                  <Button variant="ghost" size="icon"
-                    class="hidden sm:flex h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
-                    @click="showEditOperator = true">
-                    <Pencil class="h-4 w-4" />
-                  </Button>
                 </div>
+              </div>
+              <div class="trac-mobile-action-row sm:shrink-0">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="trac-card-action-btn"
+                  @click="showEditOperator = true"
+                  :title="t('profile.editOperatorAction')"
+                  :aria-label="t('profile.editOperatorAction')"
+                >
+                  <Pencil class="h-4 w-4" />
+                  {{ t('common.edit') }}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="trac-card-action-btn"
+                  @click="showChangePassword = true"
+                  :title="t('profile.changePassword')"
+                  :aria-label="t('profile.changePassword')"
+                >
+                  <Key class="h-4 w-4" />
+                  {{ t('profile.changePassword') }}
+                </Button>
               </div>
             </div>
             <p class="text-xs text-muted-foreground">{{ t('profile.qth') }}</p>
@@ -333,15 +321,17 @@ watch(
         <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
           <!-- Contact Info Section -->
           <div class="space-y-4 rounded-xl border p-5">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 class="flex items-center gap-2 font-semibold">
                 <Phone class="h-4 w-4 text-primary" />
                 {{ t('account.contactInfo') }}
               </h3>
-              <Button variant="ghost" size="icon"
-                class="hidden sm:flex h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
-                @click="showEditContact = true">
+              <Button variant="outline" size="sm"
+                class="trac-card-action-btn self-end sm:self-auto"
+                @click="showEditContact = true" :title="t('account.contactInfo')"
+                :aria-label="t('account.contactInfo')">
                 <Pencil class="h-4 w-4" />
+                {{ t('common.edit') }}
               </Button>
             </div>
             <div class="space-y-3">
@@ -373,15 +363,17 @@ watch(
 
           <!-- Personal Info Section -->
           <div class="space-y-4 rounded-xl border p-5">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 class="flex items-center gap-2 font-semibold">
                 <UserCircle class="h-4 w-4 text-primary" />
                 {{ t('account.personalInfo') }}
               </h3>
-              <Button variant="ghost" size="icon"
-                class="hidden sm:flex h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
-                @click="showEditPersonalBasics = true">
+              <Button variant="outline" size="sm"
+                class="trac-card-action-btn self-end sm:self-auto"
+                @click="showEditPersonalBasics = true" :title="t('account.personalInfo')"
+                :aria-label="t('account.personalInfo')">
                 <Pencil class="h-4 w-4" />
+                {{ t('common.edit') }}
               </Button>
             </div>
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -411,15 +403,17 @@ watch(
 
           <!-- Emergency Contact Section -->
           <div class="space-y-4 rounded-xl border p-5 md:col-span-2">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 class="flex items-center gap-2 font-semibold">
                 <HeartPulse class="h-4 w-4 text-destructive" />
                 {{ t('account.emergencyContacts') }}
               </h3>
-              <Button variant="ghost" size="icon"
-                class="hidden sm:flex h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
-                @click="showEditEmergency = true">
+              <Button variant="outline" size="sm"
+                class="trac-card-action-btn self-end sm:self-auto"
+                @click="showEditEmergency = true" :title="t('account.emergencyContacts')"
+                :aria-label="t('account.emergencyContacts')">
                 <Pencil class="h-4 w-4" />
+                {{ t('common.edit') }}
               </Button>
             </div>
             <div v-if="profile.emergencyContacts?.length" class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -440,15 +434,17 @@ watch(
 
           <!-- Expertise & Training Section -->
           <div class="space-y-6 rounded-xl border p-5 md:col-span-2">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 class="flex items-center gap-2 font-semibold">
                 <GraduationCap class="h-4 w-4 text-primary" />
                 {{ t('account.expertise') }}
               </h3>
-              <Button variant="ghost" size="icon"
-                class="hidden sm:flex h-8 w-8 text-muted-foreground hover:text-primary transition-colors"
-                @click="showEditExpertise = true">
+              <Button variant="outline" size="sm"
+                class="trac-card-action-btn self-end sm:self-auto"
+                @click="showEditExpertise = true" :title="t('account.editExpertise')"
+                :aria-label="t('account.editExpertise')">
                 <Pencil class="h-4 w-4" />
+                {{ t('common.edit') }}
               </Button>
             </div>
 
@@ -510,8 +506,6 @@ watch(
         </section>
       </template>
     </div>
-
-    <MobileFab :actions="mobileFabActions" @action="handleFabAction" />
 
     <EditPersonalBasicsSheet v-model:open="showEditPersonalBasics" :initial-profile="profile"
       @updated="handleProfileUpdated" />

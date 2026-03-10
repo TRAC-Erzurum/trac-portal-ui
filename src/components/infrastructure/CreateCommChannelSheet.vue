@@ -10,7 +10,7 @@ import { useFormValidation } from '@/composables'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { LocationMapPicker, type LocationSelection } from '@/components/shared'
-import { Plus, TowerControl, Globe, Navigation, X } from 'lucide-vue-next'
+import { Check, Plus, TowerControl, Globe, Navigation, X } from 'lucide-vue-next'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
 import { WGS84ToMaidenhead } from '@/lib/maidenhead'
@@ -563,7 +563,7 @@ async function handleSubmit() {
               <div class="space-y-3">
                 <div class="flex items-center justify-between">
                   <h4 class="text-sm font-medium text-muted-foreground">{{ t('communicationChannels.talkgroups') }}</h4>
-                  <Button type="button" variant="outline" size="sm" @click="addTalkgroup">
+                  <Button type="button" size="sm" @click="addTalkgroup">
                     <Plus class="h-3 w-3 mr-1" />
                     {{ t('common.add') }}
                   </Button>
@@ -914,11 +914,13 @@ async function handleSubmit() {
           <Separator />
         </template>
 
-        <div class="flex justify-end gap-3 pt-4">
-          <Button type="button" variant="outline" @click="emit('update:open', false)">
+        <div class="trac-sheet-actions">
+          <Button type="button" variant="outline" class="trac-sheet-btn" @click="emit('update:open', false)">
+            <X class="h-4 w-4 mr-2" />
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" variant="outline" :disabled="isLoading">
+          <Button type="submit" class="trac-sheet-btn" :disabled="isLoading">
+            <Check class="h-4 w-4 mr-2" />
             {{ isLoading ? t('common.loading') : t('common.save') }}
           </Button>
         </div>

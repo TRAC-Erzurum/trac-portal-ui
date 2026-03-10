@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
+import { Check, X } from 'lucide-vue-next'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -113,11 +114,13 @@ async function handleSubmit() {
           />
         </div>
 
-        <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-3 pt-6 border-t bg-background sticky bottom-0 z-10 -mx-4 px-4 pb-2 mt-auto">
-          <Button type="button" variant="ghost" @click="emit('update:open', false)">
+        <div class="trac-sheet-actions border-t bg-background sticky bottom-0 z-10 -mx-4 px-4 pb-2 mt-auto pt-6">
+          <Button type="button" variant="outline" class="trac-sheet-btn" @click="emit('update:open', false)">
+            <X class="h-4 w-4 mr-2" />
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" :loading="isLoading">
+          <Button type="submit" class="trac-sheet-btn" :loading="isLoading">
+            <Check class="h-4 w-4 mr-2" />
             {{ t('common.save') }}
           </Button>
         </div>
