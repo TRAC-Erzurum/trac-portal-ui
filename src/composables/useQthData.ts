@@ -20,19 +20,29 @@ const isLoading = ref(false)
 const isLoaded = ref(false)
 
 function loadFromCache(): CityData[] | null {
+  const cookieStore = useCookieConsentStore()
+  if (!cookieStore.isAllAllowed) return null
+
   try {
     const cached = localStorage.getItem(CACHE_KEY)
     if (!cached) return null
 
-    const { data, timestamp }: CacheData = JSON.parse(cached)
-    if (Date.now() - timestamp > CACHE_TTL) {
+    const parsed: CacheData = JSON.parse(cached)
+    if (!parsed?.data || !parsed?.timestamp) {
       localStorage.removeItem(CACHE_KEY)
       return null
     }
 
-    return data
+    if (Date.now() - parsed.timestamp > CACHE_TTL) {
+      localStorage.removeItem(CACHE_KEY)
+      return null
+    }
+
+    return parsed.data
   } catch {
-    localStorage.removeItem(CACHE_KEY)
+    try {
+      localStorage.removeItem(CACHE_KEY)
+    } catch {}
     return null
   }
 }

@@ -334,9 +334,8 @@
     "addressWork": "İş",
     "addressOther": "Diğer",
     "addressFull": "Açık Adres",
-    "addressDetail": "Adres Detayı",
     "qthSelection": "QTH Seçimi",
-    "detailedInfo": "Üyelik ve İletişim Detayları",
+    "detailedInfo": "Acil Durumlar için iletişim bilgileri",
     "detailedInfoProfileDesc": "Operatörün adres, telefon ve acil durum kişileri gibi sadece yetkililerin erişebildiği hassas verileri inceleyin.",
     "expertise": "Uzmanlık",
     "expertiseAreas": "Uzmanlık Alanları",
@@ -757,6 +756,7 @@
     "clear": "Temizle",
     "loading": "Yükleniyor...",
     "save": "Kaydet",
+    "saving": "Kaydediliyor...",
     "cancel": "İptal",
     "close": "Kapat",
     "delete": "Sil",
@@ -806,6 +806,7 @@
     "filterAllCities": "Tüm İller",
     "filterAllDistricts": "Tüm İlçeler",
     "howToConnect": "Nasıl Bağlanırım?",
+    "tutorialDescription": "Bağlantı talimatları ve teknik detaylar.",
     "tutorials": {
       "vhf_uhf_repeater": {
         "title": "Bağlantı Talimatları",

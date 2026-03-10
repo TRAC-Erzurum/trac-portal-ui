@@ -142,8 +142,14 @@ const canViewSensitive = computed(() => {
   if (authStore.user?.id === operator.value.user.id) return true
   
   // Check if current user is an admin of ANY branch that the viewed user is also a member of
-  // We use the memberships ref which contains the viewed operator's branch list
-  return authStore.user?.role === 'admin' || authStore.user?.role === 'super_admin'
+  const viewedUserBranchIds = memberships.value.map(m => m.branchId)
+  const currentUserBranchMemberships = authStore.user?.branchMemberships || []
+  
+  const isBranchAdmin = currentUserBranchMemberships.some(m => 
+    m.role === 'admin' && viewedUserBranchIds.includes(m.branchId)
+  )
+
+  return isBranchAdmin
 })
 
 const mobileFabActions = computed<MobileFabAction[]>(() => {

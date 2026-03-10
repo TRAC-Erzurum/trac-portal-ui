@@ -116,7 +116,7 @@ type MapBaseLayer = 'standard' | 'satellite' | 'terrain'
 const LAYERS: MapBaseLayer[] = ['standard', 'satellite', 'terrain']
 
 function getStoredMapLayer(): MapBaseLayer | null {
-  if (typeof window === 'undefined') return null
+  if (!cookieStore.isAllAllowed) return null
   try {
     const raw = localStorage.getItem(MAP_LAYER_STORAGE_KEY)
     if (!raw) return null
@@ -130,7 +130,6 @@ function getStoredMapLayer(): MapBaseLayer | null {
 }
 
 function setStoredMapLayer(layer: MapBaseLayer) {
-  if (typeof window === 'undefined') return
   if (!cookieStore.isAllAllowed) return
   try {
     localStorage.setItem(
