@@ -54,6 +54,10 @@ import { toast } from 'vue-sonner'
 
 const TURKEY_CENTER: [number, number] = [39.93, 32.85]
 const TURKEY_ZOOM = 6
+import { useCookieConsentStore } from '@/stores/cookieConsent'
+
+const cookieStore = useCookieConsentStore()
+
 const MAP_LAYER_STORAGE_KEY = 'trac-map-layer'
 const MAP_LAYER_TTL_MS = 60 * 60 * 1000
 const SEARCH_DEBOUNCE_MS = 400
@@ -127,6 +131,7 @@ function getStoredMapLayer(): MapBaseLayer | null {
 
 function setStoredMapLayer(layer: MapBaseLayer) {
   if (typeof window === 'undefined') return
+  if (!cookieStore.isAllAllowed) return
   try {
     localStorage.setItem(
       MAP_LAYER_STORAGE_KEY,
