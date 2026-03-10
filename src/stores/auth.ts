@@ -34,6 +34,7 @@ export interface User {
   createdAt?: string
   operator?: Operator
   currentBranchId?: string | null
+  branchMemberships?: { branchId: string; role: string }[]
 }
 
 interface AuthCheckResponse {

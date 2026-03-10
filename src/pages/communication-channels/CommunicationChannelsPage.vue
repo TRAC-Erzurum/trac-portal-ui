@@ -392,6 +392,9 @@ fetchChannels()
           <DialogTitle class="text-lg font-semibold leading-tight text-foreground">
             {{ tutorialTitle }}
           </DialogTitle>
+          <DialogDescription class="sr-only">
+            {{ t('communicationChannels.tutorialDescription') }}
+          </DialogDescription>
         </DialogHeader>
         <div class="tutorial-content text-sm text-foreground" v-html="renderMarkdown(tutorialContent.content)" />
         <DialogFooter>
@@ -521,12 +524,12 @@ fetchChannels()
             {{ t('common.cancel') }}
           </Button>
           <Button
-            variant="outline"
+            variant="destructive"
             @click="deleteChannel"
             :disabled="isDeleting || activeNetsCount > 0"
-            class="text-red-600 hover:text-red-700"
           >
-            {{ isDeleting ? t('common.loading') : t('common.delete') }}
+            <span v-if="isDeleting">{{ t('common.saving') }}</span>
+            <span v-else>{{ t('common.delete') }}</span>
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -556,7 +559,7 @@ fetchChannels()
             :disabled="isDeactivating"
             class="text-amber-600 hover:text-amber-700"
           >
-            {{ isDeactivating ? t('common.loading') : t('communicationChannels.deactivate') }}
+            {{ isDeactivating ? t('common.saving') : t('communicationChannels.deactivate') }}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -568,6 +571,9 @@ fetchChannels()
           <DialogTitle class="text-lg font-semibold leading-tight text-foreground">
             {{ tutorialTitle }}
           </DialogTitle>
+          <DialogDescription class="sr-only">
+            {{ t('communicationChannels.tutorialDescription') }}
+          </DialogDescription>
         </DialogHeader>
         <div class="tutorial-content text-sm text-foreground" v-html="renderMarkdown(tutorialContent.content)" />
         <DialogFooter>

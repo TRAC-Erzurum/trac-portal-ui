@@ -5,15 +5,31 @@ export type CookieConsentStatus = 'all' | 'necessary' | 'undecided'
 
 const STORAGE_KEY = 'trac-cookie-consent'
 
+function getInitialStatus(): CookieConsentStatus {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    if (stored === 'all' || stored === 'necessary' || stored === 'undecided') {
+      return stored as CookieConsentStatus
+    }
+  } catch (e) {
+    // LocalStorage access might be blocked
+  }
+  return 'undecided'
+}
+
 export const useCookieConsentStore = defineStore('cookie-consent', () => {
-  const status = ref<CookieConsentStatus>((localStorage.getItem(STORAGE_KEY) as CookieConsentStatus) || 'undecided')
+  const status = ref<CookieConsentStatus>(getInitialStatus())
 
   const isAccepted = computed(() => status.value !== 'undecided')
   const isAllAllowed = computed(() => status.value === 'all')
 
   function setConsent(newStatus: CookieConsentStatus) {
     status.value = newStatus
-    localStorage.setItem(STORAGE_KEY, newStatus)
+    try {
+      localStorage.setItem(STORAGE_KEY, newStatus)
+    } catch (e) {
+      // LocalStorage access might be blocked
+    }
   }
 
   function allowAll() {
