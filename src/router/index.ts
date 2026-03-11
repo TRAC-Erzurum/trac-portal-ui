@@ -116,6 +116,24 @@ const router = createRouter({
       meta: { requiresAuth: true, minRole: 'admin', titleKey: 'admin.pendingRequests' }
     },
     {
+      path: '/operators/:id/inventory',
+      name: 'operator-inventory',
+      component: () => import('@/pages/operators/OperatorInventoryPage.vue'),
+      meta: { requiresAuth: true, minRole: 'volunteer' as UserRole, titleKey: 'inventory.operatorInventory' }
+    },
+    {
+      path: '/branches/:id/inventory',
+      name: 'branch-inventory',
+      component: () => import('@/pages/branches/BranchInventoryPage.vue'),
+      meta: { requiresAuth: true, minRole: 'volunteer' as UserRole, titleKey: 'inventory.branchInventory' }
+    },
+    {
+      path: '/admin/inventory',
+      name: 'admin-inventory',
+      component: () => import('@/pages/admin/InventoryAdminPage.vue'),
+      meta: { requiresAuth: true, minRole: 'super_admin' as UserRole, titleKey: 'inventory.inventoryManagement' }
+    },
+    {
       path: '/map',
       name: 'map',
       component: () => import('@/pages/MapPage.vue'),

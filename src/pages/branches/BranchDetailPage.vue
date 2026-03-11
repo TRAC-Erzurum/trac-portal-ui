@@ -3,9 +3,11 @@ import { computed, onMounted, ref, toRaw, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Award, CalendarRange, Check, ChevronDown, Edit, Mail, MapPin, Phone, Plus, Radio, Search, TowerControl, Trash2, Users, X } from 'lucide-vue-next'
+import { Award, CalendarRange, Check, ChevronDown, ChevronRight, Edit, Mail, MapPin, Package, Phone, Plus, Radio, Search, TowerControl, Trash2, Users, X } from 'lucide-vue-next'
 import EditBranchSheet from '@/components/branches/EditBranchSheet.vue'
 import AddMemberSheet from '@/components/branches/AddMemberSheet.vue'
+import EquipmentCard from '@/components/inventory/EquipmentCard.vue'
+import EquipmentCardSkeleton from '@/components/inventory/EquipmentCardSkeleton.vue'
 import CertificateTemplateCard from '@/components/certificates/CertificateTemplateCard.vue'
 import CreateCertificateTemplateSheet from '@/components/certificates/CreateCertificateTemplateSheet.vue'
 import EditCertificateTemplateSheet from '@/components/certificates/EditCertificateTemplateSheet.vue'
@@ -143,6 +145,11 @@ const schedulers = ref<any[]>([])
 const isLoadingSchedulers = ref(false)
 const selectedSchedulerId = ref<string | null>(null)
 const isEditSchedulerSheetOpen = ref(false)
+
+const branchEquipment = ref<any[]>([])
+const branchEquipmentTotal = ref(0)
+const branchEquipmentLoading = ref(false)
+
 const canManage = computed(() => {
   return authStore.isSuperAdmin
 })
@@ -741,6 +748,33 @@ const handleNetsSearchChange = () => {
 }
 const handleNetsFilterChange = () => fetchNets()
 
+function buildCategoryPath(category: any): string {
+  if (!category) return ''
+  const parts: string[] = []
+  let current = category
+  while (current) {
+    parts.unshift(current.name)
+    current = current.parent
+  }
+  return parts.join(' > ')
+}
+
+const fetchBranchEquipment = async () => {
+  branchEquipmentLoading.value = true
+  try {
+    const response = await api.get<{ data: any[]; total: number }>(
+      `/equipment/branch/${route.params.id}?pageSize=6`
+    )
+    branchEquipment.value = response.data
+    branchEquipmentTotal.value = response.total
+  } catch {
+    branchEquipment.value = []
+    branchEquipmentTotal.value = 0
+  } finally {
+    branchEquipmentLoading.value = false
+  }
+}
+
 watch(membersSearch, handleMembersSearchChange)
 watch(membersRoleFilter, handleMembersFilterChange)
 watch(channelSearch, handleChannelSearchChange)
@@ -775,6 +809,7 @@ onMounted(() => {
   fetchChannels()
   fetchCertificateTemplates()
   fetchNets()
+  fetchBranchEquipment()
 })
 </script>
 
@@ -1214,6 +1249,44 @@ onMounted(() => {
           </div>
         </div>
       </section>
+
+      <template v-if="branchEquipmentTotal > 0 || branchEquipmentLoading">
+        <Separator class="my-8" />
+
+        <section>
+          <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+            <Package class="h-4 w-4" />
+            {{ t('inventory.title') }}
+          </h3>
+
+          <div v-if="branchEquipmentLoading" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+            <EquipmentCardSkeleton v-for="i in 3" :key="i" />
+          </div>
+
+          <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+            <EquipmentCard
+              v-for="eq in branchEquipment"
+              :key="eq.id"
+              :id="eq.id"
+              :label="eq.label"
+              :category-name="eq.category?.name"
+              :category-path="buildCategoryPath(eq.category)"
+              :status-name="eq.status?.name"
+              :status-color="eq.status?.color"
+              :is-visible="eq.isVisible"
+              :properties="eq.propertyValues?.map((pv: any) => ({ name: pv.propertyDefinition?.name, value: pv.value, type: pv.propertyDefinition?.type }))"
+              :thumbnail-path="eq.photos?.[0]?.filePath"
+            />
+          </div>
+
+          <div v-if="branchEquipmentTotal > 6" class="mt-4">
+            <router-link :to="`/branches/${route.params.id}/inventory`" class="text-sm text-primary hover:underline flex items-center gap-1">
+              {{ t('inventory.viewAll') }} ({{ branchEquipmentTotal }})
+              <ChevronRight class="h-4 w-4" />
+            </router-link>
+          </div>
+        </section>
+      </template>
     </div>
 
     <EditBranchSheet
