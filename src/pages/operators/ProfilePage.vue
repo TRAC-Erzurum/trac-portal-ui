@@ -3,8 +3,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Award, Building2, Calendar, ChevronDown, ChevronRight, Download, Ear, Key, Mail, Pencil, Radio, Signal, Trash2, TrendingUp, UserCircle, Users } from 'lucide-vue-next'
+import { Award, Building2, Calendar, ChevronDown, ChevronRight, Download, Ear, Key, Mail, Package, Pencil, Radio, Signal, Trash2, TrendingUp, UserCircle, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
+import EquipmentCard from '@/components/inventory/EquipmentCard.vue'
+import EquipmentCardSkeleton from '@/components/inventory/EquipmentCardSkeleton.vue'
 import BranchMembershipCard from '@/components/shared/BranchMembershipCard.vue'
 import { LocatorMapPreview, SearchInput } from '@/components/shared'
 import { usePersistedFilters } from '@/composables'
@@ -126,6 +128,10 @@ const isLoadingCertificates = ref(false)
 const certificatePreviews = ref<Record<string, CertificatePreviewData | null>>({})
 const loadingPreviewAttendeeIds = ref<Set<string>>(new Set())
 const certificatePreviewDialogCert = ref<OperatorCertificateItem | null>(null)
+
+const equipmentItems = ref<any[]>([])
+const equipmentTotal = ref(0)
+const equipmentLoading = ref(false)
 
 const operatorId = computed(() => route.params.id as string)
 
@@ -403,10 +409,38 @@ usePersistedFilters(profileMembershipsFilterKey, { membershipSearch, membershipR
 
 const getProfileNetsStorageKey = () => `trac-filters-profile-nets-${operatorId.value}`
 
+function buildCategoryPath(category: any): string {
+  if (!category) return ''
+  const parts: string[] = []
+  let current = category
+  while (current) {
+    parts.unshift(current.name)
+    current = current.parent
+  }
+  return parts.join(' > ')
+}
+
+const fetchEquipment = async () => {
+  equipmentLoading.value = true
+  try {
+    const response = await api.get<{ data: any[]; total: number }>(
+      `/equipment/operator/${operatorId.value}?pageSize=6`
+    )
+    equipmentItems.value = response.data
+    equipmentTotal.value = response.total
+  } catch {
+    equipmentItems.value = []
+    equipmentTotal.value = 0
+  } finally {
+    equipmentLoading.value = false
+  }
+}
+
 onMounted(async () => {
   await fetchOperator()
   fetchStats()
   fetchCertificates()
+  fetchEquipment()
   if (operator.value?.user?.id) {
     await fetchMemberships()
     const approved = memberships.value.filter(m => m.status === 'approved' && m.branch)
@@ -861,6 +895,44 @@ onMounted(async () => {
             {{ filteredMemberships.length }}/{{ approvedMembershipsCount }} {{ t('branches.nameEntity') }}
           </p>
         </section>
+
+        <template v-if="equipmentTotal > 0 || equipmentLoading">
+          <Separator class="my-8" />
+
+          <section>
+            <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+              <Package class="h-4 w-4" />
+              {{ t('inventory.title') }}
+            </h3>
+
+            <div v-if="equipmentLoading" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+              <EquipmentCardSkeleton v-for="i in 3" :key="i" />
+            </div>
+
+            <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+              <EquipmentCard
+                v-for="eq in equipmentItems"
+                :key="eq.id"
+                :id="eq.id"
+                :label="eq.label"
+                :category-name="eq.category?.name"
+                :category-path="buildCategoryPath(eq.category)"
+                :status-name="eq.status?.name"
+                :status-color="eq.status?.color"
+                :is-visible="eq.isVisible"
+                :properties="eq.propertyValues?.map((pv: any) => ({ name: pv.propertyDefinition?.name, value: pv.value, type: pv.propertyDefinition?.type }))"
+                :thumbnail-path="eq.photos?.[0]?.filePath"
+              />
+            </div>
+
+            <div v-if="equipmentTotal > 6" class="mt-4">
+              <router-link :to="`/operators/${route.params.id}/inventory`" class="text-sm text-primary hover:underline flex items-center gap-1">
+                {{ t('inventory.viewAll') }} ({{ equipmentTotal }})
+                <ChevronRight class="h-4 w-4" />
+              </router-link>
+            </div>
+          </section>
+        </template>
       </template>
 
       <EditOperatorAdminSheet
@@ -895,7 +967,7 @@ onMounted(async () => {
             <Button variant="outline" @click="showDeleteDialog = false" :disabled="isDeleting">
               {{ t('common.cancel') }}
             </Button>
-            <Button variant="destructive" class="trac-btn-destructive-outlined" @click="confirmDelete" :disabled="isDeleting">
+            <Button variant="outline" class="trac-btn-destructive-outlined" @click="confirmDelete" :disabled="isDeleting">
               <Trash2 v-if="!isDeleting" class="h-4 w-4 mr-2" />
               {{ isDeleting ? t('common.loading') : t('common.delete') }}
             </Button>

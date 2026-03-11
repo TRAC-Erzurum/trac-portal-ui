@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { LogOut, UserCircle } from 'lucide-vue-next'
+import { LogOut, Package, UserCircle } from 'lucide-vue-next'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,12 @@ const displayName = computed(() => {
 
 function handleAccountClick() {
   router.push('/account')
+}
+
+function handleInventoryClick() {
+  if (authStore.user?.operator?.id) {
+    router.push(`/operators/${authStore.user.operator.id}/inventory`)
+  }
 }
 
 async function handleLogout() {
@@ -55,6 +61,10 @@ async function handleLogout() {
       <DropdownMenuItem @click="handleAccountClick" class="cursor-pointer">
         <UserCircle class="mr-2 h-4 w-4" />
         {{ t('nav.account') }}
+      </DropdownMenuItem>
+      <DropdownMenuItem v-if="authStore.user?.operator?.id" @click="handleInventoryClick" class="cursor-pointer">
+        <Package class="mr-2 h-4 w-4" />
+        {{ t('inventory.myInventory') }}
       </DropdownMenuItem>
       <DropdownMenuSeparator />
       <DropdownMenuItem @click="handleLogout" class="cursor-pointer text-destructive focus:text-destructive">
