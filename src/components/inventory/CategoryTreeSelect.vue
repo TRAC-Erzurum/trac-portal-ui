@@ -96,7 +96,7 @@ const indentPrefix = (depth: number): string => {
 <template>
   <Select
     :model-value="modelValue"
-    @update:model-value="(v: string) => emit('update:modelValue', v)"
+    @update:model-value="(v) => emit('update:modelValue', v === null ? '' : String(v))"
   >
     <SelectTrigger class="w-full">
       <SelectValue :placeholder="t('inventory.category')">

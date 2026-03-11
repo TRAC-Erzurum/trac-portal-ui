@@ -120,7 +120,7 @@ function rangeHint(prop: PropertyDefinition): string {
         <template v-if="prop.type === 'enum'">
           <Select
             :model-value="getValue(prop.id) ?? undefined"
-            @update:model-value="(v: string) => updateValue(prop.id, v)"
+            @update:model-value="(v) => updateValue(prop.id, v === null ? undefined : String(v))"
           >
             <SelectTrigger :id="`prop-${prop.id}`" class="w-full">
               <SelectValue :placeholder="t('common.select')" />

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { ImagePlus, Save, X } from 'lucide-vue-next'
@@ -324,7 +324,7 @@ onMounted(() => {
 
           <div v-if="photoFiles.length > 0" class="flex flex-wrap gap-2">
             <div
-              v-for="(file, idx) in photoFiles"
+              v-for="(_, idx) in photoFiles"
               :key="idx"
               class="relative w-20 h-20"
             >

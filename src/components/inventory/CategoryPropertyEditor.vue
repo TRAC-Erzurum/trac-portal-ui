@@ -184,17 +184,19 @@ function handleSave() {
         <div class="space-y-1.5">
           <Label class="text-xs">{{ t('inventory.minValue') }}</Label>
           <Input
-            v-model.number="minValue"
+            :model-value="minValue ?? ''"
             type="number"
             class="h-8 text-sm"
+            @update:model-value="(v) => { minValue = (v === '' || v === undefined) ? null : Number(v) }"
           />
         </div>
         <div class="space-y-1.5">
           <Label class="text-xs">{{ t('inventory.maxValue') }}</Label>
           <Input
-            v-model.number="maxValue"
+            :model-value="maxValue ?? ''"
             type="number"
             class="h-8 text-sm"
+            @update:model-value="(v) => { maxValue = (v === '' || v === undefined) ? null : Number(v) }"
           />
         </div>
       </div>
@@ -204,10 +206,11 @@ function handleSave() {
       <div class="space-y-1.5">
         <Label class="text-xs">{{ t('inventory.numberArrayMaxLength') }}</Label>
         <Input
-          v-model.number="numberArrayMaxLength"
+          :model-value="numberArrayMaxLength ?? ''"
           type="number"
           min="1"
           class="h-8 text-sm"
+          @update:model-value="(v) => { numberArrayMaxLength = (v === '' || v === undefined) ? null : Number(v) }"
         />
       </div>
     </template>
