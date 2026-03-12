@@ -32,7 +32,7 @@ const props = withDefaults(
   defineProps<{
     categories: Category[]
     /** When provided (e.g. from InventoryAdminPage), tree uses this for expand state so path can be expanded after edit */
-    expandedIds?: Ref<Set<string>>
+    expandedIds?: Ref<Set<string>> | Set<string>
   }>(),
   { expandedIds: undefined }
 )

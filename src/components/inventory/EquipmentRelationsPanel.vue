@@ -284,7 +284,7 @@ watch(
           v-if="canEdit"
           :model-value="getRelationValue(item.equipment.id)"
           :disabled="updatingEquipmentId === item.equipment.id"
-          @update:model-value="(v: string) => setRelation(item.equipment.id, v)"
+          @update:model-value="(v) => { if (v != null) setRelation(item.equipment.id, String(v)) }"
         >
           <SelectTrigger class="w-[180px] shrink-0 h-8">
             <Loader2

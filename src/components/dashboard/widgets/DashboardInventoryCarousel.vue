@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ChevronRight, Package } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -21,7 +20,6 @@ interface Equipment {
 const CAROUSEL_INTERVAL_MS = 4000
 
 const { t } = useI18n()
-const router = useRouter()
 const authStore = useAuthStore()
 
 const operatorId = computed(() => authStore.user?.operator?.id ?? null)
@@ -107,13 +105,6 @@ function maybeStartCarousel() {
   if (items.value.length <= 1 || isHovering.value || showDetailSheet.value) return
   startCarousel()
 }
-
-const currentItem = computed(() => {
-  const list = items.value
-  if (!list.length) return null
-  const i = currentIndex.value % list.length
-  return list[i] ?? null
-})
 
 /** Slots around center: offset -2, -1, 0, 1, 2 with item and scale/opacity. */
 const visibleSlots = computed(() => {

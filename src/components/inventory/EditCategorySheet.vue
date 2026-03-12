@@ -247,7 +247,7 @@ async function handleSave() {
 }
 
 function getPropertyKey(prop: CategoryProperty | PendingProperty): string {
-  return 'id' in prop && prop.id ? prop.id : prop.tempId
+  return 'tempId' in prop ? prop.tempId : (prop as CategoryProperty).id
 }
 
 function handlePropertySaved(propertyData: Record<string, unknown>, propertyId?: string) {

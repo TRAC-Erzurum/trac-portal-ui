@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { ImagePlus, Loader2, Plus, Save, Search, X } from 'lucide-vue-next'
+import { ImagePlus, Loader2, Save, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import CategoryTreeSelect from '@/components/inventory/CategoryTreeSelect.vue'
 import DynamicPropertyFields from '@/components/inventory/DynamicPropertyFields.vue'
@@ -429,7 +429,7 @@ watch(
             <p class="text-xs text-muted-foreground">{{ t('inventory.maxPhotosCount', { count: 5 }) }}</p>
 
             <div v-if="existingPhotos.length > 0 || photoFiles.length > 0" class="flex flex-wrap gap-2">
-              <template v-for="(photo, idx) in existingPhotos" :key="photo.id">
+              <template v-for="photo in existingPhotos" :key="photo.id">
                 <div class="relative w-20 h-20">
                   <img
                     :src="getUploadedFileUrl(photo.filePath)"

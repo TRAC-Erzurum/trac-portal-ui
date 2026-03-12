@@ -443,7 +443,7 @@ onMounted(() => {
               </div>
               <Select
                 :model-value="getRelationSelectionValue(eq.id)"
-                @update:model-value="(v: string) => setRelationSelection(eq.id, v)"
+                @update:model-value="(v) => { if (v != null) setRelationSelection(eq.id, String(v)) }"
               >
                 <SelectTrigger class="w-[180px] shrink-0 h-8">
                   <SelectValue />
