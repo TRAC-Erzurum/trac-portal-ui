@@ -13,12 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
+import { MAX_UPLOAD_BYTES } from '@/constants/upload'
 import { getUploadedFileUrl } from '@/composables'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
 import { readFileAsDataUrl } from '@/lib/utils'
 
-type PropertyType = 'enum' | 'number' | 'number_array' | 'string' | 'boolean' | 'date'
+type PropertyType = 'enum' | 'multi_select' | 'number' | 'number_array' | 'string' | 'boolean' | 'date'
 
 interface PropertyDefinition {
   id: string
@@ -142,6 +143,10 @@ async function handlePhotoChange(event: Event) {
   for (const file of Array.from(files)) {
     if (!validTypes.includes(file.type)) {
       toast.error(t('error.invalidFileType'))
+      continue
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      toast.error(t('error.fileTooLarge'))
       continue
     }
     newFiles.push(file)
@@ -425,7 +430,7 @@ watch(
           <Separator class="my-4" />
 
           <div class="space-y-2">
-            <Label>{{ t('inventory.photos') }}</Label>
+            <Label>{{ t('inventory.photos') }} ({{ t('common.maxUploadSize') }})</Label>
             <p class="text-xs text-muted-foreground">{{ t('inventory.maxPhotosCount', { count: 5 }) }}</p>
 
             <div v-if="existingPhotos.length > 0 || photoFiles.length > 0" class="flex flex-wrap gap-2">

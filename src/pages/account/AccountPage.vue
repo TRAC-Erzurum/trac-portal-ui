@@ -17,6 +17,7 @@ import { useDateFormat } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 import { LocatorMapPreview } from '@/components/shared'
+import { MAX_UPLOAD_BYTES } from '@/constants/upload'
 import { api, type ApiError } from '@/lib/api'
 import { formatCallSign } from '@/lib/formatters'
 
@@ -120,8 +121,8 @@ async function handleAvatarChange(event: Event) {
     return
   }
 
-  if (file.size > 5 * 1024 * 1024) {
-    toast.error(t('profile.fileTooLarge'))
+  if (file.size > MAX_UPLOAD_BYTES) {
+    toast.error(t('error.fileTooLarge'))
     return
   }
 
@@ -247,6 +248,7 @@ watch(
               </div>
               <input ref="fileInputRef" type="file" accept="image/jpeg,image/png,image/webp" class="hidden"
                 @change="handleAvatarChange" />
+              <p class="text-xs text-muted-foreground mt-1 text-center sm:text-left">{{ t('common.maxUploadSize') }}</p>
             </div>
             <div class="min-w-0 flex-1 space-y-3">
               <div class="flex flex-wrap items-start justify-between gap-3">

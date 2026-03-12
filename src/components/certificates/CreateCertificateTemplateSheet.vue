@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator'
 import CertificateTemplateCanvasEditor from '@/components/certificates/CertificateTemplateCanvasEditor.vue'
 import { DEFAULT_SERIAL_ELEMENT } from '@/components/certificates/certificate-template-defaults'
 import type { CertificateTemplateElement } from '@/components/certificates/certificate-template-defaults'
+import { MAX_UPLOAD_BYTES } from '@/constants/upload'
 import { translateError } from '@/i18n'
 import { api, API_BASE, type ApiError } from '@/lib/api'
 
@@ -63,8 +64,8 @@ const onFileSelected = async (e: Event) => {
     input.value = ''
     return
   }
-  if (file.size > 5 * 1024 * 1024) {
-    toast.error(t('error.invalidFileType'))
+  if (file.size > MAX_UPLOAD_BYTES) {
+    toast.error(t('error.fileTooLarge'))
     input.value = ''
     return
   }
@@ -147,7 +148,7 @@ const handleSubmit = async () => {
         </div>
 
         <div class="space-y-2">
-          <Label>{{ t('certificates.image') }}</Label>
+          <Label>{{ t('certificates.image') }} ({{ t('common.maxUploadSize') }})</Label>
           <input
             ref="fileInputRef"
             type="file"
