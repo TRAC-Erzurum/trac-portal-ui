@@ -11,7 +11,11 @@
     "schedulerStartDateImmutable": "Başlangıç tarihi değiştirilemez. Değiştirmek için planlayıcıyı silip yeniden oluşturun.",
     "invalidFileType": "Geçersiz dosya türü. JPG, PNG veya WebP yükleyin.",
     "categoryParentSelf": "Bir kategori kendisinin üst kategorisi olamaz.",
-    "categoryParentDescendant": "Bir kategori alt kategorilerinden birinin altına taşınamaz."
+    "categoryParentDescendant": "Bir kategori alt kategorilerinden birinin altına taşınamaz.",
+    "invalidMultiSelectValue": "Çoklu seçim özelliği için geçersiz değer. İzin verilen seçeneklerden seçin.",
+    "requiredPropertyEmpty": "Bu alan zorunludur. Lütfen en az bir değer seçin.",
+    "requiredPropertyMissing": "Zorunlu bir özellik eksik.",
+    "fileTooLarge": "Dosya çok büyük. Maksimum boyut 2 MB."
   },
   "auth": {
     "login": "Giriş Yap",
@@ -377,7 +381,7 @@
     "changeAvatar": "Fotoğrafı değiştir",
     "deleteAvatar": "Fotoğrafı sil",
     "invalidFileType": "Geçersiz dosya türü. JPG, PNG veya WebP yükleyin.",
-    "fileTooLarge": "Dosya çok büyük. Maksimum 5MB yüklenebilir.",
+    "fileTooLarge": "Dosya çok büyük. Maksimum boyut 2 MB.",
     "certificatesTitle": "Sertifikalar",
     "certificatesEmpty": "Henüz sertifika yok",
     "viewNet": "Çevrime git"
@@ -783,7 +787,8 @@
     "selectDate": "Tarih seçin",
     "year"  : "Yıl",
     "month" : "Ay",
-    "day"   : "Gün"
+    "day"   : "Gün",
+    "maxUploadSize": "Maks. 2 MB"
   },
   "inventory": {
     "title": "Envanter",
@@ -831,6 +836,7 @@
 
     "propertyTypes": {
       "enum": "Seçenek Listesi",
+      "multi_select": "Çoklu Seçim",
       "number": "Sayı",
       "number_array": "Sayı Dizisi",
       "string": "Metin",

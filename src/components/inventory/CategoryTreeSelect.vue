@@ -6,6 +6,7 @@ interface Category {
   id: string
   name: string
   parentId: string | null
+  sortOrder?: number
   children?: Category[]
 }
 
@@ -38,6 +39,7 @@ function flattenTree(cats: Category[], parentId: string | null = null): Category
       id: c.id,
       name: c.name,
       parentId: c.parentId ?? parentId,
+      sortOrder: c.sortOrder ?? 0,
       children: undefined,
     })
     if (c.children?.length) {
@@ -73,7 +75,7 @@ const flatNodes = computed<FlatNode[]>(() => {
   function walk(parentId: string | null, depth: number) {
     const children = flatCategories
       .filter((c) => c.parentId === parentId)
-      .sort((a, b) => a.name.localeCompare(b.name))
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.name.localeCompare(b.name))
 
     for (const cat of children) {
       result.push({

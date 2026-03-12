@@ -3,12 +3,11 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Plus, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
-type PropertyType = 'enum' | 'number' | 'number_array' | 'string' | 'boolean' | 'date'
+type PropertyType = 'enum' | 'multi_select' | 'number' | 'number_array' | 'string' | 'boolean' | 'date'
 
 interface PropertyDefinition {
   id: string
@@ -105,10 +104,12 @@ function rangeHint(prop: PropertyDefinition): string {
       <!-- Boolean -->
       <template v-if="prop.type === 'boolean'">
         <div class="flex items-center gap-2">
-          <Checkbox
+          <input
             :id="`prop-${prop.id}`"
+            type="checkbox"
+            class="h-4 w-4 rounded border-input"
             :checked="!!getValue(prop.id)"
-            @update:checked="(v: boolean) => updateValue(prop.id, v)"
+            @change="(e) => updateValue(prop.id, (e.target as HTMLInputElement).checked)"
           />
           <Label :for="`prop-${prop.id}`" class="text-sm cursor-pointer">
             {{ prop.name }}
@@ -143,6 +144,29 @@ function rangeHint(prop: PropertyDefinition): string {
               </SelectItem>
             </SelectContent>
           </Select>
+        </template>
+
+        <!-- MULTI_SELECT -->
+        <template v-else-if="prop.type === 'multi_select'">
+          <div class="flex flex-wrap gap-3 py-1">
+            <label
+              v-for="option in (prop.enumValues || [])"
+              :key="option"
+              class="flex items-center gap-2 cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                class="h-4 w-4 rounded border-input"
+                :checked="(getValue(prop.id) ?? []).includes(option)"
+                @change="(e) => {
+                  const arr = Array.isArray(getValue(prop.id)) ? [...getValue(prop.id)] : []
+                  if ((e.target as HTMLInputElement).checked) updateValue(prop.id, [...arr, option])
+                  else updateValue(prop.id, arr.filter((x: string) => x !== option))
+                }"
+              />
+              <span class="text-sm">{{ option }}</span>
+            </label>
+          </div>
         </template>
 
         <!-- NUMBER -->

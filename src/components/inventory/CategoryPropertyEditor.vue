@@ -19,7 +19,7 @@ interface PropertyData {
   maxValue: number | null
 }
 
-const PROPERTY_TYPES = ['enum', 'number', 'number_array', 'string', 'boolean', 'date'] as const
+const PROPERTY_TYPES = ['enum', 'multi_select', 'number', 'number_array', 'string', 'boolean', 'date'] as const
 
 const props = defineProps<{
   property?: PropertyData
@@ -88,7 +88,7 @@ function handleSave() {
     sortOrder: sortOrder.value,
   }
 
-  if (type.value === 'enum') {
+  if (type.value === 'enum' || type.value === 'multi_select') {
     data.enumValues = enumValues.value.length > 0 ? enumValues.value : null
   }
 
@@ -136,7 +136,7 @@ function handleSave() {
       <span class="text-xs">{{ t('inventory.required') }}</span>
     </label>
 
-    <template v-if="type === 'enum'">
+    <template v-if="type === 'enum' || type === 'multi_select'">
       <div class="space-y-1.5">
         <Label class="text-xs">{{ t('inventory.enumValues') }}</Label>
         <div class="flex flex-wrap gap-1 mb-2">

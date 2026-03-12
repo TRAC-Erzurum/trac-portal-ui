@@ -11,7 +11,11 @@
     "schedulerStartDateImmutable": "Start date cannot be changed. Delete and recreate the scheduler to change it.",
     "invalidFileType": "Invalid file type. Please upload JPG, PNG or WebP.",
     "categoryParentSelf": "A category cannot be its own parent.",
-    "categoryParentDescendant": "A category cannot be moved under one of its subcategories."
+    "categoryParentDescendant": "A category cannot be moved under one of its subcategories.",
+    "invalidMultiSelectValue": "Invalid value for multi-select property. Choose from the allowed options.",
+    "requiredPropertyEmpty": "This field is required. Please select at least one value.",
+    "requiredPropertyMissing": "A required property is missing.",
+    "fileTooLarge": "File is too large. Maximum size is 2 MB."
   },
   "auth": {
     "login": "Login",
@@ -377,7 +381,7 @@
     "changeAvatar": "Change photo",
     "deleteAvatar": "Delete photo",
     "invalidFileType": "Invalid file type. Please upload JPG, PNG or WebP.",
-    "fileTooLarge": "File too large. Maximum size is 5MB.",
+    "fileTooLarge": "File too large. Maximum size is 2 MB.",
     "certificatesTitle": "Certificates",
     "certificatesEmpty": "No certificates yet",
     "viewNet": "View net"
@@ -781,7 +785,8 @@
     "selectDate": "Select date",
     "year": "Year",
     "month": "Month",
-    "day": "Day"
+    "day": "Day",
+    "maxUploadSize": "Max 2 MB"
   },
   "inventory": {
     "title": "Inventory",
@@ -830,6 +835,7 @@
 
     "propertyTypes": {
       "enum": "Selection List",
+      "multi_select": "Multi-Select",
       "number": "Number",
       "number_array": "Number Array",
       "string": "Text",
