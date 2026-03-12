@@ -267,7 +267,7 @@ onMounted(() => {
           <Label>{{ t('inventory.status') }} *</Label>
           <Select v-model="statusId">
             <SelectTrigger class="w-full">
-              <SelectValue :placeholder="t('common.select')" />
+              <SelectValue placeholder="" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem v-for="s in statuses" :key="s.id" :value="s.id">
@@ -285,19 +285,12 @@ onMounted(() => {
 
         <div class="space-y-2">
           <Label>{{ t('inventory.equipmentLabel') }}</Label>
-          <Input
-            v-model="label"
-            :placeholder="t('inventory.equipmentLabel')"
-          />
+          <Input v-model="label" />
         </div>
 
         <div class="space-y-2">
           <Label>{{ t('inventory.equipmentNote') }}</Label>
-          <Textarea
-            v-model="note"
-            :placeholder="t('inventory.equipmentNote')"
-            rows="3"
-          />
+          <Textarea v-model="note" rows="3" />
         </div>
 
         <label class="flex items-center gap-2 cursor-pointer">

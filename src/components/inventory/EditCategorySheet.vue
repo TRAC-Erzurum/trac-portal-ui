@@ -189,7 +189,7 @@ function handleClose(value: boolean) {
       <div class="space-y-4 py-4 px-1">
         <div class="space-y-2">
           <Label>{{ t('inventory.categoryName') }} *</Label>
-          <Input v-model="name" :placeholder="t('inventory.categoryName')" />
+          <Input v-model="name" />
         </div>
 
         <div class="space-y-2">

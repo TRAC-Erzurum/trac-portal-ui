@@ -2,9 +2,7 @@
 import { useI18n } from 'vue-i18n'
 import { ArrowRight, Map, MapPin, Radio, Signal, Users, Waves } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import LangToggle from '@/components/layout/LangToggle.vue'
-import ThemeToggle from '@/components/layout/ThemeToggle.vue'
-import { AppVersionBox } from '@/components/shared'
+import AppFooter from '@/components/layout/AppFooter.vue'
 
 const { t } = useI18n()
 </script>
@@ -250,48 +248,7 @@ const { t } = useI18n()
         </div>
       </section>
 
-      <footer class="border-t border-border bg-muted/30">
-        <div class="container mx-auto px-4 py-10">
-          <div class="flex flex-col md:flex-row justify-between gap-8">
-            <div class="max-w-sm">
-              <div class="flex items-center gap-3 mb-3">
-                <img src="/logo-s.svg" alt="TRAC" class="h-8 w-auto" />
-                <span class="font-semibold">{{ t('brand.erzurumBranch') }}</span>
-              </div>
-              <p class="text-sm text-muted-foreground leading-relaxed">
-                {{ t('brand.developedBy') }}
-              </p>
-            </div>
-            <nav class="flex gap-12" :aria-label="t('landing.footer.ariaFooterLinks')">
-              <div>
-                <h4 class="text-sm font-medium mb-3">{{ t('landing.footer.platform') }}</h4>
-                <ul class="space-y-2 text-sm text-muted-foreground">
-                  <li><router-link to="/register" class="hover:text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">{{ t('auth.register') }}</router-link></li>
-                  <li><router-link to="/login" class="hover:text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">{{ t('auth.login') }}</router-link></li>
-                  <li><router-link to="/map" class="hover:text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">{{ t('landing.heroMapLink') }}</router-link></li>
-                  <li><router-link to="/communication-channels" class="hover:text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">{{ t('landing.heroChannelsLink') }}</router-link></li>
-                </ul>
-              </div>
-              <div>
-                <h4 class="text-sm font-medium mb-3">{{ t('landing.footer.links') }}</h4>
-                <ul class="space-y-2 text-sm text-muted-foreground">
-                  <li><a href="https://trac.org.tr" target="_blank" rel="noopener noreferrer" class="hover:text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">TRAC</a></li>
-                  <li><router-link to="/privacy" class="hover:text-foreground transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded">{{ t('auth.privacyLink') }}</router-link></li>
-                </ul>
-              </div>
-            </nav>
-          </div>
-          <div class="border-t border-border mt-8 pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
-            <p>© {{ new Date().getFullYear() }} {{ t('brand.erzurumBranch') }}</p>
-            <div class="flex items-center gap-3">
-              <ThemeToggle />
-              <LangToggle />
-              <AppVersionBox />
-              <span aria-hidden="true">73!</span>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <AppFooter />
     </main>
   </div>
 </template>

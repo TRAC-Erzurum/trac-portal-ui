@@ -3,7 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { Calendar, Camera, ChevronRight, Key, LogIn, Mail, Pencil, Trash2, UserCircle, Phone, MapPin, HeartPulse, Briefcase, GraduationCap } from 'lucide-vue-next'
+import { Calendar, Camera, ChevronRight, Edit, Key, LogIn, Mail, Trash2, UserCircle, Phone, MapPin, HeartPulse, Briefcase, GraduationCap } from 'lucide-vue-next'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ChangePasswordSheet from '@/components/profile/ChangePasswordSheet.vue'
 import EditOperatorSheet from '@/components/profile/EditOperatorSheet.vue'
@@ -292,7 +292,7 @@ watch(
                   :title="t('profile.editOperatorAction')"
                   :aria-label="t('profile.editOperatorAction')"
                 >
-                  <Pencil class="h-4 w-4" />
+                  <Edit class="h-4 w-4" />
                   {{ t('common.edit') }}
                 </Button>
                 <Button
@@ -330,7 +330,7 @@ watch(
                 class="trac-card-action-btn self-end sm:self-auto"
                 @click="showEditContact = true" :title="t('account.contactInfo')"
                 :aria-label="t('account.contactInfo')">
-                <Pencil class="h-4 w-4" />
+                <Edit class="h-4 w-4" />
                 {{ t('common.edit') }}
               </Button>
             </div>
@@ -372,7 +372,7 @@ watch(
                 class="trac-card-action-btn self-end sm:self-auto"
                 @click="showEditPersonalBasics = true" :title="t('account.personalInfo')"
                 :aria-label="t('account.personalInfo')">
-                <Pencil class="h-4 w-4" />
+                <Edit class="h-4 w-4" />
                 {{ t('common.edit') }}
               </Button>
             </div>
@@ -412,7 +412,7 @@ watch(
                 class="trac-card-action-btn self-end sm:self-auto"
                 @click="showEditEmergency = true" :title="t('account.emergencyContacts')"
                 :aria-label="t('account.emergencyContacts')">
-                <Pencil class="h-4 w-4" />
+                <Edit class="h-4 w-4" />
                 {{ t('common.edit') }}
               </Button>
             </div>
@@ -443,7 +443,7 @@ watch(
                 class="trac-card-action-btn self-end sm:self-auto"
                 @click="showEditExpertise = true" :title="t('account.editExpertise')"
                 :aria-label="t('account.editExpertise')">
-                <Pencil class="h-4 w-4" />
+                <Edit class="h-4 w-4" />
                 {{ t('common.edit') }}
               </Button>
             </div>

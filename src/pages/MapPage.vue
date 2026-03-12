@@ -22,9 +22,7 @@ import { LMap, LTileLayer, LMarker, LPopup, LPolyline } from '@vue-leaflet/vue-l
 import 'leaflet/dist/leaflet.css'
 import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster'
-import LangToggle from '@/components/layout/LangToggle.vue'
-import ThemeToggle from '@/components/layout/ThemeToggle.vue'
-import { AppVersionBox } from '@/components/shared'
+import AppFooter from '@/components/layout/AppFooter.vue'
 import MapSearchPanel from '@/components/shared/MapSearchPanel.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -1079,17 +1077,7 @@ watch(selectedLatLng, (latlng) => {
       </Sheet>
     </div>
 
-    <footer class="flex-shrink-0 border-t border-border/20 bg-background/95 safe-area-inset">
-      <div class="flex justify-between items-center gap-2 px-3 py-2 text-xs text-muted-foreground">
-        <p class="shrink-0">© {{ new Date().getFullYear() }} {{ t('brand.erzurumBranch') }}</p>
-        <div class="flex items-center gap-2 flex-shrink-0">
-          <ThemeToggle />
-          <LangToggle />
-          <AppVersionBox />
-          <span>73!</span>
-        </div>
-      </div>
-    </footer>
+    <AppFooter class="bg-background/95 safe-area-inset px-4 py-3" />
   </div>
 </template>
 

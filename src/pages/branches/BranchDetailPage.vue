@@ -829,52 +829,69 @@ onMounted(() => {
     </div>
 
     <div v-else-if="branch" class="space-y-6">
-      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-        <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 min-w-0 flex-1">
-          <div class="flex justify-center sm:justify-start shrink-0">
-            <div class="h-24 w-24 rounded-lg border border-border bg-muted/30 flex items-center justify-center overflow-hidden">
-              <img src="/logo-s.svg" alt="" class="h-14 w-14 object-contain" />
-            </div>
-          </div>
-          <div class="min-w-0 flex-1 space-y-3">
-            <div v-if="!branch.isHeadquarters && branchCallSignsSorted.length > 0" class="flex flex-wrap items-center gap-2 mb-1">
-              <span
-                v-for="cs in branchCallSignsSorted"
-                :key="cs.id"
-                class="font-mono text-sm"
-                :class="cs.isDefault ? 'font-bold' : 'font-normal text-muted-foreground'"
-              >
-                {{ cs.callSign }}
-              </span>
-            </div>
-            <h1 class="text-2xl font-bold min-w-0">{{ branch.name }}</h1>
-            <div v-if="branch.address || branch.phone || branch.email" class="flex min-w-0 flex-1 flex-col gap-y-1.5 text-sm text-muted-foreground">
-              <span v-if="branch.address" class="flex items-center gap-2">
-                <MapPin class="h-4 w-4 shrink-0" />
-                {{ branch.address }}
-              </span>
-              <span v-if="branch.phone" class="flex items-center gap-2">
-                <Phone class="h-4 w-4 shrink-0" />
-                {{ branch.phone }}
-              </span>
-              <span v-if="branch.email" class="flex items-center gap-2">
-                <Mail class="h-4 w-4 shrink-0" />
-                {{ branch.email }}
-              </span>
-            </div>
-            <span v-if="!branch.isActive" class="text-xs font-medium text-red-600 dark:text-red-400">
-              {{ t('branches.deleted') }}
-            </span>
+      <div class="flex flex-col sm:flex-row gap-4 sm:gap-6">
+        <div class="flex justify-center sm:justify-start shrink-0">
+          <div class="h-24 w-24 rounded-lg border border-border bg-muted/30 flex items-center justify-center overflow-hidden">
+            <img src="/logo-s.svg" alt="" class="h-14 w-14 object-contain" />
           </div>
         </div>
-        <div class="trac-mobile-action-row shrink-0 sm:ml-4">
-          <Button v-if="canJoin && branch.isActive" @click="joinBranch" :disabled="isJoining" variant="outline" size="sm" class="trac-card-action-btn" :title="t('branches.joinBranch')" :aria-label="t('branches.joinBranch')">
-            <Users class="h-4 w-4 mr-2" />
-            {{ t('branches.joinBranch') }}
-          </Button>
-          <span v-if="hasPendingRequest" class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
-            {{ t('memberships.pending') }}
-          </span>
+        <div class="flex-1 min-w-0 space-y-3">
+          <div class="flex items-start justify-between gap-4">
+            <div class="min-w-0">
+              <div v-if="!branch.isHeadquarters && branchCallSignsSorted.length > 0" class="flex flex-wrap items-center gap-2 mb-1">
+                <span
+                  v-for="cs in branchCallSignsSorted"
+                  :key="cs.id"
+                  class="font-mono text-sm"
+                  :class="cs.isDefault ? 'font-bold' : 'font-normal text-muted-foreground'"
+                >
+                  {{ cs.callSign }}
+                </span>
+              </div>
+              <h1 class="text-2xl font-bold">{{ branch.name }}</h1>
+            </div>
+            <div class="hidden sm:flex items-center gap-2 shrink-0">
+              <Button v-if="canJoin && branch.isActive" @click="joinBranch" :disabled="isJoining" variant="outline" size="sm" :title="t('branches.joinBranch')" :aria-label="t('branches.joinBranch')">
+                <Users class="h-4 w-4 mr-2" />
+                {{ t('branches.joinBranch') }}
+              </Button>
+              <span v-if="hasPendingRequest" class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 whitespace-nowrap">
+                {{ t('memberships.pending') }}
+              </span>
+              <template v-if="canManage && branch.isActive">
+                <Button variant="outline" size="sm" @click="openEdit" :title="t('branches.edit')" :aria-label="t('branches.edit')">
+                  <Edit class="h-4 w-4 mr-2" />
+                  {{ t('branches.edit') }}
+                </Button>
+                <Button
+                  v-if="!branch.isHeadquarters"
+                  variant="outline"
+                  size="sm"
+                  class="trac-btn-destructive-outlined"
+                  @click="openDeleteDialog"
+                  :title="t('common.delete')"
+                  :aria-label="t('common.delete')"
+                >
+                  <Trash2 class="h-4 w-4 mr-2" />
+                  {{ t('common.delete') }}
+                </Button>
+              </template>
+            </div>
+          </div>
+          <div v-if="branch.address || branch.phone || branch.email" class="flex flex-col gap-y-1.5 text-sm text-muted-foreground">
+            <span v-if="branch.address" class="flex items-center gap-2">
+              <MapPin class="h-4 w-4 shrink-0" />
+              {{ branch.address }}
+            </span>
+            <span v-if="branch.phone" class="flex items-center gap-2">
+              <Phone class="h-4 w-4 shrink-0" />
+              {{ branch.phone }}
+            </span>
+            <span v-if="branch.email" class="flex items-center gap-2">
+              <Mail class="h-4 w-4 shrink-0" />
+              {{ branch.email }}
+            </span>
+          </div>
           <div v-if="hasRejectedMembership" class="flex flex-col gap-1">
             <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 w-fit">
               {{ t('memberships.rejected') }}
@@ -883,9 +900,20 @@ onMounted(() => {
               {{ t('memberships.rejectedReasonDescription') }} {{ userMembership.rejectionReason }}
             </p>
           </div>
-          <template v-if="canManage">
-            <template v-if="branch.isActive">
-              <Button variant="outline" size="sm" class="trac-card-action-btn" @click="openEdit" :title="t('branches.edit')" :aria-label="t('branches.edit')">
+          <span v-if="!branch.isActive" class="text-xs font-medium text-red-600 dark:text-red-400">
+            {{ t('branches.deleted') }}
+          </span>
+          <!-- Mobile action buttons -->
+          <div class="flex sm:hidden flex-wrap items-center gap-2">
+            <Button v-if="canJoin && branch.isActive" @click="joinBranch" :disabled="isJoining" variant="outline" size="sm" :title="t('branches.joinBranch')" :aria-label="t('branches.joinBranch')">
+              <Users class="h-4 w-4 mr-2" />
+              {{ t('branches.joinBranch') }}
+            </Button>
+            <span v-if="hasPendingRequest" class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300">
+              {{ t('memberships.pending') }}
+            </span>
+            <template v-if="canManage && branch.isActive">
+              <Button variant="outline" size="sm" @click="openEdit" :title="t('branches.edit')" :aria-label="t('branches.edit')">
                 <Edit class="h-4 w-4 mr-2" />
                 {{ t('branches.edit') }}
               </Button>
@@ -893,7 +921,7 @@ onMounted(() => {
                 v-if="!branch.isHeadquarters"
                 variant="outline"
                 size="sm"
-                class="trac-card-action-btn"
+                class="trac-btn-destructive-outlined"
                 @click="openDeleteDialog"
                 :title="t('common.delete')"
                 :aria-label="t('common.delete')"
@@ -902,7 +930,7 @@ onMounted(() => {
                 {{ t('common.delete') }}
               </Button>
             </template>
-          </template>
+          </div>
         </div>
       </div>
 

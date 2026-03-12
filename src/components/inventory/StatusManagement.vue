@@ -178,7 +178,7 @@ onMounted(fetchStatuses)
           #{{ status.sortOrder }}
         </span>
 
-        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div class="flex items-center gap-1 shrink-0">
           <Button
             variant="outline"
             size="sm"
@@ -191,7 +191,7 @@ onMounted(fetchStatuses)
           <Button
             variant="outline"
             size="sm"
-            class="h-7 w-7 p-0"
+            class="h-7 w-7 p-0 trac-btn-destructive-outlined"
             @click="openDeleteDialog(status)"
             :aria-label="t('inventory.deleteStatus')"
           >
@@ -213,11 +213,7 @@ onMounted(fetchStatuses)
         <div class="space-y-4 py-4 px-1">
           <div class="space-y-2">
             <Label>{{ t('inventory.statusName') }} *</Label>
-            <Input
-              v-model="formName"
-              :placeholder="t('inventory.statusName')"
-              autofocus
-            />
+            <Input v-model="formName" autofocus />
           </div>
 
           <div class="space-y-2">
@@ -230,7 +226,6 @@ onMounted(fetchStatuses)
               />
               <Input
                 v-model="formColor"
-                placeholder="#6b7280"
                 class="flex-1 font-mono text-sm"
                 maxlength="7"
               />

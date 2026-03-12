@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Calendar, Eye, EyeOff, Loader2, Pencil, Settings2, Trash2, X } from 'lucide-vue-next'
+import { Calendar, Edit, Eye, EyeOff, Loader2, Settings2, Trash2, X } from 'lucide-vue-next'
 import EquipmentRelationsPanel from '@/components/inventory/EquipmentRelationsPanel.vue'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -324,7 +324,7 @@ watch(
             class="trac-sheet-btn"
             @click="emit('edit')"
           >
-            <Pencil class="h-4 w-4 mr-2" />
+            <Edit class="h-4 w-4 mr-2" />
             {{ t('common.edit') }}
           </Button>
         </div>

@@ -587,7 +587,7 @@ onMounted(() => {
       <form @submit.prevent="handleSubmit" class="space-y-4 py-4 px-1">
         <div class="space-y-2">
           <Label class="text-sm font-medium text-muted-foreground">{{ t('nets.createType') }}</Label>
-          <div class="flex flex-col gap-2 sm:flex-row sm:gap-4">
+          <div class="flex flex-row flex-wrap gap-4">
             <label class="flex items-center gap-2 cursor-pointer">
               <input v-model="createMode" type="radio" value="today" class="rounded border-input" />
               <span>{{ t('nets.createModeToday') }}</span>

@@ -8,7 +8,7 @@ export type EffectiveLocale = 'tr' | 'en'
 const STORAGE_KEY = 'trac-locale'
 
 export const useLocaleStore = defineStore('locale', () => {
-  const mode = ref<LocaleMode>('system')
+  const mode = ref<LocaleMode>('tr')
 
   function getSystemLocale(): EffectiveLocale {
     try {
@@ -40,7 +40,8 @@ export const useLocaleStore = defineStore('locale', () => {
     if (saved && ['system', 'tr', 'en'].includes(saved)) {
       mode.value = saved
     } else {
-      localStorage.setItem(STORAGE_KEY, mode.value)
+      mode.value = 'tr'
+      localStorage.setItem(STORAGE_KEY, 'tr')
     }
     applyLocale(mode.value)
 

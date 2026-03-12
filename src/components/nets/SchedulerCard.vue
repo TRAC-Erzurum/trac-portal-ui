@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Award, Building2, Calendar, CalendarRange, Clock, Edit, Repeat } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { useDateFormat } from '@/composables'
 import { api } from '@/lib/api'
 import {
@@ -203,6 +203,7 @@ const branchIsHeadquarters = computed(() => props.scheduler.branch?.isHeadquarte
     <SheetContent class="sm:max-w-md overflow-y-auto px-4 sm:px-6">
       <SheetHeader>
         <SheetTitle>{{ t('scheduler.plannedNets') }}</SheetTitle>
+        <SheetDescription class="sr-only">{{ t('scheduler.plannedNets') }}</SheetDescription>
       </SheetHeader>
       <div class="mt-4 space-y-3 px-2 sm:px-4">
         <div v-if="isLoadingPlanned" class="py-6 text-sm text-muted-foreground">

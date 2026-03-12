@@ -25,7 +25,7 @@ const logoLoaded = ref(false)
       </div>
       <div class="absolute bottom-6 left-6 flex items-center gap-1">
         <ThemeToggle />
-        <LangToggle />
+        <LangToggle class="hidden" />
       </div>
     </div>
 
@@ -41,7 +41,7 @@ const logoLoaded = ref(false)
       />
       <div class="lg:hidden flex items-center justify-end p-4 gap-1 flex-shrink-0 relative z-10">
         <ThemeToggle />
-        <LangToggle />
+        <LangToggle class="hidden" />
       </div>
       <div class="flex-1 flex flex-col items-center justify-center p-6 md:p-8 relative z-10">
         <div class="flex-1 flex items-center justify-center w-full">
