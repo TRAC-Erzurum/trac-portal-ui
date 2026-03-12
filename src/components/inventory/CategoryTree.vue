@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ChevronDown, ChevronRight, FolderOpen, Pencil, Trash2 } from 'lucide-vue-next'
+import { ChevronDown, ChevronRight, Edit, FolderOpen, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 
 interface CategoryProperty {
@@ -94,7 +94,7 @@ function handleRowClick(category: Category) {
           {{ category.equipmentCount }} {{ t('inventory.equipment').toLowerCase() }}
         </span>
 
-        <div class="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div class="flex items-center gap-1 shrink-0">
           <Button
             variant="outline"
             size="sm"
@@ -102,7 +102,7 @@ function handleRowClick(category: Category) {
             @click.stop="emit('edit', category)"
             :aria-label="t('inventory.editCategory')"
           >
-            <Pencil class="h-3 w-3" />
+            <Edit class="h-3 w-3" />
           </Button>
           <Button
             variant="outline"

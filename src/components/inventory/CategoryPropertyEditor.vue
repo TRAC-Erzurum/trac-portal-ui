@@ -110,11 +110,7 @@ function handleSave() {
     <div class="grid grid-cols-2 gap-3">
       <div class="space-y-1.5">
         <Label class="text-xs">{{ t('inventory.propertyName') }} *</Label>
-        <Input
-          v-model="name"
-          :placeholder="t('inventory.propertyName')"
-          class="h-8 text-sm"
-        />
+        <Input v-model="name" class="h-8 text-sm" />
       </div>
       <div class="space-y-1.5">
         <Label class="text-xs">{{ t('inventory.propertyType') }}</Label>
@@ -162,7 +158,6 @@ function handleSave() {
         <div class="flex gap-2">
           <Input
             v-model="newEnumValue"
-            :placeholder="t('inventory.addEnumValue')"
             class="h-8 text-sm flex-1"
             @keyup.enter="addEnumValue"
           />

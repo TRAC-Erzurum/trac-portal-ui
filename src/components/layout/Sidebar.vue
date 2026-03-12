@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
@@ -8,24 +8,43 @@ import { Button } from '@/components/ui/button'
 import HeaderBranchDropdown from './HeaderBranchDropdown.vue'
 import { useAuthStore } from '@/stores/auth'
 
+const MOBILE_HIDDEN_ROUTES = ['/dashboard', '/nets', '/map']
+
 const props = defineProps<{
   collapsed: boolean
+  mobileOpen?: boolean
 }>()
 
 const emit = defineEmits<{
   'update:collapsed': [value: boolean]
+  'update:mobileOpen': [value: boolean]
 }>()
 
 const sidebarHovered = ref(false)
 const isDropdownOpen = ref(false)
+const isMobile = ref(false)
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
-const effectiveExpanded = computed(() => !props.collapsed || sidebarHovered.value || isDropdownOpen.value)
+const mediaQuery = typeof window !== 'undefined' ? window.matchMedia('(max-width: 1023px)') : null
+function updateIsMobile() {
+  isMobile.value = mediaQuery?.matches ?? false
+}
+onMounted(() => {
+  updateIsMobile()
+  mediaQuery?.addEventListener('change', updateIsMobile)
+})
+onUnmounted(() => {
+  mediaQuery?.removeEventListener('change', updateIsMobile)
+})
 
-const navItems = computed(() => {
+const effectiveExpanded = computed(
+  () => isMobile.value || !props.collapsed || sidebarHovered.value || isDropdownOpen.value
+)
+
+const allNavItems = computed(() => {
   const items = [
     { icon: Home, label: t('nav.dashboard'), route: '/dashboard', restricted: false },
     { icon: Radio, label: t('nav.nets'), route: '/nets', restricted: true },
@@ -38,6 +57,11 @@ const navItems = computed(() => {
     items.push({ icon: ClipboardList, label: t('inventory.inventoryManagement'), route: '/admin/inventory', restricted: false })
   }
   return items
+})
+
+const navItems = computed(() => {
+  if (!isMobile.value) return allNavItems.value
+  return allNavItems.value.filter((item) => !MOBILE_HIDDEN_ROUTES.includes(item.route))
 })
 
 function isActive(path: string) {
@@ -54,17 +78,30 @@ function handleNavClick(item: { route: string; restricted: boolean }, event: Eve
     toast.error(t('error.guestRestriction'))
     return
   }
+  if (isMobile.value) emit('update:mobileOpen', false)
   router.push(item.route)
 }
 
 function toggleCollapse() {
-  emit('update:collapsed', !props.collapsed)
+  if (isMobile.value) {
+    emit('update:mobileOpen', false)
+  } else {
+    emit('update:collapsed', !props.collapsed)
+  }
 }
 </script>
 
 <template>
+  <!-- Mobile backdrop -->
+  <div
+    v-show="props.mobileOpen && isMobile"
+    class="lg:hidden fixed inset-0 z-30 bg-black/50 transition-opacity"
+    aria-hidden="true"
+    @click="emit('update:mobileOpen', false)"
+  />
   <aside :class="[
-    'hidden lg:flex flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 fixed top-0 left-0 z-40',
+    'flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 fixed top-0 left-0 z-40',
+    props.mobileOpen ? 'flex lg:flex' : 'hidden lg:flex',
     effectiveExpanded ? 'w-64' : 'w-16'
   ]" @mouseenter="sidebarHovered = true" @mouseleave="sidebarHovered = false">
     <div class="h-16 border-b border-sidebar-border flex items-center flex-shrink-0">
@@ -88,7 +125,7 @@ function toggleCollapse() {
 
     <div class="p-2 border-t border-sidebar-border flex-shrink-0">
       <Button variant="ghost" size="icon" @click="toggleCollapse" class="w-full h-9">
-        <component :is="collapsed ? PanelLeft : PanelLeftClose" class="h-4 w-4" />
+        <component :is="isMobile ? PanelLeftClose : (collapsed ? PanelLeft : PanelLeftClose)" class="h-4 w-4" />
       </Button>
     </div>
   </aside>

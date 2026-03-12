@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Award, Building2, Calendar, ChevronDown, ChevronRight, Download, Ear, Key, Mail, Package, Pencil, Radio, Signal, Trash2, TrendingUp, UserCircle, Users } from 'lucide-vue-next'
+import { Award, Building2, Calendar, ChevronDown, ChevronRight, Download, Ear, Edit, Key, Mail, Package, Radio, Signal, Trash2, TrendingUp, UserCircle, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import EquipmentCard from '@/components/inventory/EquipmentCard.vue'
 import EquipmentCardSkeleton from '@/components/inventory/EquipmentCardSkeleton.vue'
@@ -509,7 +509,7 @@ onMounted(async () => {
                     :title="t('common.edit')"
                     :aria-label="t('common.edit')"
                   >
-                    <Pencil class="h-4 w-4 mr-2" />
+                    <Edit class="h-4 w-4 mr-2" />
                     {{ t('common.edit') }}
                   </Button>
                 </div>
@@ -580,7 +580,7 @@ onMounted(async () => {
                 :title="t('common.edit')"
                 :aria-label="t('common.edit')"
               >
-                <Pencil class="h-4 w-4 mr-2" />
+                <Edit class="h-4 w-4 mr-2" />
                 {{ t('common.edit') }}
               </Button>
             </div>

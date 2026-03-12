@@ -47,7 +47,7 @@ interface AdminPendingResponse {
 const { t } = useI18n()
 const router = useRouter()
 const { formatDateSimple } = useDateFormat()
-const refreshPendingRequestsCount = inject<() => Promise<void>>('refreshPendingRequestsCount')
+const refreshPendingRequestsCount = inject<() => Promise<void>>('refreshPendingRequestsCount', () => Promise.resolve())
 const isLoading = ref(true)
 const membershipRequests = ref<BranchRequests[]>([])
 const passwordResetRequests = ref<PasswordResetRequest[]>([])

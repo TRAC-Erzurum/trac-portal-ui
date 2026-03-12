@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 import { Button } from '@/components/ui/button'
-import LangToggle from '@/components/layout/LangToggle.vue'
-import ThemeToggle from '@/components/layout/ThemeToggle.vue'
-import { AppVersionBox } from '@/components/shared'
+import AppFooter from '@/components/layout/AppFooter.vue'
 
 const { t } = useI18n()
 </script>
@@ -43,18 +41,6 @@ const { t } = useI18n()
       </div>
     </main>
 
-    <footer class="border-t border-border/40 flex-shrink-0">
-      <div
-        class="container mx-auto px-4 py-4 flex justify-between items-center gap-2 flex-wrap text-sm text-muted-foreground"
-      >
-        <p class="shrink-0">© {{ new Date().getFullYear() }} {{ t('brand.erzurumBranch') }}</p>
-        <div class="flex items-center gap-2 flex-shrink-0">
-          <ThemeToggle />
-          <LangToggle />
-          <AppVersionBox />
-          <span aria-hidden="true">73!</span>
-        </div>
-      </div>
-    </footer>
+    <AppFooter />
   </div>
 </template>

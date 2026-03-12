@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface Category {
@@ -24,8 +23,6 @@ const emit = defineEmits<{
   'update:modelValue': [value: string]
 }>()
 
-const { t } = useI18n()
-
 interface FlatNode {
   id: string
   name: string
@@ -33,6 +30,23 @@ interface FlatNode {
   hasChildren: boolean
   disabled: boolean
   path: string
+}
+
+/** Flatten tree from API (nested children) into a list with parentId so walk() can build flatNodes. */
+function flattenTree(cats: Category[], parentId: string | null = null): Category[] {
+  const out: Category[] = []
+  for (const c of cats) {
+    out.push({
+      id: c.id,
+      name: c.name,
+      parentId: c.parentId ?? parentId,
+      children: undefined,
+    })
+    if (c.children?.length) {
+      out.push(...flattenTree(c.children, c.id))
+    }
+  }
+  return out
 }
 
 function buildCategoryMap(categories: Category[]): Map<string, Category> {
@@ -54,23 +68,24 @@ function getPath(catId: string, map: Map<string, Category>): string {
 }
 
 const flatNodes = computed<FlatNode[]>(() => {
-  const map = buildCategoryMap(props.categories)
-  const childIds = new Set(props.categories.filter((c) => c.parentId).map((c) => c.parentId!))
+  const flatCategories = flattenTree(props.categories)
+  const map = buildCategoryMap(flatCategories)
+  const childIds = new Set(flatCategories.filter((c) => c.parentId).map((c) => c.parentId!))
   const result: FlatNode[] = []
 
   function walk(parentId: string | null, depth: number) {
-    const children = props.categories
+    const children = flatCategories
       .filter((c) => c.parentId === parentId)
       .sort((a, b) => a.name.localeCompare(b.name))
 
     for (const cat of children) {
-      const hasChildren = childIds.has(cat.id) || (cat.children && cat.children.length > 0)
+      const hasChildren = childIds.has(cat.id)
       result.push({
         id: cat.id,
         name: cat.name,
         depth,
-        hasChildren: !!hasChildren,
-        disabled: props.leafOnly ? !!hasChildren : false,
+        hasChildren,
+        disabled: props.leafOnly ? hasChildren : false,
         path: getPath(cat.id, map),
       })
       walk(cat.id, depth + 1)
@@ -99,7 +114,7 @@ const indentPrefix = (depth: number): string => {
     @update:model-value="(v) => emit('update:modelValue', v === null ? '' : String(v))"
   >
     <SelectTrigger class="w-full">
-      <SelectValue :placeholder="t('inventory.category')">
+      <SelectValue placeholder="">
         <span v-if="selectedPath" class="truncate">{{ selectedPath }}</span>
       </SelectValue>
     </SelectTrigger>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ChevronRight, EyeOff, Pencil, Trash2 } from 'lucide-vue-next'
+import { ChevronRight, Edit, EyeOff, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 
 interface Props {
@@ -141,7 +141,7 @@ const formatPropertyValue = (value: any, type: string): string => {
         class="h-7 px-2 text-[10px]"
         @click.stop="emit('edit', id)"
       >
-        <Pencil class="h-3.5 w-3.5 mr-1.5" />
+        <Edit class="h-3.5 w-3.5 mr-1.5" />
         {{ t('common.edit') }}
       </Button>
       <Button

@@ -130,18 +130,14 @@ watch(() => props.open, (val) => {
       <div class="space-y-4 py-4 px-1">
         <div class="space-y-2">
           <Label>{{ t('inventory.categoryName') }} *</Label>
-          <Input
-            v-model="name"
-            :placeholder="t('inventory.categoryName')"
-            autofocus
-          />
+          <Input v-model="name" autofocus />
         </div>
 
         <div class="space-y-2">
           <Label>{{ t('inventory.parentCategory') }}</Label>
           <Select v-model="parentId">
             <SelectTrigger class="w-full">
-              <SelectValue :placeholder="t('inventory.noParentCategory')" />
+              <SelectValue placeholder="" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="none">{{ t('inventory.noParentCategory') }}</SelectItem>

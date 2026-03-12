@@ -123,7 +123,7 @@ function rangeHint(prop: PropertyDefinition): string {
             @update:model-value="(v) => updateValue(prop.id, v === null ? undefined : String(v))"
           >
             <SelectTrigger :id="`prop-${prop.id}`" class="w-full">
-              <SelectValue :placeholder="t('common.select')" />
+              <SelectValue placeholder="" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem
