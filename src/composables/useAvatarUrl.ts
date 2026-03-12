@@ -18,3 +18,11 @@ export function getAvatarUrl(picture?: string | null): string {
   const baseUrl = import.meta.env.VITE_API_URL.replace(/\/api$/, '')
   return `${baseUrl}${picture}`
 }
+
+/** Build full URL to display an uploaded file (equipment/category photos). Same origin as avatar, no /api. */
+export function getUploadedFileUrl(path?: string | null): string {
+  if (!path?.trim()) return ''
+  if (path.startsWith('http')) return path
+  const baseUrl = import.meta.env.VITE_API_URL.replace(/\/api$/, '')
+  return `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`
+}

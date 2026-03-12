@@ -3,10 +3,12 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Award, Building2, Calendar, ChevronDown, ChevronRight, Download, Ear, Edit, Key, Mail, Package, Radio, Signal, Trash2, TrendingUp, UserCircle, Users } from 'lucide-vue-next'
+import { Award, Building2, Calendar, ChevronDown, ChevronRight, Download, Ear, Edit, Key, Mail, Package, Radio, Signal, Trash2, TrendingUp, UserCircle, Users, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import EquipmentCard from '@/components/inventory/EquipmentCard.vue'
 import EquipmentCardSkeleton from '@/components/inventory/EquipmentCardSkeleton.vue'
+import EquipmentDetailSheet from '@/components/inventory/EquipmentDetailSheet.vue'
+import EditEquipmentSheet from '@/components/inventory/EditEquipmentSheet.vue'
 import BranchMembershipCard from '@/components/shared/BranchMembershipCard.vue'
 import { LocatorMapPreview, SearchInput } from '@/components/shared'
 import { usePersistedFilters } from '@/composables'
@@ -22,12 +24,10 @@ import { useAuthStore } from '@/stores/auth'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import CertificateFilledPreview from '@/components/certificates/CertificateFilledPreview.vue'
 import type { CertificateTemplateElement } from '@/components/certificates/certificate-template-defaults'
-import { api } from '@/lib/api'
+import { api, API_BASE, type ApiError } from '@/lib/api'
 import { formatCallSign } from '@/lib/formatters'
 import { translateError } from '@/i18n'
 import { matchesTurkishSearch } from '@/lib/turkish-search'
-
-const API_BASE = import.meta.env.VITE_API_URL
 
 interface Operator {
   id: string
@@ -132,8 +132,15 @@ const certificatePreviewDialogCert = ref<OperatorCertificateItem | null>(null)
 const equipmentItems = ref<any[]>([])
 const equipmentTotal = ref(0)
 const equipmentLoading = ref(false)
+const detailEquipmentId = ref<string | null>(null)
+const showDetailSheet = ref(false)
+const editingEquipmentId = ref<string | null>(null)
+const showEquipmentDeleteDialog = ref(false)
+const deletingEquipment = ref<{ id: string; label?: string; category?: { name: string } } | null>(null)
+const isDeletingEquipment = ref(false)
 
 const operatorId = computed(() => route.params.id as string)
+const isEquipmentOwner = computed(() => authStore.user?.operator?.id === operatorId.value)
 
 const isProfileOwner = computed(() =>
   !!authStore.user?.id && authStore.user.id === operator.value?.user?.id
@@ -356,6 +363,65 @@ const confirmDelete = async () => {
 
 const handleOperatorUpdated = () => {
   fetchOperator()
+}
+
+function handleEquipmentCardClick(id: string) {
+  detailEquipmentId.value = id
+  showDetailSheet.value = true
+}
+
+function handleEquipmentDetailEdit() {
+  showDetailSheet.value = false
+  if (detailEquipmentId.value) {
+    editingEquipmentId.value = detailEquipmentId.value
+    showEditSheet.value = true
+  }
+}
+
+function handleEquipmentDetailDeleted() {
+  showDetailSheet.value = false
+  detailEquipmentId.value = null
+  fetchEquipment()
+}
+
+function handleEquipmentEditClick(id: string) {
+  editingEquipmentId.value = id
+  showEditSheet.value = true
+}
+
+function handleEquipmentDeleteClick(id: string) {
+  const eq = equipmentItems.value.find((e: any) => e.id === id)
+  deletingEquipment.value = eq ? { id: eq.id, label: eq.label, category: eq.category } : null
+  showEquipmentDeleteDialog.value = true
+}
+
+async function confirmEquipmentDelete() {
+  if (!deletingEquipment.value || isDeletingEquipment.value) return
+  isDeletingEquipment.value = true
+  try {
+    await api.delete(`/equipment/${deletingEquipment.value.id}`)
+    toast.success(t('inventory.equipmentDeleted'))
+    showEquipmentDeleteDialog.value = false
+    deletingEquipment.value = null
+    fetchEquipment()
+  } catch (e) {
+    const err = e as ApiError
+    toast.error(translateError(err.message))
+  } finally {
+    isDeletingEquipment.value = false
+  }
+}
+
+function handleEquipmentUpdated() {
+  showEditSheet.value = false
+  editingEquipmentId.value = null
+  fetchEquipment()
+}
+
+function handleEquipmentDeleted() {
+  showEditSheet.value = false
+  editingEquipmentId.value = null
+  fetchEquipment()
 }
 
 const approvedMembershipsCount = computed(() =>
@@ -843,6 +909,51 @@ onMounted(async () => {
 
         <Separator class="my-8" />
 
+        <template v-if="equipmentTotal > 0 || equipmentLoading">
+          <Separator class="my-8" />
+
+          <section>
+            <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
+              <Package class="h-4 w-4" />
+              {{ t('inventory.title') }}
+            </h3>
+
+            <div v-if="equipmentLoading" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+              <EquipmentCardSkeleton v-for="i in 3" :key="i" />
+            </div>
+
+            <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+              <EquipmentCard
+                v-for="eq in equipmentItems"
+                :key="eq.id"
+                :id="eq.id"
+                :label="eq.label"
+                :category-name="eq.category?.name"
+                :category-path="buildCategoryPath(eq.category)"
+                :category-photo-path="eq.category?.photoPath"
+                :status-name="eq.status?.name"
+                :status-color="eq.status?.color"
+                :quantity="eq.quantity"
+                :is-visible="eq.isVisible"
+                :properties="eq.propertyValues?.map((pv: any) => ({ name: pv.propertyDefinition?.name, value: pv.value, type: pv.propertyDefinition?.type }))"
+                :photo-paths="eq.photos?.map((p: { filePath: string }) => p.filePath) ?? []"
+                :thumbnail-path="eq.photos?.[0]?.filePath"
+                :show-actions="isEquipmentOwner"
+                @click="handleEquipmentCardClick"
+                @edit="handleEquipmentEditClick"
+                @delete="handleEquipmentDeleteClick"
+              />
+            </div>
+
+            <div v-if="equipmentTotal > 6" class="mt-4">
+              <router-link :to="`/operators/${route.params.id}/inventory`" class="text-sm text-primary hover:underline flex items-center gap-1">
+                {{ t('inventory.viewAll') }} ({{ equipmentTotal }})
+                <ChevronRight class="h-4 w-4" />
+              </router-link>
+            </div>
+          </section>
+        </template>
+
         <section v-if="hasUserAccount">
           <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
             <Building2 class="h-4 w-4" />
@@ -895,44 +1006,6 @@ onMounted(async () => {
             {{ filteredMemberships.length }}/{{ approvedMembershipsCount }} {{ t('branches.nameEntity') }}
           </p>
         </section>
-
-        <template v-if="equipmentTotal > 0 || equipmentLoading">
-          <Separator class="my-8" />
-
-          <section>
-            <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
-              <Package class="h-4 w-4" />
-              {{ t('inventory.title') }}
-            </h3>
-
-            <div v-if="equipmentLoading" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-              <EquipmentCardSkeleton v-for="i in 3" :key="i" />
-            </div>
-
-            <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-              <EquipmentCard
-                v-for="eq in equipmentItems"
-                :key="eq.id"
-                :id="eq.id"
-                :label="eq.label"
-                :category-name="eq.category?.name"
-                :category-path="buildCategoryPath(eq.category)"
-                :status-name="eq.status?.name"
-                :status-color="eq.status?.color"
-                :is-visible="eq.isVisible"
-                :properties="eq.propertyValues?.map((pv: any) => ({ name: pv.propertyDefinition?.name, value: pv.value, type: pv.propertyDefinition?.type }))"
-                :thumbnail-path="eq.photos?.[0]?.filePath"
-              />
-            </div>
-
-            <div v-if="equipmentTotal > 6" class="mt-4">
-              <router-link :to="`/operators/${route.params.id}/inventory`" class="text-sm text-primary hover:underline flex items-center gap-1">
-                {{ t('inventory.viewAll') }} ({{ equipmentTotal }})
-                <ChevronRight class="h-4 w-4" />
-              </router-link>
-            </div>
-          </section>
-        </template>
       </template>
 
       <EditOperatorAdminSheet
@@ -954,6 +1027,49 @@ onMounted(async () => {
         :user-id="operator.user.id"
         :call-sign="formattedCallSign"
       />
+
+      <EquipmentDetailSheet
+        :open="showDetailSheet"
+        :equipment-id="detailEquipmentId"
+        :can-edit="isEquipmentOwner"
+        @update:open="showDetailSheet = $event"
+        @edit="handleEquipmentDetailEdit"
+        @deleted="handleEquipmentDetailDeleted"
+      />
+
+      <EditEquipmentSheet
+        :open="showEditSheet"
+        :equipment-id="editingEquipmentId"
+        @update:open="showEditSheet = $event"
+        @updated="handleEquipmentUpdated"
+        @deleted="handleEquipmentDeleted"
+      />
+
+      <Dialog :open="showEquipmentDeleteDialog" @update:open="showEquipmentDeleteDialog = $event">
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{{ t('inventory.deleteEquipment') }}</DialogTitle>
+            <DialogDescription>
+              {{ deletingEquipment?.label || deletingEquipment?.category?.name }}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" @click="showEquipmentDeleteDialog = false" :disabled="isDeletingEquipment">
+              <X class="h-4 w-4 mr-2" />
+              {{ t('common.cancel') }}
+            </Button>
+            <Button
+              variant="outline"
+              @click="confirmEquipmentDelete"
+              :disabled="isDeletingEquipment"
+              class="trac-btn-destructive-outlined"
+            >
+              <Trash2 v-if="!isDeletingEquipment" class="h-4 w-4 mr-2" />
+              {{ isDeletingEquipment ? t('common.loading') : t('common.delete') }}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog v-model:open="showDeleteDialog">
         <DialogContent>

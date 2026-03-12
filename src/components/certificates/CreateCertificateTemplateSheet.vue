@@ -18,7 +18,7 @@ import CertificateTemplateCanvasEditor from '@/components/certificates/Certifica
 import { DEFAULT_SERIAL_ELEMENT } from '@/components/certificates/certificate-template-defaults'
 import type { CertificateTemplateElement } from '@/components/certificates/certificate-template-defaults'
 import { translateError } from '@/i18n'
-import { api, type ApiError } from '@/lib/api'
+import { api, API_BASE, type ApiError } from '@/lib/api'
 
 const props = defineProps<{
   open: boolean
@@ -31,7 +31,6 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const API_BASE = import.meta.env.VITE_API_URL
 
 const name = ref('')
 const imagePath = ref('')

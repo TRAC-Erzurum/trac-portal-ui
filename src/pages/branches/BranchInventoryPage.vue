@@ -22,6 +22,7 @@ import { api, type ApiError } from '@/lib/api'
 interface Branch {
   id: string
   name: string
+  isHeadquarters?: boolean
 }
 
 interface EquipmentCategory {
@@ -119,6 +120,10 @@ async function fetchBranch() {
   isLoadingBranch.value = true
   try {
     branch.value = await api.get<Branch>(`/branches/${branchId.value}`)
+    if (branch.value?.isHeadquarters) {
+      router.replace(`/branches/${branchId.value}`)
+      return
+    }
   } catch (e) {
     const err = e as ApiError
     toast.error(translateError(err.message))
@@ -496,6 +501,7 @@ onMounted(() => {
             :properties="item.propertyValues.map((pv) => ({ name: pv.propertyDefinition.name, value: pv.value, type: pv.propertyDefinition.type }))"
             :thumbnail-path="item.photos[0]?.filePath"
             :owner-call-sign="item.operator?.callSign"
+            :operator-id="item.operator?.id"
             :show-actions="false"
             @click="handleMemberCardClick"
           />

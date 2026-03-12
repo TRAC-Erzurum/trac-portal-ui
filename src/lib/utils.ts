@@ -16,3 +16,13 @@ export function debounce<T extends (...args: any[]) => any>(
     timeoutId = setTimeout(() => fn(...args), delay)
   }
 }
+
+/** Read a file as a data URL for img src (CSP-safe, no blob:). */
+export function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}

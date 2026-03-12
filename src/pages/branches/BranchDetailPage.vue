@@ -953,6 +953,59 @@ onMounted(() => {
 
       <Separator class="my-8" />
 
+      <template v-if="!branch?.isHeadquarters">
+        <section>
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+            <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Package class="h-4 w-4" />
+              {{ t('inventory.title') }}
+            </h3>
+            <router-link :to="`/branches/${route.params.id}/inventory`">
+              <Button variant="outline" size="sm" class="trac-page-action-btn">
+                {{ t('inventory.viewInventory') }}
+                <ChevronRight class="h-4 w-4 ml-1" />
+              </Button>
+            </router-link>
+          </div>
+
+          <div v-if="branchEquipmentLoading" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+            <EquipmentCardSkeleton v-for="i in 3" :key="i" />
+          </div>
+
+          <div v-else-if="branchEquipmentTotal === 0" class="py-8 text-center">
+            <Package class="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+            <p class="text-sm text-muted-foreground">{{ t('inventory.noEquipmentYet') }}</p>
+          </div>
+
+          <template v-else>
+            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
+              <EquipmentCard
+                v-for="eq in branchEquipment"
+                :key="eq.id"
+                :id="eq.id"
+                :label="eq.label"
+                :category-name="eq.category?.name"
+                :category-path="buildCategoryPath(eq.category)"
+                :status-name="eq.status?.name"
+                :status-color="eq.status?.color"
+                :is-visible="eq.isVisible"
+                :properties="eq.propertyValues?.map((pv: any) => ({ name: pv.propertyDefinition?.name, value: pv.value, type: pv.propertyDefinition?.type }))"
+                :thumbnail-path="eq.photos?.[0]?.filePath"
+              />
+            </div>
+
+            <div v-if="branchEquipmentTotal > 6" class="mt-4">
+              <router-link :to="`/branches/${route.params.id}/inventory`" class="text-sm text-primary hover:underline flex items-center gap-1">
+                {{ t('inventory.viewAll') }} ({{ branchEquipmentTotal }})
+                <ChevronRight class="h-4 w-4" />
+              </router-link>
+            </div>
+          </template>
+        </section>
+
+        <Separator class="my-8" />
+      </template>
+
       <section>
         <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
           <TowerControl class="h-4 w-4" />
@@ -1277,44 +1330,6 @@ onMounted(() => {
           </div>
         </div>
       </section>
-
-      <template v-if="branchEquipmentTotal > 0 || branchEquipmentLoading">
-        <Separator class="my-8" />
-
-        <section>
-          <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
-            <Package class="h-4 w-4" />
-            {{ t('inventory.title') }}
-          </h3>
-
-          <div v-if="branchEquipmentLoading" class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-            <EquipmentCardSkeleton v-for="i in 3" :key="i" />
-          </div>
-
-          <div v-else class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3">
-            <EquipmentCard
-              v-for="eq in branchEquipment"
-              :key="eq.id"
-              :id="eq.id"
-              :label="eq.label"
-              :category-name="eq.category?.name"
-              :category-path="buildCategoryPath(eq.category)"
-              :status-name="eq.status?.name"
-              :status-color="eq.status?.color"
-              :is-visible="eq.isVisible"
-              :properties="eq.propertyValues?.map((pv: any) => ({ name: pv.propertyDefinition?.name, value: pv.value, type: pv.propertyDefinition?.type }))"
-              :thumbnail-path="eq.photos?.[0]?.filePath"
-            />
-          </div>
-
-          <div v-if="branchEquipmentTotal > 6" class="mt-4">
-            <router-link :to="`/branches/${route.params.id}/inventory`" class="text-sm text-primary hover:underline flex items-center gap-1">
-              {{ t('inventory.viewAll') }} ({{ branchEquipmentTotal }})
-              <ChevronRight class="h-4 w-4" />
-            </router-link>
-          </div>
-        </section>
-      </template>
     </div>
 
     <EditBranchSheet

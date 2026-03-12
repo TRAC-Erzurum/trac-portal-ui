@@ -20,8 +20,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import { LMap, LTileLayer } from '@vue-leaflet/vue-leaflet'
 import 'leaflet/dist/leaflet.css'
 import AppLayout from '@/components/layout/AppLayout.vue'
-import { api } from '@/lib/api'
-const API_BASE = import.meta.env.VITE_API_URL
+import { api, API_BASE } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { toast } from 'vue-sonner'
@@ -262,6 +261,15 @@ function createAttendeeMarkerIcon(callSign: string): L.DivIcon {
   })
 }
 
+/** Orana göre cluster rengi (dashboard ile aynı): en yüksek oran turuncu, orta sarı, düşük yeşil */
+function clusterSizeClassByRatio(count: number, total: number): string {
+  const max = Math.max(total, 1)
+  const ratio = count / max
+  if (ratio <= 0.33) return 'marker-cluster-small'
+  if (ratio <= 0.66) return 'marker-cluster-medium'
+  return 'marker-cluster-large'
+}
+
 function updateCluster() {
   const map = leafletMapInstance.value
   if (!map || !attendeePoints.value.length) return
@@ -271,9 +279,20 @@ function updateCluster() {
   }
   const markerClusterGroupFn = (L as any).markerClusterGroup
   if (!markerClusterGroupFn) return
+  const totalMarkers = attendeePoints.value.length
   const group = markerClusterGroupFn({
     chunkedLoading: true,
-    maxClusterRadius: 60
+    maxClusterRadius: 60,
+    iconCreateFunction(cluster: { getChildCount: () => number }) {
+      const count = cluster.getChildCount()
+      const sizeClass = clusterSizeClassByRatio(count, totalMarkers)
+      return L.divIcon({
+        className: `marker-cluster ${sizeClass}`,
+        html: `<div><span>${count}</span></div>`,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+      })
+    },
   })
   for (const { attendee, lat, lng } of attendeePoints.value) {
     const marker = L.marker([lat, lng], {

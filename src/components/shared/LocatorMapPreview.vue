@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import L from 'leaflet'
 import { LMap, LTileLayer, LMarker, LPopup } from '@vue-leaflet/vue-leaflet'
 import 'leaflet/dist/leaflet.css'
 import MapSelectionSummary from '@/components/shared/MapSelectionSummary.vue'
@@ -16,8 +17,10 @@ const props = withDefaults(
     gridSquare: string | null
     /** When false, no outer border (e.g. inside dashboard card). */
     standalone?: boolean
+    /** When false, map is not clickable (e.g. dashboard preview with separate "Open map" button). */
+    interactive?: boolean
   }>(),
-  { standalone: true }
+  { standalone: true, interactive: true }
 )
 
 const emit = defineEmits<{
@@ -42,6 +45,14 @@ const mapCenter = computed((): [number, number] => {
 })
 
 const mapZoom = computed(() => MAP_ZOOM)
+
+/** Pin yok; sadece popup. Ok tam QTH noktasını gösterir. */
+const selectionMarkerIcon = L.divIcon({
+  className: 'selection-marker-invisible',
+  html: '',
+  iconSize: [0, 0],
+  iconAnchor: [0, 0],
+})
 
 const markerLatLng = computed((): [number, number] | null => {
   if (!userParsed.value) return null
@@ -150,7 +161,7 @@ const mapOptions = {
 }
 
 function onMapClick() {
-  emit('click')
+  if (props.interactive) emit('click')
 }
 
 const selectionSummary = computed(() => {
@@ -165,17 +176,24 @@ const selectionSummary = computed(() => {
 
 <template>
   <div
-    role="button"
-    tabindex="0"
-    class="overflow-hidden cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-    :class="standalone ? 'rounded-lg border border-border bg-background' : ''"
-    :aria-label="userParsed ? t('map.title') : t('dashboard.mapPreviewNoQth')"
-    @click="onMapClick"
-    @keydown.enter="onMapClick"
-    @keydown.space.prevent="onMapClick"
+    :role="interactive ? 'button' : undefined"
+    :tabindex="interactive ? 0 : undefined"
+    class="overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+    :class="[
+      standalone ? 'rounded-lg border border-border bg-background' : '',
+      interactive ? 'cursor-pointer' : ''
+    ]"
+    :aria-label="interactive ? (userParsed ? t('map.title') : t('dashboard.mapPreviewNoQth')) : undefined"
+    @click="interactive ? onMapClick() : undefined"
+    @keydown.enter="interactive ? onMapClick() : undefined"
+    @keydown.space.prevent="interactive ? onMapClick() : undefined"
   >
     <div class="h-48 relative">
-      <div class="absolute inset-0 z-0 cursor-pointer" @click.stop="onMapClick">
+      <div
+        class="absolute inset-0 z-0"
+        :class="interactive ? 'cursor-pointer' : 'pointer-events-none'"
+        @click.stop="interactive ? onMapClick() : undefined"
+      >
         <LMap
           :use-global-leaflet="true"
           :center="mapCenter"
@@ -191,11 +209,12 @@ const selectionSummary = computed(() => {
             v-if="markerLatLng"
             ref="markerRef"
             :lat-lng="markerLatLng"
+            :icon="(selectionMarkerIcon as any)"
             @add="onMarkerAdd"
           >
-            <LPopup :options="{ closeButton: false }">
+            <LPopup :options="{ closeButton: false, className: 'locator-popup-opaque' }">
               <div
-                class="rounded bg-background px-2 py-1.5 shadow-sm min-w-0 max-w-[20rem]"
+                class="rounded border border-border bg-background px-2 py-1.5 shadow-sm min-w-0 max-w-[20rem]"
                 @click.stop
               >
                 <p class="text-[11px] font-medium text-foreground break-words">
@@ -229,3 +248,20 @@ const selectionSummary = computed(() => {
     />
   </div>
 </template>
+
+<style>
+/* Pin yok; sadece popup. Marker görünmez (Leaflet DOM harita içinde). */
+.selection-marker-invisible {
+  background: none !important;
+  border: none !important;
+}
+/* Popup ve ok opak (tema rengi) */
+.locator-popup-opaque .leaflet-popup-content-wrapper {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.locator-popup-opaque .leaflet-popup-tip {
+  background: var(--background) !important;
+  border: 1px solid var(--border) !important;
+}
+</style>

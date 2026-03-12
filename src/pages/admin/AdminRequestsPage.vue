@@ -384,15 +384,15 @@ onMounted(fetchPending)
           <div
             v-for="req in passwordResetRequests"
             :key="req.id"
-            class="flex flex-col gap-2 rounded-lg border border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+            class="flex flex-col gap-2 rounded-lg border border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
           >
-            <div class="min-w-0">
+            <div class="min-w-0 flex-1">
               <p class="font-medium font-mono text-foreground">{{ req.callSign }}</p>
               <p v-if="req.operator?.fullName" class="text-xs text-muted-foreground truncate">
                 {{ req.operator.fullName }}
               </p>
             </div>
-            <div class="flex gap-2">
+            <div class="flex flex-wrap gap-2 shrink-0">
               <Button
                 variant="outline"
                 size="sm"

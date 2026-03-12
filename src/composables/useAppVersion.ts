@@ -1,6 +1,5 @@
 import { ref, onMounted } from 'vue'
-
-const API_BASE = import.meta.env.VITE_API_URL || ''
+import { API_BASE } from '@/lib/api'
 
 const buildTimeUiVersion =
   typeof import.meta.env.VITE_APP_VERSION === 'string' && import.meta.env.VITE_APP_VERSION.trim()
@@ -15,7 +14,7 @@ async function fetchVersions() {
   if (healthFetched) return
   healthFetched = true
   try {
-    const healthUrl = API_BASE ? `${API_BASE}/health` : '/api/health'
+    const healthUrl = `${API_BASE}/health`
     const res = await fetch(healthUrl, { credentials: 'include' })
     if (res.ok) {
       const data = await res.json()

@@ -276,18 +276,17 @@ watch(
           </div>
 
           <div class="min-w-0 space-y-3">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
               <div class="min-w-0 flex-1">
                 <p class="text-xs text-muted-foreground">{{ t('profile.dmrId') }}</p>
                 <div class="flex items-center justify-between gap-2">
                   <p class="text-sm font-medium font-mono">{{ profile.operator?.dmrId || '-' }}</p>
                 </div>
               </div>
-              <div class="trac-mobile-action-row sm:shrink-0">
+              <div class="flex flex-wrap items-center gap-2 shrink-0">
                 <Button
                   variant="outline"
                   size="sm"
-                  class="trac-card-action-btn"
                   @click="showEditOperator = true"
                   :title="t('profile.editOperatorAction')"
                   :aria-label="t('profile.editOperatorAction')"
@@ -298,7 +297,6 @@ watch(
                 <Button
                   variant="outline"
                   size="sm"
-                  class="trac-card-action-btn"
                   @click="showChangePassword = true"
                   :title="t('profile.changePassword')"
                   :aria-label="t('profile.changePassword')"
@@ -321,13 +319,12 @@ watch(
         <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
           <!-- Contact Info Section -->
           <div class="space-y-4 rounded-xl border p-5">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <h3 class="flex items-center gap-2 font-semibold">
-                <Phone class="h-4 w-4 text-primary" />
-                {{ t('account.contactInfo') }}
+            <div class="flex flex-row items-center justify-between gap-3">
+              <h3 class="flex items-center gap-2 font-semibold min-w-0 flex-1 shrink">
+                <Phone class="h-4 w-4 text-primary shrink-0" />
+                <span class="truncate">{{ t('account.contactInfo') }}</span>
               </h3>
-              <Button variant="outline" size="sm"
-                class="trac-card-action-btn self-end sm:self-auto"
+              <Button variant="outline" size="sm" class="shrink-0"
                 @click="showEditContact = true" :title="t('account.contactInfo')"
                 :aria-label="t('account.contactInfo')">
                 <Edit class="h-4 w-4" />
@@ -363,13 +360,12 @@ watch(
 
           <!-- Personal Info Section -->
           <div class="space-y-4 rounded-xl border p-5">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <h3 class="flex items-center gap-2 font-semibold">
-                <UserCircle class="h-4 w-4 text-primary" />
-                {{ t('account.personalInfo') }}
+            <div class="flex flex-row items-center justify-between gap-3">
+              <h3 class="flex items-center gap-2 font-semibold min-w-0 flex-1 shrink">
+                <UserCircle class="h-4 w-4 text-primary shrink-0" />
+                <span class="truncate">{{ t('account.personalInfo') }}</span>
               </h3>
-              <Button variant="outline" size="sm"
-                class="trac-card-action-btn self-end sm:self-auto"
+              <Button variant="outline" size="sm" class="shrink-0"
                 @click="showEditPersonalBasics = true" :title="t('account.personalInfo')"
                 :aria-label="t('account.personalInfo')">
                 <Edit class="h-4 w-4" />
@@ -403,13 +399,12 @@ watch(
 
           <!-- Emergency Contact Section -->
           <div class="space-y-4 rounded-xl border p-5 md:col-span-2">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <h3 class="flex items-center gap-2 font-semibold">
-                <HeartPulse class="h-4 w-4 text-destructive" />
-                {{ t('account.emergencyContacts') }}
+            <div class="flex flex-row items-center justify-between gap-3">
+              <h3 class="flex items-center gap-2 font-semibold min-w-0 flex-1 shrink">
+                <HeartPulse class="h-4 w-4 text-destructive shrink-0" />
+                <span class="truncate">{{ t('account.emergencyContacts') }}</span>
               </h3>
-              <Button variant="outline" size="sm"
-                class="trac-card-action-btn self-end sm:self-auto"
+              <Button variant="outline" size="sm" class="shrink-0"
                 @click="showEditEmergency = true" :title="t('account.emergencyContacts')"
                 :aria-label="t('account.emergencyContacts')">
                 <Edit class="h-4 w-4" />
@@ -434,13 +429,12 @@ watch(
 
           <!-- Expertise & Training Section -->
           <div class="space-y-6 rounded-xl border p-5 md:col-span-2">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <h3 class="flex items-center gap-2 font-semibold">
-                <GraduationCap class="h-4 w-4 text-primary" />
-                {{ t('account.expertise') }}
+            <div class="flex flex-row items-center justify-between gap-3">
+              <h3 class="flex items-center gap-2 font-semibold min-w-0 flex-1 shrink">
+                <GraduationCap class="h-4 w-4 text-primary shrink-0" />
+                <span class="truncate">{{ t('account.expertise') }}</span>
               </h3>
-              <Button variant="outline" size="sm"
-                class="trac-card-action-btn self-end sm:self-auto"
+              <Button variant="outline" size="sm" class="shrink-0"
                 @click="showEditExpertise = true" :title="t('account.editExpertise')"
                 :aria-label="t('account.editExpertise')">
                 <Edit class="h-4 w-4" />

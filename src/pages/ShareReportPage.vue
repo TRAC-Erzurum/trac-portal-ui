@@ -11,12 +11,11 @@ import {
   REPORT_EXPORT_WIDTH,
 } from "@/lib/reportExportStyles";
 import html2canvas from "html2canvas";
+import { API_BASE } from "@/lib/api";
 
 const route = useRoute();
 const { t } = useI18n();
 const { formatDateTime, formatTime } = useDateFormat();
-
-const API_BASE = import.meta.env.VITE_API_URL || "";
 
 const status = ref<"loading" | "building" | "ready" | "error">("loading");
 const imageUrl = ref<string | null>(null);

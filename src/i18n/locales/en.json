@@ -9,7 +9,9 @@
     "pleaseWaitForCaptcha": "Please wait for verification",
     "guestRestriction": "Dear guest, please contact administrators to access this feature",
     "schedulerStartDateImmutable": "Start date cannot be changed. Delete and recreate the scheduler to change it.",
-    "invalidFileType": "Invalid file type. Please upload JPG, PNG or WebP."
+    "invalidFileType": "Invalid file type. Please upload JPG, PNG or WebP.",
+    "categoryParentSelf": "A category cannot be its own parent.",
+    "categoryParentDescendant": "A category cannot be moved under one of its subcategories."
   },
   "auth": {
     "login": "Login",
@@ -224,6 +226,11 @@
     "aMember": "a member",
     "mapPreview": "QTH",
     "mapPreviewNoQth": "Enter your QTH to see the map",
+    "openMap": "Open map",
+    "addOrEditQth": "Add QTH",
+    "myInventoryTitle": "My inventory",
+    "carouselIndicators": "Image carousel",
+    "carouselSlide": "Slide {current} of {total}",
     "mapPickerSelectHint": "Click on the map to select QTH / location (city and district will be filled automatically)",
     "sections": {
       "me": "My summary",
@@ -234,14 +241,9 @@
       "topStreak": "Longest streaks",
       "participation": "Participation",
       "personalTrend": "Trend",
-      "communityPulse": "Change vs previous period",
-      "trendUp": "up from previous period",
-      "trendDown": "down from previous period",
-      "noComparison": "no comparison",
-      "trendBreakdown": "Nets %{nets}, check-ins %{checkIns}, participants %{participants}",
-      "trendOnlyWithPeriod": "Select 7 or 30 days to see trend.",
       "busiestTime": "Busiest times",
       "geography": "Geographic distribution",
+      "monthlyAndBusiest": "Monthly & busiest times",
       "monthlyTrend": "Monthly",
       "netsAttendeesTrend": "Net attendees trend",
       "completedNets": "Nets",
@@ -786,7 +788,7 @@
     "inventoryManagement": "Inventory Management",
     "myInventory": "My Inventory",
     "branchInventory": "Branch Inventory",
-    "memberEquipment": "Member Equipment",
+    "memberEquipment": "Member Inventory",
     "operatorInventory": "Operator Inventory",
 
     "categories": "Categories",
@@ -799,6 +801,7 @@
     "editCategory": "Edit Category",
     "deleteCategory": "Delete Category",
     "categoryProperties": "Category Properties",
+    "categoryPropertiesCreateHint": "You can add property definitions for this category.",
     "noCategoriesYet": "No categories yet",
     "categoryHasChildrenCannotDelete": "Cannot delete a category that has subcategories",
     "categoryHasEquipmentCannotDelete": "Cannot delete a category that contains equipment",
@@ -848,10 +851,12 @@
     "statusDeleted": "Status deleted",
 
     "equipment": "Equipment",
+    "quantity": "Quantity",
     "equipmentLabel": "Equipment Label",
     "equipmentNote": "Note",
     "visibility": "Visibility",
     "visible": "Visible",
+    "showOnMyProfile": "Show on my profile",
     "hidden": "Hidden",
     "addEquipment": "Add Equipment",
     "editEquipment": "Edit Equipment",
@@ -877,6 +882,7 @@
     "selectEquipment": "Select Equipment",
     "relationCreated": "Relation created",
     "relationRemoved": "Relation removed",
+    "noRelation": "No relation",
     "noRelationsYet": "No relations yet",
     "relationType": {
       "accessory": "Accessory",
@@ -884,6 +890,7 @@
       "mounted": "Mounted",
       "used_together": "Used Together"
     },
+    "relationTypeLabel": "Relation type",
 
     "equipmentStatus": {
       "working": "Working",
@@ -899,10 +906,11 @@
     "filterByStatus": "Filter by Status",
 
     "viewAll": "View All",
+    "viewInventory": "View Inventory",
     "loadMore": "Load More",
     "showing": "Showing: {count} / {total}",
     "emptyState": "No equipment found to display",
-    "ownerCallSign": "Owner Call Sign",
+    "operator": "Operator",
 
     "validation": {
       "requiredProperty": "'{name}' is required",
