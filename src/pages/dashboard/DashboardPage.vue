@@ -1,23 +1,25 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ActivityFeed from '@/components/dashboard/ActivityFeed.vue'
 import CommunityModule from '@/components/dashboard/CommunityModule.vue'
 import NetsModule from '@/components/dashboard/NetsModule.vue'
 import PersonalStatsModule from '@/components/dashboard/PersonalStatsModule.vue'
+import DashboardInventoryCarousel from '@/components/dashboard/widgets/DashboardInventoryCarousel.vue'
+import GeographyWidget from '@/components/dashboard/widgets/GeographyWidget.vue'
+import MonthlyAndBusiestCard from '@/components/dashboard/widgets/MonthlyAndBusiestCard.vue'
+import NetsAttendeesTrendWidget from '@/components/dashboard/widgets/NetsAttendeesTrendWidget.vue'
 import PersonalLastNetsWidget from '@/components/dashboard/widgets/PersonalLastNetsWidget.vue'
 import PersonalTrendWidget from '@/components/dashboard/widgets/PersonalTrendWidget.vue'
-import CommunityPulseWidget from '@/components/dashboard/widgets/CommunityPulseWidget.vue'
-import BusiestTimeWidget from '@/components/dashboard/widgets/BusiestTimeWidget.vue'
-import GeographyWidget from '@/components/dashboard/widgets/GeographyWidget.vue'
-import MapPreviewWidget from '@/components/dashboard/widgets/MapPreviewWidget.vue'
-import MonthlyTrendWidget from '@/components/dashboard/widgets/MonthlyTrendWidget.vue'
-import NetsAttendeesTrendWidget from '@/components/dashboard/widgets/NetsAttendeesTrendWidget.vue'
 import { Separator } from '@/components/ui/separator'
 import { useAuthStore } from '@/stores/auth'
 import { useBranchStore } from '@/stores/branch'
 import { api } from '@/lib/api'
+
+const MapPreviewWidget = defineAsyncComponent(
+  () => import('@/components/dashboard/widgets/MapPreviewWidget.vue')
+)
 
 interface ActiveNet {
   id: string
@@ -179,7 +181,6 @@ const fetchPersonalStats = async () => {
 }
 
 const communityPeriod = ref<'all' | '7d' | '30d'>('all')
-const communityPulsePeriod = ref<'7d' | '30d'>('7d')
 
 const fetchCommunity = async () => {
   try {
@@ -213,7 +214,7 @@ onMounted(() => {
 <template>
   <AppLayout :title="t('nav.dashboard')">
     <!-- Top: Nets + Activity (unchanged) -->
-    <div class="hidden xl:flex items-stretch gap-6">
+    <div class="hidden xl:flex items-stretch gap-6 max-h-[70vh] min-h-0">
       <div class="flex-1">
         <NetsModule
           :active-nets="activeNets"
@@ -248,17 +249,27 @@ onMounted(() => {
         :max-nets="3"
       />
       <div class="h-px bg-zinc-200 dark:bg-zinc-800 my-6" />
-      <ActivityFeed
-        :activities="activities"
-        :is-loading="isLoadingActivity"
-        :has-more="hasMoreActivity"
-        :is-loading-more="isLoadingMoreActivity"
-        @load-more="loadMoreActivity"
-      />
+      <div class="h-[310px] min-h-0 shrink-0 flex flex-col">
+        <ActivityFeed
+          :activities="activities"
+          :is-loading="isLoadingActivity"
+          :has-more="hasMoreActivity"
+          :is-loading-more="isLoadingMoreActivity"
+          @load-more="loadMoreActivity"
+        />
+      </div>
     </div>
 
-    <div class="mt-6">
-      <MapPreviewWidget />
+    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+      <DashboardInventoryCarousel class="min-h-0" />
+      <Suspense>
+        <MapPreviewWidget />
+        <template #fallback>
+          <div class="rounded-lg border border-border bg-background overflow-hidden min-h-[12rem] flex items-center justify-center text-sm text-muted-foreground">
+            {{ t('common.loading') }}
+          </div>
+        </template>
+      </Suspense>
     </div>
 
     <Separator class="my-8" />
@@ -295,15 +306,11 @@ onMounted(() => {
         />
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <BusiestTimeWidget />
-        <MonthlyTrendWidget />
-      </div>
-      <div class="mb-6">
+        <MonthlyAndBusiestCard />
         <NetsAttendeesTrendWidget />
       </div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+      <div class="mb-6">
         <GeographyWidget />
-        <CommunityPulseWidget v-model:period="communityPulsePeriod" />
       </div>
     </section>
   </AppLayout>

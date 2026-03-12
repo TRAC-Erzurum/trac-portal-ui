@@ -104,13 +104,17 @@ provide('refreshPendingRequestsCount', fetchPendingRequestsCount)
         </div>
       </header>
 
-      <main class="relative flex-1 min-h-0 overflow-y-auto pb-16 lg:pb-0 pt-[57px] lg:pt-[65px]">
-        <div class="px-6 lg:px-8 pt-5">
-          <Breadcrumb :items="breadcrumbItems" :current-label="breadcrumbLabel" class="mb-4" />
+      <main
+        class="relative flex flex-col flex-1 min-h-0 overflow-y-auto pt-[57px] lg:pt-[65px] pb-[calc(5rem+env(safe-area-inset-bottom,0px))] lg:pb-0"
+      >
+        <div class="px-6 lg:px-8 pt-5 flex-1 flex flex-col min-h-0">
+          <Breadcrumb :items="breadcrumbItems" :current-label="breadcrumbLabel" class="mb-4 flex-shrink-0" />
 
-          <slot />
+          <div class="flex-1 min-h-0">
+            <slot />
+          </div>
 
-          <AppFooter class="mt-6 pt-4 pb-6 lg:pb-8" />
+          <AppFooter class="mt-6 pt-4 pb-1 flex-shrink-0" />
         </div>
       </main>
     </div>

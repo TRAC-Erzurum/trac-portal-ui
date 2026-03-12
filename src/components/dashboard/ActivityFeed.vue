@@ -93,13 +93,13 @@ const getActivityText = (activity: Activity) => {
 </script>
 
 <template>
-  <section class="flex flex-col min-h-0 xl:h-full">
+  <section class="flex h-[310px] max-h-[310px] flex-col min-h-0 shrink-0">
     <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4 shrink-0">
       <ActivityIcon class="h-4 w-4" />
       {{ t('dashboard.recentActivity') }}
     </h3>
     
-    <div v-if="isLoading" class="space-y-3">
+    <div v-if="isLoading" class="space-y-3 shrink-0">
       <div v-for="i in 3" :key="i" class="flex items-center gap-3">
         <div class="h-2 w-2 bg-muted rounded-full" />
         <div class="h-4 flex-1 bg-muted animate-pulse rounded" />
@@ -107,12 +107,12 @@ const getActivityText = (activity: Activity) => {
       </div>
     </div>
     
-    <div v-else-if="activities.length === 0" class="text-sm text-muted-foreground py-4">
+    <div v-else-if="activities.length === 0" class="text-sm text-muted-foreground py-4 shrink-0">
       {{ t('dashboard.noActivity') }}
     </div>
     
     <template v-else>
-      <div 
+      <div
         class="space-y-2 flex-1 min-h-0 overflow-y-auto pr-2"
       >
         <div
@@ -120,33 +120,33 @@ const getActivityText = (activity: Activity) => {
           :key="activity.id"
           class="flex items-start gap-3"
         >
-          <component 
-            :is="getActivityIcon(activity.type)" 
-            class="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" 
+          <component
+            :is="getActivityIcon(activity.type)"
+            class="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5"
           />
           <div class="flex-1 min-w-0">
             <p class="text-sm leading-snug">{{ getActivityText(activity) }}</p>
             <p class="text-xs text-muted-foreground mt-0.5">{{ formatTime(activity.createdAt) }}</p>
           </div>
         </div>
-        
+
         <div v-if="isLoadingMore" class="flex items-center gap-3 py-2">
           <div class="h-4 w-4 bg-muted animate-pulse rounded" />
           <div class="h-4 flex-1 bg-muted animate-pulse rounded" />
         </div>
+
+        <Button
+          v-if="hasMore"
+          variant="outline"
+          size="sm"
+          class="trac-load-more-btn mt-3 w-full lg:w-auto"
+          :disabled="isLoadingMore"
+          @click="emit('loadMore')"
+        >
+          <ChevronDown v-if="!isLoadingMore" class="h-4 w-4 mr-2" />
+          {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
+        </Button>
       </div>
-      
-      <Button
-        v-if="hasMore"
-        variant="outline"
-        size="sm"
-        class="trac-load-more-btn mt-3 shrink-0"
-        :disabled="isLoadingMore"
-        @click="emit('loadMore')"
-      >
-        <ChevronDown v-if="!isLoadingMore" class="h-4 w-4 mr-2" />
-        {{ isLoadingMore ? t('common.loading') : t('common.loadMore') }}
-      </Button>
     </template>
   </section>
 </template>

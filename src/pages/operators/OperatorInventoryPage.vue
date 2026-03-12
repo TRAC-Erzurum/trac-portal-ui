@@ -53,6 +53,7 @@ interface Equipment {
   branchId?: string
   label?: string
   note?: string
+  quantity?: number
   isVisible: boolean
   photos: Array<{ id: string; filePath: string; sortOrder: number }>
   propertyValues: Array<{ id: string; propertyDefinitionId: string; propertyDefinition: { id: string; name: string; type: string }; value: any }>
@@ -336,8 +337,10 @@ onMounted(() => {
           :category-photo-path="item.category.photoPath"
           :status-name="item.status.name"
           :status-color="item.status.color"
+          :quantity="item.quantity"
           :is-visible="item.isVisible"
           :properties="item.propertyValues.map((pv) => ({ name: pv.propertyDefinition.name, value: pv.value, type: pv.propertyDefinition.type }))"
+          :photo-paths="item.photos.map((p) => p.filePath)"
           :thumbnail-path="item.photos[0]?.filePath"
           :show-actions="isOwner"
           @click="handleCardClick"

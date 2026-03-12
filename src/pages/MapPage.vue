@@ -88,6 +88,14 @@ function createChannelIcon(type: 'repeater' | 'aprs'): L.DivIcon {
 const repeaterIcon = createChannelIcon('repeater')
 const aprsIcon = createChannelIcon('aprs')
 
+/** Tıklanan noktada sadece popup gösterilir; pin yok. Ok tam tıklanan noktayı gösterir. */
+const selectionMarkerIcon = L.divIcon({
+  className: 'selection-marker-invisible',
+  html: '',
+  iconSize: [0, 0],
+  iconAnchor: [0, 0],
+})
+
 function createClusterIcon(cluster: any): L.DivIcon {
   const count = cluster.getChildCount()
   let sizeClass = 'channel-cluster-small'
@@ -936,11 +944,12 @@ watch(selectedLatLng, (latlng) => {
           v-if="selectedLatLng"
           ref="markerRef"
           :lat-lng="selectedLatLng"
+          :icon="(selectionMarkerIcon as any)"
           @add="onMarkerAdd"
         >
           <LPopup :options="{ closeButton: false, autoPan: true, autoPanPadding: [40, 40], className: 'compact-popup' }">
-            <!-- Desktop popup (transparent until hover) -->
-            <div class="hidden md:block w-[15rem] rounded-md border border-border/40 py-1.5 px-2.5 shadow-sm popup-desktop-fade">
+            <!-- Desktop popup -->
+            <div class="hidden md:block w-[15rem] rounded-md border border-border bg-background py-1.5 px-2.5 shadow-sm">
               <!-- QTH locator + copy -->
               <div class="flex items-center gap-1.5">
                 <Crosshair class="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -1082,6 +1091,12 @@ watch(selectedLatLng, (latlng) => {
 </template>
 
 <style>
+/* Tıklanan noktada pin yok; sadece popup. Marker görünmez. */
+.selection-marker-invisible {
+  background: none !important;
+  border: none !important;
+}
+
 /* Leaflet popup chrome: minimal */
 .compact-popup .leaflet-popup-content-wrapper {
   padding: 0 !important;
@@ -1097,45 +1112,10 @@ watch(selectedLatLng, (latlng) => {
   margin-top: -1px;
 }
 
-/* Desktop: popup saydam arka plan, hover'da opak */
-@media (min-width: 768px) {
-  .popup-desktop-fade {
-    background: color-mix(in srgb, var(--background) 55%, transparent) !important;
-    backdrop-filter: blur(2px);
-    border-color: color-mix(in srgb, var(--border) 45%, transparent) !important;
-    transition: background 0.2s ease, backdrop-filter 0.2s ease, border-color 0.2s ease;
-  }
-  .popup-desktop-fade * {
-    transition: opacity 0.2s ease;
-    opacity: 0.7;
-  }
-  .popup-desktop-fade:hover {
-    background: color-mix(in srgb, var(--background) 95%, transparent) !important;
-    backdrop-filter: blur(0);
-    border-color: var(--border) !important;
-  }
-  .popup-desktop-fade:hover * {
-    opacity: 1;
-  }
-  /* Tip (ok) da saydam olsun */
-  .compact-popup .leaflet-popup-tip {
-    background: color-mix(in srgb, var(--background) 55%, transparent) !important;
-    border: 1px solid color-mix(in srgb, var(--border) 45%, transparent) !important;
-    box-shadow: none !important;
-    transition: background 0.2s ease, border-color 0.2s ease;
-  }
-  .compact-popup:hover .leaflet-popup-tip {
-    background: color-mix(in srgb, var(--background) 95%, transparent) !important;
-    border-color: var(--border) !important;
-  }
-}
-
-/* Mobile: tip opak */
-@media (max-width: 767px) {
-  .compact-popup .leaflet-popup-tip {
-    background: var(--background) !important;
-    border: 1px solid var(--border) !important;
-    box-shadow: none !important;
-  }
+/* Popup ve ok her zaman opak */
+.compact-popup .leaflet-popup-tip {
+  background: var(--background) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
 }
 </style>

@@ -5,6 +5,7 @@ import { toast } from 'vue-sonner'
 import { ImagePlus, Loader2, Trash2, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { getUploadedFileUrl } from '@/composables'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
 
@@ -29,17 +30,12 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const API_BASE = import.meta.env.VITE_API_URL
 
 const isUploading = ref(false)
 const showDeleteDialog = ref(false)
 const deletingPhoto = ref<EquipmentPhoto | null>(null)
 const isDeleting = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
-
-function photoUrl(photo: EquipmentPhoto): string {
-  return `${API_BASE}/uploads/${photo.filePath}`
-}
 
 function triggerUpload() {
   if (props.photos.length >= props.maxPhotos) {
@@ -120,7 +116,7 @@ async function handleDelete() {
         class="relative group h-20 w-20 rounded-md overflow-hidden border border-border"
       >
         <img
-          :src="photoUrl(photo)"
+          :src="getUploadedFileUrl(photo.filePath)"
           alt=""
           class="h-full w-full object-cover"
         />

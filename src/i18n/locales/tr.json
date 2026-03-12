@@ -9,7 +9,9 @@
     "pleaseWaitForCaptcha": "Lütfen doğrulamayı bekleyin",
     "guestRestriction": "Değerli misafirimiz, bu özelliğe erişim için yöneticilerle iletişime geçin",
     "schedulerStartDateImmutable": "Başlangıç tarihi değiştirilemez. Değiştirmek için planlayıcıyı silip yeniden oluşturun.",
-    "invalidFileType": "Geçersiz dosya türü. JPG, PNG veya WebP yükleyin."
+    "invalidFileType": "Geçersiz dosya türü. JPG, PNG veya WebP yükleyin.",
+    "categoryParentSelf": "Bir kategori kendisinin üst kategorisi olamaz.",
+    "categoryParentDescendant": "Bir kategori alt kategorilerinden birinin altına taşınamaz."
   },
   "auth": {
     "login": "Giriş Yap",
@@ -224,6 +226,11 @@
     "aMember": "bir üye",
     "mapPreview": "QTH",
     "mapPreviewNoQth": "Haritayı görmek için QTH bilginizi girin",
+    "openMap": "Haritayı aç",
+    "addOrEditQth": "QTH ekle",
+    "myInventoryTitle": "Envanterim",
+    "carouselIndicators": "Görsel galerisi",
+    "carouselSlide": "Slayt {current} / {total}",
     "mapPickerSelectHint": "QTH / konum seçmek için haritaya tıklayın (il ve ilçe otomatik doldurulur)",
     "sections": {
       "me": "Özet",
@@ -234,14 +241,9 @@
       "topStreak": "En uzun ardışık seriler",
       "participation": "Katılım",
       "personalTrend": "Trend",
-      "communityPulse": "Önceki döneme göre değişim",
-      "trendUp": "önceki döneme göre artış",
-      "trendDown": "önceki döneme göre azalış",
-      "noComparison": "karşılaştırma yok",
-      "trendBreakdown": "Çevrimler %{nets}, girişler %{checkIns}, katılımcılar %{participants}",
-      "trendOnlyWithPeriod": "Trend için 7 gün veya 30 gün seçin.",
       "busiestTime": "Yoğun saatler",
       "geography": "Coğrafi dağılım",
+      "monthlyAndBusiest": "Aylık & yoğun saatler",
       "monthlyTrend": "Aylık",
       "netsAttendeesTrend": "Çevrim katılımcı trendi",
       "completedNets": "Çevrim",
@@ -788,7 +790,7 @@
     "inventoryManagement": "Envanter Yönetimi",
     "myInventory": "Envanterim",
     "branchInventory": "Şube Envanteri",
-    "memberEquipment": "Üye Ekipmanları",
+    "memberEquipment": "Üye Envanteri",
     "operatorInventory": "Operatör Envanteri",
 
     "categories": "Kategoriler",
@@ -801,6 +803,7 @@
     "editCategory": "Kategori Düzenle",
     "deleteCategory": "Kategoriyi Sil",
     "categoryProperties": "Kategori Özellikleri",
+    "categoryPropertiesCreateHint": "Bu kategori için özellik tanımları ekleyebilirsiniz.",
     "noCategoriesYet": "Henüz kategori yok",
     "categoryHasChildrenCannotDelete": "Alt kategorileri olan bir kategori silinemez",
     "categoryHasEquipmentCannotDelete": "Ekipman içeren bir kategori silinemez",
@@ -808,7 +811,6 @@
     "categoryCreated": "Kategori oluşturuldu",
     "categoryUpdated": "Kategori güncellendi",
     "categoryDeleted": "Kategori silindi",
-
     "properties": "Özellikler",
     "property": "Özellik",
     "propertyName": "Özellik Adı",
@@ -850,10 +852,12 @@
     "statusDeleted": "Durum silindi",
 
     "equipment": "Ekipman",
+    "quantity": "Adet",
     "equipmentLabel": "Ekipman Etiketi",
     "equipmentNote": "Not",
     "visibility": "Görünürlük",
     "visible": "Görünür",
+    "showOnMyProfile": "Profilimde Göster",
     "hidden": "Gizli",
     "addEquipment": "Ekipman Ekle",
     "editEquipment": "Ekipman Düzenle",
@@ -879,6 +883,7 @@
     "selectEquipment": "Ekipman Seç",
     "relationCreated": "İlişki oluşturuldu",
     "relationRemoved": "İlişki kaldırıldı",
+    "noRelation": "İlişki yok",
     "noRelationsYet": "Henüz ilişki yok",
     "relationType": {
       "accessory": "Aksesuar",
@@ -886,6 +891,7 @@
       "mounted": "Montajlı",
       "used_together": "Birlikte Kullanılır"
     },
+    "relationTypeLabel": "İlişki türü",
 
     "equipmentStatus": {
       "working": "Çalışıyor",
@@ -901,10 +907,11 @@
     "filterByStatus": "Duruma Göre",
 
     "viewAll": "Tümünü Gör",
+    "viewInventory": "Envanteri Görüntüle",
     "loadMore": "Daha Fazla Yükle",
     "showing": "Gösteriliyor: {count} / {total}",
     "emptyState": "Görüntülenecek ekipman bulunamadı",
-    "ownerCallSign": "Sahibinin Çağrı İşareti",
+    "operator": "Operatör",
 
     "validation": {
       "requiredProperty": "'{name}' alanı zorunludur",

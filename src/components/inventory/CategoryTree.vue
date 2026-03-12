@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import type { Ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ChevronDown, ChevronRight, Edit, FolderOpen, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
@@ -27,9 +28,14 @@ interface Category {
   equipmentCount?: number
 }
 
-defineProps<{
-  categories: Category[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    categories: Category[]
+    /** When provided (e.g. from InventoryAdminPage), tree uses this for expand state so path can be expanded after edit */
+    expandedIds?: Ref<Set<string>>
+  }>(),
+  { expandedIds: undefined }
+)
 
 const emit = defineEmits<{
   edit: [category: Category]
@@ -37,18 +43,31 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const expandedIds = ref<Set<string>>(new Set())
+const internalExpandedIds = ref<Set<string>>(new Set())
+
+/** Prop may be Ref<Set> or Set (if parent ref was unwrapped). Normalize to the Set and the Ref to mutate. */
+const expandedState = computed(() => {
+  const source = props.expandedIds ?? internalExpandedIds
+  const set = source && typeof source === 'object' && 'value' in source ? (source as Ref<Set<string>>).value : (source as Set<string>)
+  return { set: set ?? new Set(), ref: source && typeof source === 'object' && 'value' in source ? (source as Ref<Set<string>>) : internalExpandedIds }
+})
+
+/** Same ref/source to pass to recursive children so they share expand state */
+const expandedIdsToPass = computed(() => props.expandedIds ?? internalExpandedIds)
 
 function toggleExpand(id: string) {
-  if (expandedIds.value.has(id)) {
-    expandedIds.value.delete(id)
+  const { set, ref } = expandedState.value
+  if (set.has(id)) {
+    set.delete(id)
   } else {
-    expandedIds.value.add(id)
+    set.add(id)
   }
+  ref.value = new Set(ref.value)
 }
 
 function isExpanded(id: string) {
-  return expandedIds.value.has(id)
+  const { set } = expandedState.value
+  return set.has(id)
 }
 
 function handleRowClick(category: Category) {
@@ -84,7 +103,7 @@ function handleRowClick(category: Category) {
           v-if="category.propertyDefinitions?.length"
           class="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full"
         >
-          {{ category.propertyDefinitions.length }} {{ t('inventory.properties').toLowerCase() }}
+          {{ category.propertyDefinitions.length }} {{ t('inventory.property').toLowerCase() }}
         </span>
 
         <span
@@ -122,6 +141,7 @@ function handleRowClick(category: Category) {
       >
         <CategoryTree
           :categories="category.children"
+          :expanded-ids="expandedIdsToPass"
           @edit="(cat) => emit('edit', cat)"
           @delete="(cat) => emit('delete', cat)"
         />

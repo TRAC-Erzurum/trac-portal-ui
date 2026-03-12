@@ -12,11 +12,11 @@ interface Category {
 interface Props {
   modelValue?: string
   categories: Category[]
-  leafOnly?: boolean
+  disabled?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  leafOnly: true,
+  disabled: false,
 })
 
 const emit = defineEmits<{
@@ -27,8 +27,6 @@ interface FlatNode {
   id: string
   name: string
   depth: number
-  hasChildren: boolean
-  disabled: boolean
   path: string
 }
 
@@ -70,7 +68,6 @@ function getPath(catId: string, map: Map<string, Category>): string {
 const flatNodes = computed<FlatNode[]>(() => {
   const flatCategories = flattenTree(props.categories)
   const map = buildCategoryMap(flatCategories)
-  const childIds = new Set(flatCategories.filter((c) => c.parentId).map((c) => c.parentId!))
   const result: FlatNode[] = []
 
   function walk(parentId: string | null, depth: number) {
@@ -79,13 +76,10 @@ const flatNodes = computed<FlatNode[]>(() => {
       .sort((a, b) => a.name.localeCompare(b.name))
 
     for (const cat of children) {
-      const hasChildren = childIds.has(cat.id)
       result.push({
         id: cat.id,
         name: cat.name,
         depth,
-        hasChildren,
-        disabled: props.leafOnly ? hasChildren : false,
         path: getPath(cat.id, map),
       })
       walk(cat.id, depth + 1)
@@ -101,16 +95,12 @@ const selectedPath = computed(() => {
   const node = flatNodes.value.find((n) => n.id === props.modelValue)
   return node?.path ?? ''
 })
-
-const indentPrefix = (depth: number): string => {
-  if (depth === 0) return ''
-  return '—'.repeat(depth) + ' '
-}
 </script>
 
 <template>
   <Select
     :model-value="modelValue"
+    :disabled="disabled"
     @update:model-value="(v) => emit('update:modelValue', v === null ? '' : String(v))"
   >
     <SelectTrigger class="w-full">
@@ -123,11 +113,9 @@ const indentPrefix = (depth: number): string => {
         v-for="node in flatNodes"
         :key="node.id"
         :value="node.id"
-        :disabled="node.disabled"
-        :class="{ 'opacity-50': node.disabled }"
       >
         <span :style="{ paddingLeft: `${node.depth * 16}px` }">
-          {{ indentPrefix(node.depth) }}{{ node.name }}
+          {{ node.name }}
         </span>
       </SelectItem>
     </SelectContent>

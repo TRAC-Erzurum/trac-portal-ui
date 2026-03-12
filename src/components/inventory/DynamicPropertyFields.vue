@@ -92,8 +92,16 @@ function rangeHint(prop: PropertyDefinition): string {
 </script>
 
 <template>
-  <div class="space-y-4">
-    <div v-for="prop in sortedProperties" :key="prop.id" class="space-y-1.5">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div
+      v-for="(prop, index) in sortedProperties"
+      :key="prop.id"
+      class="space-y-1.5"
+      :class="{
+        'sm:col-span-2':
+          sortedProperties.length % 2 === 1 && index === sortedProperties.length - 1,
+      }"
+    >
       <!-- Boolean -->
       <template v-if="prop.type === 'boolean'">
         <div class="flex items-center gap-2">

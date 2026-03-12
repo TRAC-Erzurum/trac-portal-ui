@@ -47,6 +47,18 @@ const selectedCategory = ref<Category | null>(null)
 const showDeleteDialog = ref(false)
 const deletingCategory = ref<Category | null>(null)
 const isDeleting = ref(false)
+/** Shared expand state so path to edited category can be expanded after save */
+const categoryExpandedIds = ref<Set<string>>(new Set())
+
+/** Returns ancestor ids (root to parent) for the category with targetId, so tree can expand path to it */
+function getAncestorIds(tree: Category[], targetId: string, path: string[] = []): string[] | null {
+  for (const c of tree) {
+    if (c.id === targetId) return path
+    const found = getAncestorIds(c.children ?? [], targetId, [...path, c.id])
+    if (found) return found
+  }
+  return null
+}
 
 const fetchCategories = async () => {
   isLoadingCategories.value = true
@@ -100,7 +112,16 @@ const handleCategoryCreated = () => {
 }
 
 const handleCategoryUpdated = () => {
-  fetchCategories()
+  const editedCategoryId = selectedCategory.value?.id
+  fetchCategories().then(() => {
+    if (editedCategoryId && categories.value.length) {
+      const ancestorIds = getAncestorIds(categories.value, editedCategoryId)
+      if (ancestorIds?.length) {
+        ancestorIds.forEach((id) => categoryExpandedIds.value.add(id))
+        categoryExpandedIds.value = new Set(categoryExpandedIds.value)
+      }
+    }
+  })
 }
 
 onMounted(() => {
@@ -140,6 +161,7 @@ onMounted(() => {
         <CategoryTree
           v-else
           :categories="categories"
+          :expanded-ids="categoryExpandedIds"
           @edit="handleCategoryEdit"
           @delete="handleCategoryDelete"
         />

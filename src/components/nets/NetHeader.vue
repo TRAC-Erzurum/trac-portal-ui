@@ -131,15 +131,15 @@ const formatDuration = (net: Net) => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-    <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 min-w-0 flex-1">
-      <div class="flex justify-center sm:justify-start shrink-0">
-        <div class="h-24 w-24 rounded-lg border border-border bg-muted/30 flex items-center justify-center overflow-hidden">
-          <Radio class="h-12 w-12 text-muted-foreground" />
-        </div>
+  <div class="flex flex-col sm:flex-row gap-4 sm:gap-6">
+    <div class="flex justify-center sm:justify-start shrink-0">
+      <div class="h-24 w-24 rounded-lg border border-border bg-muted/30 flex items-center justify-center overflow-hidden">
+        <Radio class="h-12 w-12 text-muted-foreground" />
       </div>
-      <div class="min-w-0 flex-1 space-y-3">
-        <div class="flex items-center gap-2 flex-wrap">
+    </div>
+    <div class="flex-1 min-w-0 space-y-3">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex items-center gap-2 min-w-0 flex-wrap">
           <span v-if="netStatus === 'active'" class="relative flex h-3 w-3 shrink-0" :title="t('netDetail.statusActive')">
             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75" />
             <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
@@ -150,97 +150,140 @@ const formatDuration = (net: Net) => {
           <h1 class="text-2xl font-bold min-w-0 truncate">{{ net.name }}</h1>
           <span class="text-lg text-muted-foreground shrink-0">· {{ statusLabel }}</span>
         </div>
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          <span v-if="dateTimeRange" class="flex items-center gap-2">
-            <Clock class="h-4 w-4 shrink-0" />
-            {{ dateTimeRange }}
-          </span>
-          <span class="flex items-center gap-2">
-            <Radio class="h-4 w-4 shrink-0" />
-            {{ net.operator.callSign }}
-          </span>
-          <span class="flex items-center gap-2">
-            <Users class="h-4 w-4 shrink-0" />
-            {{ net.attendeeCount }} {{ t('nets.attendees') }}
-          </span>
-          <span v-if="net.startedAt" class="flex items-center gap-2">
-            <Clock class="h-4 w-4 shrink-0" />
-            {{ formatDuration(net) }}
-          </span>
-        </div>
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-          <span v-if="net.branch" class="flex items-center gap-2">
-            <Building2 class="h-4 w-4 shrink-0" />
-            <span class="font-medium text-foreground">
-              <span v-if="!net.branch.isHeadquarters && net.branchCallSign" class="font-mono text-primary">{{ net.branchCallSign.callSign }}</span>
-              <span v-if="!net.branch.isHeadquarters && net.branchCallSign" class="mx-1.5 text-muted-foreground">·</span>
-              <span>{{ net.branch.name }}</span>
-            </span>
-          </span>
-          <span v-if="net.communicationChannels && net.communicationChannels.length > 0" class="flex items-center gap-2">
-            <TowerControl class="h-4 w-4 shrink-0" />
-            <span class="font-medium text-foreground">
-              <template v-for="(channel, idx) in net.communicationChannels" :key="channel.id">
-                <template v-if="idx > 0"> · </template>
-                {{ formatCommunicationChannelLabel(channel) }}
-              </template>
-            </span>
-          </span>
-          <span v-if="net.certificateTemplate" class="flex items-center gap-2" :title="t('certificates.template')">
-            <Award class="h-4 w-4 shrink-0" />
-            <span class="font-medium text-foreground">{{ net.certificateTemplate.name }}</span>
-          </span>
+        <div v-if="canManage || (netStatus !== 'pending' && attendeesCount > 0)" class="hidden sm:flex items-center gap-2 shrink-0">
+          <Button
+            v-if="canManage && netStatus !== 'cancelled'"
+            variant="outline"
+            size="sm"
+            @click="emit('edit')"
+            :title="t('common.edit')"
+            :aria-label="t('common.edit')"
+          >
+            <Settings class="h-4 w-4 mr-2" />
+            {{ t('common.edit') }}
+          </Button>
+          <DropdownMenu v-if="canManage && netStatus === 'pending' && !net.endedAt">
+            <DropdownMenuTrigger as-child>
+              <Button variant="outline" size="sm">
+                <Play class="h-4 w-4 mr-2" fill="currentColor" />
+                {{ t('netDetail.start') }}
+                <ChevronDown class="h-4 w-4 ml-2 shrink-0 opacity-70" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuItem class="gap-2 cursor-pointer" @click="emit('start', true)">
+                <Play class="h-4 w-4" fill="currentColor" />
+                {{ t('netDetail.startWithOperator') }}
+              </DropdownMenuItem>
+              <DropdownMenuItem class="gap-2 cursor-pointer" @click="emit('start', false)">
+                <Play class="h-4 w-4" fill="currentColor" />
+                {{ t('netDetail.startWithoutOperator') }}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button
+            v-if="canManage && (netStatus === 'pending' || netStatus === 'active') && !net.endedAt"
+            variant="outline"
+            size="sm"
+            @click="emit('end')"
+            :title="netStatus === 'pending' ? t('netDetail.cancel') : t('netDetail.end')"
+            :aria-label="netStatus === 'pending' ? t('netDetail.cancel') : t('netDetail.end')"
+          >
+            <XCircle v-if="netStatus === 'pending'" class="h-4 w-4 mr-2" />
+            <Square v-else class="h-4 w-4 mr-2" fill="currentColor" />
+            {{ netStatus === 'pending' ? t('netDetail.cancel') : t('netDetail.end') }}
+          </Button>
         </div>
       </div>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <span v-if="dateTimeRange" class="flex items-center gap-2">
+          <Clock class="h-4 w-4 shrink-0" />
+          {{ dateTimeRange }}
+        </span>
+        <span class="flex items-center gap-2">
+          <Radio class="h-4 w-4 shrink-0" />
+          {{ net.operator.callSign }}
+        </span>
+        <span class="flex items-center gap-2">
+          <Users class="h-4 w-4 shrink-0" />
+          {{ net.attendeeCount }} {{ t('nets.attendees') }}
+        </span>
+        <span v-if="net.startedAt" class="flex items-center gap-2">
+          <Clock class="h-4 w-4 shrink-0" />
+          {{ formatDuration(net) }}
+        </span>
+      </div>
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+        <span v-if="net.branch" class="flex items-center gap-2">
+          <Building2 class="h-4 w-4 shrink-0" />
+          <span class="font-medium text-foreground">
+            <span v-if="!net.branch.isHeadquarters && net.branchCallSign" class="font-mono text-primary">{{ net.branchCallSign.callSign }}</span>
+            <span v-if="!net.branch.isHeadquarters && net.branchCallSign" class="mx-1.5 text-muted-foreground">·</span>
+            <span>{{ net.branch.name }}</span>
+          </span>
+        </span>
+        <span v-if="net.communicationChannels && net.communicationChannels.length > 0" class="flex items-center gap-2">
+          <TowerControl class="h-4 w-4 shrink-0" />
+          <span class="font-medium text-foreground">
+            <template v-for="(channel, idx) in net.communicationChannels" :key="channel.id">
+              <template v-if="idx > 0"> · </template>
+              {{ formatCommunicationChannelLabel(channel) }}
+            </template>
+          </span>
+        </span>
+        <span v-if="net.certificateTemplate" class="flex items-center gap-2" :title="t('certificates.template')">
+          <Award class="h-4 w-4 shrink-0" />
+          <span class="font-medium text-foreground">{{ net.certificateTemplate.name }}</span>
+        </span>
+      </div>
+      <!-- Mobile action buttons -->
+      <div v-if="canManage || (netStatus !== 'pending' && attendeesCount > 0)" class="flex sm:hidden flex-wrap items-center gap-2">
+        <Button
+          v-if="canManage && netStatus !== 'cancelled'"
+          variant="outline"
+          size="sm"
+          @click="emit('edit')"
+          :title="t('common.edit')"
+          :aria-label="t('common.edit')"
+        >
+          <Settings class="h-4 w-4 mr-2" />
+          {{ t('common.edit') }}
+        </Button>
+        <DropdownMenu v-if="canManage && netStatus === 'pending' && !net.endedAt">
+          <DropdownMenuTrigger as-child>
+            <Button variant="outline" size="sm">
+              <Play class="h-4 w-4 mr-2" fill="currentColor" />
+              {{ t('netDetail.start') }}
+              <ChevronDown class="h-4 w-4 ml-2 shrink-0 opacity-70" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuItem class="gap-2 cursor-pointer" @click="emit('start', true)">
+              <Play class="h-4 w-4" fill="currentColor" />
+              {{ t('netDetail.startWithOperator') }}
+            </DropdownMenuItem>
+            <DropdownMenuItem class="gap-2 cursor-pointer" @click="emit('start', false)">
+              <Play class="h-4 w-4" fill="currentColor" />
+              {{ t('netDetail.startWithoutOperator') }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button
+          v-if="canManage && (netStatus === 'pending' || netStatus === 'active') && !net.endedAt"
+          variant="outline"
+          size="sm"
+          @click="emit('end')"
+          :title="netStatus === 'pending' ? t('netDetail.cancel') : t('netDetail.end')"
+          :aria-label="netStatus === 'pending' ? t('netDetail.cancel') : t('netDetail.end')"
+        >
+          <XCircle v-if="netStatus === 'pending'" class="h-4 w-4 mr-2" />
+          <Square v-else class="h-4 w-4 mr-2" fill="currentColor" />
+          {{ netStatus === 'pending' ? t('netDetail.cancel') : t('netDetail.end') }}
+        </Button>
+      </div>
     </div>
-    <div v-if="$slots.certificate" class="hidden lg:block shrink-0 w-52 xl:w-60 min-w-0">
+    <div v-if="$slots.certificate" class="hidden lg:block shrink-0 w-52 xl:w-60">
       <slot name="certificate" />
-    </div>
-    <div v-if="canManage || (netStatus !== 'pending' && attendeesCount > 0)" class="trac-mobile-action-row shrink-0 sm:ml-4">
-      <Button
-        v-if="canManage && netStatus !== 'cancelled'"
-        variant="outline"
-        size="sm"
-        class="trac-card-action-btn"
-        @click="emit('edit')"
-        :title="t('common.edit')"
-        :aria-label="t('common.edit')"
-      >
-        <Settings class="h-4 w-4 mr-2" />
-        {{ t('common.edit') }}
-      </Button>
-      <DropdownMenu v-if="canManage && netStatus === 'pending' && !net.endedAt">
-        <DropdownMenuTrigger as-child>
-          <Button variant="outline" size="sm" class="trac-card-action-btn">
-            <Play class="h-4 w-4 mr-2" fill="currentColor" />
-            {{ t('netDetail.start') }}
-            <ChevronDown class="h-4 w-4 ml-2 shrink-0 opacity-70" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start">
-          <DropdownMenuItem class="gap-2 cursor-pointer" @click="emit('start', true)">
-            <Play class="h-4 w-4" fill="currentColor" />
-            {{ t('netDetail.startWithOperator') }}
-          </DropdownMenuItem>
-          <DropdownMenuItem class="gap-2 cursor-pointer" @click="emit('start', false)">
-            <Play class="h-4 w-4" fill="currentColor" />
-            {{ t('netDetail.startWithoutOperator') }}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <Button
-        v-if="canManage && (netStatus === 'pending' || netStatus === 'active') && !net.endedAt"
-        variant="outline"
-        size="sm"
-        class="trac-card-action-btn"
-        @click="emit('end')"
-        :title="netStatus === 'pending' ? t('netDetail.cancel') : t('netDetail.end')"
-        :aria-label="netStatus === 'pending' ? t('netDetail.cancel') : t('netDetail.end')"
-      >
-        <XCircle v-if="netStatus === 'pending'" class="h-4 w-4 mr-2" />
-        <Square v-else class="h-4 w-4 mr-2" fill="currentColor" />
-        {{ netStatus === 'pending' ? t('netDetail.cancel') : t('netDetail.end') }}
-      </Button>
     </div>
   </div>
 </template>
