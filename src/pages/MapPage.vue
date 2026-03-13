@@ -435,14 +435,11 @@ async function fetchElevation(lat: number, lng: number) {
       `/qth/elevation?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`
     )
     const m = data.elevation
-    if (typeof m === 'number' && Number.isFinite(m)) {
-      elevationMeters.value = m
-      elevationCache.set(key, m)
-    } else {
-      elevationMeters.value = null
-    }
+    const value = typeof m === 'number' && Number.isFinite(m) ? m : 0
+    elevationMeters.value = value
+    elevationCache.set(key, value)
   } catch {
-    elevationMeters.value = null
+    elevationMeters.value = 0
   } finally {
     elevationLoading.value = false
   }

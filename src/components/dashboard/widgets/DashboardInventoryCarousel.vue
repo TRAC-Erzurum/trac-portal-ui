@@ -172,9 +172,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div
-    class="rounded-lg border border-border bg-background overflow-hidden flex flex-col min-h-[200px] lg:min-h-[240px]"
-  >
+  <div class="flex flex-col min-h-0">
+    <div
+      class="rounded-lg border border-border bg-background overflow-hidden flex flex-col min-h-[200px] lg:min-h-[240px]"
+    >
     <div class="px-3 py-2 border-b border-border/50 flex items-center justify-between gap-2">
       <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2">
         <Package class="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -256,14 +257,14 @@ onUnmounted(() => {
         </div>
       </template>
     </div>
-  </div>
-
-  <EquipmentDetailSheet
+    </div>
+    <EquipmentDetailSheet
     :open="showDetailSheet"
     :equipment-id="detailEquipmentId"
     :can-edit="true"
     @update:open="onDetailClose"
-  />
+    />
+  </div>
 </template>
 
 <style scoped>

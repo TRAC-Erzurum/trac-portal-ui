@@ -96,8 +96,11 @@ const isLoading = ref(false)
 const isLoadingDetail = ref(false)
 const isSubmitted = ref(false)
 
+/** Sentinel for "no template"; SelectItem cannot use value="" */
+const NO_TEMPLATE_VALUE = '__none__'
+
 const certificateTemplates = ref<CertificateTemplate[]>([])
-const selectedCertificateTemplateId = ref<string>('')
+const selectedCertificateTemplateId = ref<string>(NO_TEMPLATE_VALUE)
 const isLoadingCertificateTemplates = ref(false)
 
 // Form validation setup
@@ -144,7 +147,7 @@ const loadScheduler = async () => {
     estimatedDurationMinutes.value = s.estimatedDurationMinutes ?? 30
     recurrence.value = s.recurrence as typeof recurrence.value
     endDate.value = s.endDate ?? ''
-    selectedCertificateTemplateId.value = s.certificateTemplateId ?? ''
+    selectedCertificateTemplateId.value = s.certificateTemplateId ?? NO_TEMPLATE_VALUE
     const branchId = s.branchId ?? (s.branch as { id?: string } | undefined)?.id
     if (branchId) {
       await loadCertificateTemplates(branchId)
@@ -186,7 +189,10 @@ async function handleSubmit() {
       estimatedDurationMinutes: estimatedDurationMinutes.value,
       recurrence: recurrence.value,
       endDate: recurrence.value !== 'one_time' && endDate.value ? endDate.value : null,
-      certificateTemplateId: selectedCertificateTemplateId.value || null,
+      certificateTemplateId:
+        selectedCertificateTemplateId.value === NO_TEMPLATE_VALUE
+          ? null
+          : selectedCertificateTemplateId.value,
     })
     toast.success(t('common.save'))
     emit('updated')
@@ -237,7 +243,7 @@ async function handleSubmit() {
                 <SelectValue :placeholder="t('certificates.noTemplate')" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">{{ t('certificates.noTemplate') }}</SelectItem>
+                <SelectItem :value="NO_TEMPLATE_VALUE">{{ t('certificates.noTemplate') }}</SelectItem>
                 <SelectItem v-for="tpl in certificateTemplates" :key="tpl.id" :value="tpl.id">
                   {{ tpl.name }}
                 </SelectItem>

@@ -69,13 +69,18 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+/** Sentinel for "no parent category"; SelectItem cannot use value="" */
+const NO_PARENT_VALUE = '__none__'
+
 const isCreateMode = computed(() => !props.category)
 
 const name = ref('')
-const parentId = ref<string>('')
+const parentId = ref<string>(NO_PARENT_VALUE)
 const sortOrder = ref(0)
 const photoFile = ref<File | null>(null)
 const photoPreview = ref<string | null>(null)
+/** Edit mode: kullanıcı mevcut fotoğrafı kaldırdı (sadece UI; Kaydet’te PATCH ile sunucuya gider) */
+const removeExistingPhoto = ref(false)
 const isSaving = ref(false)
 const showAddProperty = ref(false)
 const editingPropertyId = ref<string | null>(null)
@@ -86,6 +91,7 @@ const editModeProperties = ref<(CategoryProperty | PendingProperty)[]>([])
 
 const currentPhotoUrl = computed(() => {
   if (photoPreview.value) return photoPreview.value
+  if (removeExistingPhoto.value && props.category) return null
   if (props.category?.photoPath) return getUploadedFileUrl(props.category.photoPath) || null
   return null
 })
@@ -132,15 +138,16 @@ function getMaxSortOrder(): number {
 function initForm() {
   if (props.category) {
     name.value = props.category.name
-    parentId.value = props.category.parentId ?? ''
+    parentId.value = props.category.parentId ?? NO_PARENT_VALUE
     sortOrder.value = props.category.sortOrder
   } else {
     name.value = ''
-    parentId.value = ''
+    parentId.value = NO_PARENT_VALUE
     sortOrder.value = getMaxSortOrder() + 1
   }
   photoFile.value = null
   photoPreview.value = null
+  removeExistingPhoto.value = false
   showAddProperty.value = false
   editingPropertyId.value = null
   pendingProperties.value = []
@@ -175,6 +182,7 @@ async function handlePhotoChange(event: Event) {
 function removePhoto() {
   photoFile.value = null
   photoPreview.value = null
+  removeExistingPhoto.value = true
 }
 
 async function handleSave() {
@@ -195,7 +203,8 @@ async function handleSave() {
       }))
       const created = await api.post<Category>('/equipment-categories', {
         name: name.value.trim(),
-        parentId: parentId.value || undefined,
+        parentId:
+        parentId.value === NO_PARENT_VALUE ? undefined : parentId.value,
         sortOrder: sortOrder.value,
         propertyDefinitions,
       })
@@ -225,9 +234,11 @@ async function handleSave() {
       })
       await api.patch(`/equipment-categories/${props.category.id}`, {
         name: name.value.trim(),
-        parentId: parentId.value || null,
+        parentId:
+        parentId.value === NO_PARENT_VALUE ? null : parentId.value,
         sortOrder: sortOrder.value,
         propertyDefinitions,
+        ...(removeExistingPhoto.value ? { photoPath: null } : {}),
       })
       if (photoFile.value) {
         const formData = new FormData()
@@ -341,7 +352,7 @@ function handleClose(value: boolean) {
               <SelectValue :placeholder="t('inventory.noParentCategory')" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">{{ t('inventory.noParentCategory') }}</SelectItem>
+              <SelectItem :value="NO_PARENT_VALUE">{{ t('inventory.noParentCategory') }}</SelectItem>
               <SelectItem
                 v-for="cat in parentCategoryOptions"
                 :key="cat.id"
