@@ -15,7 +15,7 @@
     "invalidMultiSelectValue": "Çoklu seçim özelliği için geçersiz değer. İzin verilen seçeneklerden seçin.",
     "requiredPropertyEmpty": "Bu alan zorunludur. Lütfen en az bir değer seçin.",
     "requiredPropertyMissing": "Zorunlu bir özellik eksik.",
-    "fileTooLarge": "Dosya çok büyük. Maksimum boyut 2 MB."
+    "fileTooLarge": "Dosya çok büyük. Maksimum boyut 5 MB."
   },
   "auth": {
     "login": "Giriş Yap",
@@ -291,7 +291,8 @@
     "layerTerrain": "Arazi Görünümü",
     "addressExpandA11y": "Tam adresi göster",
     "addressCollapseA11y": "Tam adresi gizle",
-    "searchPlaceholder": "QTH locator ara"
+    "searchPlaceholder": "QTH locator ara",
+    "measureFromHere": "Buradan ölçüm başlat"
   },
   "mapSearch": {
     "searchTab": "Ara",
@@ -381,7 +382,7 @@
     "changeAvatar": "Fotoğrafı değiştir",
     "deleteAvatar": "Fotoğrafı sil",
     "invalidFileType": "Geçersiz dosya türü. JPG, PNG veya WebP yükleyin.",
-    "fileTooLarge": "Dosya çok büyük. Maksimum boyut 2 MB.",
+    "fileTooLarge": "Dosya çok büyük. Maksimum boyut 5 MB.",
     "certificatesTitle": "Sertifikalar",
     "certificatesEmpty": "Henüz sertifika yok",
     "viewNet": "Çevrime git"
@@ -788,7 +789,7 @@
     "year"  : "Yıl",
     "month" : "Ay",
     "day"   : "Gün",
-    "maxUploadSize": "Maks. 2 MB"
+    "maxUploadSize": "Maks. 5 MB"
   },
   "inventory": {
     "title": "Envanter",

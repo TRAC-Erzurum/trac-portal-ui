@@ -15,7 +15,7 @@
     "invalidMultiSelectValue": "Invalid value for multi-select property. Choose from the allowed options.",
     "requiredPropertyEmpty": "This field is required. Please select at least one value.",
     "requiredPropertyMissing": "A required property is missing.",
-    "fileTooLarge": "File is too large. Maximum size is 2 MB."
+    "fileTooLarge": "File is too large. Maximum size is 5 MB."
   },
   "auth": {
     "login": "Login",
@@ -291,7 +291,8 @@
     "layerTerrain": "Terrain View",
     "addressExpandA11y": "Show full address",
     "addressCollapseA11y": "Hide full address",
-    "searchPlaceholder": "Search QTH locator"
+    "searchPlaceholder": "Search QTH locator",
+    "measureFromHere": "Measure from here"
   },
   "mapSearch": {
     "searchTab": "Search",
@@ -381,7 +382,7 @@
     "changeAvatar": "Change photo",
     "deleteAvatar": "Delete photo",
     "invalidFileType": "Invalid file type. Please upload JPG, PNG or WebP.",
-    "fileTooLarge": "File too large. Maximum size is 2 MB.",
+    "fileTooLarge": "File too large. Maximum size is 5 MB.",
     "certificatesTitle": "Certificates",
     "certificatesEmpty": "No certificates yet",
     "viewNet": "View net"
@@ -786,7 +787,7 @@
     "year": "Year",
     "month": "Month",
     "day": "Day",
-    "maxUploadSize": "Max 2 MB"
+    "maxUploadSize": "Max 5 MB"
   },
   "inventory": {
     "title": "Inventory",

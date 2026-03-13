@@ -95,8 +95,11 @@ const branchCallSigns = ref<BranchCallSign[]>([])
 const selectedCallSignId = ref<string>('')
 const isLoadingCallSigns = ref(false)
 
+/** Sentinel for "no template"; SelectItem cannot use value="" */
+const NO_TEMPLATE_VALUE = '__none__'
+
 const certificateTemplates = ref<CertificateTemplate[]>([])
-const selectedCertificateTemplateId = ref<string>('')
+const selectedCertificateTemplateId = ref<string>(NO_TEMPLATE_VALUE)
 const isLoadingCertificateTemplates = ref(false)
 
 const branch = computed(() => {
@@ -346,7 +349,7 @@ watch(() => props.open, async (isOpen) => {
     
     selectedCallSignId.value = props.net.branchCallSignId || ''
     
-    selectedCertificateTemplateId.value = props.net.certificateTemplateId ?? ''
+    selectedCertificateTemplateId.value = props.net.certificateTemplateId ?? NO_TEMPLATE_VALUE
 
     if (props.net.branch?.id) {
       await Promise.all([
@@ -434,7 +437,10 @@ async function handleSubmit() {
       communicationChannels,
       scheduledAt: scheduledAtDate.toISOString(),
       estimatedDurationMinutes: estimatedDurationMinutes.value ?? 30,
-      certificateTemplateId: selectedCertificateTemplateId.value || null,
+      certificateTemplateId:
+        selectedCertificateTemplateId.value === NO_TEMPLATE_VALUE
+          ? null
+          : selectedCertificateTemplateId.value,
     })
 
     toast.success(t('netDetail.netUpdated'))
@@ -492,7 +498,7 @@ async function handleSubmit() {
               <SelectValue :placeholder="t('certificates.noTemplate')" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">{{ t('certificates.noTemplate') }}</SelectItem>
+              <SelectItem :value="NO_TEMPLATE_VALUE">{{ t('certificates.noTemplate') }}</SelectItem>
               <SelectItem v-for="tpl in certificateTemplates" :key="tpl.id" :value="tpl.id">
                 {{ tpl.name }}
               </SelectItem>

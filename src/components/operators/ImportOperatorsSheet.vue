@@ -28,6 +28,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+/** Sentinel for "no column mapped"; SelectItem cannot use value="" */
+const UNMAPPED_VALUE = '__unmapped__'
+
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFile = ref<File | null>(null)
 const headers = ref<string[]>([])
@@ -35,12 +38,12 @@ const previewRows = ref<string[][]>([])
 const isLoading = ref(false)
 
 const mapping = ref<Record<string, string>>({
-  callSign: '',
-  fullName: '',
-  city: '',
-  district: '',
-  country: '',
-  gridSquare: ''
+  callSign: UNMAPPED_VALUE,
+  fullName: UNMAPPED_VALUE,
+  city: UNMAPPED_VALUE,
+  district: UNMAPPED_VALUE,
+  country: UNMAPPED_VALUE,
+  gridSquare: UNMAPPED_VALUE
 })
 
 const fields = [
@@ -53,7 +56,9 @@ const fields = [
 ]
 
 const isFileSelected = computed(() => !!selectedFile.value)
-const isCallSignMapped = computed(() => !!mapping.value.callSign)
+const isCallSignMapped = computed(
+  () => !!mapping.value.callSign && mapping.value.callSign !== UNMAPPED_VALUE
+)
 
 function handleFileSelect(event: Event) {
   const target = event.target as HTMLInputElement
@@ -109,10 +114,10 @@ async function handleImport() {
     const formData = new FormData()
     formData.append('file', selectedFile.value)
     
-    // Clean up mapping (remove empty values)
+    // Clean up mapping (remove unmapped/empty values)
     const finalMapping: Record<string, string> = {}
     Object.entries(mapping.value).forEach(([key, value]) => {
-      if (value) finalMapping[key] = value
+      if (value && value !== UNMAPPED_VALUE) finalMapping[key] = value
     })
     
     formData.append('mapping', JSON.stringify(finalMapping))
@@ -136,12 +141,12 @@ function reset() {
   headers.value = []
   previewRows.value = []
   mapping.value = {
-    callSign: '',
-    fullName: '',
-    city: '',
-    district: '',
-    country: '',
-    gridSquare: ''
+    callSign: UNMAPPED_VALUE,
+    fullName: UNMAPPED_VALUE,
+    city: UNMAPPED_VALUE,
+    district: UNMAPPED_VALUE,
+    country: UNMAPPED_VALUE,
+    gridSquare: UNMAPPED_VALUE
   }
   if (fileInput.value) fileInput.value.value = ''
 }
@@ -214,7 +219,7 @@ function getMappedValue(rowIndex: number, field: string) {
                   <SelectValue :placeholder="t('common.select')" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">--</SelectItem>
+                  <SelectItem :value="UNMAPPED_VALUE">--</SelectItem>
                   <SelectItem v-for="header in headers" :key="header" :value="header">
                     {{ header }}
                   </SelectItem>

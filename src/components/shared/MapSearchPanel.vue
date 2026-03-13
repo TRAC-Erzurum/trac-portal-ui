@@ -145,13 +145,14 @@ async function fetchPointElevation(which: 'A' | 'B', lat: number, lng: number) {
       `/qth/elevation?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`,
     )
     const m = data.elevation
-    if (typeof m === 'number' && Number.isFinite(m)) {
-      elevationCache.set(key, m)
-      if (which === 'A' && pointA.value) pointA.value.elevation = m
-      if (which === 'B' && pointB.value) pointB.value.elevation = m
-    }
+    const value = typeof m === 'number' && Number.isFinite(m) ? m : 0
+    elevationCache.set(key, value)
+    if (which === 'A' && pointA.value) pointA.value.elevation = value
+    if (which === 'B' && pointB.value) pointB.value.elevation = value
   } catch {
-    // Elevation unavailable
+    const fallback = 0
+    if (which === 'A' && pointA.value) pointA.value.elevation = fallback
+    if (which === 'B' && pointB.value) pointB.value.elevation = fallback
   }
 }
 
@@ -209,7 +210,7 @@ const distanceDisplay = computed(() => {
 /*  Elevation difference                                               */
 /* ------------------------------------------------------------------ */
 const elevationDiff = computed(() => {
-  if (!pointA.value?.elevation || !pointB.value?.elevation) return null
+  if (pointA.value?.elevation == null || pointB.value?.elevation == null) return null
   return pointB.value.elevation - pointA.value.elevation
 })
 

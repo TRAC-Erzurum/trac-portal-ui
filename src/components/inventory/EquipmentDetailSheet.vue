@@ -5,7 +5,7 @@ import { toast } from 'vue-sonner'
 import { Loader2, X } from 'lucide-vue-next'
 import EquipmentRelationsPanel from '@/components/inventory/EquipmentRelationsPanel.vue'
 import { Separator } from '@/components/ui/separator'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet'
 import { getUploadedFileUrl } from '@/composables'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
@@ -108,6 +108,11 @@ const categoryPhotoUrl = computed(() => {
   return path ? getUploadedFileUrl(path) : null
 })
 
+const sheetTitle = computed(() =>
+  equipment.value?.label || equipment.value?.category?.name || t('inventory.equipment')
+)
+const sheetDescription = computed(() => t('inventory.equipmentDetail'))
+
 const sortedPhotos = computed(() => {
   if (!equipment.value?.photos?.length) return []
   return [...equipment.value.photos].sort((a, b) => a.sortOrder - b.sortOrder)
@@ -200,6 +205,8 @@ watch(enlargedPhotoUrl, (url) => {
 <template>
   <Sheet :open="open" @update:open="handleClose">
     <SheetContent class="sm:max-w-xl overflow-y-auto px-4 sm:px-6">
+      <SheetTitle class="sr-only">{{ sheetTitle }}</SheetTitle>
+      <SheetDescription class="sr-only">{{ sheetDescription }}</SheetDescription>
       <template v-if="isLoading">
         <div class="flex items-center justify-center py-20">
           <Loader2 class="h-6 w-6 animate-spin text-muted-foreground" />

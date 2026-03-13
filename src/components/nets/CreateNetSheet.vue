@@ -101,8 +101,11 @@ interface CertificateTemplate {
   imagePath: string
   elements: unknown[]
 }
+/** Sentinel for "no template"; SelectItem cannot use value="" */
+const NO_TEMPLATE_VALUE = '__none__'
+
 const certificateTemplates = ref<CertificateTemplate[]>([])
-const selectedCertificateTemplateId = ref<string>('')
+const selectedCertificateTemplateId = ref<string>(NO_TEMPLATE_VALUE)
 const isLoadingCertificateTemplates = ref(false)
 
 interface SimplexRow {
@@ -276,7 +279,7 @@ const loadChannels = async (branchId: string) => {
 const loadCertificateTemplates = async (branchId: string) => {
   if (!branchId) {
     certificateTemplates.value = []
-    selectedCertificateTemplateId.value = ''
+    selectedCertificateTemplateId.value = NO_TEMPLATE_VALUE
     return
   }
   isLoadingCertificateTemplates.value = true
@@ -293,7 +296,7 @@ const loadCertificateTemplates = async (branchId: string) => {
 watch(selectedBranchId, async (branchId) => {
   selectedCallSignId.value = ''
   selectedChannelIds.value = []
-  selectedCertificateTemplateId.value = ''
+  selectedCertificateTemplateId.value = NO_TEMPLATE_VALUE
   simplexRows.value = [{ checked: false, value: '' }]
   if (branchId) {
     await Promise.all([
@@ -555,7 +558,10 @@ async function handleSubmit() {
       endDate: recurrenceValue !== 'one_time' && endDate.value ? endDate.value : null,
       scheduledTime: scheduledTime.value,
       estimatedDurationMinutes: estimatedDurationMinutes.value,
-      certificateTemplateId: selectedCertificateTemplateId.value || null,
+      certificateTemplateId:
+        selectedCertificateTemplateId.value === NO_TEMPLATE_VALUE
+          ? null
+          : selectedCertificateTemplateId.value,
     })
 
     toast.success(t('nets.createSuccess'))
@@ -678,7 +684,7 @@ onMounted(() => {
               <SelectValue :placeholder="t('certificates.noTemplate')" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">{{ t('certificates.noTemplate') }}</SelectItem>
+              <SelectItem :value="NO_TEMPLATE_VALUE">{{ t('certificates.noTemplate') }}</SelectItem>
               <SelectItem v-for="tpl in certificateTemplates" :key="tpl.id" :value="tpl.id">
                 {{ tpl.name }}
               </SelectItem>
