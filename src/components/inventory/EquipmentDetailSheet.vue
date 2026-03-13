@@ -198,7 +198,15 @@ watch(
 )
 
 watch(enlargedPhotoUrl, (url) => {
-  if (url) nextTick(() => photoOverlayRef.value?.focus())
+  if (url) {
+    // Defer focus to avoid "Autofocus processing was blocked" when Sheet already has focus
+    nextTick(() => {
+      requestAnimationFrame(() => {
+        const el = photoOverlayRef.value
+        if (el && document.activeElement !== el) el.focus()
+      })
+    })
+  }
 })
 </script>
 

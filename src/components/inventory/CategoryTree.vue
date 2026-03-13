@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ChevronDown, ChevronRight, Edit, FolderOpen, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
+import { getUploadedFileUrl } from '@/composables'
 
 interface CategoryProperty {
   id: string
@@ -75,6 +76,11 @@ function handleRowClick(category: Category) {
     toggleExpand(category.id)
   }
 }
+
+function getCategoryPhotoUrl(category: Category): string | null {
+  if (!category.photoPath) return null
+  return getUploadedFileUrl(category.photoPath) || null
+}
 </script>
 
 <template>
@@ -95,7 +101,17 @@ function handleRowClick(category: Category) {
         </button>
         <div v-else class="w-5" />
 
-        <FolderOpen class="h-4 w-4 text-muted-foreground flex-shrink-0" />
+        <img
+          v-if="getCategoryPhotoUrl(category)"
+          :src="getCategoryPhotoUrl(category)!"
+          :alt="category.name"
+          class="h-8 w-8 object-cover rounded-md flex-shrink-0 border border-border"
+        />
+        <FolderOpen
+          v-else
+          class="h-4 w-4 text-muted-foreground flex-shrink-0"
+          :aria-hidden="true"
+        />
 
         <span class="font-medium text-sm flex-1 truncate">{{ category.name }}</span>
 
