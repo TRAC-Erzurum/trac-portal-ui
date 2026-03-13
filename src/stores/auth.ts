@@ -52,6 +52,7 @@ interface RegisterData {
   country?: string
   gridSquare?: string
   captchaToken?: string
+  privacyAccepted: boolean
 }
 
 export const useAuthStore = defineStore('auth', () => {

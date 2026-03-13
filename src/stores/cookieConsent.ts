@@ -40,12 +40,17 @@ export const useCookieConsentStore = defineStore('cookie-consent', () => {
     setConsent('necessary')
   }
 
+  function revokeConsent() {
+    setConsent('undecided')
+  }
+
   return {
     status,
     isAccepted,
     isAllAllowed,
     setConsent,
     allowAll,
-    allowNecessary
+    allowNecessary,
+    revokeConsent
   }
 })

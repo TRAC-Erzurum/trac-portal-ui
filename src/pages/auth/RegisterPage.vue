@@ -17,6 +17,7 @@ import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
 import { useFormValidation } from '@/composables'
+import { isValidCallSignFormat } from '@/lib/callsign'
 
 interface Branch {
   id: string
@@ -78,7 +79,11 @@ const { validateForm, shouldShowError, getFieldError } = useFormValidation(
       (value: string) => (!value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) ? true : t('form.validation.invalid')
     ],
     callSign: [
-      (value: string) => value.trim() ? true : t('form.validation.required')
+      (value: string) => value.trim() ? true : t('form.validation.required'),
+      (value: string) =>
+        isValidCallSignFormat(value, { allowSlashes: false })
+          ? true
+          : t('error.callSignPlainOnly'),
     ],
     password: [
       (value: string) => value.trim() ? true : t('form.validation.required'),
@@ -151,7 +156,8 @@ async function handleSubmit() {
       district: (district.value || '').trim() || undefined,
       country: (city.value || '').trim() ? t('form.country') : undefined,
       gridSquare: (gridSquare.value || '').trim() ? gridSquare.value.trim().toUpperCase() : undefined,
-      captchaToken: captchaToken.value || undefined
+      captchaToken: captchaToken.value || undefined,
+      privacyAccepted: privacyAccepted.value
     })
     toast.success(t('auth.registerSuccess'))
     router.push('/dashboard')

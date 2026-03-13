@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Separator } from '@/components/ui/separator'
 import { AutocompleteCombobox } from '@/components/shared'
 import { translateError } from '@/i18n'
+import { isValidCallSignFormat } from '@/lib/callsign'
 import { api, type ApiError } from '@/lib/api'
 import { useQthData, useFormValidation } from '@/composables'
 
@@ -67,7 +68,12 @@ const validators = computed(() => ({
       if (props.branch.isHeadquarters) return true
       const allFilled = callSigns.value.length > 0 && callSigns.value.every(cs => cs.callSign.trim())
       return allFilled ? true : t('form.validation.required')
-    }
+    },
+    (_value: any) => {
+      if (props.branch.isHeadquarters) return true
+      const invalid = callSigns.value.find(cs => cs.callSign.trim() && !isValidCallSignFormat(cs.callSign, { allowSlashes: false }))
+      return !invalid ? true : t('error.callSignPlainOnly')
+    },
   ],
   email: [
     (_value: string) => {
