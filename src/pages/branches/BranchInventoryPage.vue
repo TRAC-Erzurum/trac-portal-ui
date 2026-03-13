@@ -18,6 +18,7 @@ import EquipmentDetailSheet from '@/components/inventory/EquipmentDetailSheet.vu
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
+import { flattenCategoriesWithLevel } from '@/lib/category-utils'
 
 interface Branch {
   id: string
@@ -70,6 +71,7 @@ const isBranchAdmin = computed(() =>
 const branch = ref<Branch | null>(null)
 const isLoadingBranch = ref(true)
 const categories = ref<EquipmentCategory[]>([])
+const categoryOptions = computed(() => flattenCategoriesWithLevel(categories.value))
 const statuses = ref<EquipmentStatus[]>([])
 
 // Branch equipment state
@@ -360,8 +362,12 @@ onMounted(() => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{{ t('inventory.allCategories') }}</SelectItem>
-                  <SelectItem v-for="cat in categories" :key="cat.id" :value="cat.id">
-                    {{ cat.name }}
+                  <SelectItem
+                    v-for="item in categoryOptions"
+                    :key="item.category.id"
+                    :value="item.category.id"
+                  >
+                    <span :style="{ paddingLeft: `${item.level * 12}px` }">{{ item.category.name }}</span>
                   </SelectItem>
                 </SelectContent>
               </Select>
@@ -457,8 +463,12 @@ onMounted(() => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">{{ t('inventory.allCategories') }}</SelectItem>
-                  <SelectItem v-for="cat in categories" :key="cat.id" :value="cat.id">
-                    {{ cat.name }}
+                  <SelectItem
+                    v-for="item in categoryOptions"
+                    :key="item.category.id"
+                    :value="item.category.id"
+                  >
+                    <span :style="{ paddingLeft: `${item.level * 12}px` }">{{ item.category.name }}</span>
                   </SelectItem>
                 </SelectContent>
               </Select>

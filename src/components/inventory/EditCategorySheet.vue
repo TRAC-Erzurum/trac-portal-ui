@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { getUploadedFileUrl } from '@/composables'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
+import { flattenCategoriesWithLevel } from '@/lib/category-utils'
 import { readFileAsDataUrl } from '@/lib/utils'
 
 interface CategoryProperty {
@@ -119,14 +120,14 @@ function collectSelfAndDescendantIds(cat: Category): string[] {
   return [cat.id, ...(cat.children || []).flatMap((c) => collectSelfAndDescendantIds(c))]
 }
 
-/** Categories that can be selected as parent (exclude self and descendants in edit mode) */
+/** Categories that can be selected as parent (exclude self and descendants in edit mode), with level for indentation */
 const parentCategoryOptions = computed(() => {
-  const flat = flattenCategories(props.categories)
-  if (!props.category) return flat
+  const withLevel = flattenCategoriesWithLevel(props.categories)
+  if (!props.category) return withLevel
   const cat = findCategoryInTree(props.categories, props.category.id)
-  if (!cat) return flat
+  if (!cat) return withLevel
   const excludeIds = new Set(collectSelfAndDescendantIds(cat))
-  return flat.filter((c) => !excludeIds.has(c.id))
+  return withLevel.filter((item) => !excludeIds.has(item.category.id))
 })
 
 function getMaxSortOrder(): number {
@@ -354,11 +355,11 @@ function handleClose(value: boolean) {
             <SelectContent>
               <SelectItem :value="NO_PARENT_VALUE">{{ t('inventory.noParentCategory') }}</SelectItem>
               <SelectItem
-                v-for="cat in parentCategoryOptions"
-                :key="cat.id"
-                :value="cat.id"
+                v-for="item in parentCategoryOptions"
+                :key="item.category.id"
+                :value="item.category.id"
               >
-                {{ cat.name }}
+                <span :style="{ paddingLeft: `${item.level * 12}px` }">{{ item.category.name }}</span>
               </SelectItem>
             </SelectContent>
           </Select>
