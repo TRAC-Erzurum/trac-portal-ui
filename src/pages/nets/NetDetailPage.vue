@@ -226,8 +226,9 @@ async function buildAttendeePoints() {
       })
     }
     attendeePoints.value = out
-  } catch {
+  } catch (err) {
     attendeePoints.value = []
+    console.warn('[NetDetail] Harita noktaları alınamadı (geocode/API hatası):', err)
   } finally {
     mapLoading.value = false
   }

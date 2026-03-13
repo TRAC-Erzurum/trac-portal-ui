@@ -50,6 +50,12 @@ const router = createRouter({
       meta: { requiresAuth: false, guestOnly: true, titleKey: 'auth.forgotPasswordTitle' }
     },
     {
+      path: '/register/complete-sso',
+      name: 'complete-sso-registration',
+      component: () => import('@/pages/auth/CompleteSsoRegistrationPage.vue'),
+      meta: { requiresAuth: false, titleKey: 'auth.completeSsoTitle' }
+    },
+    {
       path: '/change-password',
       name: 'force-change-password',
       component: () => import('@/pages/auth/ForceChangePasswordPage.vue'),

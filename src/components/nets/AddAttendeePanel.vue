@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { toast } from 'vue-sonner'
 import { Check, Plus, Search, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AutocompleteCombobox } from '@/components/shared'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { api } from '@/lib/api'
+import { isValidCallSignFormat } from '@/lib/callsign'
 import { debounce } from '@/lib/utils'
 import { useQthData } from '@/composables/useQthData'
 
@@ -231,11 +233,17 @@ const focusSearchInput = () => {
 
 const submitEntry = async () => {
   if (!selectedEntry.value || isSubmitting.value) return
-  
+
+  const callSign = selectedEntry.value.callSign.trim()
+  if (!isValidCallSignFormat(callSign, { allowSlashes: true })) {
+    toast.error(t('error.callSignInvalid'))
+    return
+  }
+
   isSubmitting.value = true
   try {
     await api.post(`/net/${props.netId}/attendee`, {
-      callSign: selectedEntry.value.callSign.trim(),
+      callSign,
       name: (selectedEntry.value.name || '').trim() || undefined,
       city: (selectedEntry.value.city || '').trim() || undefined,
       district: (selectedEntry.value.district || '').trim() || undefined,
