@@ -18,24 +18,25 @@ const versionAriaLabel = computed(() =>
 
 <template>
   <div
-    class="inline-flex items-center gap-1.5 text-muted-foreground cursor-help"
+    class="inline-flex items-center gap-2 text-muted-foreground text-xs"
     role="img"
     :aria-label="versionAriaLabel"
   >
     <template v-if="versionsMatch">
-      <Tag class="h-3.5 w-3.5 shrink-0" aria-hidden="true" :title="uiVersion" />
+      <span class="flex items-center gap-1">
+        <Tag class="h-3 w-3 shrink-0" aria-hidden="true" />
+        <span class="font-medium tabular-nums">{{ uiVersion }}</span>
+      </span>
     </template>
     <template v-else>
-      <Monitor
-        class="h-3.5 w-3.5 shrink-0"
-        aria-hidden="true"
-        :title="t('common.appVersionTooltipUi', { version: uiVersion })"
-      />
-      <Server
-        class="h-3.5 w-3.5 shrink-0"
-        aria-hidden="true"
-        :title="t('common.appVersionTooltipApi', { version: apiVersion })"
-      />
+      <span class="flex items-center gap-1">
+        <Monitor class="h-3 w-3 shrink-0" aria-hidden="true" />
+        <span class="font-medium tabular-nums">{{ uiVersion }}</span>
+      </span>
+      <span class="flex items-center gap-1">
+        <Server class="h-3 w-3 shrink-0" aria-hidden="true" />
+        <span class="font-medium tabular-nums">{{ apiVersion }}</span>
+      </span>
     </template>
   </div>
 </template>
