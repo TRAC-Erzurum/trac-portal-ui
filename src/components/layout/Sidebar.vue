@@ -3,10 +3,11 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Building2, ClipboardList, Home, Map, PanelLeft, PanelLeftClose, Radio, TowerControl, Users } from 'lucide-vue-next'
+import { Building2, ClipboardList, Home, Map, MessageSquareText, PanelLeft, PanelLeftClose, Radio, TowerControl, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import HeaderBranchDropdown from './HeaderBranchDropdown.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useFeedbackStore } from '@/stores/feedback'
 
 const MOBILE_HIDDEN_ROUTES = ['/dashboard', '/nets', '/map']
 
@@ -27,6 +28,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const feedbackStore = useFeedbackStore()
 
 const mediaQuery = typeof window !== 'undefined' ? window.matchMedia('(max-width: 1023px)') : null
 function updateIsMobile() {
@@ -89,6 +91,11 @@ function toggleCollapse() {
     emit('update:collapsed', !props.collapsed)
   }
 }
+
+function openFeedbackSheet() {
+  feedbackStore.openSheet()
+  if (isMobile.value) emit('update:mobileOpen', false)
+}
 </script>
 
 <template>
@@ -123,8 +130,24 @@ function toggleCollapse() {
       </a>
     </nav>
 
-    <div class="p-2 border-t border-sidebar-border flex-shrink-0">
-      <Button variant="ghost" size="icon" @click="toggleCollapse" class="w-full h-9">
+    <div class="border-t border-sidebar-border flex-shrink-0 p-2 space-y-2">
+      <button
+        v-if="authStore.isAuthenticated"
+        type="button"
+        :class="[
+          'flex w-full items-center gap-3 rounded-md text-left text-sm font-normal transition-colors cursor-pointer',
+          effectiveExpanded ? 'px-3 py-2' : 'justify-center px-2 py-2',
+          'text-sidebar-foreground hover:bg-sidebar-accent/50',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring focus-visible:ring-offset-2 focus-visible:ring-offset-sidebar',
+        ]"
+        :aria-label="t('feedback.openSheet')"
+        :title="!effectiveExpanded ? t('feedback.openSheet') : undefined"
+        @click="openFeedbackSheet"
+      >
+        <MessageSquareText class="h-5 w-5 flex-shrink-0" aria-hidden="true" />
+        <span v-if="effectiveExpanded" class="truncate">{{ t('feedback.openSheet') }}</span>
+      </button>
+      <Button variant="ghost" size="icon" class="w-full h-9" @click="toggleCollapse">
         <component :is="isMobile ? PanelLeftClose : (collapsed ? PanelLeft : PanelLeftClose)" class="h-4 w-4" />
       </Button>
     </div>

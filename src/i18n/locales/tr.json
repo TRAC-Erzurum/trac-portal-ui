@@ -99,7 +99,13 @@
     "userHasActiveNet": "Kullanıcının aktif çevrimi olduğu için kaldırılamaz.",
     "membershipNotApproved": "Üyelik henüz onaylanmadı.",
     "cannotChangeSuperAdminRole": "Süper adminin rolü değiştirilemez.",
-    "lastAdminCannotBeDemoted": "Son adminin yetkisi düşürülemez."
+    "lastAdminCannotBeDemoted": "Son adminin yetkisi düşürülemez.",
+    "feedbackNotConfigured": "Geri bildirim şu anda yapılandırılmamış.",
+    "feedbackInvalidCategory": "Geçersiz geri bildirim kategorisi.",
+    "feedbackGithubFailed": "GitHub üzerinde kayıt oluşturulamadı. Lütfen daha sonra tekrar deneyin.",
+    "feedbackAttachmentRejected": "Ek dosya kabul edilmedi (tür veya boyut).",
+    "feedbackBodyTooLarge": "Açıklama metni çok uzun.",
+    "feedbackSummaryTooLong": "Özet metni çok uzun."
   },
   "auth": {
     "login": "Giriş Yap",
@@ -149,6 +155,65 @@
     "allowAll": "Tümüne İzin Ver",
     "allowNecessary": "Yalnızca Gerekli Olanlar",
     "privacyPolicy": "Gizlilik Politikası"
+  },
+  "feedback": {
+    "openSheet": "Geri bildirim",
+    "sheetTitle": "Geri bildirim gönder",
+    "intro": "Mesajınız GitHub üzerinde herkese açık bir kayıt olarak oluşturulur. İsterseniz doğrudan projede de issue açabilirsiniz:",
+    "openOnGithub": "GitHub’da aç",
+    "categoryLabel": "Kategori",
+    "categoryRequiredHint": "Göndermek için bir kategori seçin.",
+    "summaryLabel": "Kısa özet",
+    "summaryPlaceholder": "Örn. çevrim listesi yüklenmiyor",
+    "bodyLabel": "Açıklama",
+    "bodyPlaceholder": "Sorunu veya önerinizi ayrıntılı yazın.",
+    "markdownWrite": "Yaz",
+    "markdownPreview": "Önizleme",
+    "markdownTabsAria": "Açıklama düzenleyici modu",
+    "previewEmpty": "Önizlenecek içerik yok.",
+    "toolbarAria": "Metin biçimlendirme",
+    "toolbarBold": "Kalın yazı",
+    "toolbarItalic": "İtalik",
+    "toolbarCode": "Satır içi kod",
+    "toolbarHeading": "Başlık satırı",
+    "toolbarQuote": "Alıntı",
+    "toolbarBulletList": "Madde işaretli liste",
+    "toolbarNumberedList": "Numaralı liste",
+    "toolbarLink": "Bağlantı ekle",
+    "toolbarDivider": "Yatay çizgi",
+    "toolbarLinkPlaceholder": "bağlantı metni",
+    "attachFilesHint": "Ekran görüntüsü eklemek için tıklayın — en fazla 3 (PNG, JPEG, WebP, GIF)",
+    "attachmentsLabel": "Ekran görüntüsü (en fazla 3, PNG/JPEG/WebP/GIF)",
+    "removeFile": "Kaldır",
+    "submit": "Gönder",
+    "submitted": "Geri bildiriminiz iletildi",
+    "securityWarning": "Güvenlik konularında hassas bilgileri burada paylaşmayın; kayıtlar herkese açık GitHub issue olur.",
+    "categories": {
+      "bug": {
+        "title": "Hata",
+        "hint": "Beklenmeyen davranış veya kırılan özellik"
+      },
+      "enhancement": {
+        "title": "Özellik isteği",
+        "hint": "Yeni yetenek veya büyük değişiklik"
+      },
+      "improvement": {
+        "title": "İyileştirme",
+        "hint": "UX, metin veya küçük düzeltmeler"
+      },
+      "question": {
+        "title": "Soru",
+        "hint": "Nasıl kullanılır veya destek"
+      },
+      "security": {
+        "title": "Güvenlik",
+        "hint": "Güvenlik açığı veya güvenlik konusu"
+      }
+    }
+  },
+  "footer": {
+    "githubProject": "GitHub",
+    "githubProjectAria": "Projeyi GitHub’da aç"
   },
   "form": {
     "callSign": "Çağrı İşareti",
@@ -264,6 +329,13 @@
         "deletion": "Hesap silme: Talebiniz üzerine profiliniz ve kişisel tanımlayıcılarınız silinir.",
         "integrity": "Tarihsel bütünlük: Telsiz geçmişinin doğruluğunu korumak için çevrim katılımlarınız kayıtlarda kalacak ancak hesabınız silindiğinde anonimleştirilecektir.",
         "access": "Yasada öngörüldüğü şekilde verilerinize erişim, düzeltme veya işlemenin kısıtlanması talep edebilir; işlemeye itiraz edebilir veya veri taşınabilirliği isteyebilirsiniz."
+      },
+      "githubFeedback": {
+        "title": "Geri bildirim ve GitHub",
+        "item1": "Portal üzerinden gönderdiğiniz geri bildirimler uygulama veritabanında saklanmaz; içerik GitHub’da herkese açık bir issue olarak oluşturulur.",
+        "item2": "Issue metnine şunlar yazılabilir: kullanıcı UUID’niz, çağrı işaretiniz, portal rolünüz, geçerli şube seçiminizin teknik kimliği, onaylı şube üyeliği sayınız, operatör kaydınızın teknik kimliği (varsa), UTC zaman damgası, sizin yazdığınız açıklama ve isteğe bağlı ekran görüntüsü bağlantıları (dosyalar sunucuda barındırılır, issue’da URL ile görünür). E-posta adresiniz issue metnine eklenmez.",
+        "item3": "Hata bildirimi için otomatik doldurulan teknik özetlerde hassas veriler mümkün olduğunca maskelemeye çalışılır; yine de göndermeden önce metni kontrol edin.",
+        "item4": "GitHub’ın kendi gizlilik uygulamaları için GitHub Gizlilik Bildirimi’ne bakın."
       },
       "cookies": {
         "title": "Çerez Tercihleri",

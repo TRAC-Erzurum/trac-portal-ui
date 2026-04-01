@@ -99,7 +99,13 @@
     "userHasActiveNet": "User has an active net and cannot be removed.",
     "membershipNotApproved": "Membership has not been approved yet.",
     "cannotChangeSuperAdminRole": "Cannot change the role of a super admin.",
-    "lastAdminCannotBeDemoted": "The last admin cannot be demoted."
+    "lastAdminCannotBeDemoted": "The last admin cannot be demoted.",
+    "feedbackNotConfigured": "Feedback is not configured.",
+    "feedbackInvalidCategory": "Invalid feedback category.",
+    "feedbackGithubFailed": "Could not create the record on GitHub. Please try again later.",
+    "feedbackAttachmentRejected": "Attachment was rejected (type or size).",
+    "feedbackBodyTooLarge": "Description text is too long.",
+    "feedbackSummaryTooLong": "Summary text is too long."
   },
   "auth": {
     "login": "Login",
@@ -149,6 +155,65 @@
     "allowAll": "Allow All",
     "allowNecessary": "Only Necessary",
     "privacyPolicy": "Privacy Policy"
+  },
+  "feedback": {
+    "openSheet": "Feedback",
+    "sheetTitle": "Send feedback",
+    "intro": "Your message creates a public record on GitHub. You can also open an issue directly in the project:",
+    "openOnGithub": "Open on GitHub",
+    "categoryLabel": "Category",
+    "categoryRequiredHint": "Choose a category to enable submit.",
+    "summaryLabel": "Short summary",
+    "summaryPlaceholder": "e.g. net list fails to load",
+    "bodyLabel": "Description",
+    "bodyPlaceholder": "Describe the issue or suggestion in detail.",
+    "markdownWrite": "Write",
+    "markdownPreview": "Preview",
+    "markdownTabsAria": "Description editor mode",
+    "previewEmpty": "Nothing to preview yet.",
+    "toolbarAria": "Text formatting",
+    "toolbarBold": "Bold",
+    "toolbarItalic": "Italic",
+    "toolbarCode": "Inline code",
+    "toolbarHeading": "Heading line",
+    "toolbarQuote": "Quote",
+    "toolbarBulletList": "Bullet list",
+    "toolbarNumberedList": "Numbered list",
+    "toolbarLink": "Insert link",
+    "toolbarDivider": "Horizontal rule",
+    "toolbarLinkPlaceholder": "link text",
+    "attachFilesHint": "Click to add screenshots — up to 3 (PNG, JPEG, WebP, GIF)",
+    "attachmentsLabel": "Screenshots (up to 3, PNG/JPEG/WebP/GIF)",
+    "removeFile": "Remove",
+    "submit": "Submit",
+    "submitted": "Your feedback was submitted",
+    "securityWarning": "Do not share sensitive security details here; submissions become public GitHub issues.",
+    "categories": {
+      "bug": {
+        "title": "Bug",
+        "hint": "Unexpected behavior or broken feature"
+      },
+      "enhancement": {
+        "title": "Feature request",
+        "hint": "New capability or major change"
+      },
+      "improvement": {
+        "title": "Improvement",
+        "hint": "UX, copy, or small fixes"
+      },
+      "question": {
+        "title": "Question",
+        "hint": "How-to or support"
+      },
+      "security": {
+        "title": "Security",
+        "hint": "Vulnerability or security concern"
+      }
+    }
+  },
+  "footer": {
+    "githubProject": "GitHub",
+    "githubProjectAria": "Open the project on GitHub"
   },
   "form": {
     "callSign": "Call Sign",
@@ -264,6 +329,13 @@
         "deletion": "Account deletion: On request, your profile and personal identifiers will be deleted.",
         "integrity": "Historical integrity: To preserve the accuracy of radio history, your participation in nets will remain in the records but will be anonymised when your account is deleted.",
         "access": "You may request access to, rectification of, or restriction of processing of your data, and you may object to processing or request data portability where applicable under law."
+      },
+      "githubFeedback": {
+        "title": "Feedback and GitHub",
+        "item1": "Feedback you send through the portal is not stored in the application database; it is created as a public issue on GitHub.",
+        "item2": "The issue body may include: your user UUID, call sign, portal role, technical ID of your current branch selection, count of approved branch memberships, technical ID of your operator record if present, a UTC timestamp, the description you wrote, and optional screenshot links (files are hosted on the server and appear in the issue via URL). Your email address is not added to the issue body.",
+        "item3": "Automatically filled technical summaries for error reports attempt to mask sensitive data where possible; review the text before sending.",
+        "item4": "For GitHub’s own privacy practices, see GitHub’s Privacy Statement."
       },
       "cookies": {
         "title": "Cookie Choices",

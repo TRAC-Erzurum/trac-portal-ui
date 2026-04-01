@@ -194,6 +194,17 @@ const showMapSection = computed(
   () => isCompleted.value && attendeesWithCity.value.length > 0
 )
 
+/** Re-geocode only when completed + unique city keys change (not on every attendees refetch). */
+const attendeeGeoFingerprint = computed(() => {
+  if (!isCompleted.value) return `0:${attendees.value.length}`
+  const keys = new Set<string>()
+  for (const a of attendees.value) {
+    if (!(a.city ?? '').trim()) continue
+    keys.add(`${(a.city ?? '').trim()}|${(a.district ?? '').trim()}|${(a.country ?? '').trim()}`)
+  }
+  return `1:${[...keys].sort().join('||')}`
+})
+
 async function buildAttendeePoints() {
   const list = attendeesWithCity.value
   if (!list.length) {
@@ -329,11 +340,16 @@ watch(
   { flush: 'post' }
 )
 watch(
-  () => [attendees.value, isCompleted.value] as const,
+  attendeeGeoFingerprint,
   () => {
-    if (showMapSection.value) buildAttendeePoints()
+    if (!showMapSection.value) {
+      attendeePoints.value = []
+      mapLoading.value = false
+      return
+    }
+    void buildAttendeePoints()
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 const geographicDistribution = computed(() => {

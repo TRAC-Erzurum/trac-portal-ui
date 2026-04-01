@@ -33,6 +33,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { useCookieConsentStore } from '@/stores/cookieConsent'
 import { useThemeStore } from '@/stores/theme'
 import { buildTutorialContent } from '@/lib/tutorial-content'
 import { api } from '@/lib/api'
@@ -52,9 +53,6 @@ import { toast } from 'vue-sonner'
 
 const TURKEY_CENTER: [number, number] = [39.93, 32.85]
 const TURKEY_ZOOM = 6
-import { useCookieConsentStore } from '@/stores/cookieConsent'
-
-const cookieStore = useCookieConsentStore()
 
 const MAP_LAYER_STORAGE_KEY = 'trac-map-layer'
 const MAP_LAYER_TTL_MS = 60 * 60 * 1000
@@ -116,6 +114,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const themeStore = useThemeStore()
+const cookieStore = useCookieConsentStore()
 
 type MapBaseLayer = 'standard' | 'satellite' | 'terrain'
 const LAYERS: MapBaseLayer[] = ['standard', 'satellite', 'terrain']
@@ -818,16 +817,18 @@ watch(selectedLatLng, (latlng) => {
       <span class="text-sm font-medium text-muted-foreground truncate">
         {{ t('map.title') }}
       </span>
-      <Button
-        variant="outline"
-        size="icon-sm"
-        class="shrink-0"
-        :aria-label="mapBaseLayerLabel"
-        :title="mapBaseLayerLabel"
-        @click="cycleMapBaseLayer"
-      >
-        <Layers class="h-4 w-4" aria-hidden="true" />
-      </Button>
+      <div class="flex shrink-0 items-center gap-1">
+        <Button
+          variant="outline"
+          size="icon-sm"
+          class="shrink-0"
+          :aria-label="mapBaseLayerLabel"
+          :title="mapBaseLayerLabel"
+          @click="cycleMapBaseLayer"
+        >
+          <Layers class="h-4 w-4" aria-hidden="true" />
+        </Button>
+      </div>
     </div>
 
     <div class="flex-1 min-h-0 pt-14 relative flex">
