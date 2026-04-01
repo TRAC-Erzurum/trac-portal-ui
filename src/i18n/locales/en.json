@@ -983,7 +983,11 @@
     "year": "Year",
     "month": "Month",
     "day": "Day",
-    "maxUploadSize": "Max 5 MB"
+    "maxUploadSize": "Max 5 MB",
+    "appVersionAriaSingle": "Application version {version}",
+    "appVersionAriaSplit": "UI version {ui}, API version {api}",
+    "appVersionTooltipUi": "UI {version}",
+    "appVersionTooltipApi": "API {version}"
   },
   "inventory": {
     "title": "Inventory",

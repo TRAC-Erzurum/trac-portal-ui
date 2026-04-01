@@ -986,7 +986,11 @@
     "year"  : "Yıl",
     "month" : "Ay",
     "day"   : "Gün",
-    "maxUploadSize": "Maks. 5 MB"
+    "maxUploadSize": "Maks. 5 MB",
+    "appVersionAriaSingle": "Uygulama sürümü {version}",
+    "appVersionAriaSplit": "Arayüz sürümü {ui}, API sürümü {api}",
+    "appVersionTooltipUi": "Arayüz {version}",
+    "appVersionTooltipApi": "API {version}"
   },
   "inventory": {
     "title": "Envanter",
