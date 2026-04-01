@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import L from 'leaflet'
 import 'leaflet.markercluster/dist/MarkerCluster.css'
@@ -110,15 +110,13 @@ async function buildPoints() {
   mapLoading.value = false
 }
 
-onMounted(() => {
-  buildPoints()
+/** Avoid deep watch + onMounted double-fetch; only re-geocode when top city list actually changes. */
+const citiesFingerprint = computed(() => {
+  const cities = props.data?.cities?.slice(0, TOP_CITIES) ?? []
+  return cities.map((c) => `${String(c.city ?? '').trim()}|${c.count}`).join('||')
 })
 
-watch(
-  () => props.data,
-  () => buildPoints(),
-  { deep: true }
-)
+watch(citiesFingerprint, () => buildPoints(), { immediate: true })
 </script>
 
 <template>

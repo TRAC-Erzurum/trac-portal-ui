@@ -8,6 +8,8 @@ const buildTimeUiVersion =
 
 const uiVersion = ref<string>(buildTimeUiVersion)
 const apiVersion = ref<string>('0.0.0')
+const githubRepoUrl = ref<string | null>(null)
+const githubIssuesUrl = ref<string | null>(null)
 let healthFetched = false
 
 async function fetchVersions() {
@@ -18,15 +20,18 @@ async function fetchVersions() {
     const res = await fetch(healthUrl, { credentials: 'include' })
     if (res.ok) {
       const data = await res.json()
-      // Prefer API's uiVersion (set at deploy from UI_TAG); fallback to build-time only when API doesn't send it
       const fromApi = typeof data?.uiVersion === 'string' && data.uiVersion.trim()
-      // If API doesn't provide uiVersion, prefer build-time value; otherwise show 0.0.0
       const fallbackUiVersion = buildTimeUiVersion || '0.0.0'
       uiVersion.value = fromApi ? data.uiVersion.trim() : fallbackUiVersion
       if (typeof data?.version === 'string') apiVersion.value = data.version
+      if (typeof data?.githubRepoUrl === 'string' && data.githubRepoUrl.trim()) {
+        githubRepoUrl.value = data.githubRepoUrl.trim()
+      }
+      if (typeof data?.githubIssuesUrl === 'string' && data.githubIssuesUrl.trim()) {
+        githubIssuesUrl.value = data.githubIssuesUrl.trim()
+      }
     }
   } catch {
-    // On fetch failure, prefer build-time version or fall back to 0.0.0
     uiVersion.value = buildTimeUiVersion || '0.0.0'
     apiVersion.value = '0.0.0'
   }
@@ -38,5 +43,7 @@ export function useAppVersion() {
   return {
     uiVersion,
     apiVersion,
+    githubRepoUrl,
+    githubIssuesUrl,
   }
 }

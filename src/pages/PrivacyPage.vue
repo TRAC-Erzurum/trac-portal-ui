@@ -49,7 +49,7 @@ const getSectionItems = (section: string) => {
         {{ t('privacy.intro') }}
       </p>
 
-      <div v-for="section in ['data', 'retention', 'purpose', 'visibility', 'rights', 'cookies']" :key="section">
+      <div v-for="section in ['data', 'retention', 'purpose', 'visibility', 'rights', 'githubFeedback', 'cookies']" :key="section">
         <Separator class="my-8" />
         <h3 class="text-xl font-semibold mb-3 text-foreground">
           {{ t(`privacy.sections.${section}.title`) }}
