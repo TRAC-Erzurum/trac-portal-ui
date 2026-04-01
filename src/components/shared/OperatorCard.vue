@@ -81,6 +81,20 @@ const mapLocatorUrl = computed(() => {
           >
             {{ t('roles.super_admin') }}
           </span>
+          <span
+            v-else-if="globalRole === 'president'"
+            class="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+            :class="getRoleBadgeClass('president')"
+          >
+            {{ t('roles.president') }}
+          </span>
+          <span
+            v-else-if="globalRole === 'admin'"
+            class="text-[10px] px-1.5 py-0.5 rounded-full font-medium"
+            :class="getRoleBadgeClass('admin')"
+          >
+            {{ t('roles.admin') }}
+          </span>
           <span v-if="(attendedCount && attendedCount > 0) || (managedCount && managedCount > 0)" class="flex items-center gap-2 text-xs text-muted-foreground">
             <span v-if="attendedCount && attendedCount > 0" class="flex items-center gap-0.5">
               <Users class="h-3 w-3" />

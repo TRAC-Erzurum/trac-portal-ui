@@ -2,6 +2,7 @@
   "error": {
     "forbidden": "Erişim Engellendi",
     "forbiddenDescription": "Bu işlem için yetkiniz bulunmuyor.",
+    "noPermission": "Bu işlem için yetkiniz bulunmuyor.",
     "serverError": "Bir Hata Oluştu",
     "serverErrorDescription": "Beklenmeyen bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
     "somethingWentWrong": "Bir şeyler ters gitti",
@@ -800,6 +801,9 @@
     "netStarted": "Çevrim başlatıldı",
     "netEnded": "Çevrim sonlandırıldı",
     "netUpdated": "Çevrim güncellendi",
+    "deleteNet": "Çevrimi sil",
+    "deleteNetConfirm": "\"{name}\" çevrimi ve tüm katılımcı kayıtları kalıcı olarak silinecek. Bu işlem geri alınamaz.",
+    "deleteNetSuccess": "Çevrim silindi",
     "editNet": "Çevrimi Düzenle",
     "editNetDescription": "Çevrim bilgilerini güncelleyin",
     "downloadMyCertificate": "Sertifikamı indir",

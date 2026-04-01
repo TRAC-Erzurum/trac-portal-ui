@@ -1,7 +1,20 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Award, Building2, ChevronDown, Play, Square, TowerControl, Users, XCircle, Radio, Clock, Settings } from 'lucide-vue-next'
+import {
+  Award,
+  Building2,
+  ChevronDown,
+  Clock,
+  Play,
+  Radio,
+  Settings,
+  Square,
+  TowerControl,
+  Trash2,
+  Users,
+  XCircle,
+} from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { useDateFormat } from '@/composables'
@@ -59,17 +72,22 @@ interface Net {
 interface Props {
   net: Net
   canManage: boolean
+  /** Çevrim silme: yalnız şube yöneticisi / başkan / süper admin (çevrim operatörü değil). */
+  canDelete?: boolean
   isAdmin: boolean
   attendeesCount: number
   isExporting?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  canDelete: false,
+})
 
 const emit = defineEmits<{
   start: [addOperatorAsAttendee: boolean]
   end: []
   edit: []
+  delete: []
   exportCsv: []
   exportPdf: []
   exportPng: []
@@ -162,6 +180,18 @@ const formatDuration = (net: Net) => {
             <Settings class="h-4 w-4 mr-2" />
             {{ t('common.edit') }}
           </Button>
+          <Button
+            v-if="canDelete"
+            variant="outline"
+            size="sm"
+            class="trac-btn-destructive-outlined"
+            @click="emit('delete')"
+            :title="t('netDetail.deleteNet')"
+            :aria-label="t('netDetail.deleteNet')"
+          >
+            <Trash2 class="h-4 w-4 mr-2" />
+            {{ t('netDetail.deleteNet') }}
+          </Button>
           <DropdownMenu v-if="canManage && netStatus === 'pending' && !net.endedAt">
             <DropdownMenuTrigger as-child>
               <Button variant="outline" size="sm">
@@ -248,6 +278,18 @@ const formatDuration = (net: Net) => {
         >
           <Settings class="h-4 w-4 mr-2" />
           {{ t('common.edit') }}
+        </Button>
+        <Button
+          v-if="canDelete"
+          variant="outline"
+          size="sm"
+          class="trac-btn-destructive-outlined"
+          @click="emit('delete')"
+          :title="t('netDetail.deleteNet')"
+          :aria-label="t('netDetail.deleteNet')"
+        >
+          <Trash2 class="h-4 w-4 mr-2" />
+          {{ t('netDetail.deleteNet') }}
         </Button>
         <DropdownMenu v-if="canManage && netStatus === 'pending' && !net.endedAt">
           <DropdownMenuTrigger as-child>

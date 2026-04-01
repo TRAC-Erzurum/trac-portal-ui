@@ -1,11 +1,13 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { api, type ApiError } from '@/lib/api'
+import type { UserRole } from '@/lib/ui-helpers'
 
-export type UserRole = 'super_admin' | 'admin' | 'member' | 'volunteer' | 'guest'
+export type { UserRole }
 
 const ROLE_HIERARCHY: Record<UserRole, number> = {
-  super_admin: 5,
+  super_admin: 6,
+  president: 5,
   admin: 4,
   member: 3,
   volunteer: 2,
@@ -34,7 +36,7 @@ export interface User {
   createdAt?: string
   operator?: Operator
   currentBranchId?: string | null
-  branchMemberships?: { branchId: string; role: string }[]
+  branchMemberships?: { branchId: string; role: string; status?: string }[]
 }
 
 interface AuthCheckResponse {
@@ -66,6 +68,16 @@ export const useAuthStore = defineStore('auth', () => {
   const isVolunteer = computed(() => hasRole('volunteer'))
   const isAdmin = computed(() => hasRole('admin'))
   const isSuperAdmin = computed(() => user.value?.role === 'super_admin')
+
+  /** Sistem yöneticisi; veya kullanıcı kaydında `role === 'admin'` (şube üyeliğindeki yönetici değil); veya onaylı şube yöneticisi/başkan — talep kuyruğu, operatör import vb. */
+  const canManageRequestQueues = computed(() => {
+    if (isSuperAdmin.value || isAdmin.value) return true
+    const m = user.value?.branchMemberships ?? []
+    return m.some(
+      x =>
+        x.status === 'approved' && (x.role === 'admin' || x.role === 'president')
+    )
+  })
 
   function hasRole(minRole: UserRole): boolean {
     if (!user.value) return false
@@ -141,6 +153,7 @@ export const useAuthStore = defineStore('auth', () => {
     isVolunteer,
     isAdmin,
     isSuperAdmin,
+    canManageRequestQueues,
     isInitialized,
     isTemporaryPassword,
     hasRole,

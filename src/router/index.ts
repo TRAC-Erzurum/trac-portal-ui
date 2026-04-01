@@ -10,6 +10,8 @@ declare module 'vue-router' {
     requiresAuth?: boolean
     guestOnly?: boolean
     minRole?: UserRole
+    /** Talep kuyruğu: sistem yöneticisi, `User.role === 'admin'` veya şube yöneticisi/başkan */
+    requiresRequestQueueAccess?: boolean
     forceChangePassword?: boolean
     /** i18n key for document title (tab). Rendered as "TRAC Portal | {t(titleKey)}" */
     titleKey?: string
@@ -119,7 +121,12 @@ const router = createRouter({
       path: '/admin/requests',
       name: 'admin-requests',
       component: () => import('@/pages/admin/AdminRequestsPage.vue'),
-      meta: { requiresAuth: true, minRole: 'admin', titleKey: 'admin.pendingRequests' }
+      meta: {
+        requiresAuth: true,
+        minRole: 'volunteer',
+        requiresRequestQueueAccess: true,
+        titleKey: 'admin.pendingRequests'
+      }
     },
     {
       path: '/operators/:id/inventory',
@@ -211,6 +218,13 @@ router.beforeEach(async (to) => {
 
   if (to.meta.minRole && authStore.isAuthenticated) {
     if (!authStore.hasRole(to.meta.minRole)) {
+      toast.error(t('error.guestRestriction'))
+      return { name: 'dashboard' }
+    }
+  }
+
+  if (to.meta.requiresRequestQueueAccess && authStore.isAuthenticated) {
+    if (!authStore.canManageRequestQueues) {
       toast.error(t('error.guestRestriction'))
       return { name: 'dashboard' }
     }
