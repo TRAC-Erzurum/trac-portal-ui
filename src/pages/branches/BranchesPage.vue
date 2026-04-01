@@ -53,7 +53,12 @@ const hasMore = ref(true)
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const canCreate = computed(() => {
-  return authStore.isSuperAdmin
+  if (authStore.isSuperAdmin) return true
+  return (
+    authStore.user?.branchMemberships?.some(
+      m => m.status === 'approved' && m.role === 'president',
+    ) ?? false
+  )
 })
 
 const fetchBranches = async (append = false) => {

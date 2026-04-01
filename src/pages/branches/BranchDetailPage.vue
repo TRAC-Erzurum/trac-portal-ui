@@ -151,8 +151,16 @@ const branchEquipmentTotal = ref(0)
 const branchEquipmentLoading = ref(false)
 
 const canManage = computed(() => {
-  return authStore.isSuperAdmin
+  if (authStore.isSuperAdmin) return true
+  if (!userMembership.value || userMembership.value.status !== 'approved') return false
+  return (
+    userMembership.value.role === 'admin' ||
+    userMembership.value.role === 'president'
+  )
 })
+
+/** Şube silme API yalnız süper admin */
+const canDeleteBranch = computed(() => authStore.isSuperAdmin)
 
 const hasPendingRequest = computed(() => {
   return userMembership.value?.status === 'pending'
@@ -863,19 +871,19 @@ onMounted(() => {
                   <Edit class="h-4 w-4 mr-2" />
                   {{ t('branches.edit') }}
                 </Button>
-                <Button
-                  v-if="!branch.isHeadquarters"
-                  variant="outline"
-                  size="sm"
-                  class="trac-btn-destructive-outlined"
-                  @click="openDeleteDialog"
-                  :title="t('common.delete')"
-                  :aria-label="t('common.delete')"
-                >
-                  <Trash2 class="h-4 w-4 mr-2" />
-                  {{ t('common.delete') }}
-                </Button>
               </template>
+              <Button
+                v-if="canDeleteBranch && branch.isActive && !branch.isHeadquarters"
+                variant="outline"
+                size="sm"
+                class="trac-btn-destructive-outlined"
+                @click="openDeleteDialog"
+                :title="t('common.delete')"
+                :aria-label="t('common.delete')"
+              >
+                <Trash2 class="h-4 w-4 mr-2" />
+                {{ t('common.delete') }}
+              </Button>
             </div>
           </div>
           <div v-if="branch.address || branch.phone || branch.email" class="flex flex-col gap-y-1.5 text-sm text-muted-foreground">
@@ -917,19 +925,19 @@ onMounted(() => {
                 <Edit class="h-4 w-4 mr-2" />
                 {{ t('branches.edit') }}
               </Button>
-              <Button
-                v-if="!branch.isHeadquarters"
-                variant="outline"
-                size="sm"
-                class="trac-btn-destructive-outlined"
-                @click="openDeleteDialog"
-                :title="t('common.delete')"
-                :aria-label="t('common.delete')"
-              >
-                <Trash2 class="h-4 w-4 mr-2" />
-                {{ t('common.delete') }}
-              </Button>
             </template>
+            <Button
+              v-if="canDeleteBranch && branch.isActive && !branch.isHeadquarters"
+              variant="outline"
+              size="sm"
+              class="trac-btn-destructive-outlined"
+              @click="openDeleteDialog"
+              :title="t('common.delete')"
+              :aria-label="t('common.delete')"
+            >
+              <Trash2 class="h-4 w-4 mr-2" />
+              {{ t('common.delete') }}
+            </Button>
           </div>
         </div>
       </div>

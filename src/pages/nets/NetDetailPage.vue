@@ -7,10 +7,11 @@ import {
   Clock,
   FileSpreadsheet,
   Image,
-  Plus,
   MapPin,
+  Plus,
   Printer,
   Share2,
+  Trash2,
   TrendingUp,
   Users,
 } from 'lucide-vue-next'
@@ -34,8 +35,16 @@ import ExportReportTemplate from '@/components/nets/ExportReportTemplate.vue'
 import NetHeader from '@/components/nets/NetHeader.vue'
 import AddAttendeePanel from '@/components/nets/AddAttendeePanel.vue'
 import AttendeeList from '@/components/nets/AttendeeList.vue'
-import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Separator } from '@/components/ui/separator'
 import html2canvas from 'html2canvas'
 import QRCode from 'qrcode'
 import type { Map as LeafletMap } from 'leaflet'
@@ -89,6 +98,7 @@ interface Net {
   totalDurationMinutes?: number
   attendeeCount: number
   operator: Operator
+  branchId?: string
   branch?: {
     id: string
     name: string
@@ -469,7 +479,33 @@ const netDurationFormatted = computed(() => {
 const canManageNet = computed(() => {
   if (!net.value) return false
   if (auth.isAdmin || auth.isSuperAdmin) return true
-  return net.value.operator.user?.id === auth.user?.id
+  if (net.value.operator.user?.id === auth.user?.id) return true
+  const branchId = net.value.branchId ?? net.value.branch?.id
+  if (!branchId) return false
+  return (
+    auth.user?.branchMemberships?.some(
+      m =>
+        m.branchId === branchId &&
+        m.status === 'approved' &&
+        (m.role === 'admin' || m.role === 'president'),
+    ) ?? false
+  )
+})
+
+/** Çevrim silme: süper admin veya ilgili şubede şube yöneticisi/başkan (çevrim operatörü tek başına yetmez). */
+const canDeleteNet = computed(() => {
+  if (!net.value) return false
+  if (auth.isSuperAdmin) return true
+  const branchId = net.value.branchId ?? net.value.branch?.id
+  if (!branchId) return false
+  return (
+    auth.user?.branchMemberships?.some(
+      m =>
+        m.branchId === branchId &&
+        m.status === 'approved' &&
+        (m.role === 'admin' || m.role === 'president'),
+    ) ?? false
+  )
 })
 
 watch(netStatus, (status) => {
@@ -865,6 +901,25 @@ interface NetComparePrevious {
 const comparePrevious = ref<NetComparePrevious | null>(null)
 const isLoadingCompare = ref(false)
 
+const showDeleteNetDialog = ref(false)
+const isDeletingNet = ref(false)
+
+const confirmDeleteNet = async () => {
+  if (!net.value || isDeletingNet.value) return
+  isDeletingNet.value = true
+  try {
+    await api.delete(`/net/${net.value.id}`)
+    toast.success(t('netDetail.deleteNetSuccess'))
+    showDeleteNetDialog.value = false
+    router.push('/nets')
+  } catch (error: unknown) {
+    const err = error as { message?: string }
+    toast.error(translateError(err.message || 'error.serverError'))
+  } finally {
+    isDeletingNet.value = false
+  }
+}
+
 const fetchComparePrevious = async () => {
   if (!net.value?.id || !isCompleted.value) return
   try {
@@ -889,9 +944,10 @@ const fetchComparePrevious = async () => {
     </div>
 
     <div v-else-if="net" class="space-y-6">
-      <NetHeader :net="net" :can-manage="canManageNet" :is-admin="auth.isAdmin || auth.isSuperAdmin"
-        :attendees-count="attendees.length" :is-exporting="isExporting" @start="startNet" @end="endNet"
-        @edit="openEditNet" @export-csv="exportToCsv" @export-pdf="exportToPdf"
+      <NetHeader :net="net" :can-manage="canManageNet" :can-delete="canDeleteNet"
+        :is-admin="auth.isAdmin || auth.isSuperAdmin" :attendees-count="attendees.length" :is-exporting="isExporting"
+        @start="startNet" @end="endNet" @edit="openEditNet" @delete="showDeleteNetDialog = true"
+        @export-csv="exportToCsv" @export-pdf="exportToPdf"
         @export-png="exportToPng" @export-certificates="exportCertificates" @share-report="openShareFlow">
         <template v-if="net?.certificateTemplate && (certificatePreviewImageUrl || isLoadingCertificatePreview)"
           #certificate>
@@ -1196,6 +1252,31 @@ const fetchComparePrevious = async () => {
       :attendees="exportAttendees" :date-info="getNetDateInfo()" :branch-name="net.branch?.name"
       :branch-call-sign="net.branchCallSign?.callSign" :branch-is-headquarters="net.branch?.isHeadquarters"
       :communication-channels="net.communicationChannels" />
+
+    <Dialog v-model:open="showDeleteNetDialog">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{{ t('netDetail.deleteNet') }}</DialogTitle>
+          <DialogDescription>
+            {{ t('netDetail.deleteNetConfirm', { name: net?.name ?? '' }) }}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter class="gap-2 sm:gap-0">
+          <Button variant="outline" :disabled="isDeletingNet" @click="showDeleteNetDialog = false">
+            {{ t('common.cancel') }}
+          </Button>
+          <Button
+            variant="outline"
+            class="trac-btn-destructive-outlined"
+            :disabled="isDeletingNet"
+            @click="confirmDeleteNet"
+          >
+            <Trash2 v-if="!isDeletingNet" class="h-4 w-4 mr-2" />
+            {{ isDeletingNet ? t('common.loading') : t('common.delete') }}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
 
   </AppLayout>
   <ShareReportSheet :open="shareDialogOpen" :share-url="shareUrl" :share-qr-data-url="shareQrDataUrl"

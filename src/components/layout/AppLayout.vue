@@ -34,11 +34,11 @@ const { t } = useI18n()
 const router = useRouter()
 
 const showRequestsButton = computed(
-  () => (authStore.isAdmin || authStore.isSuperAdmin) && pendingRequestsCount.value > 0
+  () => authStore.canManageRequestQueues && pendingRequestsCount.value > 0
 )
 
 const fetchPendingRequestsCount = async () => {
-  if (!authStore.isAdmin && !authStore.isSuperAdmin) return
+  if (!authStore.canManageRequestQueues) return
   try {
     const data = await api.get<{ total: number }>('/auth/admin/pending-requests/count')
     pendingRequestsCount.value = data.total
@@ -53,7 +53,7 @@ const goToRequests = () => {
 
 onMounted(fetchPendingRequestsCount)
 router.afterEach(() => {
-  if (authStore.isAdmin || authStore.isSuperAdmin) fetchPendingRequestsCount()
+  if (authStore.canManageRequestQueues) fetchPendingRequestsCount()
 })
 provide('refreshPendingRequestsCount', fetchPendingRequestsCount)
 </script>

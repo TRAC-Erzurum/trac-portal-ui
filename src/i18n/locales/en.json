@@ -2,6 +2,7 @@
   "error": {
     "forbidden": "Access Denied",
     "forbiddenDescription": "You don't have permission to perform this action.",
+    "noPermission": "You don't have permission to perform this action.",
     "serverError": "Something Went Wrong",
     "serverErrorDescription": "An unexpected error occurred. Please try again later.",
     "somethingWentWrong": "Something went wrong",
@@ -797,6 +798,9 @@
     "netStarted": "Net started",
     "netEnded": "Net ended",
     "netUpdated": "Net updated",
+    "deleteNet": "Delete net",
+    "deleteNetConfirm": "This will permanently delete \"{name}\" and all participants. This cannot be undone.",
+    "deleteNetSuccess": "Net deleted",
     "editNet": "Edit Net",
     "editNetDescription": "Update net details",
     "downloadMyCertificate": "Download my certificate",

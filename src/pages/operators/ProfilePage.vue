@@ -146,7 +146,7 @@ const isProfileOwner = computed(() =>
   !!authStore.user?.id && authStore.user.id === operator.value?.user?.id
 )
 
-const canEdit = computed(() => authStore.isAdmin || authStore.isSuperAdmin)
+const canEdit = computed(() => authStore.canManageRequestQueues)
 
 const canViewSensitive = computed(() => {
   if (!operator.value?.user?.id) return false
@@ -157,8 +157,10 @@ const canViewSensitive = computed(() => {
   const viewedUserBranchIds = memberships.value.map(m => m.branchId)
   const currentUserBranchMemberships = authStore.user?.branchMemberships || []
   
-  const isBranchAdmin = currentUserBranchMemberships.some(m => 
-    m.role === 'admin' && viewedUserBranchIds.includes(m.branchId)
+  const isBranchAdmin = currentUserBranchMemberships.some(
+    m =>
+      (m.role === 'admin' || m.role === 'president') &&
+      viewedUserBranchIds.includes(m.branchId),
   )
 
   return isBranchAdmin

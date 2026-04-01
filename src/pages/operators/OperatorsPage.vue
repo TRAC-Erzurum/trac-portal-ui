@@ -169,7 +169,7 @@ onMounted(() => {
         </div>
         <div class="trac-top-actions">
           <Button
-            v-if="authStore.isAdmin"
+            v-if="authStore.canManageRequestQueues"
             variant="outline"
             size="sm"
             class="trac-page-action-btn"
@@ -208,7 +208,7 @@ onMounted(() => {
           :user-full-name="op.user?.fullName"
           :user-picture="op.user?.picture"
           :global-role="op.user?.role"
-          :show-delete="authStore.isAdmin && !op.user?.id && op.attendedCount === 0 && op.managedCount === 0"
+          :show-delete="authStore.canManageRequestQueues && !op.user?.id && op.attendedCount === 0 && op.managedCount === 0"
           @delete="handleDeleteClick(op)"
         />
       </div>
