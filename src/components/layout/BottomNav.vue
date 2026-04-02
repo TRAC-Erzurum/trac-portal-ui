@@ -36,8 +36,10 @@ function handleNavClick(item: { route: string; restricted: boolean }, event: Eve
 </script>
 
 <template>
-  <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-border">
-    <div class="flex items-center justify-around h-16">
+  <nav
+    class="lg:hidden fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background pb-[env(safe-area-inset-bottom,0px)]"
+  >
+    <div class="flex h-16 items-center justify-around">
       <a
         v-for="item in navItems"
         :key="item.route"

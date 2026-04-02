@@ -463,7 +463,9 @@
       "byHour": "Hour",
       "countries": "Countries",
       "cities": "Cities",
-      "districts": "Districts"
+      "districts": "Districts",
+      "geographyTotalParticipation": "Total participation",
+      "geographyUniqueParticipation": "Unique participation"
     }
   },
   "map": {

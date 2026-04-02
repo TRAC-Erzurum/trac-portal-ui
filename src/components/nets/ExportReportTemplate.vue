@@ -94,7 +94,9 @@ const formatReadabilitySignal = (attendee: Attendee) => {
   <div ref="templateRef" class="report-container fixed -left-[9999px] top-0">
     <div class="report-header">
       <div class="report-top">
-        <img src="/logo-s.svg" alt="TRAC logo" class="report-logo" />
+        <div class="report-logo-wrap" aria-hidden="true">
+          <img src="/logo-s.svg" alt="" class="report-logo" />
+        </div>
         <h1 class="branch-title">{{ formatBranchTitle() || netName }}</h1>
       </div>
       <h2 class="net-title">{{ netName }}</h2>

@@ -463,7 +463,9 @@
       "byHour": "Saat",
       "countries": "Ülkeler",
       "cities": "İller",
-      "districts": "İlçeler"
+      "districts": "İlçeler",
+      "geographyTotalParticipation": "Toplam katılımcı",
+      "geographyUniqueParticipation": "Benzersiz katılımcı"
     }
   },
   "map": {

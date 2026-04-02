@@ -102,12 +102,12 @@ function openFeedbackSheet() {
   <!-- Mobile backdrop -->
   <div
     v-show="props.mobileOpen && isMobile"
-    class="lg:hidden fixed inset-0 z-30 bg-black/50 transition-opacity"
+    class="fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden"
     aria-hidden="true"
     @click="emit('update:mobileOpen', false)"
   />
   <aside :class="[
-    'flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 fixed top-0 left-0 z-40',
+    'flex-col h-screen bg-sidebar border-r border-sidebar-border transition-all duration-300 fixed top-0 left-0 z-50 lg:z-40',
     props.mobileOpen ? 'flex lg:flex' : 'hidden lg:flex',
     effectiveExpanded ? 'w-64' : 'w-16'
   ]" @mouseenter="sidebarHovered = true" @mouseleave="sidebarHovered = false">
