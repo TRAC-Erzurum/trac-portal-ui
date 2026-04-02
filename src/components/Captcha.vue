@@ -20,11 +20,12 @@ defineExpose({ isEnabled: !!siteKey })
 </script>
 
 <template>
-  <VueTurnstile
-    v-if="!!siteKey"
-    :site-key="siteKey"
-    v-model="model"
-    :theme="theme"
-    size="flexible"
-  />
+  <div v-if="!!siteKey" class="w-full min-w-0 max-w-full overflow-x-auto">
+    <VueTurnstile
+      :site-key="siteKey"
+      v-model="model"
+      :theme="theme"
+      size="flexible"
+    />
+  </div>
 </template>

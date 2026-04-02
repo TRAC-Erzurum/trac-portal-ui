@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { defineAsyncComponent, onMounted, ref } from 'vue'
+import { defineAsyncComponent, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import StatCard from '../StatCard.vue'
 import { api } from '@/lib/api'
 
+type GeographyCountMode = 'total' | 'unique'
+
 interface Data {
   countries: { country: string; count: number }[]
-  cities: { city: string; count: number }[]
+  cities: { city: string; count: number; lat?: number; lng?: number }[]
   districts: { city: string; district: string; count: number }[]
 }
 
@@ -19,12 +21,17 @@ const data = ref<Data | null>(null)
 const loading = ref(true)
 const error = ref(false)
 const activeTab = ref<'countries' | 'cities' | 'districts'>('cities')
+const countMode = ref<GeographyCountMode>('unique')
 
 const fetchData = async () => {
   try {
     loading.value = true
     error.value = false
-    data.value = await api.get<Data>('/dashboard/stats/geography')
+    const params = new URLSearchParams()
+    params.set('mode', countMode.value)
+    data.value = await api.get<Data>(
+      `/dashboard/stats/geography?${params.toString()}`,
+    )
   } catch {
     error.value = true
   } finally {
@@ -40,6 +47,7 @@ const maxDistrictCount = () =>
   data.value?.districts?.length ? Math.max(...data.value.districts.map((d) => d.count)) : 1
 
 onMounted(fetchData)
+watch(countMode, fetchData)
 </script>
 
 <template>
@@ -48,6 +56,36 @@ onMounted(fetchData)
     :loading="loading"
     :error="error"
   >
+    <template #actions>
+      <div class="flex flex-wrap gap-1">
+        <button
+          type="button"
+          class="px-2 py-1 text-xs rounded-md border transition-colors"
+          :class="
+            countMode === 'unique'
+              ? 'border-primary text-primary'
+              : 'border-border hover:bg-muted/30'
+          "
+          :aria-pressed="countMode === 'unique'"
+          @click="countMode = 'unique'"
+        >
+          {{ t('dashboard.stats.geographyUniqueParticipation') }}
+        </button>
+        <button
+          type="button"
+          class="px-2 py-1 text-xs rounded-md border transition-colors"
+          :class="
+            countMode === 'total'
+              ? 'border-primary text-primary'
+              : 'border-border hover:bg-muted/30'
+          "
+          :aria-pressed="countMode === 'total'"
+          @click="countMode = 'total'"
+        >
+          {{ t('dashboard.stats.geographyTotalParticipation') }}
+        </button>
+      </div>
+    </template>
     <template v-if="data">
       <div class="flex flex-col lg:flex-row gap-4">
         <!-- Sol: grafik (ülke/il/ilçe sekmeleri + çubuklar) -->

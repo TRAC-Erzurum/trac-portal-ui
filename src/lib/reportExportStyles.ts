@@ -6,7 +6,8 @@ export function getReportExportStyles(width: number = REPORT_EXPORT_WIDTH): stri
 .report-container { background: #ffffff !important; color: #000000 !important; min-height: 100vh; padding: 2rem; display: flex; flex-direction: column; width: ${width}px !important; min-width: ${width}px !important; }
 .report-header { display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem; margin-bottom: 1.5rem; background: transparent !important; }
 .report-top { display: flex; align-items: center; justify-content: center; gap: 0.75rem; background: transparent !important; }
-.report-logo { width: 80px; height: auto; max-height: 80px; object-fit: contain; display: block; background: transparent !important; }
+.report-logo-wrap { flex-shrink: 0; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; background: transparent !important; }
+.report-logo { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; object-position: center; display: block; background: transparent !important; }
 .branch-title { margin: 0; font-weight: 700; font-size: 1.5rem; text-align: center; color: #000000 !important; background: transparent !important; }
 .net-title { text-align: center; font-weight: 700; font-size: 1.25rem; margin: 0; color: #000000 !important; background: transparent !important; }
 .header-meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; align-items: center; font-weight: 600; background: transparent !important; }

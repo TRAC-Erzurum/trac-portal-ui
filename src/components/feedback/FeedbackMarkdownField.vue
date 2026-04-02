@@ -129,7 +129,9 @@ const hasFooter = computed(() => !!slots.footer)
 </script>
 
 <template>
-  <div class="flex min-h-0 flex-1 flex-col space-y-2 overflow-hidden">
+  <div
+    class="flex min-h-[min(42vh,280px)] flex-1 flex-col space-y-2 overflow-hidden sm:min-h-0"
+  >
     <Label :for="inputId" class="text-xs text-muted-foreground font-normal">
       {{ label }}
     </Label>
@@ -183,7 +185,7 @@ const hasFooter = computed(() => !!slots.footer)
           v-show="panel === 'write'"
           role="toolbar"
           :aria-label="t('feedback.toolbarAria')"
-          class="flex flex-wrap items-center justify-end gap-px"
+          class="-mx-1 flex max-w-full flex-nowrap items-center justify-end gap-px overflow-x-auto px-1 pb-0.5 sm:flex-wrap sm:overflow-visible"
         >
           <button
             type="button"
@@ -289,7 +291,7 @@ const hasFooter = computed(() => !!slots.footer)
             :value="modelValue"
             :placeholder="placeholder"
             :class="cn(
-              'min-h-[200px] w-full max-h-full flex-1 resize-none overflow-y-auto border-0 bg-transparent px-3 py-3 text-sm leading-relaxed',
+              'min-h-[140px] sm:min-h-[200px] w-full max-h-full flex-1 resize-none overflow-y-auto border-0 bg-transparent px-3 py-3 text-sm leading-relaxed',
               'placeholder:text-muted-foreground',
               'focus-visible:outline-none focus-visible:ring-0',
             )"
@@ -303,7 +305,7 @@ const hasFooter = computed(() => !!slots.footer)
           role="tabpanel"
           :aria-labelledby="`${inputId}-tab-preview`"
           :class="cn(
-            'feedback-md-preview min-h-[200px] max-h-[min(50vh,420px)] flex-1 overflow-y-auto px-3 py-3 text-sm',
+            'feedback-md-preview min-h-[140px] sm:min-h-[200px] max-h-[min(50vh,420px)] flex-1 overflow-y-auto px-3 py-3 text-sm',
           )"
         >
           <p

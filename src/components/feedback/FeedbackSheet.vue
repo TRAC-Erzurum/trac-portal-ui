@@ -100,9 +100,9 @@ async function submit() {
   >
     <SheetContent
       side="right"
-      class="flex flex-col w-full sm:max-w-xl overflow-y-auto px-4 sm:px-6 pt-2 pb-0 gap-0"
+      class="flex h-full min-h-0 w-full flex-col gap-0 px-4 pt-2 pb-0 sm:max-w-xl sm:px-6"
     >
-      <SheetHeader class="text-left space-y-1.5 pr-8">
+      <SheetHeader class="shrink-0 text-left space-y-1.5 pr-8">
         <SheetTitle>{{ t('feedback.sheetTitle') }}</SheetTitle>
         <p class="text-sm text-muted-foreground leading-relaxed">
           {{ t('feedback.intro') }}
@@ -119,7 +119,7 @@ async function submit() {
         </p>
       </SheetHeader>
 
-      <div class="py-5 flex flex-col gap-6 flex-1 min-h-0">
+      <div class="min-h-0 flex-1 overflow-y-auto overscroll-contain py-5 flex flex-col gap-6">
         <div>
           <p id="fb-category-label" class="mb-2 text-xs text-muted-foreground">
             {{ t('feedback.categoryLabel') }}
@@ -233,13 +233,21 @@ async function submit() {
         <Captcha v-model="captchaToken" />
       </div>
 
-      <SheetFooter class="flex-row gap-2 justify-end border-t border-border pt-4 pb-6 px-0 sm:px-0 mt-auto">
-        <Button type="button" variant="outline" @click="feedbackStore.closeSheet()">
+      <SheetFooter
+        class="mt-0 shrink-0 flex-col gap-2 border-t border-border px-0 pt-4 sm:flex-row sm:justify-end sm:gap-2 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]"
+      >
+        <Button
+          type="button"
+          variant="outline"
+          class="w-full sm:w-auto"
+          @click="feedbackStore.closeSheet()"
+        >
           {{ t('common.cancel') }}
         </Button>
         <Button
           type="button"
           variant="outline"
+          class="w-full sm:w-auto"
           :disabled="isSubmitting || !feedbackStore.category || !feedbackStore.summary.trim() || !feedbackStore.body.trim()"
           @click="submit"
         >
