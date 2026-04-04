@@ -64,8 +64,7 @@ const authStore = useAuthStore()
 
 const branchId = computed(() => route.params.id as string)
 const isBranchAdmin = computed(() =>
-  authStore.isSuperAdmin ||
-  (authStore.hasRole('admin') && authStore.user?.currentBranchId === branchId.value),
+  authStore.canLeadBranch(branchId.value),
 )
 
 const branch = ref<Branch | null>(null)

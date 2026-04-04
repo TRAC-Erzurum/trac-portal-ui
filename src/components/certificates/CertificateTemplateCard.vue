@@ -4,7 +4,10 @@ import { useI18n } from 'vue-i18n'
 import { Edit, FileImage, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { REFERENCE_HEIGHT } from '@/components/certificates/certificate-template-defaults'
+import {
+  CERTIFICATE_PREVIEW_FONT_FAMILY,
+  REFERENCE_HEIGHT,
+} from '@/components/certificates/certificate-template-defaults'
 
 export interface CertificateTemplate {
   id: string
@@ -19,7 +22,6 @@ interface ParsedElement {
   placeholderKey?: string
   x: number
   y: number
-  fontFamily: string
   fontSize: number
   color: string
 }
@@ -58,7 +60,6 @@ const parsedElements = computed((): ParsedElement[] => {
       placeholderKey: e.placeholderKey as string | undefined,
       x: Number(e.x) || 0,
       y: Number(e.y) || 0,
-      fontFamily: (e.fontFamily as string) ?? 'Arial',
       fontSize: Number(e.fontSize) || 16,
       color: (e.color as string) ?? '#000000',
     }
@@ -124,7 +125,7 @@ onUnmounted(() => {
             :style="{
               left: el.x + '%',
               top: el.y + '%',
-              fontFamily: el.fontFamily,
+              fontFamily: CERTIFICATE_PREVIEW_FONT_FAMILY,
               fontSize: (el.fontSize * (previewHeight / REFERENCE_HEIGHT)) + 'px',
               color: el.color,
               textShadow: '0 0 2px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,0.6)',

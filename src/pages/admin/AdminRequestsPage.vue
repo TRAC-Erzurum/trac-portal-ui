@@ -17,9 +17,14 @@ import { api, type ApiError } from '@/lib/api'
 
 interface PendingMembership {
   id: string
-  userId: string
+  operatorId: string
   branchId: string
-  user?: { id: string; fullName?: string; operator?: { id?: string; callSign?: string } }
+  operator?: {
+    id: string
+    callSign?: string
+    fullName?: string
+    user?: { id: string; fullName?: string } | null
+  }
   branch?: { id: string; name: string }
   createdAt: string
 }
@@ -60,8 +65,8 @@ const showApproveDialog = ref(false)
 const showRejectDialog = ref(false)
 const showApprovePwSheet = ref(false)
 const showRejectPwDialog = ref(false)
-const pendingApprove = ref<{ branchId: string; userId: string; membershipId: string } | null>(null)
-const pendingReject = ref<{ branchId: string; userId: string; membershipId: string } | null>(null)
+const pendingApprove = ref<{ branchId: string; membershipId: string } | null>(null)
+const pendingReject = ref<{ branchId: string; membershipId: string } | null>(null)
 const pendingApprovePwId = ref<string | null>(null)
 const pendingRejectPwId = ref<string | null>(null)
 const approvePwNewPassword = ref('')
@@ -81,26 +86,26 @@ async function fetchPending() {
   }
 }
 
-function openApproveDialog(branchId: string, userId: string, membershipId: string) {
-  pendingApprove.value = { branchId, userId, membershipId }
+function openApproveDialog(branchId: string, membershipId: string) {
+  pendingApprove.value = { branchId, membershipId }
   showApproveDialog.value = true
 }
 
-function openRejectDialog(branchId: string, userId: string, membershipId: string) {
-  pendingReject.value = { branchId, userId, membershipId }
+function openRejectDialog(branchId: string, membershipId: string) {
+  pendingReject.value = { branchId, membershipId }
   showRejectDialog.value = true
 }
 
 async function confirmApproveMembership() {
   if (!pendingApprove.value) return
-  const { branchId, userId, membershipId } = pendingApprove.value
+  const { branchId, membershipId } = pendingApprove.value
   const role = approveRole.value[membershipId]
   if (!role) return
   processingMembershipId.value = membershipId
   showApproveDialog.value = false
   pendingApprove.value = null
   try {
-    await api.patch(`/branches/${branchId}/members/${userId}/approve`, { role })
+    await api.patch(`/branches/${branchId}/members/${membershipId}/approve`, { role })
     toast.success(t('admin.roleUpdated'))
     await fetchPending()
     await refreshPendingRequestsCount?.()
@@ -114,13 +119,13 @@ async function confirmApproveMembership() {
 
 async function confirmRejectMembership() {
   if (!pendingReject.value) return
-  const { branchId, userId, membershipId } = pendingReject.value
+  const { branchId, membershipId } = pendingReject.value
   processingMembershipId.value = membershipId
   showRejectDialog.value = false
   const reason = rejectReason.value[membershipId] || undefined
   pendingReject.value = null
   try {
-    await api.patch(`/branches/${branchId}/members/${userId}/reject`, { rejectionReason: reason })
+    await api.patch(`/branches/${branchId}/members/${membershipId}/reject`, { rejectionReason: reason })
     toast.success(t('admin.membershipRejected'))
     await fetchPending()
     await refreshPendingRequestsCount?.()
@@ -195,12 +200,12 @@ async function confirmRejectPasswordReset() {
 }
 
 function getMemberLabel(m: PendingMembership): string {
-  if (m.user?.operator?.callSign) return m.user.operator.callSign
-  return m.user?.fullName || m.userId.slice(0, 8)
+  if (m.operator?.callSign) return m.operator.callSign
+  return m.operator?.fullName || m.operator?.user?.fullName || m.id.slice(0, 8)
 }
 
 function getOperatorProfilePath(m: PendingMembership): string | null {
-  const id = m.user?.operator?.id
+  const id = m.operator?.id
   return id ? `/operators/${id}` : null
 }
 
@@ -292,9 +297,11 @@ onMounted(fetchPending)
                   <label class="text-xs text-muted-foreground">{{ t('admin.operator') }}</label>
                   <div class="min-w-0 text-sm leading-8">
                     <span class="font-medium font-mono text-foreground">{{ getMemberLabel(m) }}</span>
-                    <template v-if="m.user?.fullName">
+                    <template v-if="m.operator?.user?.fullName || m.operator?.fullName">
                       <span class="text-muted-foreground mx-1">·</span>
-                      <span class="text-xs text-muted-foreground">{{ m.user.fullName }}</span>
+                      <span class="text-xs text-muted-foreground">{{
+                        m.operator?.user?.fullName || m.operator?.fullName
+                      }}</span>
                     </template>
                     <span class="text-muted-foreground mx-1">·</span>
                     <span class="text-xs text-muted-foreground">{{ formatDateSimple(m.createdAt) }}</span>
@@ -334,7 +341,7 @@ onMounted(fetchPending)
                     size="sm"
                     class="h-8 w-full justify-start"
                     :disabled="processingMembershipId === m.id || !hasSelectedRole(m.id)"
-                    @click="openApproveDialog(branch.branchId, m.userId, m.id)"
+                    @click="openApproveDialog(branch.branchId, m.id)"
                   >
                     <Check class="h-4 w-4 mr-2" />
                     {{ t('admin.approve') }}
@@ -354,7 +361,7 @@ onMounted(fetchPending)
                     size="sm"
                     class="h-8 w-full justify-start"
                     :disabled="processingMembershipId === m.id"
-                    @click="openRejectDialog(branch.branchId, m.userId, m.id)"
+                    @click="openRejectDialog(branch.branchId, m.id)"
                   >
                     <X class="h-4 w-4 mr-2" />
                     {{ t('admin.reject') }}

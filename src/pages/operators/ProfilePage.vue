@@ -25,6 +25,7 @@ import { UserAvatar } from '@/components/ui/user-avatar'
 import CertificateFilledPreview from '@/components/certificates/CertificateFilledPreview.vue'
 import type { CertificateTemplateElement } from '@/components/certificates/certificate-template-defaults'
 import { api, API_BASE, type ApiError } from '@/lib/api'
+import { getFilenameFromContentDisposition } from '@/lib/content-disposition'
 import { formatCallSign } from '@/lib/formatters'
 import { translateError } from '@/i18n'
 import { matchesTurkishSearch } from '@/lib/turkish-search'
@@ -70,7 +71,7 @@ interface OperatorNetItem {
 
 interface UserBranchMembership {
   id: string
-  userId: string
+  operatorId: string
   branchId: string
   role: string
   status: string
@@ -217,11 +218,11 @@ const fetchStats = async () => {
 }
 
 const fetchMemberships = async () => {
-  if (!operator.value?.user?.id) return
-  
   isLoadingMemberships.value = true
   try {
-    memberships.value = await api.get<UserBranchMembership[]>(`/users/${operator.value.user.id}/memberships`)
+    memberships.value = await api.get<UserBranchMembership[]>(
+      `/operator/${operatorId.value}/memberships`
+    )
   } catch (error) {
     console.error('Failed to fetch memberships:', error)
   } finally {
@@ -278,10 +279,13 @@ const downloadCertificateFromProfile = async (item: OperatorCertificateItem) => 
       throw new Error((err as { message?: string }).message || 'error.serverError')
     }
     const blob = await res.blob()
-    const name = (item.netName || 'certificate').replace(/[/\\?%*:|"<>]/g, '-')
+    const cd = res.headers.get('Content-Disposition')
+    const filename =
+      getFilenameFromContentDisposition(cd) ??
+      `${(item.netName || 'certificate').replace(/[/\\?%*:|"<>]/g, '-')}-certificate.pdf`
     const link = document.createElement('a')
     link.href = URL.createObjectURL(blob)
-    link.download = `${name}-certificate.pdf`
+    link.download = filename
     link.click()
     URL.revokeObjectURL(link.href)
     toast.success(t('certificates.downloadSuccess'))
@@ -509,22 +513,18 @@ onMounted(async () => {
   fetchStats()
   fetchCertificates()
   fetchEquipment()
-  if (operator.value?.user?.id) {
-    await fetchMemberships()
-    const approved = memberships.value.filter(m => m.status === 'approved' && m.branch)
-    if (approved.length > 0 && !sessionStorage.getItem(getProfileNetsStorageKey()) && netsBranchFilter.value === 'all') {
-      const isOwn = authStore.user?.operator?.id === operator.value?.id
-      const currentId = authStore.user?.currentBranchId
-      if (isOwn && currentId && approved.some(m => m.branchId === currentId)) {
-        netsBranchFilter.value = currentId
-      } else {
-        netsBranchFilter.value = approved[0]!.branchId
-      }
+  await fetchMemberships()
+  const approved = memberships.value.filter(m => m.status === 'approved' && m.branch)
+  if (approved.length > 0 && !sessionStorage.getItem(getProfileNetsStorageKey()) && netsBranchFilter.value === 'all') {
+    const isOwn = authStore.user?.operator?.id === operator.value?.id
+    const currentId = authStore.user?.currentBranchId
+    if (isOwn && currentId && approved.some(m => m.branchId === currentId)) {
+      netsBranchFilter.value = currentId
+    } else {
+      netsBranchFilter.value = approved[0]!.branchId
     }
-    fetchRecentNets()
-  } else {
-    fetchRecentNets()
   }
+  fetchRecentNets()
 })
 </script>
 
@@ -956,10 +956,10 @@ onMounted(async () => {
           </section>
         </template>
 
-        <section v-if="hasUserAccount">
+        <section v-if="operator">
           <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2 mb-4">
             <Building2 class="h-4 w-4" />
-            {{ t('memberships.myBranches') }}
+            {{ t('memberships.operatorBranches') }}
           </h3>
 
           <div class="flex flex-col lg:flex-row lg:items-start lg:gap-4 gap-2 mb-4">

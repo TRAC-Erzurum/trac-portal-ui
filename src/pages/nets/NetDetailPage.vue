@@ -22,6 +22,7 @@ import { LMap, LTileLayer } from '@vue-leaflet/vue-leaflet'
 import 'leaflet/dist/leaflet.css'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { api, API_BASE } from '@/lib/api'
+import { getFilenameFromContentDisposition } from '@/lib/content-disposition'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
 import { toast } from 'vue-sonner'
@@ -494,34 +495,19 @@ const netDurationFormatted = computed(() => {
 
 const canManageNet = computed(() => {
   if (!net.value) return false
-  if (auth.isAdmin || auth.isSuperAdmin) return true
-  if (net.value.operator.user?.id === auth.user?.id) return true
   const branchId = net.value.branchId ?? net.value.branch?.id
   if (!branchId) return false
-  return (
-    auth.user?.branchMemberships?.some(
-      m =>
-        m.branchId === branchId &&
-        m.status === 'approved' &&
-        (m.role === 'admin' || m.role === 'president'),
-    ) ?? false
-  )
+  if (auth.canLeadBranch(branchId)) return true
+  if (net.value.operator.user?.id === auth.user?.id) return true
+  return false
 })
 
 /** Çevrim silme: süper admin veya ilgili şubede şube yöneticisi/başkan (çevrim operatörü tek başına yetmez). */
 const canDeleteNet = computed(() => {
   if (!net.value) return false
-  if (auth.isSuperAdmin) return true
   const branchId = net.value.branchId ?? net.value.branch?.id
   if (!branchId) return false
-  return (
-    auth.user?.branchMemberships?.some(
-      m =>
-        m.branchId === branchId &&
-        m.status === 'approved' &&
-        (m.role === 'admin' || m.role === 'president'),
-    ) ?? false
-  )
+  return auth.canLeadBranch(branchId)
 })
 
 watch(netStatus, (status) => {
@@ -747,8 +733,11 @@ const downloadCertificate = async (attendee: Attendee) => {
       throw new Error((err as { message?: string }).message || 'error.serverError')
     }
     const blob = await res.blob()
-    const name = (attendee.callSign || attendee.id).replace(/[/\\?%*:|"<>]/g, '-')
-    downloadBlob(blob, `${name}-certificate.pdf`)
+    const cd = res.headers.get('Content-Disposition')
+    const filename =
+      getFilenameFromContentDisposition(cd) ??
+      `${(attendee.callSign || attendee.id).replace(/[/\\?%*:|"<>]/g, '-')}-certificate.pdf`
+    downloadBlob(blob, filename)
     toast.success(t('certificates.downloadSuccess'))
   } catch (e: unknown) {
     const msg = (e instanceof Error ? e.message : null) || 'error.serverError'
@@ -961,7 +950,7 @@ const fetchComparePrevious = async () => {
 
     <div v-else-if="net" class="space-y-6">
       <NetHeader :net="net" :can-manage="canManageNet" :can-delete="canDeleteNet"
-        :is-admin="auth.isAdmin || auth.isSuperAdmin" :attendees-count="attendees.length" :is-exporting="isExporting"
+        :is-admin="canManageNet" :attendees-count="attendees.length" :is-exporting="isExporting"
         @start="startNet" @end="endNet" @edit="openEditNet" @delete="showDeleteNetDialog = true"
         @export-csv="exportToCsv" @export-pdf="exportToPdf"
         @export-png="exportToPng" @export-certificates="exportCertificates" @share-report="openShareFlow">

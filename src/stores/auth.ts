@@ -36,7 +36,12 @@ export interface User {
   createdAt?: string
   operator?: Operator
   currentBranchId?: string | null
-  branchMemberships?: { branchId: string; role: string; status?: string }[]
+  branchMemberships?: {
+    branchId: string
+    role: string
+    status?: string
+    isHeadquarters?: boolean
+  }[]
 }
 
 interface AuthCheckResponse {
@@ -47,7 +52,7 @@ interface RegisterData {
   email: string
   callSign: string
   password: string
-  branchIds: string[]
+  branchIds?: string[]
   fullName?: string
   city?: string
   district?: string
@@ -68,6 +73,32 @@ export const useAuthStore = defineStore('auth', () => {
   const isVolunteer = computed(() => hasRole('volunteer'))
   const isAdmin = computed(() => hasRole('admin'))
   const isSuperAdmin = computed(() => user.value?.role === 'super_admin')
+
+  /** Genel Merkez şubesinde onaylı şube yöneticisi veya başkan (API ile aynı mantık). */
+  const isHeadquartersLeader = computed(() => {
+    const list = user.value?.branchMemberships ?? []
+    return list.some(
+      x =>
+        x.status === 'approved' &&
+        (x.role === 'admin' || x.role === 'president') &&
+        x.isHeadquarters === true,
+    )
+  })
+
+  /** Yerel şube lideri veya GM lideri: o şubede yönetici yetkisi (UI, API guard’ları ile uyumlu). */
+  function canLeadBranch(branchId: string): boolean {
+    if (!branchId) return false
+    if (isSuperAdmin.value) return true
+    const list = user.value?.branchMemberships ?? []
+    const local = list.some(
+      x =>
+        x.branchId === branchId &&
+        x.status === 'approved' &&
+        (x.role === 'admin' || x.role === 'president'),
+    )
+    if (local) return true
+    return isHeadquartersLeader.value
+  }
 
   /** Sistem yöneticisi; veya kullanıcı kaydında `role === 'admin'` (şube üyeliğindeki yönetici değil); veya onaylı şube yöneticisi/başkan — talep kuyruğu, operatör import vb. */
   const canManageRequestQueues = computed(() => {
@@ -153,6 +184,8 @@ export const useAuthStore = defineStore('auth', () => {
     isVolunteer,
     isAdmin,
     isSuperAdmin,
+    isHeadquartersLeader,
+    canLeadBranch,
     canManageRequestQueues,
     isInitialized,
     isTemporaryPassword,

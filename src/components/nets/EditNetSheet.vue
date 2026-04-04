@@ -119,6 +119,11 @@ const channels = ref<CommunicationChannel[]>([])
 const selectedChannelIds = ref<string[]>([])
 const isLoadingChannels = ref(false)
 
+/** Şubenin kayıtlı çağrı işareti yoksa (ör. GM) API `branchCallSignId` null kabul eder. */
+const needsBranchCallSign = computed(
+  () => !isLoadingCallSigns.value && branchCallSigns.value.length > 0,
+)
+
 interface SimplexRow {
   checked: boolean
   value: string
@@ -134,7 +139,10 @@ const validators = computed(() => ({
     (_value: Operator | null) => selectedOperator.value ? true : t('form.validation.required')
   ],
   callSign: [
-    (_value: string) => selectedCallSignId.value ? true : t('form.validation.required')
+    (_value: string) =>
+      !needsBranchCallSign.value || selectedCallSignId.value
+        ? true
+        : t('form.validation.required'),
   ],
   channels: [
     (_value: any) => {
@@ -403,7 +411,7 @@ async function handleSubmit() {
     return
   }
 
-  if (!selectedOperator.value || !selectedCallSignId.value) {
+  if (!selectedOperator.value) {
     return
   }
 
@@ -433,7 +441,9 @@ async function handleSubmit() {
     await api.put(`/net/${props.net.id}`, {
       name: name.value.trim(),
       operatorId: selectedOperator.value.id,
-      branchCallSignId: selectedCallSignId.value,
+      branchCallSignId: needsBranchCallSign.value
+        ? selectedCallSignId.value || null
+        : null,
       communicationChannels,
       scheduledAt: scheduledAtDate.toISOString(),
       estimatedDurationMinutes: estimatedDurationMinutes.value ?? 30,
@@ -477,10 +487,14 @@ async function handleSubmit() {
           <p class="text-xs text-muted-foreground">{{ t('nets.branchCannotBeChanged') }}</p>
         </div>
 
-        <div class="space-y-2">
+        <div v-if="needsBranchCallSign || isLoadingCallSigns" class="space-y-2">
           <Label for="callSign">{{ t('nets.branchCallSign') }}</Label>
           <Select v-model="selectedCallSignId" :disabled="!branch || isLoadingCallSigns">
-            <SelectTrigger id="callSign" class="w-full">
+            <SelectTrigger
+              id="callSign"
+              class="w-full"
+              :class="shouldShowError('callSign', isSubmitted) ? 'border-destructive' : ''"
+            >
               <SelectValue :placeholder="t('nets.selectCallSign')" />
             </SelectTrigger>
             <SelectContent>
@@ -489,6 +503,9 @@ async function handleSubmit() {
               </SelectItem>
             </SelectContent>
           </Select>
+          <p v-if="shouldShowError('callSign', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('callSign') }}
+          </p>
         </div>
 
         <div v-if="certificateTemplates.length > 0" class="space-y-2">
@@ -668,7 +685,11 @@ async function handleSubmit() {
             <X class="h-4 w-4 mr-2" />
             {{ t('common.cancel') }}
           </Button>
-          <Button type="submit" class="trac-sheet-btn" :disabled="isLoading">
+          <Button
+            type="submit"
+            class="trac-sheet-btn"
+            :disabled="isLoading || isLoadingCallSigns || isLoadingChannels"
+          >
             <Check class="h-4 w-4 mr-2" />
             {{ isLoading ? t('common.loading') : t('common.save') }}
           </Button>

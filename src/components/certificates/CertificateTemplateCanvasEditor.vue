@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { REFERENCE_HEIGHT } from '@/components/certificates/certificate-template-defaults'
 import { ChevronDown, Plus, Trash2, Type } from 'lucide-vue-next'
+import {
+  CERTIFICATE_PREVIEW_FONT_FAMILY,
+  REFERENCE_HEIGHT,
+  type CertificateTemplateElement,
+} from '@/components/certificates/certificate-template-defaults'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -12,15 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import type { CertificateTemplateElement } from '@/components/certificates/certificate-template-defaults'
 
 const PLACEHOLDER_KEYS = [
   'operator_callsign',
@@ -38,21 +34,6 @@ const PLACEHOLDER_KEYS = [
   'participant_number',
   'issue_date',
 ] as const
-
-const FONT_OPTIONS = [
-  { value: 'Arial', label: 'Arial' },
-  { value: 'Helvetica', label: 'Helvetica' },
-  { value: 'Times New Roman', label: 'Times New Roman' },
-  { value: 'Georgia', label: 'Georgia' },
-  { value: 'Verdana', label: 'Verdana' },
-  { value: 'Tahoma', label: 'Tahoma' },
-  { value: 'Trebuchet MS', label: 'Trebuchet MS' },
-  { value: 'Courier New', label: 'Courier New' },
-  { value: 'Palatino Linotype', label: 'Palatino Linotype' },
-  { value: 'Garamond', label: 'Garamond' },
-  { value: 'Comic Sans MS', label: 'Comic Sans MS' },
-  { value: 'Impact', label: 'Impact' },
-]
 
 const props = withDefaults(
   defineProps<{
@@ -100,7 +81,6 @@ const addStaticText = () => {
     content: '',
     x: 50,
     y: 50,
-    fontFamily: 'Arial',
     fontSize: 16,
     color: '#000000',
   }
@@ -113,7 +93,6 @@ const addPlaceholder = (key: string) => {
     placeholderKey: key,
     x: 50,
     y: 50,
-    fontFamily: 'Arial',
     fontSize: 16,
     color: '#000000',
   }
@@ -164,7 +143,6 @@ const updateElement = (index: number, patch: Partial<CertificateTemplateElement>
     placeholderKey: patch.placeholderKey !== undefined ? patch.placeholderKey : current.placeholderKey,
     x: patch.x ?? current.x,
     y: patch.y ?? current.y,
-    fontFamily: patch.fontFamily ?? current.fontFamily,
     fontSize: patch.fontSize ?? current.fontSize,
     color: patch.color ?? current.color,
   }
@@ -218,7 +196,7 @@ const previewLabel = (el: CertificateTemplateElement) => {
         :style="{
           left: el.x + '%',
           top: el.y + '%',
-          fontFamily: el.fontFamily,
+          fontFamily: CERTIFICATE_PREVIEW_FONT_FAMILY,
           fontSize: scaledFontSize(el.fontSize) + 'px',
           color: el.color,
         }"
@@ -326,38 +304,16 @@ const previewLabel = (el: CertificateTemplateElement) => {
               />
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-2">
-            <div class="space-y-1">
-              <Label class="text-xs">{{ t('certificates.fontFamily') }}</Label>
-              <Select
-                :model-value="el.fontFamily"
-                @update:model-value="(v) => updateElement(idx, { fontFamily: v != null ? String(v) : undefined })"
-              >
-                <SelectTrigger class="mt-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem
-                    v-for="opt in FONT_OPTIONS"
-                    :key="opt.value"
-                    :value="opt.value"
-                  >
-                    <span :style="{ fontFamily: opt.value }">{{ opt.label }}</span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div class="space-y-1">
-              <Label class="text-xs">{{ t('certificates.fontSize') }}</Label>
-              <Input
-                type="number"
-                min="8"
-                max="120"
-                :model-value="String(el.fontSize)"
-                class="mt-1"
-                @update:model-value="(v) => updateElement(idx, { fontSize: Number(v) || 16 })"
-              />
-            </div>
+          <div class="space-y-1">
+            <Label class="text-xs">{{ t('certificates.fontSize') }}</Label>
+            <Input
+              type="number"
+              min="8"
+              max="120"
+              :model-value="String(el.fontSize)"
+              class="mt-1 max-w-[8rem]"
+              @update:model-value="(v) => updateElement(idx, { fontSize: Number(v) || 16 })"
+            />
           </div>
           <div class="space-y-1">
             <Label class="text-xs">{{ t('certificates.color') }}</Label>
