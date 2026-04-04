@@ -15,7 +15,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import CertificateTemplateCanvasEditor from '@/components/certificates/CertificateTemplateCanvasEditor.vue'
-import { DEFAULT_SERIAL_ELEMENT } from '@/components/certificates/certificate-template-defaults'
+import {
+  DEFAULT_SERIAL_ELEMENT,
+  toCertificateTemplateElementsPayload,
+} from '@/components/certificates/certificate-template-defaults'
 import type { CertificateTemplateElement } from '@/components/certificates/certificate-template-defaults'
 import { MAX_UPLOAD_BYTES } from '@/constants/upload'
 import { translateError } from '@/i18n'
@@ -113,7 +116,7 @@ const handleSubmit = async () => {
     await api.post(`/branches/${props.branchId}/certificate-templates`, {
       name: trimmedName,
       imagePath: imagePath.value,
-      elements: elements.value,
+      elements: toCertificateTemplateElementsPayload(elements.value),
     })
     toast.success(t('certificates.createSuccess'))
     emit('created')

@@ -15,7 +15,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import CertificateTemplateCanvasEditor from '@/components/certificates/CertificateTemplateCanvasEditor.vue'
-import { DEFAULT_SERIAL_ELEMENT } from '@/components/certificates/certificate-template-defaults'
+import {
+  DEFAULT_SERIAL_ELEMENT,
+  toCertificateTemplateElementsPayload,
+} from '@/components/certificates/certificate-template-defaults'
 import type { CertificateTemplateElement } from '@/components/certificates/certificate-template-defaults'
 import { MAX_UPLOAD_BYTES } from '@/constants/upload'
 import { translateError } from '@/i18n'
@@ -65,7 +68,6 @@ watch(
               placeholderKey: e.placeholderKey as string | undefined,
               x: x > 100 ? (x / 400) * 100 : x,
               y: y > 100 ? (y / 300) * 100 : y,
-              fontFamily: (e.fontFamily as string) ?? 'Arial',
               fontSize: Number(e.fontSize) || 16,
               color: (e.color as string) ?? '#000000',
             }
@@ -145,7 +147,7 @@ const handleSubmit = async () => {
       {
         name: trimmedName,
         imagePath: imagePath.value,
-        elements: elements.value,
+        elements: toCertificateTemplateElementsPayload(elements.value),
       }
     )
     toast.success(t('certificates.updateSuccess'))

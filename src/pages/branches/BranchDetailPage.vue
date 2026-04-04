@@ -56,21 +56,21 @@ interface Branch {
 
 interface BranchMember {
   id: string
-  userId: string
+  operatorId: string
   branchId: string
   role: string
-  user: {
+  operator?: {
     id: string
+    callSign?: string
+    prefix?: string
+    suffix?: string
     fullName?: string
-    picture?: string
-    globalRole?: string
-    operator?: { 
-      id?: string
-      callSign?: string
-      prefix?: string
-      suffix?: string
-      fullName?: string 
-    }
+    user?: {
+      id: string
+      fullName?: string
+      picture?: string
+      globalRole?: string
+    } | null
   }
 }
 
@@ -150,14 +150,13 @@ const branchEquipment = ref<any[]>([])
 const branchEquipmentTotal = ref(0)
 const branchEquipmentLoading = ref(false)
 
-const canManage = computed(() => {
-  if (authStore.isSuperAdmin) return true
-  if (!userMembership.value || userMembership.value.status !== 'approved') return false
-  return (
-    userMembership.value.role === 'admin' ||
-    userMembership.value.role === 'president'
-  )
-})
+const branchIdForAuth = computed(
+  () => branch.value?.id ?? (route.params.id as string),
+)
+
+const canManage = computed(() =>
+  authStore.canLeadBranch(branchIdForAuth.value),
+)
 
 /** Şube silme API yalnız süper admin */
 const canDeleteBranch = computed(() => authStore.isSuperAdmin)
@@ -176,16 +175,12 @@ const canJoin = computed(() => {
 
 const isBranchMember = computed(() => userMembership.value?.status === 'approved')
 
-const canManageMembers = computed(() => {
-  if (authStore.isSuperAdmin) return true
-  
-  if (!userMembership.value || userMembership.value.status !== 'approved') return false
-  
-  return userMembership.value?.role === 'admin' || userMembership.value?.role === 'president'
-})
+const canManageMembers = computed(() =>
+  authStore.canLeadBranch(branchIdForAuth.value),
+)
 
 const canCreateNet = computed(() => {
-  if (authStore.isSuperAdmin) return true
+  if (authStore.canLeadBranch(branchIdForAuth.value)) return true
   if (!userMembership.value || userMembership.value.status !== 'approved') return false
   return userMembership.value?.role === 'member' || 
          userMembership.value?.role === 'admin' || 
@@ -193,18 +188,20 @@ const canCreateNet = computed(() => {
          userMembership.value?.role === 'volunteer'
 })
 
+const myOperatorId = computed(() => authStore.user?.operator?.id ?? null)
+
 const canRemoveMember = (member: BranchMember) => {
   if (!canManageMembers.value) return false
-  if (member.user?.globalRole === 'super_admin') return false
+  if (member.operator?.user?.globalRole === 'super_admin') return false
   if (branch.value?.isHeadquarters) return false
-  if (member.userId === authStore.user?.id) return false
+  if (member.operatorId === myOperatorId.value) return false
   return true
 }
 
 const canChangeRole = (member: BranchMember) => {
   if (!canManageMembers.value) return false
-  if (member.user?.globalRole === 'super_admin') return false
-  if (member.userId === authStore.user?.id) return false
+  if (member.operator?.user?.globalRole === 'super_admin') return false
+  if (member.operatorId === myOperatorId.value) return false
   return true
 }
 
@@ -357,7 +354,7 @@ const confirmRemoveMember = async () => {
   if (!memberToRemove.value || !route.params.id || isRemovingMember.value) return
   isRemovingMember.value = true
   try {
-    await api.delete(`/branches/${route.params.id}/members/${memberToRemove.value.userId}`)
+    await api.delete(`/branches/${route.params.id}/members/${memberToRemove.value.operatorId}`)
     toast.success(t('branches.memberRemoved'))
     showRemoveMemberDialog.value = false
     memberToRemove.value = null
@@ -371,13 +368,52 @@ const confirmRemoveMember = async () => {
 }
 
 const memberCallSign = (m: BranchMember) => {
-  const op = m.user?.operator
-  if (!op) return m.user?.fullName || '-'
+  const op = m.operator
+  if (!op?.callSign) return op?.fullName || m.operator?.user?.fullName || '-'
   return formatCallSign({
     callSign: op.callSign ?? '',
     prefix: op.prefix,
     suffix: op.suffix
   })
+}
+
+function branchMemberCardUser(m: BranchMember): MemberCardUserPayload {
+  const op = m.operator
+  if (!op) {
+    return {
+      id: '',
+      fullName: undefined,
+      picture: undefined,
+      globalRole: undefined,
+      operator: undefined,
+    }
+  }
+  const u = op.user
+  return {
+    id: u?.id ?? '',
+    fullName: u?.fullName || op.fullName,
+    picture: u?.picture,
+    globalRole: u?.globalRole,
+    operator: {
+      id: op.id,
+      callSign: op.callSign,
+      prefix: op.prefix,
+      suffix: op.suffix,
+    },
+  }
+}
+
+interface MemberCardUserPayload {
+  id: string
+  fullName?: string
+  picture?: string
+  globalRole?: string
+  operator?: {
+    id: string
+    callSign?: string
+    prefix?: string
+    suffix?: string
+  }
 }
 
 const fetchChannels = async (append = false) => {
@@ -1145,10 +1181,10 @@ onMounted(() => {
               v-for="m in members"
               :key="m.id"
               :id="m.id"
-              :user-id="m.userId"
-              :operator-id="m.user.operator?.id"
+              :user-id="m.operator?.user?.id ?? ''"
+              :operator-id="m.operatorId"
               :role="m.role"
-              :user="m.user"
+              :user="branchMemberCardUser(m)"
               :can-manage="canManageMembers"
               :can-change-role="canChangeRole(m)"
               :can-remove="canRemoveMember(m)"

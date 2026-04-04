@@ -24,7 +24,7 @@ export interface Branch {
 
 export interface UserBranchMembership {
   id: string
-  userId: string
+  operatorId: string
   branchId: string
   role: string
   status: string

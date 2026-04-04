@@ -11,7 +11,7 @@ import { getRoleBadgeClass } from '@/lib/ui-helpers'
 
 interface Props {
   id: string
-  userId: string
+  userId?: string
   operatorId?: string
   role: string
   user?: {

@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, ref, onMounted, onUnmounted } from 'vue'
-import { REFERENCE_HEIGHT } from '@/components/certificates/certificate-template-defaults'
-import type { CertificateTemplateElement } from '@/components/certificates/certificate-template-defaults'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import {
+  CERTIFICATE_PREVIEW_FONT_FAMILY,
+  REFERENCE_HEIGHT,
+  type CertificateTemplateElement,
+} from '@/components/certificates/certificate-template-defaults'
 
 const props = withDefaults(
   defineProps<{
@@ -76,7 +79,7 @@ function scaledFontSize(fontSize: number): number {
           left: `${el.x}%`,
           top: `${el.y}%`,
           fontSize: `${scaledFontSize(el.fontSize || 12)}px`,
-          fontFamily: el.fontFamily || 'Arial, sans-serif',
+          fontFamily: CERTIFICATE_PREVIEW_FONT_FAMILY,
           color: el.color || '#000000',
         }"
       >

@@ -29,7 +29,7 @@ interface Operator {
     email: string
     fullName?: string
     picture?: string
-  }
+  } | null
 }
 
 interface PaginatedResponse<T> {
@@ -38,14 +38,14 @@ interface PaginatedResponse<T> {
 }
 
 interface SearchResult {
-  userId: string
   operatorId: string
   callSign?: string
   prefix?: string
   suffix?: string
-  email: string
+  email?: string
   fullName?: string
   picture?: string
+  hasUser: boolean
 }
 
 const props = defineProps<Props>()
@@ -59,25 +59,25 @@ const { t } = useI18n()
 const searchQuery = ref('')
 const searchResults = ref<SearchResult[]>([])
 const isSearching = ref(false)
-const selectedUser = ref<SearchResult | null>(null)
+const selected = ref<SearchResult | null>(null)
 const selectedRole = ref('volunteer')
 const isAdding = ref(false)
 
 const displayName = computed(() => {
-  if (!selectedUser.value) return ''
-  if (selectedUser.value.callSign) {
+  if (!selected.value) return ''
+  if (selected.value.callSign) {
     return formatCallSign({
-      callSign: selectedUser.value.callSign,
-      prefix: selectedUser.value.prefix,
-      suffix: selectedUser.value.suffix
+      callSign: selected.value.callSign,
+      prefix: selected.value.prefix,
+      suffix: selected.value.suffix
     })
   }
-  return selectedUser.value.fullName || selectedUser.value.email
+  return selected.value.fullName || selected.value.email || ''
 })
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
-const searchUsers = async () => {
+const searchOperators = async () => {
   if (!searchQuery.value.trim()) {
     searchResults.value = []
     return
@@ -85,19 +85,19 @@ const searchUsers = async () => {
 
   isSearching.value = true
   try {
-    const response = await api.get<PaginatedResponse<Operator>>(`/operator?search=${encodeURIComponent(searchQuery.value)}`)
-    searchResults.value = (response.data || [])
-      .filter(op => op.user?.id)
-      .map(op => ({
-        userId: op.user!.id,
-        operatorId: op.id,
-        callSign: op.callSign,
-        prefix: op.prefix,
-        suffix: op.suffix,
-        email: op.user!.email,
-        fullName: op.user!.fullName || op.fullName || '',
-        picture: op.user!.picture
-      }))
+    const response = await api.get<PaginatedResponse<Operator>>(
+      `/operator?search=${encodeURIComponent(searchQuery.value)}`
+    )
+    searchResults.value = (response.data || []).map((op) => ({
+      operatorId: op.id,
+      callSign: op.callSign,
+      prefix: op.prefix,
+      suffix: op.suffix,
+      email: op.user?.email,
+      fullName: op.user?.fullName || op.fullName || '',
+      picture: op.user?.picture,
+      hasUser: !!op.user?.id
+    }))
   } catch (error) {
     console.error('Search failed:', error)
     searchResults.value = []
@@ -111,23 +111,23 @@ watch(searchQuery, () => {
     clearTimeout(searchTimeout)
   }
   searchTimeout = setTimeout(() => {
-    searchUsers()
+    searchOperators()
   }, 300)
 })
 
-const selectUser = (result: SearchResult) => {
-  selectedUser.value = result
+const selectResult = (result: SearchResult) => {
+  selected.value = result
   searchQuery.value = ''
   searchResults.value = []
 }
 
 const handleAdd = async () => {
-  if (!selectedUser.value || isAdding.value) return
+  if (!selected.value || isAdding.value) return
 
   isAdding.value = true
   try {
     await api.post(`/branches/${props.branchId}/members/add`, {
-      userId: selectedUser.value.userId,
+      operatorId: selected.value.operatorId,
       role: selectedRole.value
     })
     toast.success(t('branches.memberAdded'))
@@ -145,7 +145,7 @@ const handleAdd = async () => {
 const resetForm = () => {
   searchQuery.value = ''
   searchResults.value = []
-  selectedUser.value = null
+  selected.value = null
   selectedRole.value = 'volunteer'
 }
 
@@ -166,10 +166,10 @@ const handleOpenChange = (open: boolean) => {
       </SheetHeader>
 
       <div class="space-y-6 py-6">
-        <div v-if="!selectedUser" class="space-y-4">
+        <div v-if="!selected" class="space-y-4">
           <div class="space-y-2">
-            <Label>{{ t('branches.searchUser') }}</Label>
-            <SearchInput v-model="searchQuery" :placeholder="t('branches.searchUserPlaceholder')" />
+            <Label>{{ t('branches.searchOperator') }}</Label>
+            <SearchInput v-model="searchQuery" :placeholder="t('branches.searchOperatorPlaceholder')" />
           </div>
 
           <div v-if="isSearching" class="space-y-2">
@@ -185,18 +185,29 @@ const handleOpenChange = (open: boolean) => {
           </div>
 
           <div v-else-if="searchResults.length > 0" class="space-y-2 max-h-64 overflow-y-auto">
-            <button v-for="result in searchResults" :key="result.userId" @click="selectUser(result)"
-              class="w-full p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all text-left">
+            <button
+              v-for="result in searchResults"
+              :key="result.operatorId"
+              type="button"
+              class="w-full p-3 rounded-lg border border-border/50 hover:border-border hover:bg-muted/30 transition-all text-left"
+              @click="selectResult(result)"
+            >
               <div class="flex items-center gap-3">
                 <UserAvatar :picture="result.picture" class="h-10 w-10" />
                 <div class="flex-1 min-w-0">
                   <p class="font-medium truncate">
-                    {{ result.callSign ? formatCallSign({
-                      callSign: result.callSign, prefix: result.prefix, suffix:
-                        result.suffix
-                    }) : result.fullName || result.email }}
+                    {{
+                      result.callSign
+                        ? formatCallSign({
+                            callSign: result.callSign,
+                            prefix: result.prefix,
+                            suffix: result.suffix
+                          })
+                        : result.fullName || t('common.unknown')
+                    }}
                   </p>
-                  <p class="text-sm text-muted-foreground truncate">{{ result.email }}</p>
+                  <p v-if="result.email" class="text-sm text-muted-foreground truncate">{{ result.email }}</p>
+                  <p v-else class="text-xs text-muted-foreground">{{ t('operators.noPortalAccount') }}</p>
                 </div>
               </div>
             </button>
@@ -210,14 +221,15 @@ const handleOpenChange = (open: boolean) => {
         <div v-else class="space-y-4">
           <div class="p-4 rounded-lg border bg-muted/20">
             <div class="flex items-center gap-3 mb-4">
-              <UserAvatar :picture="selectedUser.picture" class="h-12 w-12" />
+              <UserAvatar :picture="selected.picture" class="h-12 w-12" />
               <div class="flex-1 min-w-0">
                 <p class="font-medium truncate">{{ displayName }}</p>
-                <p class="text-sm text-muted-foreground truncate">{{ selectedUser.email }}</p>
+                <p v-if="selected.email" class="text-sm text-muted-foreground truncate">{{ selected.email }}</p>
+                <p v-else class="text-xs text-muted-foreground">{{ t('operators.noPortalAccount') }}</p>
               </div>
             </div>
 
-            <Button variant="outline" size="sm" @click="selectedUser = null" class="w-full">
+            <Button variant="outline" size="sm" class="w-full" @click="selected = null">
               {{ t('common.change') }}
             </Button>
           </div>
@@ -244,7 +256,7 @@ const handleOpenChange = (open: boolean) => {
           <X class="h-4 w-4 mr-2" />
           {{ t('common.cancel') }}
         </Button>
-        <Button class="trac-sheet-btn" @click="handleAdd" :disabled="!selectedUser || isAdding">
+        <Button variant="outline" class="trac-sheet-btn" :disabled="!selected || isAdding" @click="handleAdd">
           <UserPlus class="h-4 w-4 mr-2" />
           {{ t('common.add') }}
         </Button>
