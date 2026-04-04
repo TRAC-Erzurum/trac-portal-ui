@@ -15,6 +15,7 @@ import EquipmentCardSkeleton from '@/components/inventory/EquipmentCardSkeleton.
 import CreateEquipmentSheet from '@/components/inventory/CreateEquipmentSheet.vue'
 import EditEquipmentSheet from '@/components/inventory/EditEquipmentSheet.vue'
 import EquipmentDetailSheet from '@/components/inventory/EquipmentDetailSheet.vue'
+import { useAsyncStaleGuard } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
@@ -61,6 +62,8 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const branchEquipmentListGuard = useAsyncStaleGuard()
+const memberEquipmentListGuard = useAsyncStaleGuard()
 
 const branchId = computed(() => route.params.id as string)
 const isBranchAdmin = computed(() =>
@@ -95,7 +98,7 @@ const memberCategoryFilter = ref('all')
 const memberStatusFilter = ref('all')
 const hasMemberMore = computed(() => memberEquipment.value.length < memberTotal.value)
 
-const pageSize = 12
+const pageSize = 48
 
 const showCreateSheet = ref(false)
 const detailEquipmentId = ref<string | null>(null)
@@ -135,6 +138,7 @@ async function fetchBranch() {
 }
 
 async function fetchBranchEquipment(append = false) {
+  const token = append ? branchEquipmentListGuard.beginAppend() : branchEquipmentListGuard.beginReplace()
   if (append) {
     isLoadingMoreBranch.value = true
   } else {
@@ -154,6 +158,10 @@ async function fetchBranchEquipment(append = false) {
       `/equipment/branch/${branchId.value}?${params.toString()}`,
     )
 
+    if (!branchEquipmentListGuard.isCurrent(token)) {
+      return
+    }
+
     if (append) {
       branchEquipment.value = [...branchEquipment.value, ...result.data]
     } else {
@@ -161,15 +169,21 @@ async function fetchBranchEquipment(append = false) {
     }
     branchTotal.value = result.total
   } catch (e) {
+    if (!branchEquipmentListGuard.isCurrent(token)) {
+      return
+    }
     const err = e as ApiError
     toast.error(translateError(err.message))
   } finally {
-    isLoadingBranch_.value = false
-    isLoadingMoreBranch.value = false
+    if (branchEquipmentListGuard.isCurrent(token)) {
+      isLoadingBranch_.value = false
+      isLoadingMoreBranch.value = false
+    }
   }
 }
 
 async function fetchMemberEquipment(append = false) {
+  const token = append ? memberEquipmentListGuard.beginAppend() : memberEquipmentListGuard.beginReplace()
   if (append) {
     isLoadingMoreMember.value = true
   } else {
@@ -189,6 +203,10 @@ async function fetchMemberEquipment(append = false) {
       `/equipment/branch/${branchId.value}/members?${params.toString()}`,
     )
 
+    if (!memberEquipmentListGuard.isCurrent(token)) {
+      return
+    }
+
     if (append) {
       memberEquipment.value = [...memberEquipment.value, ...result.data]
     } else {
@@ -196,11 +214,16 @@ async function fetchMemberEquipment(append = false) {
     }
     memberTotal.value = result.total
   } catch (e) {
+    if (!memberEquipmentListGuard.isCurrent(token)) {
+      return
+    }
     const err = e as ApiError
     toast.error(translateError(err.message))
   } finally {
-    isLoadingMember.value = false
-    isLoadingMoreMember.value = false
+    if (memberEquipmentListGuard.isCurrent(token)) {
+      isLoadingMember.value = false
+      isLoadingMoreMember.value = false
+    }
   }
 }
 
