@@ -26,7 +26,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { usePersistedFilters } from '@/composables'
+import { useAsyncStaleGuard, usePersistedFilters } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
@@ -79,6 +79,11 @@ const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 
+const membersListGuard = useAsyncStaleGuard()
+const branchChannelsListGuard = useAsyncStaleGuard()
+const branchNetsListGuard = useAsyncStaleGuard()
+const branchSchedulersListGuard = useAsyncStaleGuard()
+
 const branch = ref<Branch | null>(null)
 const isLoading = ref(true)
 const isEditSheetOpen = ref(false)
@@ -93,7 +98,7 @@ const isLoadingCommunity = ref(false)
 const channels = ref<CommunicationChannel[]>([])
 const channelsTotal = ref(0)
 const channelPage = ref(1)
-const channelPageSize = 12
+const channelPageSize = 6
 const hasMoreChannels = ref(true)
 const isLoadingChannels = ref(true)
 const isLoadingMoreChannels = ref(false)
@@ -110,7 +115,7 @@ const tutorialTitle = ref('')
 const members = ref<BranchMember[]>([])
 const membersTotal = ref(0)
 const membersPage = ref(1)
-const membersPageSize = 12
+const membersPageSize = 6
 const hasMoreMembers = ref(true)
 const isLoadingMembers = ref(true)
 const isLoadingMoreMembers = ref(false)
@@ -126,7 +131,7 @@ const userMembership = ref<{ status: string; role?: string; rejectionReason?: st
 const nets = ref<any[]>([])
 const netsTotal = ref(0)
 const netsPage = ref(1)
-const netsPageSize = 12
+const netsPageSize = 6
 const hasMoreNets = ref(true)
 const isLoadingNets = ref(true)
 const isLoadingMoreNets = ref(false)
@@ -269,6 +274,7 @@ watch(communityPeriod, () => {
 const fetchMembers = async (append = false) => {
   if (!route.params.id) return
   if (!userMembership.value || userMembership.value.status !== 'approved') return
+  const token = append ? membersListGuard.beginAppend() : membersListGuard.beginReplace()
   if (append) {
     isLoadingMoreMembers.value = true
   } else {
@@ -283,20 +289,29 @@ const fetchMembers = async (append = false) => {
     if (membersRoleFilter.value !== 'all') params.set('role', membersRoleFilter.value)
 
     const response = await api.get<{ data: BranchMember[]; total: number }>(`/branches/${route.params.id}/members?${params.toString()}`)
-    
+
+    if (!membersListGuard.isCurrent(token)) {
+      return
+    }
+
     if (append) {
       members.value = [...members.value, ...response.data]
     } else {
       members.value = response.data
     }
-    
+
     membersTotal.value = response.total
     hasMoreMembers.value = members.value.length < response.total
   } catch {
+    if (!membersListGuard.isCurrent(token)) {
+      return
+    }
     members.value = []
   } finally {
-    isLoadingMembers.value = false
-    isLoadingMoreMembers.value = false
+    if (membersListGuard.isCurrent(token)) {
+      isLoadingMembers.value = false
+      isLoadingMoreMembers.value = false
+    }
   }
 }
 
@@ -418,6 +433,7 @@ interface MemberCardUserPayload {
 
 const fetchChannels = async (append = false) => {
   if (!route.params.id) return
+  const token = append ? branchChannelsListGuard.beginAppend() : branchChannelsListGuard.beginReplace()
   if (append) {
     isLoadingMoreChannels.value = true
   } else {
@@ -433,20 +449,29 @@ const fetchChannels = async (append = false) => {
     if (channelTypeFilter.value !== 'all') params.set('type', channelTypeFilter.value)
 
     const response = await api.get<{ data: CommunicationChannel[]; total: number }>(`/branches/${route.params.id}/communication-channel?${params.toString()}`)
-    
+
+    if (!branchChannelsListGuard.isCurrent(token)) {
+      return
+    }
+
     if (append) {
       channels.value = [...channels.value, ...response.data]
     } else {
       channels.value = response.data
     }
-    
+
     channelsTotal.value = response.total
     hasMoreChannels.value = channels.value.length < response.total
   } catch (error) {
+    if (!branchChannelsListGuard.isCurrent(token)) {
+      return
+    }
     console.error('Failed to fetch channels:', error)
   } finally {
-    isLoadingChannels.value = false
-    isLoadingMoreChannels.value = false
+    if (branchChannelsListGuard.isCurrent(token)) {
+      isLoadingChannels.value = false
+      isLoadingMoreChannels.value = false
+    }
   }
 }
 
@@ -700,6 +725,7 @@ const deleteCertificateTemplate = async () => {
 
 const fetchNets = async (append = false) => {
   if (!route.params.id) return
+  const token = append ? branchNetsListGuard.beginAppend() : branchNetsListGuard.beginReplace()
   if (!append) {
     netsPage.value = 1
     isLoadingNets.value = true
@@ -716,6 +742,11 @@ const fetchNets = async (append = false) => {
     if (netsStatusFilter.value !== 'all') params.set('status', netsStatusFilter.value)
 
     const response = await api.get<any[] | { data: any[]; total: number; limit: number; offset: number }>(`/branches/${route.params.id}/nets?${params.toString()}`)
+
+    if (!branchNetsListGuard.isCurrent(token)) {
+      return
+    }
+
     const isPaginated = typeof response === 'object' && response !== null && 'data' in response
     const data = isPaginated ? (response as { data: any[] }).data : (Array.isArray(response) ? response : [])
     const total = isPaginated ? (response as { total: number }).total : (Array.isArray(response) ? response.length : 0)
@@ -729,13 +760,18 @@ const fetchNets = async (append = false) => {
     netsTotal.value = total
     hasMoreNets.value = nets.value.length < total
   } catch (error) {
+    if (!branchNetsListGuard.isCurrent(token)) {
+      return
+    }
     console.error('Failed to fetch nets:', error)
     nets.value = []
     hasMoreNets.value = false
     netsTotal.value = 0
   } finally {
-    isLoadingNets.value = false
-    isLoadingMoreNets.value = false
+    if (branchNetsListGuard.isCurrent(token)) {
+      isLoadingNets.value = false
+      isLoadingMoreNets.value = false
+    }
   }
 }
 
@@ -751,13 +787,23 @@ const handleNetCreated = async () => {
 
 const fetchSchedulers = async () => {
   if (!route.params.id || !canCreateNet.value) return
+  const token = branchSchedulersListGuard.beginReplace()
   isLoadingSchedulers.value = true
   try {
-    schedulers.value = await api.get<any[]>(`/net-schedulers?branchId=${route.params.id}`)
+    const list = await api.get<any[]>(`/net-schedulers?branchId=${route.params.id}`)
+    if (!branchSchedulersListGuard.isCurrent(token)) {
+      return
+    }
+    schedulers.value = list
   } catch {
+    if (!branchSchedulersListGuard.isCurrent(token)) {
+      return
+    }
     schedulers.value = []
   } finally {
-    isLoadingSchedulers.value = false
+    if (branchSchedulersListGuard.isCurrent(token)) {
+      isLoadingSchedulers.value = false
+    }
   }
 }
 

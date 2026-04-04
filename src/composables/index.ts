@@ -1,3 +1,4 @@
+export { useAsyncStaleGuard } from './useAsyncStaleGuard'
 export { useAppVersion } from './useAppVersion'
 export { useAvatarUrl, getAvatarUrl, getUploadedFileUrl, DEFAULT_AVATAR } from './useAvatarUrl'
 export { useDateFormat } from './useDateFormat'

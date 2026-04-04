@@ -7,7 +7,7 @@ import EditCommChannelSheet from '@/components/infrastructure/EditCommChannelShe
 import AppLayout from '@/components/layout/AppLayout.vue'
 import PublicPageLayout from '@/components/layout/PublicPageLayout.vue'
 import { CommunicationChannelCard, CommunicationChannelCardSkeleton, SearchInput } from '@/components/shared'
-import { usePersistedFilters } from '@/composables'
+import { useAsyncStaleGuard, usePersistedFilters } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
@@ -42,8 +42,10 @@ const searchTimeout = ref<ReturnType<typeof setTimeout> | null>(null)
 const tutorialContent = ref({ title: '', content: '' })
 const tutorialTitle = ref('')
 const page = ref(1)
-const pageSize = 12
+const pageSize = 48
 const hasMore = ref(true)
+
+const channelsListGuard = useAsyncStaleGuard()
 
 function canManageBranch(branchId: string): boolean {
   if (authStore.isSuperAdmin) return true
@@ -103,6 +105,7 @@ const filteredChannels = computed(() => {
 })
 
 async function fetchChannels(append = false) {
+  const token = append ? channelsListGuard.beginAppend() : channelsListGuard.beginReplace()
   if (append) {
     isLoadingMore.value = true
   } else {
@@ -115,9 +118,13 @@ async function fetchChannels(append = false) {
     params.set('pageSize', String(pageSize))
     if (searchQuery.value.trim()) params.set('search', searchQuery.value.trim())
     if (typeFilter.value && typeFilter.value !== 'all') params.set('type', typeFilter.value)
-    
+
     const response = await api.get<CommunicationChannelListResponse>(`/communication-channel?${params.toString()}`)
-    
+
+    if (!channelsListGuard.isCurrent(token)) {
+      return
+    }
+
     if (append) {
       channels.value = [...channels.value, ...response.data]
       allChannels.value = [...allChannels.value, ...response.data]
@@ -125,15 +132,20 @@ async function fetchChannels(append = false) {
       channels.value = response.data
       allChannels.value = response.data
     }
-    
+
     total.value = response.total
     hasMore.value = channels.value.length < response.total
   } catch {
+    if (!channelsListGuard.isCurrent(token)) {
+      return
+    }
     channels.value = []
     allChannels.value = []
   } finally {
-    isLoading.value = false
-    isLoadingMore.value = false
+    if (channelsListGuard.isCurrent(token)) {
+      isLoading.value = false
+      isLoadingMore.value = false
+    }
   }
 }
 

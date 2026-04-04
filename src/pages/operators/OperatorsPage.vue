@@ -10,7 +10,7 @@ import { Separator } from '@/components/ui/separator'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { OperatorCard, OperatorCardSkeleton, SearchInput } from '@/components/shared'
 import ImportOperatorsSheet from '@/components/operators/ImportOperatorsSheet.vue'
-import { usePersistedFilters } from '@/composables'
+import { useAsyncStaleGuard, usePersistedFilters } from '@/composables'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
 import { type UserRole } from '@/lib/ui-helpers'
@@ -53,8 +53,10 @@ const isImportSheetOpen = ref(false)
 const search = ref('')
 const membershipFilter = ref<MembershipFilter>('all')
 const page = ref(1)
-const pageSize = 12
+const pageSize = 48
 const hasMore = ref(true)
+
+const operatorsListGuard = useAsyncStaleGuard()
 
 const showDeleteDialog = ref(false)
 const operatorToDelete = ref<Operator | null>(null)
@@ -63,6 +65,8 @@ const isDeleting = ref(false)
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const fetchOperators = async (append = false) => {
+  const token = append ? operatorsListGuard.beginAppend() : operatorsListGuard.beginReplace()
+
   if (append) {
     isLoadingMore.value = true
   } else {
@@ -77,20 +81,29 @@ const fetchOperators = async (append = false) => {
     if (membershipFilter.value !== 'all') params.set('membership', membershipFilter.value)
 
     const response = await api.get<OperatorsResponse>(`/operator?${params.toString()}`)
-    
+
+    if (!operatorsListGuard.isCurrent(token)) {
+      return
+    }
+
     if (append) {
       operators.value = [...operators.value, ...response.data]
     } else {
       operators.value = response.data
     }
-    
+
     total.value = response.total
     hasMore.value = operators.value.length < response.total
   } catch (error) {
+    if (!operatorsListGuard.isCurrent(token)) {
+      return
+    }
     console.error('Failed to fetch operators:', error)
   } finally {
-    isLoading.value = false
-    isLoadingMore.value = false
+    if (operatorsListGuard.isCurrent(token)) {
+      isLoading.value = false
+      isLoadingMore.value = false
+    }
   }
 }
 

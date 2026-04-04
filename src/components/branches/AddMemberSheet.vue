@@ -9,8 +9,9 @@ import { Label } from '@/components/ui/label'
 import { SearchInput } from '@/components/shared'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { UserAvatar } from '@/components/ui/user-avatar'
-import { api, type ApiError } from '@/lib/api'
+import { useAsyncStaleGuard } from '@/composables'
 import { translateError } from '@/i18n'
+import { api, type ApiError } from '@/lib/api'
 import { formatCallSign } from '@/lib/formatters'
 
 interface Props {
@@ -56,6 +57,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+const operatorSearchGuard = useAsyncStaleGuard()
+
 const searchQuery = ref('')
 const searchResults = ref<SearchResult[]>([])
 const isSearching = ref(false)
@@ -79,15 +82,21 @@ let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const searchOperators = async () => {
   if (!searchQuery.value.trim()) {
+    operatorSearchGuard.beginReplace()
     searchResults.value = []
+    isSearching.value = false
     return
   }
 
+  const token = operatorSearchGuard.beginReplace()
   isSearching.value = true
   try {
     const response = await api.get<PaginatedResponse<Operator>>(
       `/operator?search=${encodeURIComponent(searchQuery.value)}`
     )
+    if (!operatorSearchGuard.isCurrent(token)) {
+      return
+    }
     searchResults.value = (response.data || []).map((op) => ({
       operatorId: op.id,
       callSign: op.callSign,
@@ -99,10 +108,15 @@ const searchOperators = async () => {
       hasUser: !!op.user?.id
     }))
   } catch (error) {
+    if (!operatorSearchGuard.isCurrent(token)) {
+      return
+    }
     console.error('Search failed:', error)
     searchResults.value = []
   } finally {
-    isSearching.value = false
+    if (operatorSearchGuard.isCurrent(token)) {
+      isSearching.value = false
+    }
   }
 }
 

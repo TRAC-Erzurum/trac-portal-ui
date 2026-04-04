@@ -17,7 +17,7 @@ import {
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CreateNetSheet from '@/components/nets/CreateNetSheet.vue'
 import { NetCard, NetCardSkeleton, SearchInput } from '@/components/shared'
-import { usePersistedFilters } from '@/composables'
+import { useAsyncStaleGuard, usePersistedFilters } from '@/composables'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
 import { useBranchStore } from '@/stores/branch'
@@ -73,7 +73,7 @@ const dateFilter = ref<DateFilter>('all')
 const branchFilter = ref<BranchFilterValue>('selected')
 const availableBranches = ref<Branch[]>([])
 const isLoadingBranches = ref(false)
-const pageSize = 12
+const pageSize = 48
 const hasMore = ref(true)
 const showCreateSheet = ref(false)
 
@@ -82,9 +82,12 @@ const schedulersTotal = ref(0)
 const isLoadingSchedulers = ref(false)
 const isLoadingMoreSchedulers = ref(false)
 const hasMoreSchedulers = ref(false)
-const schedulerPageSize = 12
+const schedulerPageSize = 6
 const selectedSchedulerId = ref<string | null>(null)
 const isEditSchedulerSheetOpen = ref(false)
+
+const netsListGuard = useAsyncStaleGuard()
+const schedulersListGuard = useAsyncStaleGuard()
 
 interface SchedulerResponse {
   data: typeof schedulers.value
@@ -95,6 +98,7 @@ interface SchedulerResponse {
 
 const fetchSchedulers = async (append = false) => {
   if (!canCreate.value) return
+  const token = append ? schedulersListGuard.beginAppend() : schedulersListGuard.beginReplace()
   if (append) {
     isLoadingMoreSchedulers.value = true
   } else {
@@ -114,6 +118,9 @@ const fetchSchedulers = async (append = false) => {
     const response = await api.get<SchedulerResponse | typeof schedulers.value>(
       `/net-schedulers?${params.toString()}`
     )
+    if (!schedulersListGuard.isCurrent(token)) {
+      return
+    }
     const isPaginated = typeof response === 'object' && response !== null && 'data' in response
     if (isPaginated) {
       const res = response as SchedulerResponse
@@ -127,12 +134,17 @@ const fetchSchedulers = async (append = false) => {
       hasMoreSchedulers.value = false
     }
   } catch {
+    if (!schedulersListGuard.isCurrent(token)) {
+      return
+    }
     if (!append) schedulers.value = []
     schedulersTotal.value = 0
     hasMoreSchedulers.value = false
   } finally {
-    isLoadingSchedulers.value = false
-    isLoadingMoreSchedulers.value = false
+    if (schedulersListGuard.isCurrent(token)) {
+      isLoadingSchedulers.value = false
+      isLoadingMoreSchedulers.value = false
+    }
   }
 }
 
@@ -181,6 +193,7 @@ const loadBranches = async () => {
 }
 
 const fetchNets = async (append = false) => {
+  const token = append ? netsListGuard.beginAppend() : netsListGuard.beginReplace()
   if (append) {
     isLoadingMore.value = true
   } else {
@@ -205,7 +218,11 @@ const fetchNets = async (append = false) => {
     params.set('offset', String(offset))
 
     const response = await api.get<NetResponse>(`/net?${params.toString()}`)
-    
+
+    if (!netsListGuard.isCurrent(token)) {
+      return
+    }
+
     total.value = response.total
 
     if (append) {
@@ -216,10 +233,15 @@ const fetchNets = async (append = false) => {
 
     hasMore.value = nets.value.length < response.total
   } catch (error) {
+    if (!netsListGuard.isCurrent(token)) {
+      return
+    }
     console.error('Failed to fetch nets:', error)
   } finally {
-    isLoading.value = false
-    isLoadingMore.value = false
+    if (netsListGuard.isCurrent(token)) {
+      isLoading.value = false
+      isLoadingMore.value = false
+    }
   }
 }
 

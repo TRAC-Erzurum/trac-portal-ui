@@ -14,6 +14,7 @@ import EquipmentCardSkeleton from '@/components/inventory/EquipmentCardSkeleton.
 import CreateEquipmentSheet from '@/components/inventory/CreateEquipmentSheet.vue'
 import EditEquipmentSheet from '@/components/inventory/EditEquipmentSheet.vue'
 import EquipmentDetailSheet from '@/components/inventory/EquipmentDetailSheet.vue'
+import { useAsyncStaleGuard } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 import { api, type ApiError } from '@/lib/api'
@@ -65,6 +66,7 @@ const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+const equipmentListGuard = useAsyncStaleGuard()
 
 const operatorId = computed(() => route.params.id as string)
 const isOwner = computed(() => authStore.user?.operator?.id === operatorId.value)
@@ -77,7 +79,7 @@ const equipmentTotal = ref(0)
 const isLoadingEquipment = ref(true)
 const isLoadingMore = ref(false)
 const pageNumber = ref(1)
-const pageSize = 12
+const pageSize = 48
 const hasMore = computed(() => equipment.value.length < equipmentTotal.value)
 
 const categories = ref<EquipmentCategory[]>([])
@@ -126,6 +128,7 @@ async function fetchOperator() {
 }
 
 async function fetchEquipment(append = false) {
+  const token = append ? equipmentListGuard.beginAppend() : equipmentListGuard.beginReplace()
   if (append) {
     isLoadingMore.value = true
   } else {
@@ -145,6 +148,10 @@ async function fetchEquipment(append = false) {
       `/equipment/operator/${operatorId.value}?${params.toString()}`,
     )
 
+    if (!equipmentListGuard.isCurrent(token)) {
+      return
+    }
+
     if (append) {
       equipment.value = [...equipment.value, ...result.data]
     } else {
@@ -152,11 +159,16 @@ async function fetchEquipment(append = false) {
     }
     equipmentTotal.value = result.total
   } catch (e) {
+    if (!equipmentListGuard.isCurrent(token)) {
+      return
+    }
     const err = e as ApiError
     toast.error(translateError(err.message))
   } finally {
-    isLoadingEquipment.value = false
-    isLoadingMore.value = false
+    if (equipmentListGuard.isCurrent(token)) {
+      isLoadingEquipment.value = false
+      isLoadingMore.value = false
+    }
   }
 }
 

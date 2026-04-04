@@ -8,7 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CreateBranchSheet from '@/components/branches/CreateBranchSheet.vue'
 import { BranchCard, BranchCardSkeleton, SearchInput } from '@/components/shared'
-import { usePersistedFilters } from '@/composables'
+import { useAsyncStaleGuard, usePersistedFilters } from '@/composables'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
 
@@ -47,8 +47,10 @@ const search = ref('')
 const includeInactive = ref(false)
 const showCreateSheet = ref(false)
 const page = ref(1)
-const pageSize = 12
+const pageSize = 48
 const hasMore = ref(true)
+
+const branchesListGuard = useAsyncStaleGuard()
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -62,6 +64,7 @@ const canCreate = computed(() => {
 })
 
 const fetchBranches = async (append = false) => {
+  const token = append ? branchesListGuard.beginAppend() : branchesListGuard.beginReplace()
   if (append) {
     isLoadingMore.value = true
   } else {
@@ -76,21 +79,30 @@ const fetchBranches = async (append = false) => {
     if (includeInactive.value) params.set('includeInactive', 'true')
 
     const response = await api.get<BranchesResponse>(`/branches?${params.toString()}`)
-    
+
+    if (!branchesListGuard.isCurrent(token)) {
+      return
+    }
+
     if (append) {
       branches.value = [...branches.value, ...response.data]
     } else {
       branches.value = response.data
     }
-    
+
     total.value = response.total
     hasMore.value = branches.value.length < response.total
   } catch (error) {
+    if (!branchesListGuard.isCurrent(token)) {
+      return
+    }
     console.error('Failed to fetch branches:', error)
     branches.value = []
   } finally {
-    isLoading.value = false
-    isLoadingMore.value = false
+    if (branchesListGuard.isCurrent(token)) {
+      isLoading.value = false
+      isLoadingMore.value = false
+    }
   }
 }
 
