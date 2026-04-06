@@ -3,331 +3,453 @@ import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import L from 'leaflet'
 import type { Map as LeafletMap } from 'leaflet'
-import 'leaflet.markercluster/dist/MarkerCluster.css'
-import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
-// MarkerClusterGroup on L (runtime)
-import 'leaflet.markercluster'
 import { LMap, LTileLayer } from '@vue-leaflet/vue-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useThemeStore } from '@/stores/theme'
-import { api } from '@/lib/api'
+
+const TUR_ADM1_URL = '/geojson/gadm41_TUR_1.json'
+
+const TURKEY_CENTER: [number, number] = [39.0, 35.2]
+const TURKEY_INIT_ZOOM = 6
+const TURKEY_MIN_ZOOM = 3
+const TURKEY_MAX_ZOOM = 8
 
 interface GeographyData {
-  countries: { country: string; count: number }[]
   cities: { city: string; count: number; lat?: number; lng?: number }[]
-  districts: { city: string; district: string; count: number }[]
 }
 
-interface MapPoint {
-  city: string
-  count: number
-  lat: number
-  lng: number
-}
-
-/** Leaflet marker options: şehir bazlı katılımcı (attendee) sayısı; küme balonunda toplam için. */
-const GEO_MARKER_PARTICIPANT_COUNT_KEY = 'dashboardGeoParticipantCount' as const
-
-function markerParticipantCount(marker: L.Marker): number {
-  const raw = (marker.options as Record<string, unknown>)[GEO_MARKER_PARTICIPANT_COUNT_KEY]
-  return typeof raw === 'number' && Number.isFinite(raw) ? raw : 0
-}
-
-const MAP_DEFAULT_CENTER: [number, number] = [39.2, 32.8]
-const MAP_DEFAULT_ZOOM = 5
-const TOP_CITIES = 20
-const DEFAULT_COUNTRY = 'Turkey'
+type GeographyCountMode = 'total' | 'unique'
 
 const props = defineProps<{
   data: GeographyData | null
+  mode: GeographyCountMode
+  // Optional manual override: normalized/regular city name -> CSS color.
+  cityColors?: Record<string, string>
 }>()
 
 const { t } = useI18n()
 const themeStore = useThemeStore()
-const points = ref<MapPoint[]>([])
-const mapLoading = ref(false)
-const mapRef = ref<{ leafletObject: LeafletMap } | null>(null)
-const leafletMapInstance = ref<LeafletMap | null>(null)
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- leaflet.markercluster extends L at runtime
-let clusterGroupInstance: any = null
-let buildGeneration = 0
 
-function parseCoord(v: unknown): number | null {
-  if (v == null) return null
-  if (typeof v === 'number' && Number.isFinite(v)) return v
-  if (typeof v === 'string') {
-    const t = v.trim()
-    if (!t) return null
-    const n = Number(t)
-    return Number.isFinite(n) ? n : null
-  }
-  return null
+const mapRef = ref<{ leafletObject: LeafletMap } | null>(null)
+const mapInstance = ref<LeafletMap | null>(null)
+const loading = ref(true)
+
+type LayerStatus = 'idle' | 'loading' | 'ready' | 'failed'
+
+let provinceLayer: L.GeoJSON | null = null
+let provinceLayerStatus: LayerStatus = 'idle'
+
+let provinceLayerPromise: Promise<void> | null = null
+let resizeHandler: (() => void) | null = null
+
+function normalizeKey(v: string): string {
+  return String(v ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/ı/g, 'i')
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
 }
+
+function normalizeProvinceKey(v: string): string {
+  return normalizeKey(v).replace(/[^a-z0-9]/g, '')
+}
+
+function canonicalProvinceKey(rawName: string): string {
+  return normalizeProvinceKey(rawName)
+}
+
+const provinceCountByName = computed(() => {
+  const out = new Map<string, number>()
+  for (const c of props.data?.cities ?? []) {
+    const key = canonicalProvinceKey(c.city)
+    if (!key) continue
+    out.set(key, (out.get(key) ?? 0) + c.count)
+  }
+  return out
+})
+
+const maxProvince = computed(() => Math.max(1, ...provinceCountByName.value.values()))
+
+const countLabel = computed(() =>
+  props.mode === 'total'
+    ? t('dashboard.totalParticipants')
+    : t('dashboard.uniqueParticipantsSummary')
+)
 
 const tileLayerUrl = computed(() => {
   const isDark = themeStore.effectiveTheme === 'dark'
   return isDark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+    ? 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png'
 })
 
-const tileLayerAttribution = computed(() =>
-  themeStore.effectiveTheme === 'dark'
-    ? '© OpenStreetMap © CARTO'
-    : undefined
-)
+const tileLabelLayerUrl = computed(() => {
+  const isDark = themeStore.effectiveTheme === 'dark'
+  return isDark
+    ? 'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png'
+    : 'https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png'
+})
 
-function invalidateMapSize() {
-  mapRef.value?.leafletObject?.invalidateSize()
+const tileLayerAttribution = computed(() => {
+  return '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> © <a href="https://carto.com/attributions">CARTO</a>'
+})
+
+function normalizedByLog(value: number, max: number): number {
+  if (value <= 0 || max <= 0) return 0
+  return Math.log1p(value) / Math.log1p(max)
 }
 
-function scheduleMapResize() {
-  nextTick(() => {
-    invalidateMapSize()
-    setTimeout(() => invalidateMapSize(), 350)
-  })
+type ColorStop = {
+  at: number
+  rgb: [number, number, number]
 }
 
-function escapeHtml(s: string): string {
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t
 }
 
-function mapPointPopupHtml(p: MapPoint): string {
-  return `<div class="min-w-[8rem] rounded-md border border-border bg-background py-2 px-3 text-center shadow-sm">
-        <div class="font-semibold text-sm">${escapeHtml(p.city)}</div>
-      </div>`
-}
+function interpolateColor(stops: ColorStop[], ratio: number): [number, number, number] {
+  if (ratio <= stops[0].at) return stops[0].rgb
+  if (ratio >= stops[stops.length - 1].at) return stops[stops.length - 1].rgb
 
-/** Küme balonu rengi: toplam katılımcı sayısına göre (tekil marker ile aynı ölçek). */
-function clusterSizeClassByParticipantSum(sum: number, maxParticipantCount: number): string {
-  const max = Math.max(maxParticipantCount, 1)
-  const ratio = sum / max
-  if (ratio <= 0.33) return 'marker-cluster-small'
-  if (ratio <= 0.66) return 'marker-cluster-medium'
-  return 'marker-cluster-large'
-}
-
-function syncClusterLayer() {
-  const map = leafletMapInstance.value
-  if (!map || points.value.length === 0) return
-  if (clusterGroupInstance) {
-    map.removeLayer(clusterGroupInstance)
-    clusterGroupInstance = null
+  for (let i = 0; i < stops.length - 1; i++) {
+    const left = stops[i]
+    const right = stops[i + 1]
+    if (ratio >= left.at && ratio <= right.at) {
+      const span = right.at - left.at || 1
+      const t = (ratio - left.at) / span
+      return [
+        Math.round(lerp(left.rgb[0], right.rgb[0], t)),
+        Math.round(lerp(left.rgb[1], right.rgb[1], t)),
+        Math.round(lerp(left.rgb[2], right.rgb[2], t)),
+      ]
+    }
   }
-  const markerClusterGroupFn = (L as any).markerClusterGroup
-  if (!markerClusterGroupFn) return
-  const maxParticipantCount = Math.max(...points.value.map((p) => p.count), 1)
-  const group = markerClusterGroupFn({
-    chunkedLoading: true,
-    maxClusterRadius: 60,
-    iconCreateFunction(cluster: {
-      getAllChildMarkers: () => L.Marker[]
-    }) {
-      const markers = cluster.getAllChildMarkers()
-      const sum = markers.reduce((acc, m) => acc + markerParticipantCount(m), 0)
-      const sizeClass = clusterSizeClassByParticipantSum(sum, maxParticipantCount)
-      return L.divIcon({
-        className: `marker-cluster ${sizeClass}`,
-        html: `<div><span>${sum}</span></div>`,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20],
-      })
+
+  return stops[stops.length - 1].rgb
+}
+
+function shadeColor(value: number, max: number): string {
+  const ratio = normalizedByLog(value, max)
+  const isDark = themeStore.effectiveTheme === 'dark'
+
+  if (ratio <= 0) return isDark ? 'rgba(82,82,91,0.16)' : 'rgba(212,212,216,0.28)'
+
+  // Monochrome ramp requested by user: very light blue -> deep navy.
+  const stops: ColorStop[] = isDark
+    ? [
+        { at: 0, rgb: [138, 170, 210] },
+        { at: 1, rgb: [42, 78, 128] },
+      ]
+    : [
+        { at: 0, rgb: [214, 228, 245] },
+        { at: 1, rgb: [43, 92, 161] },
+      ]
+
+  const [r, g, b] = interpolateColor(stops, ratio)
+  const alpha = isDark ? 0.64 : 0.56
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+function cityOverrideColor(cityName: string): string | null {
+  const source = props.cityColors
+  if (!source) return null
+  const direct = source[cityName]
+  if (direct) return direct
+  const normalized = source[normalizeKey(cityName)]
+  return normalized ?? null
+}
+
+function baseBorder(): string {
+  return themeStore.effectiveTheme === 'dark' ? '#3f3f46' : '#d4d4d8'
+}
+
+function provinceFeatureStyle(feature: { properties?: Record<string, unknown> | null }): L.PathOptions {
+  const p = (feature.properties ?? {}) as Record<string, unknown>
+  const provinceName = String(p.NAME_1 ?? p.name_1 ?? '')
+  const province = canonicalProvinceKey(provinceName)
+  const count = provinceCountByName.value.get(province) ?? 0
+  const override = cityOverrideColor(provinceName)
+  return {
+    fillColor: override ?? shadeColor(count, maxProvince.value),
+    fillOpacity: 0.86,
+    color: baseBorder(),
+    weight: 0.8,
+  }
+}
+
+function bindTooltipWithCount(
+  layer: L.Layer,
+  label: string,
+  count: number,
+) {
+  layer.bindTooltip(
+    `<div class="compact-popup-body"><p class="compact-popup-title">${label}</p><p class="compact-popup-value">${countLabel.value}: ${count}</p></div>`,
+    {
+      className: 'compact-popup',
+      sticky: false,
+      opacity: 1,
+      direction: 'top',
+      offset: [0, -6],
     },
+  )
+}
+
+function restyleProvinceLayer() {
+  if (!provinceLayer) return
+  provinceLayer.eachLayer((ly) => {
+    const feat = (ly as L.Layer & { feature?: { properties?: Record<string, unknown> | null } }).feature
+    if (!feat || !(ly as L.Path).setStyle) return
+    ;(ly as L.Path).setStyle(provinceFeatureStyle(feat))
+    const p = (feat.properties ?? {}) as Record<string, unknown>
+    const rawName = String(p.NAME_1 ?? p.name_1 ?? '—')
+    const name = rawName
+    const cnt = provinceCountByName.value.get(canonicalProvinceKey(rawName)) ?? 0
+    bindTooltipWithCount(ly, name, cnt)
   })
-  for (const p of points.value) {
-    const marker = L.marker([p.lat, p.lng], {
-      icon: circleIcon(p.count),
-      [GEO_MARKER_PARTICIPANT_COUNT_KEY]: p.count,
-    } as L.MarkerOptions)
-    marker.bindPopup(mapPointPopupHtml(p), { className: 'net-detail-popup' })
-    group.addLayer(marker)
+}
+
+function fitTurkeyToViewport() {
+  const map = mapInstance.value
+  if (!map || !provinceLayer) return
+  const bounds = provinceLayer.getBounds()
+  if (!bounds.isValid()) return
+
+  map.fitBounds(bounds, {
+    paddingTopLeft: [10, 10],
+    paddingBottomRight: [10, 12],
+    maxZoom: TURKEY_INIT_ZOOM,
+  })
+
+  if (map.getZoom() < TURKEY_MIN_ZOOM) {
+    map.setZoom(TURKEY_MIN_ZOOM)
   }
-  group.addTo(map)
-  clusterGroupInstance = group
-  const bounds = clusterGroupInstance.getBounds?.()
-  if (bounds?.isValid?.()) {
-    map.fitBounds(bounds, { padding: [24, 24], maxZoom: 12 })
+}
+
+async function ensureProvinceLayer() {
+  if (provinceLayerStatus === 'ready' || provinceLayer) return
+  if (provinceLayerPromise) {
+    await provinceLayerPromise
+    return
+  }
+
+  provinceLayerStatus = 'loading'
+  provinceLayerPromise = (async () => {
+    const res = await fetch(TUR_ADM1_URL)
+    if (!res.ok) throw new Error('adm1-geo-unavailable')
+    const gj = (await res.json()) as object
+    provinceLayer = L.geoJSON(gj as never, {
+      style: (f) => provinceFeatureStyle(f as { properties?: Record<string, unknown> | null }),
+    })
+    restyleProvinceLayer()
+    provinceLayerStatus = 'ready'
+  })()
+
+  try {
+    await provinceLayerPromise
+  } catch {
+    provinceLayerStatus = 'failed'
+    provinceLayer = null
+    throw new Error('adm1-geo-unavailable')
+  } finally {
+    provinceLayerPromise = null
   }
 }
 
 function onMapReady(leafletMap: LeafletMap) {
-  const map = mapRef.value?.leafletObject ?? leafletMap
-  leafletMapInstance.value = map
-  nextTick(() => {
-    map.invalidateSize()
-    setTimeout(() => {
+  const map = (mapRef.value?.leafletObject ?? leafletMap) as unknown as LeafletMap
+  mapInstance.value = map
+  nextTick(async () => {
+    try {
+      loading.value = true
+      map.setView(TURKEY_CENTER, TURKEY_INIT_ZOOM)
+
+      await ensureProvinceLayer()
+      if (provinceLayer && !map.hasLayer(provinceLayer)) map.addLayer(provinceLayer)
+
+      fitTurkeyToViewport()
+    } finally {
+      loading.value = false
       map.invalidateSize()
-      syncClusterLayer()
-    }, 350)
+      setTimeout(() => {
+        map.invalidateSize()
+        fitTurkeyToViewport()
+      }, 120)
+    }
   })
-}
 
-/** Orana göre renk: en yüksek oran turuncu, orta sarı, düşük yeşil */
-function clusterSizeClass(count: number): string {
-  const max = Math.max(...points.value.map((p) => p.count), 1)
-  const ratio = count / max
-  if (ratio <= 0.33) return 'marker-cluster-small'
-  if (ratio <= 0.66) return 'marker-cluster-medium'
-  return 'marker-cluster-large'
-}
-
-/** Çevrim detay sayfasındaki div ile birebir: leaflet-marker-icon + marker-cluster + size, içerik <div><span>N</span></div> */
-function circleIcon(count: number): L.DivIcon {
-  const sizeClass = clusterSizeClass(count)
-  return L.divIcon({
-    className: `marker-cluster ${sizeClass}`,
-    html: `<div><span>${count}</span></div>`,
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-  })
-}
-
-async function buildPoints() {
-  const myGen = ++buildGeneration
-  const cities =
-    props.data?.cities?.slice(0, TOP_CITIES).filter((c) => (c.city ?? '').trim()) ?? []
-
-  if (!cities.length) {
-    if (myGen === buildGeneration) {
-      points.value = []
-      mapLoading.value = false
+  if (!resizeHandler) {
+    resizeHandler = () => {
+      map.invalidateSize()
+      fitTurkeyToViewport()
     }
-    return
-  }
-
-  mapLoading.value = true
-  points.value = []
-  const keyToCoords = new Map<string, { lat: number; lng: number }>()
-
-  try {
-    for (const c of cities) {
-      const city = String(c.city ?? '').trim()
-      const key = `${city}|${DEFAULT_COUNTRY}`
-      const lat = parseCoord(c.lat)
-      const lng = parseCoord(c.lng)
-      if (lat != null && lng != null) {
-        keyToCoords.set(key, { lat, lng })
-      }
-    }
-
-    for (const c of cities) {
-      if (myGen !== buildGeneration) return
-      const city = String(c.city ?? '').trim()
-      const key = `${city}|${DEFAULT_COUNTRY}`
-      if (keyToCoords.has(key)) continue
-      try {
-        const params = new URLSearchParams()
-        params.set('city', city)
-        params.set('country', DEFAULT_COUNTRY)
-        const res = await api.get<{ lat: number; lng: number } | null>(
-          `/qth/geocode?${params.toString()}`,
-        )
-        if (res && parseCoord(res.lat) != null && parseCoord(res.lng) != null) {
-          keyToCoords.set(key, {
-            lat: parseCoord(res.lat)!,
-            lng: parseCoord(res.lng)!,
-          })
-        }
-      } catch {
-        // skip
-      }
-    }
-
-    if (myGen !== buildGeneration) return
-    const nextPoints: MapPoint[] = []
-    for (const c of cities) {
-      const city = String(c.city ?? '').trim()
-      const coords = keyToCoords.get(`${city}|${DEFAULT_COUNTRY}`)
-      if (coords) {
-        nextPoints.push({ city, count: c.count, lat: coords.lat, lng: coords.lng })
-      }
-    }
-    if (myGen === buildGeneration) points.value = nextPoints
-  } finally {
-    if (myGen === buildGeneration) mapLoading.value = false
+    window.addEventListener('resize', resizeHandler)
   }
 }
 
-const citiesFingerprint = computed(() => {
-  const cities = props.data?.cities?.slice(0, TOP_CITIES) ?? []
-  return cities
-    .map((c) =>
-      [String(c.city ?? '').trim(), c.count, c.lat ?? '', c.lng ?? ''].join('|'),
-    )
-    .join('||')
-})
-
-watch(citiesFingerprint, () => void buildPoints(), { immediate: true })
-
 watch(
-  () => points.value.length,
-  (len) => {
-    if (len === 0) return
-    scheduleMapResize()
-  },
-  { flush: 'post' },
-)
-
-watch(tileLayerUrl, () => {
-  if (points.value.length === 0) return
-  scheduleMapResize()
-})
-
-watch(
-  () => points.value,
+  [provinceCountByName, () => themeStore.effectiveTheme, () => props.mode, () => props.cityColors],
   () => {
-    if (!leafletMapInstance.value || points.value.length === 0) return
-    syncClusterLayer()
+    restyleProvinceLayer()
   },
-  { flush: 'post' },
 )
 
 onUnmounted(() => {
-  if (clusterGroupInstance && leafletMapInstance.value) {
-    leafletMapInstance.value.removeLayer(clusterGroupInstance)
-    clusterGroupInstance = null
+  const map = mapInstance.value
+  if (map && provinceLayer) map.removeLayer(provinceLayer)
+
+  if (resizeHandler) {
+    window.removeEventListener('resize', resizeHandler)
+    resizeHandler = null
   }
+
+  provinceLayer = null
+  provinceLayerStatus = 'idle'
+  provinceLayerPromise = null
 })
 </script>
 
 <template>
-  <div class="rounded-lg overflow-hidden border border-border/50 flex-1 min-h-[200px] lg:min-h-[240px] bg-muted/30">
+  <div class="rounded-lg overflow-hidden border border-border/50 w-full min-h-[220px] sm:min-h-[320px] h-[38vh] sm:h-[min(62vh,560px)] bg-muted/20 relative">
     <div
-      v-if="mapLoading"
-      class="h-full min-h-[200px] lg:min-h-[240px] flex items-center justify-center text-sm text-muted-foreground"
+      v-if="loading"
+      class="absolute inset-0 z-[2] flex items-center justify-center text-sm text-muted-foreground bg-background/60 backdrop-blur-[1px]"
     >
       {{ t('netDetail.mapLoading') }}
     </div>
-    <template v-else-if="points.length === 0">
-      <div
-        class="h-full min-h-[200px] lg:min-h-[240px] flex items-center justify-center text-sm text-muted-foreground"
-      >
-        {{ t('netDetail.mapNoLocations') }}
-      </div>
-    </template>
     <LMap
-      v-else
       ref="mapRef"
       :use-global-leaflet="true"
-      :center="MAP_DEFAULT_CENTER"
-      :zoom="MAP_DEFAULT_ZOOM"
-      class="h-full w-full min-h-[200px] rounded-lg lg:min-h-[240px]"
+      :center="TURKEY_CENTER"
+      :zoom="TURKEY_INIT_ZOOM"
+      class="h-full w-full min-h-[220px] sm:min-h-[320px] rounded-lg z-0"
       :options="{
-        zoomControl: true,
-        dragging: true,
-        scrollWheelZoom: true,
-        doubleClickZoom: true,
-        touchZoom: true,
-        boxZoom: true,
-        keyboard: true,
+        zoomControl: false,
+        dragging: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        touchZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        zoomSnap: 0.25,
+        minZoom: TURKEY_MIN_ZOOM,
+        maxZoom: TURKEY_MAX_ZOOM,
       }"
       @ready="onMapReady"
     >
-      <LTileLayer :url="tileLayerUrl" :attribution="tileLayerAttribution" />
+      <LTileLayer
+        :url="tileLayerUrl"
+        :attribution="tileLayerAttribution"
+      />
+      <LTileLayer
+        :url="tileLabelLayerUrl"
+        :attribution="undefined"
+        :opacity="0.42"
+      />
     </LMap>
+
+    <div class="pointer-events-none absolute right-1.5 bottom-1.5 sm:right-2 sm:bottom-2 z-[1] rounded-md border border-border/60 bg-background/90 px-1.5 py-1 sm:px-2 sm:py-1.5 text-[9px] sm:text-[10px] text-foreground/85">
+      <p class="font-medium mb-1">Yoğunluk</p>
+      <div class="h-2 w-24 sm:h-2.5 sm:w-28 rounded-sm bg-[linear-gradient(90deg,#d6e4f5_0%,#2b5ca1_100%)]" />
+      <div class="mt-1 flex items-center justify-between text-[10px] text-muted-foreground">
+        <span>Az</span>
+        <span>En Yüksek</span>
+      </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+/* Leaflet popup chrome from /map page */
+:deep(.compact-popup .leaflet-popup-content-wrapper) {
+  padding: 0 !important;
+  border-radius: 0.375rem !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:deep(.compact-popup .leaflet-popup-content) {
+  margin: 0 !important;
+  min-width: 0 !important;
+}
+
+:deep(.compact-popup .leaflet-popup-tip-container) {
+  margin-top: -1px;
+}
+
+:deep(.compact-popup .leaflet-popup-tip) {
+  background: var(--background) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
+}
+
+/* Hover tooltip should keep the same compact popup look. */
+:deep(.leaflet-tooltip.compact-popup) {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  white-space: normal !important;
+}
+
+:deep(.leaflet-tooltip.compact-popup::before) {
+  border-top-color: var(--background) !important;
+}
+
+:deep(.leaflet-tooltip.compact-popup .leaflet-tooltip-content) {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+:deep(.compact-popup-body) {
+  min-width: 12rem;
+  max-width: min(15rem, calc(100vw - 2.5rem));
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--background);
+  color: var(--foreground);
+  padding: 0.375rem 0.625rem;
+  box-shadow: var(--shadow-sm);
+}
+
+:deep(.compact-popup-title) {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--foreground);
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+:deep(.compact-popup-value) {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted-foreground);
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+@media (max-width: 640px) {
+  :deep(.compact-popup-body) {
+    min-width: 10.5rem;
+    max-width: calc(100vw - 2rem);
+    padding: 0.32rem 0.5rem;
+  }
+
+  :deep(.compact-popup-title) {
+    font-size: 0.75rem;
+    line-height: 1.25;
+  }
+
+  :deep(.compact-popup-value) {
+    margin-top: 0.125rem;
+    font-size: 0.6875rem;
+    line-height: 1.2;
+  }
+}
+</style>

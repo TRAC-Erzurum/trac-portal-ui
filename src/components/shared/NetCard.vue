@@ -106,7 +106,7 @@ const scheduledLabel = computed(() => {
 </script>
 
 <template>
-  <div class="w-full text-left p-4 rounded-lg border border-border/50 transition-all flex flex-col relative">
+  <div class="w-full text-left p-4 rounded-lg border border-border/50 bg-background transition-all flex flex-col relative">
     <Award
       v-if="hasCertificate"
       class="absolute top-2.5 right-2.5 h-3.5 w-3.5 text-amber-500 dark:text-amber-400 shrink-0"

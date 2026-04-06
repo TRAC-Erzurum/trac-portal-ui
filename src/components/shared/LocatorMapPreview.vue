@@ -15,12 +15,18 @@ const MAP_ZOOM = 8
 const props = withDefaults(
   defineProps<{
     gridSquare: string | null
+    city?: string | null
+    district?: string | null
     /** When false, no outer border (e.g. inside dashboard card). */
     standalone?: boolean
     /** When false, map is not clickable (e.g. dashboard preview with separate "Open map" button). */
     interactive?: boolean
+    /**
+     * dashboard: QTH on map overlay only; no bottom summary strip or marker popup.
+     */
+    variant?: 'default' | 'dashboard'
   }>(),
-  { standalone: true, interactive: true }
+  { standalone: true, interactive: true, variant: 'default' }
 )
 
 const emit = defineEmits<{
@@ -110,6 +116,10 @@ const popupDecimalDisplay = computed(() => {
 watch(
   () => userParsed.value?.wgs84,
   (wgs84) => {
+    if (props.variant === 'dashboard') {
+      addressPlace.value = null
+      return
+    }
     if (!wgs84) {
       addressPlace.value = null
       return
@@ -133,22 +143,40 @@ function openPopupIfReady() {
 }
 
 function onMarkerAdd() {
+  if (props.variant === 'dashboard') return
   nextTick(openPopupIfReady)
   setTimeout(openPopupIfReady, 80)
 }
 
+const operatorLocationLine = computed(() => {
+  const city = props.city?.trim()
+  const district = props.district?.trim()
+  if (city && district) return `${city}, ${district}`
+  if (city) return city
+  if (district) return district
+  return '—'
+})
+
 const tileLayerUrl = computed(() => {
+  if (props.variant === 'dashboard') {
+    return 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+  }
   const isDark = themeStore.effectiveTheme === 'dark'
   return isDark
     ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
     : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 })
 
-const tileLayerAttribution = computed(() =>
-  themeStore.effectiveTheme === 'dark'
+const tileLayerAttribution = computed(() => {
+  if (props.variant === 'dashboard') {
+    return '© <a href="https://www.esri.com/">Esri</a> © <a href="https://carto.com/attributions">CARTO</a>'
+  }
+  return themeStore.effectiveTheme === 'dark'
     ? '© OpenStreetMap © CARTO'
     : undefined
-)
+})
+
+const satelliteLabelsUrl = 'https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png'
 
 const mapOptions = {
   dragging: false,
@@ -205,6 +233,12 @@ const selectionSummary = computed(() => {
             :url="tileLayerUrl"
             :attribution="tileLayerAttribution"
           />
+          <LTileLayer
+            v-if="variant === 'dashboard'"
+            :url="satelliteLabelsUrl"
+            :attribution="undefined"
+            :z-index="650"
+          />
           <LMarker
             v-if="markerLatLng"
             ref="markerRef"
@@ -212,7 +246,10 @@ const selectionSummary = computed(() => {
             :icon="(selectionMarkerIcon as any)"
             @add="onMarkerAdd"
           >
-            <LPopup :options="{ closeButton: false, className: 'locator-popup-opaque' }">
+            <LPopup
+              v-if="variant !== 'dashboard'"
+              :options="{ closeButton: false, className: 'locator-popup-opaque' }"
+            >
               <div
                 class="rounded border border-border bg-background px-2 py-1.5 shadow-sm min-w-0 max-w-[20rem]"
                 @click.stop
@@ -231,6 +268,23 @@ const selectionSummary = computed(() => {
         </LMap>
       </div>
       <div
+        v-if="variant === 'dashboard' && userParsed && markerLatLng"
+        class="absolute bottom-2 left-2 right-2 z-[500] pointer-events-none"
+      >
+        <div
+          class="rounded-md border border-border bg-background/95 backdrop-blur-sm px-3 py-2 shadow-sm min-w-0"
+        >
+          <p class="text-xs font-medium text-foreground truncate">
+            <span class="font-mono tracking-tight">{{ userGrid }}</span>
+            <span class="text-muted-foreground font-normal"> · </span>
+            <span class="text-muted-foreground font-normal">{{ operatorLocationLine }}</span>
+          </p>
+          <p class="tabular-nums text-[10px] text-muted-foreground mt-0.5 truncate">
+            {{ popupDecimalDisplay }}
+          </p>
+        </div>
+      </div>
+      <div
         v-if="!userParsed"
         :class="['absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-sm', standalone ? 'rounded-lg' : 'rounded-b-lg']"
       >
@@ -240,7 +294,7 @@ const selectionSummary = computed(() => {
       </div>
     </div>
     <MapSelectionSummary
-      v-if="selectionSummary"
+      v-if="variant !== 'dashboard' && selectionSummary"
       :district="selectionSummary.district"
       :lat="selectionSummary.lat"
       :lng="selectionSummary.lng"

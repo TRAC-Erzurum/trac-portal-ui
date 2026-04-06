@@ -2,7 +2,9 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { TrendingUp } from 'lucide-vue-next'
+import VChart from 'vue-echarts'
 import StatCard from '../StatCard.vue'
+import { useThemeStore } from '@/stores/theme'
 import { api } from '@/lib/api'
 
 interface Entry {
@@ -11,20 +13,20 @@ interface Entry {
   netName: string
 }
 
-const CHART_HEIGHT = 88
-
 const props = withDefaults(
   defineProps<{
-    /** Şube detay sayfasında branchId verilir */
     branchId?: string | null
   }>(),
   { branchId: null }
 )
 
 const { t } = useI18n()
+const themeStore = useThemeStore()
 const data = ref<Entry[]>([])
 const loading = ref(true)
 const error = ref(false)
+
+const isDark = computed(() => themeStore.effectiveTheme === 'dark')
 
 const fetchData = async () => {
   try {
@@ -48,16 +50,57 @@ const fetchData = async () => {
 onMounted(fetchData)
 watch(() => props.branchId, fetchData)
 
-const maxCount = computed(() => {
-  if (!data.value.length) return 1
-  return Math.max(...data.value.map((e) => e.attendeeCount), 1)
+const chartOption = computed(() => {
+  const rows = [...data.value].sort(
+    (a, b) => new Date(a.endedAt).getTime() - new Date(b.endedAt).getTime()
+  )
+  const times = rows.map((e) => new Date(e.endedAt).getTime())
+  const counts = rows.map((e) => e.attendeeCount)
+  const names = rows.map((e) => e.netName)
+
+  const fg = isDark.value ? '#e4e4e7' : '#18181b'
+  const muted = isDark.value ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'
+  const line = isDark.value ? '#a5b4fc' : '#0c0563'
+
+  return {
+    animationDuration: 400,
+    grid: { left: 8, right: 8, top: 32, bottom: 8, containLabel: true },
+    tooltip: {
+      trigger: 'axis',
+      confine: true,
+      formatter: (params: unknown) => {
+        const arr = params as { dataIndex: number; value: [number, number] }[]
+        const it = arr[0]
+        if (!it) return ''
+        const name = names[it.dataIndex] ?? ''
+        const cnt = it.value[1]
+        return `${name}<br/>${cnt} ${t('dashboard.stats.uniqueParticipants')}`
+      },
+    },
+    xAxis: {
+      type: 'time',
+      axisLabel: { color: fg, fontSize: 10 },
+      axisLine: { lineStyle: { color: muted } },
+    },
+    yAxis: {
+      type: 'value',
+      minInterval: 1,
+      splitLine: { lineStyle: { color: muted } },
+      axisLabel: { color: fg, fontSize: 10 },
+    },
+    series: [
+      {
+        type: 'line',
+        smooth: true,
+        showSymbol: rows.length <= 16,
+        data: times.map((tms, i) => [tms, counts[i]]),
+        itemStyle: { color: line },
+        lineStyle: { color: line, width: 2 },
+        areaStyle: { color: line, opacity: 0.14 },
+      },
+    ],
+  }
 })
-
-const barHeight = (value: number) =>
-  Math.max(2, (value / maxCount.value) * CHART_HEIGHT)
-
-const tooltip = (e: Entry) =>
-  `${e.netName}: ${e.attendeeCount} ${t('dashboard.stats.uniqueParticipants')}`
 </script>
 
 <template>
@@ -67,42 +110,10 @@ const tooltip = (e: Entry) =>
     :error="error"
     :icon="TrendingUp"
   >
-    <template v-if="data.length">
-      <div class="w-full">
-        <div class="flex gap-2 overflow-x-auto pb-1 w-full">
-          <div
-            class="flex-shrink-0 flex flex-col justify-between text-[10px] text-muted-foreground py-0.5"
-            style="width: 1.25rem"
-          >
-            <span>{{ maxCount }}</span>
-            <span>0</span>
-          </div>
-          <div class="flex gap-1 items-end flex-1 min-w-0 w-full" :style="{ height: CHART_HEIGHT + 'px' }">
-            <div
-              v-for="(e, i) in data"
-              :key="e.endedAt + String(i)"
-              class="flex-1 min-w-0 flex flex-col items-center"
-              :style="{ height: CHART_HEIGHT + 'px' }"
-              :title="tooltip(e)"
-            >
-              <div class="flex-1 min-h-0 flex flex-col justify-end items-center gap-0.5">
-                <span
-                  v-if="e.attendeeCount > 0"
-                  class="text-[10px] font-medium text-muted-foreground leading-none"
-                >
-                  {{ e.attendeeCount }}
-                </span>
-                <div
-                  class="w-full max-w-[12px] rounded-t bg-primary/50 transition-all"
-                  :style="{ height: barHeight(e.attendeeCount) + 'px', minHeight: e.attendeeCount > 0 ? '4px' : '0' }"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </template>
-    <p v-else-if="!loading && !error" class="text-sm text-muted-foreground">
+    <div v-if="data.length" class="w-full min-h-[200px] h-[220px] sm:h-[240px]">
+      <VChart class="h-full w-full" :option="chartOption" autoresize />
+    </div>
+    <p v-else-if="!loading && !error" class="text-sm text-muted-foreground py-4">
       {{ t('dashboard.noStats') }}
     </p>
   </StatCard>

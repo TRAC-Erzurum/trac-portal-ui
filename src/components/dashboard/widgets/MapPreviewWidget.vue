@@ -15,6 +15,14 @@ const userGrid = computed(() =>
   authStore.user?.operator?.gridSquare?.trim()?.toUpperCase() ?? null
 )
 
+const userCity = computed(() =>
+  authStore.user?.operator?.city?.trim() ?? ''
+)
+
+const userDistrict = computed(() =>
+  authStore.user?.operator?.district?.trim() ?? ''
+)
+
 function openMapOrEdit() {
   if (userGrid.value) {
     router.push({ path: '/map', query: { locator: userGrid.value } })
@@ -45,6 +53,9 @@ function openMapOrEdit() {
     </div>
     <LocatorMapPreview
       :grid-square="userGrid"
+      :city="userCity"
+      :district="userDistrict"
+      variant="dashboard"
       :standalone="false"
       :interactive="false"
     />
