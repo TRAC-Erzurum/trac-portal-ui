@@ -8,7 +8,9 @@ import NetsModule from '@/components/dashboard/NetsModule.vue'
 import PersonalStatsModule from '@/components/dashboard/PersonalStatsModule.vue'
 import DashboardInventoryCarousel from '@/components/dashboard/widgets/DashboardInventoryCarousel.vue'
 import GeographyWidget from '@/components/dashboard/widgets/GeographyWidget.vue'
-import MonthlyAndBusiestCard from '@/components/dashboard/widgets/MonthlyAndBusiestCard.vue'
+import BusiestHeatmapCard from '@/components/dashboard/widgets/BusiestHeatmapCard.vue'
+import MonthlyNetsCard from '@/components/dashboard/widgets/MonthlyNetsCard.vue'
+import MonthlyParticipantsCard from '@/components/dashboard/widgets/MonthlyParticipantsCard.vue'
 import NetsAttendeesTrendWidget from '@/components/dashboard/widgets/NetsAttendeesTrendWidget.vue'
 import PersonalLastNetsWidget from '@/components/dashboard/widgets/PersonalLastNetsWidget.vue'
 import PersonalTrendWidget from '@/components/dashboard/widgets/PersonalTrendWidget.vue'
@@ -306,8 +308,12 @@ onMounted(() => {
         />
       </div>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <MonthlyAndBusiestCard />
+        <MonthlyNetsCard />
+        <MonthlyParticipantsCard />
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
         <NetsAttendeesTrendWidget />
+        <BusiestHeatmapCard />
       </div>
       <div class="mb-6">
         <GeographyWidget />

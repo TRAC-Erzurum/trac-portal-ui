@@ -3,22 +3,12 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import StatCard from '../StatCard.vue'
 import { api } from '@/lib/api'
+import { utcCellToBrowserLocal, type UtcBusiestCell } from '@/lib/busiest-time'
 
 interface Data {
   byDay: { dayOfWeek: number; count: number }[]
   byHour: { hour: number; count: number }[]
-}
-
-/** UTC saatlerini tarayıcı yerel saatine çevirir (API UTC döndürüyor). */
-function utcByHourToLocal(byHour: { hour: number; count: number }[]): { hour: number; count: number }[] {
-  const offsetMinutes = new Date().getTimezoneOffset()
-  const offsetHours = -offsetMinutes / 60
-  const buckets = new Array(24).fill(0)
-  for (const { hour, count } of byHour ?? []) {
-    const localHour = (hour + offsetHours + 24) % 24
-    buckets[localHour] += count
-  }
-  return buckets.map((count, hour) => ({ hour, count }))
+  cells: UtcBusiestCell[]
 }
 
 const { t } = useI18n()
@@ -26,9 +16,25 @@ const data = ref<Data | null>(null)
 const loading = ref(true)
 const error = ref(false)
 
-const byHourLocal = computed(() =>
-  data.value?.byHour ? utcByHourToLocal(data.value.byHour) : []
-)
+const byHourLocal = computed(() => {
+  const buckets = new Array(24).fill(0)
+  for (const rawCell of data.value?.cells ?? []) {
+    const c = utcCellToBrowserLocal(rawCell)
+    if (!c) continue
+    buckets[c.hour] += c.count
+  }
+  return buckets.map((count, hour) => ({ hour, count }))
+})
+
+const byDayLocal = computed(() => {
+  const buckets = new Array(7).fill(0)
+  for (const rawCell of data.value?.cells ?? []) {
+    const c = utcCellToBrowserLocal(rawCell)
+    if (!c) continue
+    buckets[c.dayOfWeek] += c.count
+  }
+  return buckets.map((count, dayOfWeek) => ({ dayOfWeek, count }))
+})
 
 const fetchData = async () => {
   try {
@@ -46,8 +52,8 @@ const fetchData = async () => {
 }
 
 const maxDay = () =>
-  data.value?.byDay?.length
-    ? Math.max(...data.value.byDay.map((d) => d.count), 1)
+  byDayLocal.value.length
+    ? Math.max(...byDayLocal.value.map((d) => d.count), 1)
     : 1
 const maxHour = () =>
   byHourLocal.value.length
@@ -55,7 +61,7 @@ const maxHour = () =>
     : 1
 const hasData = () => {
   if (!data.value) return false
-  const dayTotal = data.value.byDay?.reduce((s, d) => s + d.count, 0) ?? 0
+  const dayTotal = byDayLocal.value.reduce((s, d) => s + d.count, 0)
   const hourTotal = byHourLocal.value.reduce((s, h) => s + h.count, 0)
   return dayTotal > 0 || hourTotal > 0
 }
@@ -78,7 +84,7 @@ onMounted(fetchData)
           <p class="text-xs font-medium text-muted-foreground mb-2">{{ t('dashboard.stats.byDay') }}</p>
           <div class="flex gap-0.5 items-end h-12">
             <div
-              v-for="d in data.byDay"
+              v-for="d in byDayLocal"
               :key="d.dayOfWeek"
               class="flex-1 flex flex-col justify-end items-center gap-0.5 h-12 min-h-0"
               :title="`${t('dashboard.stats.days.' + d.dayOfWeek)}: ${d.count}`"
@@ -91,7 +97,7 @@ onMounted(fetchData)
           </div>
           <div class="flex gap-0.5 mt-1">
             <span
-              v-for="d in data.byDay"
+              v-for="d in byDayLocal"
               :key="'l' + d.dayOfWeek"
               class="flex-1 text-[10px] text-center text-muted-foreground truncate"
             >
@@ -114,7 +120,6 @@ onMounted(fetchData)
               />
             </div>
           </div>
-          <p class="text-[10px] text-muted-foreground mt-1">0h – 23h</p>
         </div>
       </div>
     </template>
