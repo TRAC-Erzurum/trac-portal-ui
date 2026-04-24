@@ -19,18 +19,18 @@ export function getReportExportStyles(width: number = REPORT_EXPORT_WIDTH): stri
 .no-attendees-warning { text-align: center; margin: 20px 0; font-size: 1.125rem; color: #000000 !important; background: transparent !important; }
 .no-attendees-warning strong { color: #dc2626 !important; background: transparent !important; }
 .attendees-table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 0.875rem; color: #000000 !important; background: #ffffff !important; table-layout: fixed; }
-.attendees-col-index { width: 4%; }
-.attendees-col-call-sign { width: 12%; }
+.attendees-col-index { width: 3ch; }
+.attendees-col-call-sign { width: var(--attendees-call-sign-col-width, 12ch); }
 .attendees-col-operator { width: 25%; }
 .attendees-col-qth { width: 25%; }
-.attendees-col-signal { width: 6%; }
-.attendees-col-join-time { width: 28%; }
+.attendees-col-signal { width: 5ch; }
+.attendees-col-join-time { width: 16ch; }
 .attendees-thead-tr { background: #f4f4f5 !important; }
 .attendees-thead-tr * { background: #f4f4f5 !important; color: #000000 !important; }
-.attendees-th { border: 1px solid #d4d4d8 !important; padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; background: #f4f4f5 !important; color: #000000 !important; white-space: nowrap; vertical-align: middle !important; }
+.attendees-th { border: 1px solid #d4d4d8 !important; padding: 0.5rem 0.75rem; text-align: left; font-weight: 600; background: #f4f4f5 !important; color: #000000 !important; white-space: nowrap !important; vertical-align: middle !important; overflow: hidden !important; text-overflow: clip !important; }
 .attendees-tbody-tr { background: #ffffff !important; }
 .attendees-tbody-tr * { background: #ffffff !important; color: #000000 !important; }
-.attendees-td { border: 1px solid #d4d4d8 !important; padding: 0.5rem 0.75rem; text-align: left; background: transparent !important; color: #000000 !important; vertical-align: middle !important; }
+.attendees-td { border: 1px solid #d4d4d8 !important; padding: 0.5rem 0.75rem; text-align: left; background: transparent !important; color: #000000 !important; vertical-align: middle !important; white-space: nowrap !important; overflow: hidden !important; text-overflow: clip !important; }
 .attendees-td-bold { font-weight: 600 !important; }
 .attendees-tfoot { background: #fafafa !important; }
 .attendees-tfoot * { background: #fafafa !important; color: #000000 !important; }

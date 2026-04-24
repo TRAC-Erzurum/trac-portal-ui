@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDateFormat } from '@/composables'
 import { formatCommunicationChannelLabel } from '@/lib/formatters'
@@ -72,9 +72,14 @@ const formatBranchTitle = () => {
   return `${prefix}${branchName}`
 }
 
+const formatExportCallSign = (callSign: string) => {
+  return callSign
+}
+
 const formatOperatorInfo = () => {
-  if (operatorName) return `${operatorCallSign} · ${operatorName}`
-  return operatorCallSign
+  const exportOperatorCallSign = formatExportCallSign(operatorCallSign)
+  if (operatorName) return `${exportOperatorCallSign} · ${operatorName}`
+  return exportOperatorCallSign
 }
 
 const formatCommunicationChannels = () => {
@@ -88,6 +93,21 @@ const formatReadabilitySignal = (attendee: Attendee) => {
   if (r == null && s == null) return ''
   return `${r ?? '-'}/${s ?? '-'}`
 }
+
+const callSignColumnWidth = computed(() => {
+  const headerLength = t('operators.callSign').length
+  const longestCallSignLength = attendees.reduce((max, attendee) => {
+    return Math.max(max, formatExportCallSign(attendee.callSign).length)
+  }, 0)
+
+  const targetLength = Math.max(headerLength, longestCallSignLength)
+  const clampedLength = Math.min(Math.max(targetLength + 2, 10), 24)
+  return `${clampedLength}ch`
+})
+
+const attendeesTableStyle = computed<Record<string, string>>(() => ({
+  '--attendees-call-sign-col-width': callSignColumnWidth.value
+}))
 </script>
 
 <template>
@@ -111,7 +131,7 @@ const formatReadabilitySignal = (attendee: Attendee) => {
     <div v-if="attendees.length === 0" class="no-attendees-warning">
       <strong>{{ t('netReport.noAttendees') }}</strong>
     </div>
-    <table v-else class="attendees-table">
+    <table v-else class="attendees-table" :style="attendeesTableStyle">
       <colgroup>
         <col class="attendees-col-index" />
         <col class="attendees-col-call-sign" />
@@ -133,7 +153,7 @@ const formatReadabilitySignal = (attendee: Attendee) => {
       <tbody>
         <tr v-for="(attendee, index) in attendees" :key="attendee.id" class="attendees-tbody-tr">
           <td class="attendees-td">{{ index + 1 }}</td>
-          <td class="attendees-td attendees-td-bold">{{ attendee.callSign }}</td>
+          <td class="attendees-td attendees-td-bold">{{ formatExportCallSign(attendee.callSign) }}</td>
           <td class="attendees-td">{{ attendee.name || '-' }}</td>
           <td class="attendees-td">{{ formatQth(attendee) }}</td>
           <td class="attendees-td">{{ formatReadabilitySignal(attendee) }}</td>

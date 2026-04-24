@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { onBeforeRouteLeave } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { Check, Plus, Search, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CallSignInput } from '@/components/ui/call-sign-input'
+import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { AutocompleteCombobox } from '@/components/shared'
 import { UserAvatar } from '@/components/ui/user-avatar'
@@ -83,6 +85,10 @@ const districts = computed(() => {
   if (!selectedEntry.value?.city) return []
   return getDistricts(selectedEntry.value.city)
 })
+
+const nextAttendeeOrder = computed(() => props.attendees.length + 1)
+
+const hasPendingEntry = computed(() => !!selectedEntry.value && !isSubmitting.value)
 
 const existingCallSigns = computed(() => 
   new Set(props.attendees.map(a => (a.callSign || '').trim().toUpperCase()))
@@ -316,6 +322,20 @@ const handleClickOutside = (e: MouseEvent) => {
   }
 }
 
+const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+  if (!hasPendingEntry.value) return
+
+  event.preventDefault()
+  event.returnValue = ''
+}
+
+const confirmLeaveWithPendingEntry = () => {
+  if (!hasPendingEntry.value) return true
+  return window.confirm(t('netDetail.leaveAddAttendeeConfirm'))
+}
+
+onBeforeRouteLeave(() => confirmLeaveWithPendingEntry())
+
 const handleGlobalEntryHotkeys = (e: KeyboardEvent) => {
   if (!selectedEntry.value) return
 
@@ -336,39 +356,48 @@ onMounted(() => {
   loadCities()
   document.addEventListener('click', handleClickOutside)
   document.addEventListener('keydown', handleGlobalEntryHotkeys, true)
+  window.addEventListener('beforeunload', handleBeforeUnload)
   focusSearchInput()
 })
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
   document.removeEventListener('keydown', handleGlobalEntryHotkeys, true)
+  window.removeEventListener('beforeunload', handleBeforeUnload)
 })
 </script>
 
 <template>
   <div class="mb-6 p-4 rounded-lg border border-primary/30 bg-primary/5">
     <div v-if="!selectedEntry" class="space-y-3">
-      <div ref="searchContainerRef" class="relative">
-        <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
-        <CallSignInput
-          v-model="searchQuery"
-          :placeholder="t('netDetail.searchOperator')"
-          class="pl-9 pr-9"
-          @keydown="handleSearchKeyDown"
-          @focus="showSuggestions = searchQuery.length >= 2 && !selectedEntry"
-        />
-        <button
-          v-if="searchQuery"
-          type="button"
-          class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring z-10"
-          :aria-label="t('common.clear')"
-          @click="searchQuery = ''"
-        >
-          <X class="h-4 w-4" />
-        </button>
+      <div ref="searchContainerRef" class="relative space-y-2">
+        <div class="flex items-center gap-3">
+          <Label class="shrink-0 text-sm font-semibold text-foreground whitespace-nowrap">
+          {{ t('netDetail.addAttendeeOrderLabel', { order: nextAttendeeOrder }) }}
+          </Label>
+          <div class="relative flex-1">
+            <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10 pointer-events-none" />
+            <CallSignInput
+              v-model="searchQuery"
+              :placeholder="t('netDetail.searchOperator')"
+              class="pl-9 pr-9"
+              @keydown="handleSearchKeyDown"
+              @focus="showSuggestions = searchQuery.length >= 2 && !selectedEntry"
+            />
+            <button
+              v-if="searchQuery"
+              type="button"
+              class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring z-10"
+              :aria-label="t('common.clear')"
+              @click="searchQuery = ''"
+            >
+              <X class="h-4 w-4" />
+            </button>
+          </div>
+        </div>
         <div
           v-if="showSuggestions && searchQuery.length >= 2 && (suggestions.length > 0 || canAddNew || isSearching)"
-          class="absolute top-full left-0 right-0 mt-1 bg-background border border-border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
+          class="absolute left-0 right-0 top-full mt-1 bg-background border border-border rounded-lg shadow-lg z-50 max-h-64 overflow-y-auto"
         >
           <div v-if="isSearching" class="p-4 text-center text-muted-foreground">
             {{ t('common.loading') }}
@@ -468,7 +497,12 @@ onUnmounted(() => {
         <div class="flex items-center gap-3">
           <UserAvatar :picture="selectedEntry.picture" class="h-10 w-10" />
           <div>
-            <div class="font-semibold">{{ selectedEntry.callSign }}</div>
+            <div class="flex items-center gap-2">
+              <div class="font-semibold">{{ selectedEntry.callSign }}</div>
+              <span class="inline-flex items-center rounded-full bg-primary/15 px-2 py-0.5 text-xs font-semibold text-primary">
+                {{ t('netDetail.addAttendeeOrderLabel', { order: nextAttendeeOrder }) }}
+              </span>
+            </div>
             <div v-if="!selectedEntry.isNew && selectedEntry.name" class="text-sm text-muted-foreground">
               {{ selectedEntry.name }}
             </div>
@@ -496,6 +530,11 @@ onUnmounted(() => {
           <label class="text-xs font-medium text-muted-foreground mb-1 block">{{ t('form.fullName') }}</label>
           <Input v-model="selectedEntry.name" />
         </div>
+      </div>
+
+      <div v-else class="space-y-2">
+        <label class="text-xs font-medium text-muted-foreground mb-1 block">{{ t('form.fullName') }}</label>
+        <Input v-model="selectedEntry.name" :placeholder="t('form.fullNamePlaceholder')" />
       </div>
 
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-3">
