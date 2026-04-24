@@ -58,6 +58,15 @@ const email = ref('')
 const callSigns = ref<Array<{ id?: string; callSign: string; isDefault: boolean }>>([])
 const isLoading = ref(false)
 const isSubmitted = ref(false)
+
+const getNormalizedCallSigns = () =>
+  callSigns.value
+    .map(cs => ({
+      callSign: cs.callSign.trim(),
+      isDefault: cs.isDefault
+    }))
+    .filter(cs => cs.callSign)
+
 // Form validation setup
 const validators = computed(() => ({
   name: [
@@ -66,8 +75,9 @@ const validators = computed(() => ({
   callSigns: [
     (_value: any) => {
       if (props.branch.isHeadquarters) return true
-      const allFilled = callSigns.value.length > 0 && callSigns.value.every(cs => cs.callSign.trim())
-      return allFilled ? true : t('form.validation.required')
+      const filledCount = callSigns.value.filter(cs => cs.callSign.trim()).length
+      if (filledCount === 0) return true
+      return filledCount === callSigns.value.length ? true : t('form.validation.required')
     },
     (_value: any) => {
       if (props.branch.isHeadquarters) return true
@@ -94,7 +104,6 @@ const addCallSign = () => {
 }
 
 const removeCallSign = (index: number) => {
-  if (callSigns.value.length === 1) return
   const item = callSigns.value[index]
   if (!item) return
   const wasDefault = item.isDefault
@@ -141,6 +150,8 @@ async function handleSubmit() {
     return
   }
 
+  const normalizedCallSigns = getNormalizedCallSigns()
+
   isLoading.value = true
   try {
     const payload: Record<string, unknown> = {
@@ -154,12 +165,7 @@ async function handleSubmit() {
     // Only include type and callSigns for non-headquarters branches
     if (!props.branch.isHeadquarters) {
       payload.type = type.value
-      payload.callSigns = callSigns.value
-        .filter(cs => cs.callSign.trim())
-        .map(cs => ({
-          callSign: cs.callSign.trim(),
-          isDefault: cs.isDefault
-        }))
+      payload.callSigns = normalizedCallSigns
     }
 
     await api.patch(`/branches/${props.branch.id}`, payload)
@@ -228,7 +234,7 @@ async function handleSubmit() {
 
         <div v-if="!props.branch.isHeadquarters" class="space-y-3">
           <div class="flex items-center justify-between">
-            <Label>{{ t('branches.callSigns') }} <span class="text-destructive">*</span></Label>
+            <Label>{{ t('branches.callSigns') }}</Label>
             <Button
               type="button"
               variant="outline"
@@ -246,7 +252,6 @@ async function handleSubmit() {
               <CallSignInput
                 v-model="callSign.callSign"
                 :class="shouldShowError('callSigns', isSubmitted) ? 'border-destructive' : ''"
-                required
               />
               <button
                 v-if="callSign.isDefault"
@@ -271,7 +276,6 @@ async function handleSubmit() {
               variant="outline"
               size="icon"
               @click="removeCallSign(index)"
-              :disabled="callSigns.length === 1"
             >
               <Trash2 class="h-4 w-4" />
             </Button>
