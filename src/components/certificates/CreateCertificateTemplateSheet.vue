@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator'
 import CertificateTemplateCanvasEditor from '@/components/certificates/CertificateTemplateCanvasEditor.vue'
 import {
   DEFAULT_SERIAL_ELEMENT,
+  normalizeCertificateTemplateElement,
   toCertificateTemplateElementsPayload,
 } from '@/components/certificates/certificate-template-defaults'
 import type { CertificateTemplateElement } from '@/components/certificates/certificate-template-defaults'
@@ -49,7 +50,7 @@ watch(
     if (open) {
       name.value = ''
       imagePath.value = ''
-      elements.value = [{ ...DEFAULT_SERIAL_ELEMENT }]
+      elements.value = [normalizeCertificateTemplateElement(DEFAULT_SERIAL_ELEMENT)]
     }
   }
 )

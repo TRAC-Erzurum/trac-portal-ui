@@ -17,6 +17,7 @@ import { Separator } from '@/components/ui/separator'
 import CertificateTemplateCanvasEditor from '@/components/certificates/CertificateTemplateCanvasEditor.vue'
 import {
   DEFAULT_SERIAL_ELEMENT,
+  normalizeCertificateTemplateElement,
   toCertificateTemplateElementsPayload,
 } from '@/components/certificates/certificate-template-defaults'
 import type { CertificateTemplateElement } from '@/components/certificates/certificate-template-defaults'
@@ -58,25 +59,14 @@ watch(
       name.value = template.name ?? ''
       imagePath.value = template.imagePath ?? ''
       const mapped = Array.isArray(template.elements)
-        ? template.elements.map((el: unknown) => {
-            const e = el as Record<string, unknown>
-            const x = Number(e.x) || 0
-            const y = Number(e.y) || 0
-            return {
-              type: (e.type === 'placeholder' ? 'placeholder' : 'static') as 'static' | 'placeholder',
-              content: e.content as string | undefined,
-              placeholderKey: e.placeholderKey as string | undefined,
-              x: x > 100 ? (x / 400) * 100 : x,
-              y: y > 100 ? (y / 300) * 100 : y,
-              fontSize: Number(e.fontSize) || 16,
-              color: (e.color as string) ?? '#000000',
-            }
-          })
+        ? template.elements.map((el: unknown) => normalizeCertificateTemplateElement(el))
         : []
       const hasSerial = mapped.some(
         (el) => el.type === 'placeholder' && el.placeholderKey === 'certificate_serial'
       )
-      elements.value = hasSerial ? mapped : [...mapped, { ...DEFAULT_SERIAL_ELEMENT }]
+      elements.value = hasSerial
+        ? mapped
+        : [...mapped, normalizeCertificateTemplateElement(DEFAULT_SERIAL_ELEMENT)]
     }
   },
   { immediate: true }
