@@ -63,6 +63,8 @@ interface Net {
   certificateTemplateId?: string | null
   certificateTemplate?: CertificateTemplate | null
   communicationChannels?: NetCommunicationChannel[]
+  startedAt?: string | null
+  endedAt?: string | null
   scheduledAt?: string | null
   estimatedDurationMinutes?: number | null
 }
@@ -82,6 +84,10 @@ const { t } = useI18n()
 const name = ref('')
 const scheduledTime = ref('20:00')
 const estimatedDurationMinutes = ref(30)
+const startedAtDate = ref('')
+const startedAtTime = ref('')
+const endedAtDate = ref('')
+const endedAtTime = ref('')
 const selectedOperator = ref<Operator | null>(null)
 const isLoading = ref(false)
 const isSubmitted = ref(false)
@@ -119,6 +125,9 @@ const channels = ref<CommunicationChannel[]>([])
 const selectedChannelIds = ref<string[]>([])
 const isLoadingChannels = ref(false)
 
+const startedAtFieldValue = computed(() => `${startedAtDate.value}|${startedAtTime.value}`)
+const endedAtFieldValue = computed(() => `${endedAtDate.value}|${endedAtTime.value}`)
+
 /** Şubenin kayıtlı çağrı işareti yoksa (ör. GM) API `branchCallSignId` null kabul eder. */
 const needsBranchCallSign = computed(
   () => !isLoadingCallSigns.value && branchCallSigns.value.length > 0,
@@ -144,6 +153,28 @@ const validators = computed(() => ({
         ? true
         : t('form.validation.required'),
   ],
+  startedAt: [
+    () => {
+      const hasAnyValue = Boolean(
+        props.net.startedAt || startedAtDate.value || startedAtTime.value,
+      )
+      if (!hasAnyValue) return true
+      return startedAtDate.value && startedAtTime.value
+        ? true
+        : t('form.validation.required')
+    }
+  ],
+  endedAt: [
+    () => {
+      const hasAnyValue = Boolean(
+        props.net.endedAt || endedAtDate.value || endedAtTime.value,
+      )
+      if (!hasAnyValue) return true
+      return endedAtDate.value && endedAtTime.value
+        ? true
+        : t('form.validation.required')
+    }
+  ],
   channels: [
     (_value: any) => {
       const allCheckedRowsFilled = simplexRows.value
@@ -162,6 +193,8 @@ const { validateForm, getFieldError, shouldShowError, fieldErrors } = useFormVal
     name: name,
     operator: selectedOperator,
     callSign: selectedCallSignId,
+    startedAt: startedAtFieldValue,
+    endedAt: endedAtFieldValue,
     channels: selectedChannelIds
   }
 )
@@ -344,6 +377,29 @@ function scheduledAtToTimeStr(iso: string | null | undefined): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
 }
 
+function dateTimeToDateStr(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const year = d.getFullYear()
+  const month = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function dateTimeToTimeStr(iso: string | null | undefined): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const h = String(d.getHours()).padStart(2, '0')
+  const m = String(d.getMinutes()).padStart(2, '0')
+  return `${h}:${m}`
+}
+
+function combineDateAndTime(dateValue: string, timeValue: string): string | undefined {
+  if (!dateValue && !timeValue) return undefined
+  if (!dateValue || !timeValue) return undefined
+  return new Date(`${dateValue}T${timeValue}`).toISOString()
+}
+
 watch(() => props.open, async (isOpen) => {
   if (isOpen && props.net) {
     isSubmitted.value = false
@@ -351,6 +407,10 @@ watch(() => props.open, async (isOpen) => {
     name.value = props.net.name
     scheduledTime.value = scheduledAtToTimeStr(props.net.scheduledAt)
     estimatedDurationMinutes.value = props.net.estimatedDurationMinutes ?? 30
+    startedAtDate.value = dateTimeToDateStr(props.net.startedAt)
+    startedAtTime.value = dateTimeToTimeStr(props.net.startedAt)
+    endedAtDate.value = dateTimeToDateStr(props.net.endedAt)
+    endedAtTime.value = dateTimeToTimeStr(props.net.endedAt)
     selectedOperator.value = props.net.operator
     operatorSearch.value = getOperatorLabel(props.net.operator)
     branchDisplayName.value = props.net.branch?.name || ''
@@ -445,6 +505,8 @@ async function handleSubmit() {
         ? selectedCallSignId.value || null
         : null,
       communicationChannels,
+      startedAt: combineDateAndTime(startedAtDate.value, startedAtTime.value),
+      endedAt: combineDateAndTime(endedAtDate.value, endedAtTime.value),
       scheduledAt: scheduledAtDate.toISOString(),
       estimatedDurationMinutes: estimatedDurationMinutes.value ?? 30,
       certificateTemplateId:
@@ -550,6 +612,34 @@ async function handleSubmit() {
             </div>
           </div>
         </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <Label for="startedAtDate">{{ t('nets.startedAtDate') }}</Label>
+            <Input id="startedAtDate" v-model="startedAtDate" type="date" class="w-full" />
+          </div>
+          <div class="space-y-2">
+            <Label for="startedAtTime">{{ t('nets.startedAtTime') }}</Label>
+            <Input id="startedAtTime" v-model="startedAtTime" type="time" class="w-full" />
+          </div>
+        </div>
+        <p v-if="shouldShowError('startedAt', isSubmitted)" class="text-xs text-destructive">
+          {{ getFieldError('startedAt') }}
+        </p>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="space-y-2">
+            <Label for="endedAtDate">{{ t('nets.endedAtDate') }}</Label>
+            <Input id="endedAtDate" v-model="endedAtDate" type="date" class="w-full" />
+          </div>
+          <div class="space-y-2">
+            <Label for="endedAtTime">{{ t('nets.endedAtTime') }}</Label>
+            <Input id="endedAtTime" v-model="endedAtTime" type="time" class="w-full" />
+          </div>
+        </div>
+        <p v-if="shouldShowError('endedAt', isSubmitted)" class="text-xs text-destructive">
+          {{ getFieldError('endedAt') }}
+        </p>
 
         <div class="space-y-2">
           <Label for="operator">{{ t('nets.operator') }}</Label>
