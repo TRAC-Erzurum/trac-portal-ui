@@ -38,6 +38,14 @@ const callSigns = ref<Array<{ callSign: string; isDefault: boolean }>>([{ callSi
 const isLoading = ref(false)
 const isSubmitted = ref(false)
 
+const getNormalizedCallSigns = () =>
+  callSigns.value
+    .map(cs => ({
+      callSign: cs.callSign.trim(),
+      isDefault: cs.isDefault
+    }))
+    .filter(cs => cs.callSign)
+
 // Form validation setup
 const validators = computed(() => ({
   name: [
@@ -45,8 +53,9 @@ const validators = computed(() => ({
   ],
   callSigns: [
     (_value: any) => {
-      const allFilled = callSigns.value.length > 0 && callSigns.value.every(cs => cs.callSign.trim())
-      return allFilled ? true : t('form.validation.required')
+      const filledCount = callSigns.value.filter(cs => cs.callSign.trim()).length
+      if (filledCount === 0) return true
+      return filledCount === callSigns.value.length ? true : t('form.validation.required')
     },
     (_value: any) => {
       const invalid = callSigns.value.find(cs => cs.callSign.trim() && !isValidCallSignFormat(cs.callSign, { allowSlashes: false }))
@@ -72,7 +81,6 @@ const addCallSign = () => {
 }
 
 const removeCallSign = (index: number) => {
-  if (callSigns.value.length === 1) return
   const item = callSigns.value[index]
   if (!item) return
   const wasDefault = item.isDefault
@@ -115,22 +123,24 @@ async function handleSubmit() {
     return
   }
 
+  const normalizedCallSigns = getNormalizedCallSigns()
+
   isLoading.value = true
   try {
-    await api.post('/branches', {
+    const payload: Record<string, unknown> = {
       name: name.value.trim(),
       type: type.value,
       city: city.value.trim() || undefined,
       address: address.value.trim() || undefined,
       phone: phone.value.trim() || undefined,
-      email: email.value.trim() || undefined,
-      callSigns: callSigns.value
-        .filter(cs => cs.callSign.trim())
-        .map(cs => ({
-          callSign: cs.callSign.trim(),
-          isDefault: cs.isDefault
-        }))
-    })
+      email: email.value.trim() || undefined
+    }
+
+    if (normalizedCallSigns.length > 0) {
+      payload.callSigns = normalizedCallSigns
+    }
+
+    await api.post('/branches', payload)
 
     toast.success(t('branches.createSuccess'))
     emit('created')
@@ -195,7 +205,7 @@ async function handleSubmit() {
 
         <div class="space-y-3">
           <div class="flex items-center justify-between">
-            <Label>{{ t('branches.callSigns') }} <span class="text-destructive">*</span></Label>
+            <Label>{{ t('branches.callSigns') }}</Label>
             <Button
               type="button"
               variant="outline"
@@ -212,7 +222,6 @@ async function handleSubmit() {
             <div class="flex-1 relative">
               <CallSignInput
                 v-model="callSign.callSign"
-                required
               />
               <button
                 v-if="callSign.isDefault"
@@ -237,7 +246,6 @@ async function handleSubmit() {
               variant="outline"
               size="icon"
               @click="removeCallSign(index)"
-              :disabled="callSigns.length === 1"
               :aria-label="t('branches.removeCallSign')"
             >
               <Trash2 class="h-4 w-4" />
