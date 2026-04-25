@@ -2,6 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import {
   CERTIFICATE_PREVIEW_FONT_FAMILY,
+  normalizeCertificateTemplateElement,
   REFERENCE_HEIGHT,
   type CertificateTemplateElement,
 } from '@/components/certificates/certificate-template-defaults'
@@ -52,6 +53,19 @@ function getText(el: CertificateTemplateElement): string {
 function scaledFontSize(fontSize: number): number {
   return Math.max(1, Math.round((fontSize * containerHeight.value) / REFERENCE_HEIGHT))
 }
+
+const normalizedElements = computed(() =>
+  props.elements.map((el) => normalizeCertificateTemplateElement(el))
+)
+
+const getAlignmentClass = (align: CertificateTemplateElement['textAlign']) => {
+  if (align === 'left') return 'justify-start text-left'
+  if (align === 'right') return 'justify-end text-right'
+  return 'justify-center text-center'
+}
+
+const CERTIFICATE_BOX_FRAME_CLASS =
+  'absolute border-2 border-white/85 bg-black/10 ring-1 ring-black/45 shadow-[0_0_0_1px_rgba(0,0,0,0.28),0_2px_6px_rgba(0,0,0,0.35)]'
 </script>
 
 <template>
@@ -72,18 +86,27 @@ function scaledFontSize(fontSize: number): number {
       aria-hidden="true"
     >
       <div
-        v-for="(el, idx) in elements"
+        v-for="(el, idx) in normalizedElements"
         :key="idx"
-        class="absolute whitespace-nowrap"
+        :class="CERTIFICATE_BOX_FRAME_CLASS"
         :style="{
           left: `${el.x}%`,
           top: `${el.y}%`,
-          fontSize: `${scaledFontSize(el.fontSize || 12)}px`,
-          fontFamily: CERTIFICATE_PREVIEW_FONT_FAMILY,
-          color: el.color || '#000000',
+          width: `${el.boxWidth}%`,
+          height: `${el.boxHeight}%`,
         }"
       >
-        {{ getText(el) }}
+        <div
+          class="flex h-full w-full items-start whitespace-nowrap overflow-hidden"
+          :class="getAlignmentClass(el.textAlign)"
+          :style="{
+            fontSize: `${scaledFontSize(el.fontSize || 12)}px`,
+            fontFamily: CERTIFICATE_PREVIEW_FONT_FAMILY,
+            color: el.color || '#000000',
+          }"
+        >
+          {{ getText(el) }}
+        </div>
       </div>
     </div>
   </div>

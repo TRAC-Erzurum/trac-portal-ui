@@ -5,6 +5,8 @@ import { ChevronDown, Plus, Trash2, Type } from 'lucide-vue-next'
 import {
   CERTIFICATE_PREVIEW_FONT_FAMILY,
   REFERENCE_HEIGHT,
+  createDefaultCertificateElement,
+  normalizeCertificateTemplateElement,
   type CertificateTemplateElement,
 } from '@/components/certificates/certificate-template-defaults'
 import { Button } from '@/components/ui/button'
@@ -16,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 
 const PLACEHOLDER_KEYS = [
@@ -76,36 +79,18 @@ const availablePlaceholderKeys = computed(() =>
 )
 
 const addStaticText = () => {
-  const next: CertificateTemplateElement = {
-    type: 'static',
-    content: '',
-    x: 50,
-    y: 50,
-    fontSize: 16,
-    color: '#000000',
-  }
+  const next = createDefaultCertificateElement('static')
   elements.value = [...elements.value, next]
 }
 
 const addPlaceholder = (key: string) => {
-  const next: CertificateTemplateElement = {
-    type: 'placeholder',
-    placeholderKey: key,
-    x: 50,
-    y: 50,
-    fontSize: 16,
-    color: '#000000',
-  }
+  const next = createDefaultCertificateElement('placeholder', key)
   elements.value = [...elements.value, next]
 }
 
 /** x,y % (0-100); eski piksel verisi varsa gösterim için %'e çeviriyoruz */
 const normalizedElements = computed(() =>
-  elements.value.map((el) => ({
-    ...el,
-    x: el.x > 100 ? (el.x / 400) * 100 : el.x,
-    y: el.y > 100 ? (el.y / 300) * 100 : el.y,
-  }))
+  elements.value.map((el) => normalizeCertificateTemplateElement(el))
 )
 
 const canvasRef = ref<HTMLElement | null>(null)
@@ -143,6 +128,9 @@ const updateElement = (index: number, patch: Partial<CertificateTemplateElement>
     placeholderKey: patch.placeholderKey !== undefined ? patch.placeholderKey : current.placeholderKey,
     x: patch.x ?? current.x,
     y: patch.y ?? current.y,
+    boxWidth: patch.boxWidth ?? current.boxWidth,
+    boxHeight: patch.boxHeight ?? current.boxHeight,
+    textAlign: patch.textAlign ?? current.textAlign,
     fontSize: patch.fontSize ?? current.fontSize,
     color: patch.color ?? current.color,
   }
@@ -163,6 +151,15 @@ const previewLabel = (el: CertificateTemplateElement) => {
   const key = el.placeholderKey || 'operator_callsign'
   return t(`certificates.placeholders.${key}`)
 }
+
+const getAlignmentClass = (align: CertificateTemplateElement['textAlign']) => {
+  if (align === 'left') return 'justify-start text-left'
+  if (align === 'right') return 'justify-end text-right'
+  return 'justify-center text-center'
+}
+
+const CERTIFICATE_BOX_FRAME_CLASS =
+  'absolute pointer-events-none border-2 border-white/85 bg-black/10 ring-1 ring-black/45 shadow-[0_0_0_1px_rgba(0,0,0,0.28),0_2px_6px_rgba(0,0,0,0.35)]'
 </script>
 
 <template>
@@ -192,16 +189,25 @@ const previewLabel = (el: CertificateTemplateElement) => {
       <div
         v-for="(el, idx) in normalizedElements"
         :key="idx"
-        class="absolute pointer-events-none whitespace-nowrap"
+        :class="CERTIFICATE_BOX_FRAME_CLASS"
         :style="{
           left: el.x + '%',
           top: el.y + '%',
-          fontFamily: CERTIFICATE_PREVIEW_FONT_FAMILY,
-          fontSize: scaledFontSize(el.fontSize) + 'px',
-          color: el.color,
+          width: el.boxWidth + '%',
+          height: el.boxHeight + '%',
         }"
       >
-        {{ previewLabel(el) }}
+        <div
+          class="flex h-full w-full items-start whitespace-nowrap overflow-hidden"
+          :class="getAlignmentClass(el.textAlign)"
+          :style="{
+            fontFamily: CERTIFICATE_PREVIEW_FONT_FAMILY,
+            fontSize: scaledFontSize(el.fontSize) + 'px',
+            color: el.color,
+          }"
+        >
+          {{ previewLabel(el) }}
+        </div>
       </div>
     </div>
 
@@ -277,32 +283,78 @@ const previewLabel = (el: CertificateTemplateElement) => {
             <Input
               :model-value="el.content ?? ''"
               class="mt-1"
+              :disabled="disabled"
               @update:model-value="(v) => updateElement(idx, { content: v == null ? undefined : String(v) })"
             />
           </div>
           <div class="grid grid-cols-2 gap-2">
             <div class="space-y-1">
-              <Label class="text-xs">{{ t('certificates.positionHorizontal') }} (%)</Label>
+              <Label class="text-xs">{{ t('certificates.positionHorizontalTopLeft') }} (%)</Label>
               <Input
                 type="number"
                 min="0"
                 max="100"
                 :model-value="String(normalizedElements[idx]?.x ?? el.x)"
                 class="mt-1"
+                :disabled="disabled"
                 @update:model-value="(v) => updateElement(idx, { x: Number(v) || 0 })"
               />
             </div>
             <div class="space-y-1">
-              <Label class="text-xs">{{ t('certificates.positionVertical') }} (%)</Label>
+              <Label class="text-xs">{{ t('certificates.positionVerticalTopLeft') }} (%)</Label>
               <Input
                 type="number"
                 min="0"
                 max="100"
                 :model-value="String(normalizedElements[idx]?.y ?? el.y)"
                 class="mt-1"
+                :disabled="disabled"
                 @update:model-value="(v) => updateElement(idx, { y: Number(v) || 0 })"
               />
             </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <div class="space-y-1">
+              <Label class="text-xs">{{ t('certificates.boxWidth') }} (%)</Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                :model-value="String(normalizedElements[idx]?.boxWidth ?? el.boxWidth)"
+                class="mt-1"
+                :disabled="disabled"
+                @update:model-value="(v) => updateElement(idx, { boxWidth: Number(v) || 0 })"
+              />
+            </div>
+            <div class="space-y-1">
+              <Label class="text-xs">{{ t('certificates.boxHeight') }} (%)</Label>
+              <Input
+                type="number"
+                min="0"
+                max="100"
+                :model-value="String(normalizedElements[idx]?.boxHeight ?? el.boxHeight)"
+                class="mt-1"
+                :disabled="disabled"
+                @update:model-value="(v) => updateElement(idx, { boxHeight: Number(v) || 0 })"
+              />
+            </div>
+          </div>
+          <div class="space-y-1">
+            <Label class="text-xs">{{ t('certificates.textAlign') }}</Label>
+            <Select
+              :model-value="normalizedElements[idx]?.textAlign ?? el.textAlign"
+              :disabled="disabled"
+              @update:model-value="(v) => updateElement(idx, { textAlign: (v as 'left' | 'center' | 'right') || 'center' })"
+            >
+              <SelectTrigger class="w-full mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="left">{{ t('certificates.alignLeft') }}</SelectItem>
+                <SelectItem value="center">{{ t('certificates.alignCenter') }}</SelectItem>
+                <SelectItem value="right">{{ t('certificates.alignRight') }}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div class="space-y-1">
             <Label class="text-xs">{{ t('certificates.fontSize') }}</Label>
@@ -312,6 +364,7 @@ const previewLabel = (el: CertificateTemplateElement) => {
               max="120"
               :model-value="String(el.fontSize)"
               class="mt-1 max-w-[8rem]"
+              :disabled="disabled"
               @update:model-value="(v) => updateElement(idx, { fontSize: Number(v) || 16 })"
             />
           </div>
@@ -322,11 +375,13 @@ const previewLabel = (el: CertificateTemplateElement) => {
                 type="color"
                 :value="el.color"
                 class="h-9 w-14 rounded border border-input cursor-pointer"
+                :disabled="disabled"
                 @input="(e) => updateElement(idx, { color: (e.target as HTMLInputElement).value })"
               />
               <Input
                 :model-value="el.color"
                 class="flex-1 font-mono text-sm"
+                :disabled="disabled"
                 @update:model-value="(v) => updateElement(idx, { color: v == null ? undefined : String(v) })"
               />
             </div>

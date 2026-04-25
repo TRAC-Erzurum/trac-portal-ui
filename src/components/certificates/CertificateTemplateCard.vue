@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import {
   CERTIFICATE_PREVIEW_FONT_FAMILY,
+  normalizeCertificateTemplateElement,
   REFERENCE_HEIGHT,
+  type CertificateTemplateElement,
 } from '@/components/certificates/certificate-template-defaults'
 
 export interface CertificateTemplate {
@@ -14,16 +16,6 @@ export interface CertificateTemplate {
   name: string
   imagePath: string
   elements?: unknown[]
-}
-
-interface ParsedElement {
-  type: 'static' | 'placeholder'
-  content?: string
-  placeholderKey?: string
-  x: number
-  y: number
-  fontSize: number
-  color: string
 }
 
 const props = withDefaults(
@@ -49,36 +41,29 @@ const imageUrl = computed(() => {
   return `${baseUrl}${path}`
 })
 
-const parsedElements = computed((): ParsedElement[] => {
+const parsedElements = computed((): CertificateTemplateElement[] => {
   const raw = props.template?.elements
   if (!Array.isArray(raw)) return []
-  return raw.map((el: unknown) => {
-    const e = el as Record<string, unknown>
-    return {
-      type: (e.type === 'placeholder' ? 'placeholder' : 'static') as 'static' | 'placeholder',
-      content: e.content as string | undefined,
-      placeholderKey: e.placeholderKey as string | undefined,
-      x: Number(e.x) || 0,
-      y: Number(e.y) || 0,
-      fontSize: Number(e.fontSize) || 16,
-      color: (e.color as string) ?? '#000000',
-    }
-  })
+  return raw.map((el: unknown) => normalizeCertificateTemplateElement(el))
 })
 
-const previewLabel = (el: ParsedElement) => {
+const previewLabel = (el: CertificateTemplateElement) => {
   if (el.type === 'static') return el.content || '…'
   const key = el.placeholderKey || 'operator_callsign'
   return t(`certificates.placeholders.${key}`)
 }
 
 /** x,y veritabanında % (0-100) veya eski piksel (0-400, 0-300) olabilir; gösterim için %'e çeviriyoruz */
-const toPercent = (e: ParsedElement) => ({
-  ...e,
-  x: e.x > 100 ? (e.x / 400) * 100 : e.x,
-  y: e.y > 100 ? (e.y / 300) * 100 : e.y,
-})
-const elementsPercent = computed(() => parsedElements.value.map(toPercent))
+const elementsPercent = computed(() => parsedElements.value)
+
+const getAlignmentClass = (align: CertificateTemplateElement['textAlign']) => {
+  if (align === 'left') return 'justify-start text-left'
+  if (align === 'right') return 'justify-end text-right'
+  return 'justify-center text-center'
+}
+
+const CERTIFICATE_BOX_FRAME_CLASS =
+  'absolute border-2 border-white/85 bg-black/10 ring-1 ring-black/45 shadow-[0_0_0_1px_rgba(0,0,0,0.28),0_2px_6px_rgba(0,0,0,0.35)]'
 
 const previewRef = ref<HTMLElement | null>(null)
 const previewHeight = ref(REFERENCE_HEIGHT)
@@ -121,17 +106,26 @@ onUnmounted(() => {
           <div
             v-for="(el, idx) in elementsPercent"
             :key="idx"
-            class="absolute whitespace-nowrap"
+            :class="CERTIFICATE_BOX_FRAME_CLASS"
             :style="{
               left: el.x + '%',
               top: el.y + '%',
-              fontFamily: CERTIFICATE_PREVIEW_FONT_FAMILY,
-              fontSize: (el.fontSize * (previewHeight / REFERENCE_HEIGHT)) + 'px',
-              color: el.color,
-              textShadow: '0 0 2px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,0.6)',
+              width: el.boxWidth + '%',
+              height: el.boxHeight + '%',
             }"
           >
-            {{ previewLabel(el) }}
+            <div
+              class="flex h-full w-full items-start whitespace-nowrap overflow-hidden"
+              :class="getAlignmentClass(el.textAlign)"
+              :style="{
+                fontFamily: CERTIFICATE_PREVIEW_FONT_FAMILY,
+                fontSize: (el.fontSize * (previewHeight / REFERENCE_HEIGHT)) + 'px',
+                color: el.color,
+                textShadow: '0 0 2px rgba(0,0,0,0.8), 0 1px 2px rgba(0,0,0,0.6)',
+              }"
+            >
+              {{ previewLabel(el) }}
+            </div>
           </div>
         </div>
       </template>
