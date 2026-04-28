@@ -94,6 +94,12 @@ const router = createRouter({
       meta: { requiresAuth: true, minRole: 'volunteer', titleKey: 'operators.profile' }
     },
     {
+      path: '/certificates',
+      name: 'certificates',
+      component: () => import('@/pages/certificates/CertificatesPage.vue'),
+      meta: { requiresAuth: true, minRole: 'volunteer', titleKey: 'nav.certificates' }
+    },
+    {
       path: '/account',
       name: 'account',
       component: () => import('@/pages/account/AccountPage.vue'),

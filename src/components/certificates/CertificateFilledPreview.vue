@@ -64,8 +64,7 @@ const getAlignmentClass = (align: CertificateTemplateElement['textAlign']) => {
   return 'justify-center text-center'
 }
 
-const CERTIFICATE_BOX_FRAME_CLASS =
-  'absolute border-2 border-white/85 bg-black/10 ring-1 ring-black/45 shadow-[0_0_0_1px_rgba(0,0,0,0.28),0_2px_6px_rgba(0,0,0,0.35)]'
+const CERTIFICATE_BOX_CLASS = 'absolute'
 </script>
 
 <template>
@@ -88,7 +87,7 @@ const CERTIFICATE_BOX_FRAME_CLASS =
       <div
         v-for="(el, idx) in normalizedElements"
         :key="idx"
-        :class="CERTIFICATE_BOX_FRAME_CLASS"
+        :class="CERTIFICATE_BOX_CLASS"
         :style="{
           left: `${el.x}%`,
           top: `${el.y}%`,
