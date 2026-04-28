@@ -21,7 +21,7 @@ import BusiestHeatmapCard from '@/components/dashboard/widgets/BusiestHeatmapCar
 import GeographyWidget from '@/components/dashboard/widgets/GeographyWidget.vue'
 import TopStreakWidget from '@/components/dashboard/widgets/TopStreakWidget.vue'
 import { api } from '@/lib/api'
-import { defaultStatsScope, type StatsScope } from '@/composables/useStatsScope'
+import { type StatsScope } from '@/composables/useStatsScope'
 
 interface BranchOption {
   id: string

@@ -5,7 +5,6 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import ActivityFeed from '@/components/dashboard/ActivityFeed.vue'
 import NetsModule from '@/components/dashboard/NetsModule.vue'
 import DashboardInventoryCarousel from '@/components/dashboard/widgets/DashboardInventoryCarousel.vue'
-import GeographyWidget from '@/components/dashboard/widgets/GeographyWidget.vue'
 import { api } from '@/lib/api'
 
 const MapPreviewWidget = defineAsyncComponent(
