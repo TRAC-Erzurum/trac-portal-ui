@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Building2, ClipboardList, Home, Map, MessageSquareText, PanelLeft, PanelLeftClose, Radio, TowerControl, Users } from 'lucide-vue-next'
+import { Award, Building2, ClipboardList, Home, Map, MessageSquareText, PanelLeft, PanelLeftClose, Radio, TowerControl, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import HeaderBranchDropdown from './HeaderBranchDropdown.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -53,6 +53,7 @@ const allNavItems = computed(() => {
     { icon: Map, label: t('nav.map'), route: '/map', restricted: false },
     { icon: Building2, label: t('nav.branches'), route: '/branches', restricted: true },
     { icon: Users, label: t('nav.operators'), route: '/operators', restricted: true },
+    { icon: Award, label: t('nav.certificates'), route: '/certificates', restricted: true },
     { icon: TowerControl, label: t('nav.communicationChannels'), route: '/communication-channels', restricted: false },
   ]
   if (authStore.isSuperAdmin) {
