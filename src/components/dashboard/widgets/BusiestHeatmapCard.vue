@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Clock } from 'lucide-vue-next'
 import VChart from 'vue-echarts'
@@ -7,6 +7,12 @@ import StatCard from '../StatCard.vue'
 import { useThemeStore } from '@/stores/theme'
 import { api } from '@/lib/api'
 import { utcCellToBrowserLocal, type UtcBusiestCell } from '@/lib/busiest-time'
+import { buildStatsQuery, defaultStatsScope, type StatsScope } from '@/composables/useStatsScope'
+
+const props = withDefaults(defineProps<{ scope?: StatsScope; branchId?: string | null }>(), {
+  scope: defaultStatsScope,
+  branchId: null,
+})
 
 interface Cell extends UtcBusiestCell {}
 
@@ -24,18 +30,22 @@ const error = ref(false)
 
 const isDark = computed(() => themeStore.effectiveTheme === 'dark')
 
-onMounted(async () => {
+const fetchData = async () => {
   try {
     loading.value = true
     error.value = false
-    busiestData.value = await api.get<BusiestData>('/dashboard/stats/busiest-time')
+    const query = buildStatsQuery(props.scope, props.branchId)
+    busiestData.value = await api.get<BusiestData>(`/insights/stats/busiest-time?${query}`)
   } catch (e) {
     error.value = true
     if (import.meta.env.DEV) console.error('[BusiestHeatmapCard]', e)
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(fetchData)
+watch([() => props.scope, () => props.branchId], fetchData)
 
 const bubbleData = computed(() => {
   const grid = Array.from({ length: 7 }, () => new Array(24).fill(0))

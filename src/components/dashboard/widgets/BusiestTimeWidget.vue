@@ -40,7 +40,7 @@ const fetchData = async () => {
   try {
     loading.value = true
     error.value = false
-    data.value = await api.get<Data>('/dashboard/stats/busiest-time')
+    data.value = await api.get<Data>('/insights/stats/busiest-time')
   } catch (e) {
     error.value = true
     if (import.meta.env.DEV) {

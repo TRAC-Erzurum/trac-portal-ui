@@ -66,13 +66,14 @@ interface Props {
   period?: Period
 }
 
-const props = withDefaults(defineProps<Props>(), {
+const props = withDefaults(defineProps<Props & { flat?: boolean }>(), {
   isLoading: false,
   showMonthlyStats: false,
   showTotals: false,
   showLeaderboards: true,
   showGlobalSection: true,
   showPeriodFilter: false,
+  flat: false,
   period: 'all',
 })
 
@@ -187,7 +188,7 @@ const setPeriod = (p: Period) => {
 </script>
 
 <template>
-  <section class="rounded-lg border border-border/50 bg-background p-4">
+  <component :is="props.flat ? 'div' : 'section'" :class="props.flat ? '' : 'rounded-lg border border-border/50 bg-background p-4'">
     <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-4 gap-3">
       <div v-for="i in 4" :key="i" class="p-4 rounded-lg border border-border/50 space-y-2">
         <div class="h-4 w-16 bg-muted animate-pulse rounded" />
@@ -318,5 +319,5 @@ const setPeriod = (p: Period) => {
         </div>
       </div>
     </template>
-  </section>
+  </component>
 </template>

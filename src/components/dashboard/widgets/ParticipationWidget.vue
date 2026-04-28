@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { Radio, Users, TrendingUp } from 'lucide-vue-next'
 import StatCard from '../StatCard.vue'
 import { api } from '@/lib/api'
+import { buildStatsQuery, defaultStatsScope, type StatsScope } from '@/composables/useStatsScope'
 
 type Period = 'all' | '7d' | '30d'
 
@@ -13,6 +14,11 @@ interface Data {
   uniqueParticipants: number
   avgUniqueParticipantsPerNet: number
 }
+
+const props = withDefaults(defineProps<{ scope?: StatsScope; branchId?: string | null }>(), {
+  scope: defaultStatsScope,
+  branchId: null,
+})
 
 const { t } = useI18n()
 const period = ref<Period>('all')
@@ -33,7 +39,8 @@ const fetchData = async () => {
   try {
     loading.value = true
     error.value = false
-    data.value = await api.get<Data>(`/dashboard/stats/participation?period=${period.value}`)
+    const query = buildStatsQuery(props.scope, props.branchId, { period: period.value })
+    data.value = await api.get<Data>(`/insights/stats/participation?${query}`)
   } catch {
     error.value = true
   } finally {
@@ -43,6 +50,7 @@ const fetchData = async () => {
 
 onMounted(fetchData)
 watch(period, fetchData)
+watch([() => props.scope, () => props.branchId], fetchData)
 </script>
 
 <template>

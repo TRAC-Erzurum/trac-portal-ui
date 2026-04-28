@@ -70,6 +70,12 @@ const router = createRouter({
       meta: { requiresAuth: true, titleKey: 'nav.dashboard' }
     },
     {
+      path: '/insights',
+      name: 'insights',
+      component: () => import('@/pages/insights/InsightsPage.vue'),
+      meta: { requiresAuth: true, minRole: 'volunteer', titleKey: 'nav.insights' }
+    },
+    {
       path: '/nets',
       name: 'nets',
       component: () => import('@/pages/nets/NetsPage.vue'),

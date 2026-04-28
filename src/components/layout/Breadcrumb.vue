@@ -54,6 +54,7 @@ const currentPageLabel = computed(() => {
   if (path === '/nets') return t('nav.nets')
   if (path === '/operators') return t('nav.operators')
   if (path === '/branches') return t('nav.branches')
+    if (path === '/insights') return t('nav.insights')
   if (path === '/communication-channels') return t('nav.communicationChannels')
   if (path === '/account') return t('nav.account')
   

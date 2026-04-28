@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import StatCard from '../StatCard.vue'
 import { Button } from '@/components/ui/button'
 import { api } from '@/lib/api'
+import { buildStatsQuery, defaultStatsScope, type StatsScope } from '@/composables/useStatsScope'
 
 type GeographyCountMode = 'total' | 'unique'
 
@@ -17,6 +18,11 @@ const DashboardGeographyMap = defineAsyncComponent(
   () => import('./DashboardGeographyMap.vue')
 )
 
+const props = withDefaults(defineProps<{ scope?: StatsScope; branchId?: string | null }>(), {
+  scope: defaultStatsScope,
+  branchId: null,
+})
+
 const { t } = useI18n()
 const data = ref<Data | null>(null)
 const loading = ref(true)
@@ -27,11 +33,8 @@ const fetchData = async () => {
   try {
     loading.value = true
     error.value = false
-    const params = new URLSearchParams()
-    params.set('mode', countMode.value)
-    data.value = await api.get<Data>(
-      `/dashboard/stats/geography?${params.toString()}`,
-    )
+    const query = buildStatsQuery(props.scope, props.branchId, { mode: countMode.value })
+    data.value = await api.get<Data>(`/insights/stats/geography?${query}`)
   } catch {
     error.value = true
   } finally {
@@ -41,6 +44,7 @@ const fetchData = async () => {
 
 onMounted(fetchData)
 watch(countMode, fetchData)
+watch([() => props.scope, () => props.branchId], fetchData)
 </script>
 
 <template>

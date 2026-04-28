@@ -20,7 +20,6 @@ import { NetCard, NetCardSkeleton, SearchInput } from '@/components/shared'
 import { useAsyncStaleGuard, usePersistedFilters } from '@/composables'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/stores/auth'
-import { useBranchStore } from '@/stores/branch'
 
 interface Net {
   id: string
@@ -55,13 +54,12 @@ interface Branch {
 
 type NetStatus = 'all' | 'active' | 'pending' | 'completed' | 'cancelled'
 type DateFilter = 'all' | 'week' | 'month' | '3months'
-type BranchFilterValue = 'selected' | 'my-branches' | 'all'
+type BranchFilterValue = 'my-branches' | 'all' | `branch:${string}`
 
 const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const branchStore = useBranchStore()
 
 const nets = ref<Net[]>([])
 const total = ref(0)
@@ -70,7 +68,7 @@ const isLoadingMore = ref(false)
 const search = ref('')
 const statusFilter = ref<NetStatus>('all')
 const dateFilter = ref<DateFilter>('all')
-const branchFilter = ref<BranchFilterValue>('selected')
+const branchFilter = ref<BranchFilterValue>('my-branches')
 const availableBranches = ref<Branch[]>([])
 const isLoadingBranches = ref(false)
 const pageSize = 48
@@ -105,13 +103,19 @@ const fetchSchedulers = async (append = false) => {
     isLoadingSchedulers.value = true
   }
   try {
-    const branchId =
-      branchFilter.value === 'selected' && currentBranchId.value
-        ? currentBranchId.value
-        : undefined
     const offset = append ? schedulers.value.length : 0
     const params = new URLSearchParams()
-    if (branchId) params.set('branchId', branchId)
+    if (branchFilter.value === 'all') {
+      params.set('branchFilter', 'all')
+    } else if (branchFilter.value === 'my-branches') {
+      params.set('branchFilter', 'my-branches')
+    } else {
+      const branchId = selectedBranchId.value
+      if (branchId) {
+        params.set('branchFilter', 'branch')
+        params.set('branchId', branchId)
+      }
+    }
     if (search.value?.trim()) params.set('search', search.value.trim())
     params.set('limit', String(schedulerPageSize))
     params.set('offset', String(offset))
@@ -159,12 +163,9 @@ const handleSchedulerUpdated = () => {
   fetchSchedulers()
 }
 
-const currentBranchId = computed(() => branchStore.currentBranch?.id ?? authStore.user?.currentBranchId ?? availableBranches.value[0]?.id ?? null)
-
-const currentBranchName = computed(() => {
-  const name = branchStore.currentBranch?.name ?? availableBranches.value.find(b => b.id === currentBranchId.value)?.name
-  return name ?? t('nets.branchFilterSelected')
-})
+const selectedBranchId = computed(() =>
+  branchFilter.value.startsWith('branch:') ? branchFilter.value.slice('branch:'.length) : null,
+)
 
 let searchTimeout: ReturnType<typeof setTimeout> | null = null
 
@@ -212,7 +213,11 @@ const fetchNets = async (append = false) => {
     } else if (branchFilter.value === 'my-branches') {
       params.set('branchFilter', 'my-branches')
     } else {
-      if (currentBranchId.value) params.set('branchId', currentBranchId.value)
+      const branchId = selectedBranchId.value
+      if (branchId) {
+        params.set('branchFilter', 'selected')
+        params.set('branchId', branchId)
+      }
     }
     params.set('limit', String(pageSize))
     params.set('offset', String(offset))
@@ -285,8 +290,15 @@ function syncFiltersToUrl() {
   if (search.value) q.search = search.value
   if (statusFilter.value !== 'all') q.status = statusFilter.value
   if (dateFilter.value !== 'all') q.dateFilter = dateFilter.value
-  q.branchFilter = branchFilter.value
-  if (branchFilter.value === 'selected' && currentBranchId.value) q.branchId = currentBranchId.value
+  if (branchFilter.value === 'my-branches' || branchFilter.value === 'all') {
+    q.branchFilter = branchFilter.value
+  } else {
+    const branchId = selectedBranchId.value
+    if (branchId) {
+      q.branchFilter = 'selected'
+      q.branchId = branchId
+    }
+  }
   router.replace({ path: route.path, query: q })
 }
 
@@ -295,7 +307,11 @@ function applyFiltersFromUrl() {
   if (typeof q.search === 'string') search.value = q.search
   if (q.status === 'active' || q.status === 'pending' || q.status === 'completed' || q.status === 'cancelled') statusFilter.value = q.status
   if (q.dateFilter === 'week' || q.dateFilter === 'month' || q.dateFilter === '3months') dateFilter.value = q.dateFilter
-  if (q.branchFilter === 'selected' || q.branchFilter === 'my-branches' || q.branchFilter === 'all') branchFilter.value = q.branchFilter
+  if (q.branchFilter === 'my-branches' || q.branchFilter === 'all') {
+    branchFilter.value = q.branchFilter
+  } else if (q.branchFilter === 'selected' && typeof q.branchId === 'string') {
+    branchFilter.value = `branch:${q.branchId}`
+  }
 }
 
 watch(search, handleSearch)
@@ -317,7 +333,7 @@ watch(
   { deep: true }
 )
 
-watch([branchFilter, currentBranchId], () => {
+watch([branchFilter, selectedBranchId], () => {
   fetchSchedulers()
 })
 
@@ -367,9 +383,15 @@ onMounted(async () => {
                 <SelectValue :placeholder="t('nets.branchFilter')" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="selected">{{ currentBranchName }}</SelectItem>
                 <SelectItem value="my-branches">{{ t('nets.branchFilterMyBranches') }}</SelectItem>
                 <SelectItem value="all">{{ t('nets.branchFilterAll') }}</SelectItem>
+                <SelectItem
+                  v-for="branch in availableBranches"
+                  :key="branch.id"
+                  :value="`branch:${branch.id}`"
+                >
+                  {{ branch.name }}
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -489,7 +511,7 @@ onMounted(async () => {
 
     <CreateNetSheet
       :open="showCreateSheet"
-      :default-branch-id="branchFilter === 'selected' && currentBranchId ? currentBranchId : undefined"
+      :default-branch-id="selectedBranchId ?? undefined"
       @update:open="(v) => { showCreateSheet = v; if (!v) handleNetCreated() }"
       @created="handleNetCreated"
     />
