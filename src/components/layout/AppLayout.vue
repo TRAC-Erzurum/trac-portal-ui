@@ -24,7 +24,7 @@ defineProps<{
   breadcrumbItems?: BreadcrumbItem[]
 }>()
 
-const sidebarCollapsed = ref(true)
+const sidebarCollapsed = ref(false)
 const mobileSidebarOpen = ref(false)
 const logoLoaded = ref(false)
 const authStore = useAuthStore()
@@ -73,9 +73,10 @@ provide('refreshPendingRequestsCount', fetchPendingRequestsCount)
       <PendingApprovalBanner v-if="showPendingBanner" />
       <header
         :class="[
-          'fixed top-0 right-0 z-20 flex items-center justify-between gap-4 px-6 py-4 lg:px-8 lg:py-5 bg-background border-b border-border/50',
+          'fixed top-0 right-0 z-20 flex items-center justify-between gap-4 px-6 bg-background border-b border-border/50 h-[57px] lg:h-[65px]',
           sidebarCollapsed ? 'left-0 lg:left-16' : 'left-0 lg:left-64'
         ]"
+        style="line-height: 1"
       >
         <div class="flex items-center gap-3 min-w-0 flex-1">
           <Button

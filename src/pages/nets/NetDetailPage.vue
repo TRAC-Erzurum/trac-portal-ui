@@ -930,7 +930,7 @@ const fetchComparePrevious = async () => {
   try {
     isLoadingCompare.value = true
     const data = await api.get<NetComparePrevious | null>(
-      `/dashboard/net/${net.value.id}/compare-previous`
+      `/insights/net/${net.value.id}/compare-previous`
     )
     comparePrevious.value = data ?? null
   } catch {

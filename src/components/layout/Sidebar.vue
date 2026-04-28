@@ -3,9 +3,8 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Award, Building2, ClipboardList, Home, Map, MessageSquareText, PanelLeft, PanelLeftClose, Radio, TowerControl, Users } from 'lucide-vue-next'
+import { Award, BarChart3, Building2, ClipboardList, Home, Map, MessageSquareText, PanelLeft, PanelLeftClose, Radio, TowerControl, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import HeaderBranchDropdown from './HeaderBranchDropdown.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useFeedbackStore } from '@/stores/feedback'
 
@@ -22,7 +21,6 @@ const emit = defineEmits<{
 }>()
 
 const sidebarHovered = ref(false)
-const isDropdownOpen = ref(false)
 const isMobile = ref(false)
 const { t } = useI18n()
 const route = useRoute()
@@ -43,12 +41,13 @@ onUnmounted(() => {
 })
 
 const effectiveExpanded = computed(
-  () => isMobile.value || !props.collapsed || sidebarHovered.value || isDropdownOpen.value
+  () => isMobile.value || !props.collapsed || sidebarHovered.value
 )
 
 const allNavItems = computed(() => {
   const items = [
     { icon: Home, label: t('nav.dashboard'), route: '/dashboard', restricted: false },
+    { icon: BarChart3, label: t('nav.insights'), route: '/insights', restricted: true },
     { icon: Radio, label: t('nav.nets'), route: '/nets', restricted: true },
     { icon: Map, label: t('nav.map'), route: '/map', restricted: false },
     { icon: Building2, label: t('nav.branches'), route: '/branches', restricted: true },
@@ -112,8 +111,11 @@ function openFeedbackSheet() {
     props.mobileOpen ? 'flex lg:flex' : 'hidden lg:flex',
     effectiveExpanded ? 'w-64' : 'w-16'
   ]" @mouseenter="sidebarHovered = true" @mouseleave="sidebarHovered = false">
-    <div class="h-16 border-b border-sidebar-border flex items-center flex-shrink-0">
-      <HeaderBranchDropdown :compact="!effectiveExpanded" @menu-state="(state) => isDropdownOpen = state" />
+    <div class="h-[57px] lg:h-[65px] flex items-center flex-shrink-0">
+      <div :class="['flex items-center gap-3 py-2 text-sm font-medium', effectiveExpanded ? 'px-3' : 'justify-center px-0 w-full']">
+        <img src="/logo-s.svg" alt="TRAC" class="h-7 w-7 flex-shrink-0" />
+        <span v-if="effectiveExpanded" class="text-lg lg:text-xl font-extrabold tracking-wide truncate">TRAC</span>
+      </div>
     </div>
 
     <nav class="flex-1 p-2 space-y-1 overflow-y-auto">

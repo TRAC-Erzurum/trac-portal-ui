@@ -258,7 +258,7 @@ const fetchCommunityStats = async () => {
   try {
     isLoadingCommunity.value = true
     communityStats.value = await api.get(
-      `/dashboard/community?branchId=${branchId}&period=${communityPeriod.value}`
+      `/insights/community?branchId=${branchId}&period=${communityPeriod.value}`
     )
   } catch {
     communityStats.value = null

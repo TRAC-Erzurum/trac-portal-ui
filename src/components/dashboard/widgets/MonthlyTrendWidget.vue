@@ -24,7 +24,7 @@ const fetchData = async () => {
     loading.value = true
     error.value = false
     const res = await api.get<Entry[] | { data?: Entry[] }>(
-      '/dashboard/stats/monthly-trend?months=12'
+      '/insights/stats/monthly-trend?months=12'
     )
     data.value = Array.isArray(res) ? res : (res?.data ?? [])
   } catch (e) {

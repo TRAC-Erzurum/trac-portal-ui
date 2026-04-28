@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { BarChart3 } from 'lucide-vue-next'
 import VChart from 'vue-echarts'
 import StatCard from '../StatCard.vue'
 import { useThemeStore } from '@/stores/theme'
 import { api } from '@/lib/api'
+import { buildStatsQuery, defaultStatsScope, type StatsScope } from '@/composables/useStatsScope'
 
 interface MonthlyEntry {
   month: string
@@ -15,6 +16,11 @@ interface MonthlyEntry {
   uniqueParticipants: number
 }
 
+const props = withDefaults(defineProps<{ scope?: StatsScope; branchId?: string | null }>(), {
+  scope: defaultStatsScope,
+  branchId: null,
+})
+
 const { t, locale } = useI18n()
 const themeStore = useThemeStore()
 const monthlyData = ref<MonthlyEntry[]>([])
@@ -23,13 +29,12 @@ const error = ref(false)
 
 const isDark = computed(() => themeStore.effectiveTheme === 'dark')
 
-onMounted(async () => {
+const fetchData = async () => {
   try {
     loading.value = true
     error.value = false
-    const res = await api.get<MonthlyEntry[] | { data?: MonthlyEntry[] }>(
-      '/dashboard/stats/monthly-trend?months=12'
-    )
+    const query = buildStatsQuery(props.scope, props.branchId, { months: 12 })
+    const res = await api.get<MonthlyEntry[] | { data?: MonthlyEntry[] }>(`/insights/stats/monthly-trend?${query}`)
     monthlyData.value = Array.isArray(res) ? res : (res?.data ?? [])
   } catch (e) {
     error.value = true
@@ -37,7 +42,10 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-})
+}
+
+onMounted(fetchData)
+watch([() => props.scope, () => props.branchId], fetchData)
 
 const chartOption = computed(() => {
   const rows = monthlyData.value

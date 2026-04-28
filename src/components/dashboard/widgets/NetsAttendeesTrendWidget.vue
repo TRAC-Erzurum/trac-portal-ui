@@ -6,6 +6,7 @@ import VChart from 'vue-echarts'
 import StatCard from '../StatCard.vue'
 import { useThemeStore } from '@/stores/theme'
 import { api } from '@/lib/api'
+import { buildStatsQuery, defaultStatsScope, type StatsScope } from '@/composables/useStatsScope'
 
 interface Entry {
   endedAt: string
@@ -13,12 +14,13 @@ interface Entry {
   netName: string
 }
 
-const props = withDefaults(
-  defineProps<{
-    branchId?: string | null
-  }>(),
-  { branchId: null }
-)
+const props = withDefaults(defineProps<{
+  scope?: StatsScope;
+  branchId?: string | null
+}>(), {
+  scope: defaultStatsScope,
+  branchId: null,
+})
 
 const { t } = useI18n()
 const themeStore = useThemeStore()
@@ -32,10 +34,8 @@ const fetchData = async () => {
   try {
     loading.value = true
     error.value = false
-    const params = new URLSearchParams()
-    params.set('limit', '30')
-    if (props.branchId) params.set('branchId', props.branchId)
-    const url = `/dashboard/stats/nets-attendees-trend?${params.toString()}`
+    const query = buildStatsQuery(props.scope, props.branchId, { limit: 30 })
+    const url = `/insights/stats/nets-attendees-trend?${query}`
     data.value = await api.get<Entry[]>(url)
   } catch (e) {
     error.value = true
@@ -48,7 +48,7 @@ const fetchData = async () => {
 }
 
 onMounted(fetchData)
-watch(() => props.branchId, fetchData)
+watch([() => props.scope, () => props.branchId], fetchData)
 
 const chartOption = computed(() => {
   const rows = [...data.value].sort(

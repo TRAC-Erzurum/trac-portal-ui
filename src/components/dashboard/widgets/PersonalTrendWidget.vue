@@ -5,6 +5,7 @@ import VChart from 'vue-echarts'
 import StatCard from '../StatCard.vue'
 import { useThemeStore } from '@/stores/theme'
 import { api } from '@/lib/api'
+import { buildStatsQuery, defaultStatsScope, type StatsScope } from '@/composables/useStatsScope'
 
 interface MonthlyPoint {
   year: number
@@ -21,7 +22,10 @@ interface Data {
   monthlySeries: MonthlyPoint[]
 }
 
-const props = defineProps<{ branchId?: string | null }>()
+const props = withDefaults(defineProps<{ scope?: StatsScope; branchId?: string | null }>(), {
+  scope: defaultStatsScope,
+  branchId: null,
+})
 const { t, locale } = useI18n()
 const themeStore = useThemeStore()
 const data = ref<Data | null>(null)
@@ -32,9 +36,8 @@ const fetchData = async () => {
   try {
     loading.value = true
     error.value = false
-    const url = props.branchId
-      ? `/dashboard/personal/trend?branchId=${props.branchId}`
-      : '/dashboard/personal/trend'
+    const query = buildStatsQuery(props.scope, props.branchId)
+    const url = query ? `/insights/personal/trend?${query}` : '/insights/personal/trend'
     data.value = await api.get<Data>(url)
   } catch {
     error.value = true
@@ -44,7 +47,7 @@ const fetchData = async () => {
 }
 
 onMounted(fetchData)
-watch(() => props.branchId, fetchData)
+watch([() => props.scope, () => props.branchId], fetchData)
 
 const isDark = computed(() => themeStore.effectiveTheme === 'dark')
 

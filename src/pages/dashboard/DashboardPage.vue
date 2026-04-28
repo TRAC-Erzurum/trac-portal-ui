@@ -1,22 +1,11 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, ref, watch } from 'vue'
+import { defineAsyncComponent, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ActivityFeed from '@/components/dashboard/ActivityFeed.vue'
-import CommunityModule from '@/components/dashboard/CommunityModule.vue'
 import NetsModule from '@/components/dashboard/NetsModule.vue'
-import PersonalStatsModule from '@/components/dashboard/PersonalStatsModule.vue'
 import DashboardInventoryCarousel from '@/components/dashboard/widgets/DashboardInventoryCarousel.vue'
 import GeographyWidget from '@/components/dashboard/widgets/GeographyWidget.vue'
-import BusiestHeatmapCard from '@/components/dashboard/widgets/BusiestHeatmapCard.vue'
-import MonthlyNetsCard from '@/components/dashboard/widgets/MonthlyNetsCard.vue'
-import MonthlyParticipantsCard from '@/components/dashboard/widgets/MonthlyParticipantsCard.vue'
-import NetsAttendeesTrendWidget from '@/components/dashboard/widgets/NetsAttendeesTrendWidget.vue'
-import PersonalLastNetsWidget from '@/components/dashboard/widgets/PersonalLastNetsWidget.vue'
-import PersonalTrendWidget from '@/components/dashboard/widgets/PersonalTrendWidget.vue'
-import { Separator } from '@/components/ui/separator'
-import { useAuthStore } from '@/stores/auth'
-import { useBranchStore } from '@/stores/branch'
 import { api } from '@/lib/api'
 
 const MapPreviewWidget = defineAsyncComponent(
@@ -50,53 +39,6 @@ interface CancelledNet {
   branchCallSign?: { id: string; callSign: string }
 }
 
-interface PersonalStats {
-  attendedNets: number
-  managedNets: number
-  streak: number
-}
-
-interface PersonalNetStatsBranchAware {
-  branch: {
-    participatedNets: number
-    managedNets: number
-    currentStreak: number
-  }
-  global: {
-    totalParticipatedNets: number
-    totalManagedNets: number
-    longestStreak: number
-  }
-}
-
-interface LeaderboardEntry {
-  rank: number
-  callSign: string
-  operatorId?: string
-  netId?: string
-  value: number
-  label: string
-}
-
-interface MonthlyStats {
-  month: string
-  year: number
-  monthIndex: number
-  netsCount: number
-  totalAttendees: number
-  uniqueParticipants: number
-}
-
-interface CommunityStats {
-  totalUniqueParticipants: number
-  totalCompletedNets: number
-  totalAttendees?: number
-  monthlyStats: MonthlyStats[]
-  topParticipants: LeaderboardEntry[]
-  topNetManagers: LeaderboardEntry[]
-  topNets: LeaderboardEntry[]
-}
-
 interface Activity {
   id: string
   type: string
@@ -109,18 +51,10 @@ interface Activity {
 }
 
 const { t } = useI18n()
-const authStore = useAuthStore()
-const branchStore = useBranchStore()
-
-const currentBranchId = computed(() => branchStore.currentBranch?.id ?? authStore.user?.currentBranchId ?? null)
 
 const isLoadingActivity = ref(true)
 const isLoadingMoreActivity = ref(false)
 const isLoadingNets = ref(true)
-const isLoadingCommunity = ref(true)
-const isLoadingPersonal = ref(true)
-const personalStats = ref<PersonalStats | PersonalNetStatsBranchAware | null>(null)
-const communityStats = ref<CommunityStats | null>(null)
 
 const activities = ref<Activity[]>([])
 const hasMoreActivity = ref(true)
@@ -168,48 +102,9 @@ const fetchNets = async () => {
   }
 }
 
-const fetchPersonalStats = async () => {
-  try {
-    isLoadingPersonal.value = true
-    const url = currentBranchId.value
-      ? `/dashboard/nets/personal?branchId=${currentBranchId.value}`
-      : '/dashboard/nets/personal'
-    personalStats.value = await api.get<PersonalStats | PersonalNetStatsBranchAware>(url)
-  } catch (e) {
-    console.error('Failed to fetch personal stats:', e)
-  } finally {
-    isLoadingPersonal.value = false
-  }
-}
-
-const communityPeriod = ref<'all' | '7d' | '30d'>('all')
-
-const fetchCommunity = async () => {
-  try {
-    isLoadingCommunity.value = true
-    communityStats.value = await api.get<CommunityStats>(
-      `/dashboard/community?period=${communityPeriod.value}`
-    )
-  } catch (e) {
-    console.error('Failed to fetch community:', e)
-  } finally {
-    isLoadingCommunity.value = false
-  }
-}
-
-watch(communityPeriod, () => {
-  fetchCommunity()
-})
-
-watch(currentBranchId, () => {
-  fetchPersonalStats()
-})
-
 onMounted(() => {
   fetchActivity()
   fetchNets()
-  fetchPersonalStats()
-  fetchCommunity()
 })
 </script>
 
@@ -273,51 +168,5 @@ onMounted(() => {
         </template>
       </Suspense>
     </div>
-
-    <Separator class="my-8" />
-
-    <!-- Benim & şubem: sayılar + son çevrimler + trend, şube seri liderleri -->
-    <section class="mb-8" aria-labelledby="dashboard-section-me">
-      <h2 id="dashboard-section-me" class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
-        {{ t('dashboard.sections.me') }}
-      </h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <PersonalStatsModule
-          :stats="personalStats"
-          :is-loading="isLoadingPersonal"
-          :branch-name="branchStore.currentBranch?.name ?? null"
-        />
-        <PersonalLastNetsWidget />
-        <PersonalTrendWidget :branch-id="currentBranchId" />
-      </div>
-    </section>
-
-    <Separator class="my-8" />
-
-    <!-- Topluluk: çevrim istatistikleri (zaman filtresi) → grafikler → il/ilçe → liderler -->
-    <section class="mb-8" aria-labelledby="dashboard-section-community">
-      <h2 id="dashboard-section-community" class="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-4">
-        {{ t('dashboard.sections.community') }}
-      </h2>
-      <div class="mb-6">
-        <CommunityModule
-          v-model:period="communityPeriod"
-          :stats="communityStats"
-          :is-loading="isLoadingCommunity"
-          show-period-filter
-        />
-      </div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <MonthlyNetsCard />
-        <MonthlyParticipantsCard />
-      </div>
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <NetsAttendeesTrendWidget />
-        <BusiestHeatmapCard />
-      </div>
-      <div class="mb-6">
-        <GeographyWidget />
-      </div>
-    </section>
   </AppLayout>
 </template>

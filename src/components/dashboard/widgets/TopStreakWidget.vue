@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import StatCard from '../StatCard.vue'
 import { api } from '@/lib/api'
+import { buildStatsQuery, defaultStatsScope, type StatsScope } from '@/composables/useStatsScope'
 
 interface Entry {
   rank: number
@@ -12,7 +13,10 @@ interface Entry {
   value: number
 }
 
-const props = defineProps<{ branchId: string | null }>()
+const props = withDefaults(defineProps<{ scope?: StatsScope; branchId?: string | null }>(), {
+  scope: defaultStatsScope,
+  branchId: null,
+})
 const { t } = useI18n()
 const router = useRouter()
 const data = ref<Entry[]>([])
@@ -20,7 +24,7 @@ const loading = ref(true)
 const error = ref(false)
 
 const fetchData = async () => {
-  if (!props.branchId) {
+  if (props.scope === 'branch' && !props.branchId) {
     data.value = []
     loading.value = false
     return
@@ -28,7 +32,8 @@ const fetchData = async () => {
   try {
     loading.value = true
     error.value = false
-    data.value = await api.get<Entry[]>(`/dashboard/stats/top-streak?branchId=${props.branchId}`)
+    const query = buildStatsQuery(props.scope, props.branchId)
+    data.value = await api.get<Entry[]>(`/insights/stats/top-streak?${query}`)
   } catch {
     error.value = true
   } finally {
@@ -41,7 +46,7 @@ const goToOperator = (id: string | null) => {
 }
 
 onMounted(fetchData)
-watch(() => props.branchId, fetchData)
+watch([() => props.scope, () => props.branchId], fetchData)
 </script>
 
 <template>

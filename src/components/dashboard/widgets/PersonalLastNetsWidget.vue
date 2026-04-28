@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { Radio, Users } from 'lucide-vue-next'
@@ -7,6 +7,7 @@ import StatCard from '../StatCard.vue'
 import { Button } from '@/components/ui/button'
 import { api } from '@/lib/api'
 import { formatDateTime } from '@/lib/formatters'
+import { buildStatsQuery, defaultStatsScope, type StatsScope } from '@/composables/useStatsScope'
 
 interface LastNetInfo {
   id: string
@@ -20,6 +21,11 @@ interface Data {
   lastManagedNets: LastNetInfo[]
 }
 
+const props = withDefaults(defineProps<{ scope?: StatsScope; branchId?: string | null }>(), {
+  scope: defaultStatsScope,
+  branchId: null,
+})
+
 const { t } = useI18n()
 const router = useRouter()
 const data = ref<Data | null>(null)
@@ -31,7 +37,9 @@ const fetchData = async () => {
   try {
     loading.value = true
     error.value = false
-    data.value = await api.get<Data>('/dashboard/personal/last-nets')
+    const query = buildStatsQuery(props.scope, props.branchId)
+    const url = query ? `/insights/personal/last-nets?${query}` : '/insights/personal/last-nets'
+    data.value = await api.get<Data>(url)
   } catch {
     error.value = true
   } finally {
@@ -50,6 +58,7 @@ const activeList = computed(() =>
 )
 
 onMounted(fetchData)
+watch([() => props.scope, () => props.branchId], fetchData)
 </script>
 
 <template>
