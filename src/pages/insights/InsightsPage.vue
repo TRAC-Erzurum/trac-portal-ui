@@ -191,13 +191,6 @@ watch(communityPeriod, fetchCommunityStats)
   <AppLayout :title="t('nav.insights')">
     <div class="space-y-6">
       <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div class="space-y-1">
-          <h2 class="text-lg font-semibold tracking-tight">{{ t('nav.insights') }}</h2>
-          <p class="text-sm text-muted-foreground">
-            {{ t('dashboard.sections.community') }}
-          </p>
-        </div>
-
         <div v-if="false" class="w-full sm:w-[20rem]">
           <Select v-model="filterValue" :disabled="isLoadingBranches">
             <SelectTrigger class="w-full">
@@ -213,20 +206,11 @@ watch(communityPeriod, fetchCommunityStats)
       </div>
 
       <section aria-labelledby="insights-summary" class="space-y-4">
-        <h3 id="insights-summary" class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          {{ t('dashboard.sections.me') }}
-        </h3>
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
           <PersonalStatsModule :stats="personalStats" :is-loading="isLoadingPersonal" />
           <PersonalLastNetsWidget :scope="currentScope" :branch-id="currentBranchId" />
           <PersonalTrendWidget :scope="currentScope" :branch-id="currentBranchId" />
         </div>
-      </section>
-
-      <section aria-labelledby="insights-community" class="space-y-4">
-        <h3 id="insights-community" class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          {{ t('dashboard.sections.community') }}
-        </h3>
         <CommunityModule
           v-model:period="communityPeriod"
           :stats="communityStats"
@@ -241,9 +225,6 @@ watch(communityPeriod, fetchCommunityStats)
       </section>
 
       <section aria-labelledby="insights-charts" class="space-y-4">
-        <h3 id="insights-charts" class="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-          {{ t('dashboard.stats.monthlyTrend') }}
-        </h3>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <MonthlyNetsCard :scope="currentScope" :branch-id="currentBranchId" />
           <MonthlyParticipantsCard :scope="currentScope" :branch-id="currentBranchId" />

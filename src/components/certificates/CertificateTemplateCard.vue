@@ -65,17 +65,18 @@ const getAlignmentClass = (align: CertificateTemplateElement['textAlign']) => {
 const CERTIFICATE_BOX_FRAME_CLASS =
   'absolute border-2 border-white/85 bg-black/10 ring-1 ring-black/45 shadow-[0_0_0_1px_rgba(0,0,0,0.28),0_2px_6px_rgba(0,0,0,0.35)]'
 
-const previewRef = ref<HTMLElement | null>(null)
+const previewRef = ref<Element | null>(null)
 const previewHeight = ref(REFERENCE_HEIGHT)
 let resizeObserver: ResizeObserver | null = null
 onMounted(() => {
   if (!previewRef.value) return
-  previewHeight.value = previewRef.value.offsetHeight || REFERENCE_HEIGHT
+  const height = (previewRef.value as HTMLElement).offsetHeight
+  previewHeight.value = height || REFERENCE_HEIGHT
   resizeObserver = new ResizeObserver((entries) => {
     const el = entries[0]?.target as HTMLElement
     if (el) previewHeight.value = el.offsetHeight || REFERENCE_HEIGHT
   })
-  resizeObserver.observe(previewRef.value)
+  resizeObserver.observe(previewRef.value as any)
 })
 onUnmounted(() => {
   resizeObserver?.disconnect()
