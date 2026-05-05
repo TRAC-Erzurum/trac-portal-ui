@@ -45,15 +45,17 @@ const effectiveExpanded = computed(
 )
 
 const allNavItems = computed(() => {
+  const operatorId = authStore.user?.operator?.id
+
   const items = [
-    { icon: Home, label: t('nav.dashboard'), route: '/dashboard', restricted: false },
     { icon: BarChart3, label: t('nav.insights'), route: '/insights', restricted: true },
-    { icon: Radio, label: t('nav.nets'), route: '/nets', restricted: true },
+    { icon: ClipboardList, label: t('nav.inventory'), route: `/operators/${operatorId}/inventory`, restricted: true },
+    { icon: Award, label: t('nav.certificates'), route: '/certificates', restricted: true },
     { icon: Map, label: t('nav.map'), route: '/map', restricted: false },
+    { icon: TowerControl, label: t('nav.communicationChannels'), route: '/communication-channels', restricted: false },
+    { icon: Radio, label: t('nav.nets'), route: '/nets', restricted: true },
     { icon: Building2, label: t('nav.branches'), route: '/branches', restricted: true },
     { icon: Users, label: t('nav.operators'), route: '/operators', restricted: true },
-    { icon: Award, label: t('nav.certificates'), route: '/certificates', restricted: true },
-    { icon: TowerControl, label: t('nav.communicationChannels'), route: '/communication-channels', restricted: false },
   ]
   if (authStore.isSuperAdmin) {
     items.push({ icon: ClipboardList, label: t('inventory.inventoryManagement'), route: '/admin/inventory', restricted: false })
@@ -112,7 +114,7 @@ function openFeedbackSheet() {
     effectiveExpanded ? 'w-64' : 'w-16'
   ]" @mouseenter="sidebarHovered = true" @mouseleave="sidebarHovered = false">
     <div class="h-[57px] lg:h-[65px] flex items-center flex-shrink-0">
-      <div :class="['flex items-center gap-3 py-2 text-sm font-medium', effectiveExpanded ? 'px-3' : 'justify-center px-0 w-full']">
+      <div :class="['flex items-center gap-3 py-2 text-sm font-medium', effectiveExpanded ? 'px-3' : 'justify-center px-0 w-full']" @click="$router.push('/dashboard')" style="user-select: none; cursor: pointer;">
         <img src="/logo-s.svg" alt="TRAC" class="h-7 w-7 flex-shrink-0" />
         <span v-if="effectiveExpanded" class="text-lg lg:text-xl font-extrabold tracking-wide truncate">TRAC</span>
       </div>

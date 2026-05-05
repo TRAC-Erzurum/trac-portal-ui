@@ -621,14 +621,15 @@
     "dashboard": "Ana Sayfa",
     "home": "Ana Sayfa",
     "menu": "Menü",
-    "insights": "İstatistikler",
+    "insights": "İstatistiklerim",
     "nets": "Çevrimler",
     "operators": "Operatörler",
     "certificates": "Sertifikalar",
     "branches": "Şubeler",
     "communicationChannels": "İletişim Kanalları",
     "map": "Harita",
-    "account": "Hesabım"
+    "account": "Hesabım",
+    "inventory": "Envanterim"
   },
   "roles": {
     "super_admin": "Sistem Yöneticisi",
