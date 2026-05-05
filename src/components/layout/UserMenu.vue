@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { LogOut, Package, UserCircle } from 'lucide-vue-next'
+import { LogOut, UserCircle } from 'lucide-vue-next'
 import {
   DropdownMenu,
   DropdownMenuContent,

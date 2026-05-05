@@ -93,17 +93,18 @@ const normalizedElements = computed(() =>
   elements.value.map((el) => normalizeCertificateTemplateElement(el))
 )
 
-const canvasRef = ref<HTMLElement | null>(null)
+const canvasRef = ref<Element | null>(null)
 const canvasHeight = ref(REFERENCE_HEIGHT)
 let resizeObserver: ResizeObserver | null = null
 onMounted(() => {
   if (!canvasRef.value) return
-  canvasHeight.value = canvasRef.value.offsetHeight || REFERENCE_HEIGHT
+  const height = (canvasRef.value as HTMLElement).offsetHeight
+  canvasHeight.value = height || REFERENCE_HEIGHT
   resizeObserver = new ResizeObserver((entries) => {
     const el = entries[0]?.target as HTMLElement
     if (el) canvasHeight.value = el.offsetHeight || REFERENCE_HEIGHT
   })
-  resizeObserver.observe(canvasRef.value)
+  resizeObserver.observe(canvasRef.value as any)
 })
 onUnmounted(() => {
   resizeObserver?.disconnect()

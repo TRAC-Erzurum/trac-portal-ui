@@ -387,12 +387,13 @@ const geographicDistribution = computed(() => {
 })
 
 const geographicTab = ref<'country' | 'city' | 'district'>('city')
-const leftStatsRef = ref<HTMLElement | null>(null)
+const leftStatsRef = ref<Element | null>(null)
 const leftStatsHeight = ref<number>(0)
 
 const updateLeftStatsHeight = () => {
   if (!leftStatsRef.value) return
-  leftStatsHeight.value = leftStatsRef.value.offsetHeight
+  const htmlEl = leftStatsRef.value as HTMLElement
+  leftStatsHeight.value = htmlEl.offsetHeight
 }
 
 let resizeObserver: ResizeObserver | null = null
@@ -448,7 +449,7 @@ onMounted(() => {
         updateLeftStatsHeight()
         if (leftStatsRef.value && typeof ResizeObserver !== 'undefined') {
           resizeObserver = new ResizeObserver(() => updateLeftStatsHeight())
-          resizeObserver.observe(leftStatsRef.value)
+          resizeObserver.observe(leftStatsRef.value as any)
         }
       })
     }
@@ -790,18 +791,19 @@ const prepareReportCanvas = async (): Promise<HTMLCanvasElement | null> => {
 const captureReportCanvas = async (): Promise<HTMLCanvasElement | null> => {
   const templateEl = exportTemplateRef.value?.templateRef ?? null
   if (!templateEl || !net.value) return null
-  const origLeft = templateEl.style.left
-  const origTop = templateEl.style.top
-  const origZIndex = templateEl.style.zIndex
-  templateEl.style.left = '0'
-  templateEl.style.top = '0'
-  templateEl.style.zIndex = '-1'
+  const templateHtmlEl = templateEl as HTMLElement
+  const origLeft = templateHtmlEl.style.left
+  const origTop = templateHtmlEl.style.top
+  const origZIndex = templateHtmlEl.style.zIndex
+  templateHtmlEl.style.left = '0'
+  templateHtmlEl.style.top = '0'
+  templateHtmlEl.style.zIndex = '-1'
   try {
     await nextTick()
     await new Promise(r => requestAnimationFrame(r))
-    const canvas = await html2canvas(templateEl, {
+    const canvas = await html2canvas(templateHtmlEl, {
       backgroundColor: '#ffffff',
-      onclone(clonedDoc, clonedNode) {
+      onclone: (clonedDoc: Document, clonedNode: Element) => {
         const head = clonedDoc.querySelector('head')
         if (head) {
           head.querySelectorAll('link[rel="stylesheet"], style').forEach(el => el.remove())
@@ -809,15 +811,16 @@ const captureReportCanvas = async (): Promise<HTMLCanvasElement | null> => {
           style.textContent = getReportExportStyles(REPORT_EXPORT_WIDTH)
           head.appendChild(style)
         }
-        clonedNode.style.width = `${REPORT_EXPORT_WIDTH}px`
-        clonedNode.style.minWidth = `${REPORT_EXPORT_WIDTH}px`
+        const htmlEl = clonedNode as HTMLElement
+        htmlEl.style.width = `${REPORT_EXPORT_WIDTH}px`
+        htmlEl.style.minWidth = `${REPORT_EXPORT_WIDTH}px`
       }
     })
     return canvas
   } finally {
-    templateEl.style.left = origLeft
-    templateEl.style.top = origTop
-    templateEl.style.zIndex = origZIndex
+    templateHtmlEl.style.left = origLeft
+    templateHtmlEl.style.top = origTop
+    templateHtmlEl.style.zIndex = origZIndex
   }
 }
 

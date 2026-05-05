@@ -98,18 +98,19 @@ async function shareBlob() {
 async function buildPngBlob(): Promise<Blob | null> {
   const templateEl = exportTemplateRef.value?.templateRef ?? null;
   if (!templateEl || !reportData.value) return null;
-  const origLeft = templateEl.style.left;
-  const origTop = templateEl.style.top;
-  const origZIndex = templateEl.style.zIndex;
-  templateEl.style.left = "0";
-  templateEl.style.top = "0";
-  templateEl.style.zIndex = "-1";
+  const templateHtmlEl = templateEl as HTMLElement;
+  const origLeft = templateHtmlEl.style.left;
+  const origTop = templateHtmlEl.style.top;
+  const origZIndex = templateHtmlEl.style.zIndex;
+  templateHtmlEl.style.left = "0";
+  templateHtmlEl.style.top = "0";
+  templateHtmlEl.style.zIndex = "-1";
   try {
     await nextTick();
     await new Promise((r) => requestAnimationFrame(r));
-    const canvas = await html2canvas(templateEl, {
+    const canvas = await html2canvas(templateHtmlEl, {
       backgroundColor: "#ffffff",
-      onclone(clonedDoc, clonedNode) {
+      onclone: (clonedDoc: Document, clonedNode: Element) => {
         const head = clonedDoc.querySelector("head");
         if (head) {
           head
@@ -119,17 +120,18 @@ async function buildPngBlob(): Promise<Blob | null> {
           style.textContent = getReportExportStyles(REPORT_EXPORT_WIDTH);
           head.appendChild(style);
         }
-        (clonedNode as HTMLElement).style.width = `${REPORT_EXPORT_WIDTH}px`;
-        (clonedNode as HTMLElement).style.minWidth = `${REPORT_EXPORT_WIDTH}px`;
+        const htmlEl = clonedNode as HTMLElement;
+        htmlEl.style.width = `${REPORT_EXPORT_WIDTH}px`;
+        htmlEl.style.minWidth = `${REPORT_EXPORT_WIDTH}px`;
       },
     });
     return new Promise<Blob | null>((resolve) => {
       canvas.toBlob((b) => resolve(b ?? null), "image/png", 1);
     });
   } finally {
-    templateEl.style.left = origLeft;
-    templateEl.style.top = origTop;
-    templateEl.style.zIndex = origZIndex;
+    templateHtmlEl.style.left = origLeft;
+    templateHtmlEl.style.top = origTop;
+    templateHtmlEl.style.zIndex = origZIndex;
   }
 }
 

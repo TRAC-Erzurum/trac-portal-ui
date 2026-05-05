@@ -26,18 +26,19 @@ const imageUrl = computed(() => {
   return `${base}${path}`
 })
 
-const containerRef = ref<HTMLElement | null>(null)
+const containerRef = ref<Element | null>(null)
 const containerHeight = ref(REFERENCE_HEIGHT)
 
 let resizeObserver: ResizeObserver | null = null
 onMounted(() => {
   if (!containerRef.value) return
-  containerHeight.value = containerRef.value.offsetHeight || REFERENCE_HEIGHT
+  const height = (containerRef.value as HTMLElement).offsetHeight
+  containerHeight.value = height || REFERENCE_HEIGHT
   resizeObserver = new ResizeObserver((entries) => {
     const el = entries[0]?.target as HTMLElement
     if (el) containerHeight.value = el.offsetHeight || REFERENCE_HEIGHT
   })
-  resizeObserver.observe(containerRef.value)
+  resizeObserver.observe(containerRef.value as any)
 })
 onUnmounted(() => {
   resizeObserver?.disconnect()
