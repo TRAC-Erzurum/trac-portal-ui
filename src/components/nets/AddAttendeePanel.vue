@@ -15,6 +15,7 @@ import { api } from '@/lib/api'
 import { isValidCallSignFormat } from '@/lib/callsign'
 import { debounce } from '@/lib/utils'
 import { useQthData } from '@/composables/useQthData'
+import { useAsyncStaleGuard } from '@/composables'
 
 interface Operator {
   id: string
@@ -68,6 +69,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { cities, getDistricts, isLoading: isLoadingCities, loadCities } = useQthData()
+const operatorSearchGuard = useAsyncStaleGuard()
 
 const searchQuery = ref('')
 const suggestions = ref<Operator[]>([])
@@ -140,15 +142,24 @@ const searchOperators = debounce(async (query: string) => {
   }
   const params = new URLSearchParams({ q, sortBy: 'attended', limit: '10' })
   if (props.priorityBranchId) params.set('priorityBranchId', props.priorityBranchId)
+  const token = operatorSearchGuard.beginReplace()
   isSearching.value = true
   try {
     const results = await api.get<Operator[]>(`/operator/search?${params.toString()}`)
+    if (!operatorSearchGuard.isCurrent(token)) {
+      return
+    }
     suggestions.value = results
     selectedIndex.value = 0
   } catch (error) {
+    if (!operatorSearchGuard.isCurrent(token)) {
+      return
+    }
     suggestions.value = []
   } finally {
-    isSearching.value = false
+    if (operatorSearchGuard.isCurrent(token)) {
+      isSearching.value = false
+    }
   }
 }, 300)
 

@@ -256,7 +256,7 @@
       "channels": "Communication channels",
       "channelsDesc": "View frequency, tone and location details for VHF/UHF repeaters, EchoLink nodes and APRS stations in one place. Discover nearby repeaters, save them to your rig, or explore the communication infrastructure on the map.",
       "community": "Operators and leaderboards",
-      "communityDesc": "Search operators across Turkey by call sign, city and QTH. Follow the most active operators on branch and overall leaderboards; export your statistics as PDF or CSV."
+      "communityDesc": "Search operators across Turkey by call sign, city and QTH. Follow the most active operators on branch and overall leaderboards; export your statistics as PDF or Excel."
     },
     "howItWorks": {
       "title": "How do I get started?",
@@ -664,9 +664,9 @@
     "roleAll": "All Roles",
     "import": "Import",
     "importTitle": "Import Operators",
-    "importDescription": "Select a CSV file and map the columns.",
+    "importDescription": "Select an Excel file and map the columns.",
     "importNotice": "Records with existing call signs will be skipped.",
-    "selectFile": "Select File (.csv)",
+    "selectFile": "Select File (.xlsx)",
     "columnMapping": "Column Mapping",
     "preview": "Preview (First 5 Rows)",
     "importing": "Importing...",
@@ -952,7 +952,7 @@
     "shareReportOpening": "Opening share…",
     "shareReportDownload": "Download report",
     "shareReportInvalidLink": "Link invalid or expired.",
-    "exportCsvTooltip": "Export as CSV",
+    "exportExcelTooltip": "Export as Excel",
     "exportPdfTooltip": "Export as PDF",
     "exportPngTooltip": "Export as PNG",
     "shareReportAsPng": "Share Report as PNG"

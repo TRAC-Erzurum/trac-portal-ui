@@ -256,7 +256,7 @@
       "channels": "İletişim kanalları",
       "channelsDesc": "VHF/UHF röleler, EchoLink düğümleri ve APRS istasyonlarının frekans, ton ve konum bilgilerini tek yerden görün. Yakınınızdaki röleleri keşfedin, cihazınıza kaydedin veya harita üzerinde iletişim altyapısını inceleyin.",
       "community": "Operatörler ve sıralamalar",
-      "communityDesc": "Türkiye genelindeki operatörleri çağrı işareti, şehir ve QTH ile arayın. Şube ve genel sıralama tablolarında en aktif operatörleri takip edin; istatistiklerinizi PDF veya CSV olarak dışa aktarın."
+      "communityDesc": "Türkiye genelindeki operatörleri çağrı işareti, şehir ve QTH ile arayın. Şube ve genel sıralama tablolarında en aktif operatörleri takip edin; istatistiklerinizi PDF veya Excel olarak dışa aktarın."
     },
     "howItWorks": {
       "title": "Nasıl başlarım?",
@@ -668,9 +668,9 @@
     "deleteOperatorSuccess": "Operatör başarıyla silindi",
     "import": "İçe Aktar",
     "importTitle": "Operatörleri İçe Aktar",
-    "importDescription": "CSV dosyasını seçin ve sütunları eşleştirin.",
+    "importDescription": "Excel dosyasını seçin ve sütunları eşleştirin.",
     "importNotice": "Mevcut çağrı işaretleri olan kayıtlar atlanacaktır.",
-    "selectFile": "Dosya Seç (.csv)",
+    "selectFile": "Dosya Seç (.xlsx)",
     "columnMapping": "Sütun Eşleştirme",
     "preview": "Önizleme (İlk 5 Satır)",
     "importing": "İçe aktarılıyor...",
@@ -956,7 +956,7 @@
     "shareReportOpening": "Paylaşım açılıyor…",
     "shareReportDownload": "Raporu indir",
     "shareReportInvalidLink": "Link geçersiz veya süresi dolmuş.",
-    "exportCsvTooltip": "CSV olarak dışa aktar",
+    "exportExcelTooltip": "Excel olarak dışa aktar",
     "exportPdfTooltip": "PDF olarak dışa aktar",
     "exportPngTooltip": "PNG olarak dışa aktar",
     "shareReportAsPng": "Raporu PNG olarak paylaş"
