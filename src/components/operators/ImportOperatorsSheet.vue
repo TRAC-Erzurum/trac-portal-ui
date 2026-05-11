@@ -65,32 +65,40 @@ function handleFileSelect(event: Event) {
   const file = target.files?.[0]
   if (!file) return
 
-  if (!file.name.endsWith('.csv')) {
+  if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls')) {
     toast.error(t('error.invalidFileType'))
     return
   }
 
   selectedFile.value = file
-  parseCSVHeaders(file)
+  parseExcelHeaders(file)
 }
 
-function parseCSVHeaders(file: File) {
-  const reader = new FileReader()
-  reader.onload = (e) => {
-    const text = e.target?.result as string
-    const lines = text.split(/\r?\n/).filter(line => line.trim())
-    if (lines.length === 0) return
+async function parseExcelHeaders(file: File) {
+  try {
+    const XLSX = await import('xlsx')
+    const arrayBuffer = await file.arrayBuffer()
+    const workbook = XLSX.read(arrayBuffer)
+    const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+    
+    if (!worksheet) {
+      toast.error(t('error.invalidFileType'))
+      return
+    }
 
-    // Simple CSV split (not handling escaped commas for header discovery)
-      const firstLine = lines[0] ?? ''
-      headers.value = firstLine
-        ? firstLine.split(',').map(h => h.trim().replace(/^['"]|['"]$/g, ''))
-        : []
+    const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as unknown[][]
+    if (data.length === 0) {
+      toast.error(t('error.invalidFileType'))
+      return
+    }
 
-      // Parse preview rows (up to 5)
-      previewRows.value = lines.slice(1, 6).map(line =>
-        line.split(',').map(cell => cell.trim().replace(/^['"]|['"]$/g, ''))
-      )
+    const firstRow = data[0] ?? []
+    headers.value = firstRow.map(h => String(h).trim())
+
+    // Parse preview rows (up to 5)
+    previewRows.value = (data.slice(1, 6) as unknown[][]).map(row =>
+      row.map(cell => String(cell ?? '').trim())
+    )
 
     // Auto-mapping attempt
     headers.value.forEach(header => {
@@ -102,8 +110,10 @@ function parseCSVHeaders(file: File) {
         }
       })
     })
+  } catch (error) {
+    toast.error(t('error.invalidFileType'))
+    selectedFile.value = null
   }
-  reader.readAsText(file)
 }
 
 async function handleImport() {
@@ -182,7 +192,7 @@ function getMappedValue(rowIndex: number, field: string) {
               ref="fileInput"
               type="file"
               class="hidden"
-              accept=".csv"
+              accept=".xlsx,.xls"
               @change="handleFileSelect"
             />
             <div v-if="!selectedFile" class="flex flex-col items-center gap-2">

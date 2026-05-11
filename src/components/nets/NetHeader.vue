@@ -88,7 +88,7 @@ const emit = defineEmits<{
   end: []
   edit: []
   delete: []
-  exportCsv: []
+  exportExcel: []
   exportPdf: []
   exportPng: []
   exportCertificates: []

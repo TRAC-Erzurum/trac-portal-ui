@@ -16,7 +16,7 @@ import { api, type ApiError } from '@/lib/api'
 import { debounce } from '@/lib/utils'
 import { useBranchStore, type Branch } from '@/stores/branch'
 import { useAuthStore } from '@/stores/auth'
-import { useFormValidation } from '@/composables'
+import { useFormValidation, useAsyncStaleGuard } from '@/composables'
 import type { CommunicationChannel } from '@/types/communication-channel'
 
 interface Operator {
@@ -84,6 +84,7 @@ const operatorSearch = ref('')
 const operatorSuggestions = ref<Operator[]>([])
 const isSearchingOperators = ref(false)
 const showOperatorDropdown = ref(false)
+const operatorSearchGuard = useAsyncStaleGuard()
 
 const selectedBranchId = ref<string>('')
 const availableBranches = ref<Branch[]>([])
@@ -359,14 +360,23 @@ const searchOperators = debounce(async (query: string) => {
     operatorSuggestions.value = []
     return
   }
+  const token = operatorSearchGuard.beginReplace()
   isSearchingOperators.value = true
   try {
     const response = await api.get<Operator[]>(`/operator/search?q=${encodeURIComponent(query)}&sortBy=managed&branchId=${selectedBranchId.value}`)
+    if (!operatorSearchGuard.isCurrent(token)) {
+      return
+    }
     operatorSuggestions.value = response || []
   } catch {
+    if (!operatorSearchGuard.isCurrent(token)) {
+      return
+    }
     operatorSuggestions.value = []
   } finally {
-    isSearchingOperators.value = false
+    if (operatorSearchGuard.isCurrent(token)) {
+      isSearchingOperators.value = false
+    }
   }
 }, 300)
 

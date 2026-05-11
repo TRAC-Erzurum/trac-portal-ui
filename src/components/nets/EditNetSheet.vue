@@ -2,6 +2,7 @@
 import { ref, watch, computed, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
+import { useAsyncStaleGuard } from '@/composables'
 import { Search, X, Check } from 'lucide-vue-next'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
@@ -96,6 +97,7 @@ const operatorSearch = ref('')
 const operatorSuggestions = ref<Operator[]>([])
 const isSearchingOperators = ref(false)
 const showOperatorDropdown = ref(false)
+const operatorSearchGuard = useAsyncStaleGuard()
 
 const branchCallSigns = ref<BranchCallSign[]>([])
 const selectedCallSignId = ref<string>('')
@@ -268,14 +270,23 @@ const searchOperators = debounce(async (query: string) => {
     operatorSuggestions.value = []
     return
   }
+  const token = operatorSearchGuard.beginReplace()
   isSearchingOperators.value = true
   try {
     const response = await api.get<Operator[]>(`/operator/search?q=${encodeURIComponent(query)}&sortBy=managed&branchId=${branch.value.id}`)
+    if (!operatorSearchGuard.isCurrent(token)) {
+      return
+    }
     operatorSuggestions.value = response || []
   } catch {
+    if (!operatorSearchGuard.isCurrent(token)) {
+      return
+    }
     operatorSuggestions.value = []
   } finally {
-    isSearchingOperators.value = false
+    if (operatorSearchGuard.isCurrent(token)) {
+      isSearchingOperators.value = false
+    }
   }
 }, 300)
 

@@ -28,7 +28,8 @@
     "vue-i18n": "^11.3.0",
     "vue-router": "^5.0.3",
     "vue-sonner": "^2.0.9",
-    "vue-turnstile": "^1.0.11"
+    "vue-turnstile": "^1.0.11",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.1",

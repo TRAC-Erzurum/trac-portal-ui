@@ -746,26 +746,21 @@ const downloadCertificate = async (attendee: Attendee) => {
   }
 }
 
-const exportToCsv = async () => {
+const exportToExcel = async () => {
   if (!net.value) return
   try {
+    const XLSX = await import('xlsx')
     const sorted = await api.get<Attendee[]>(`/net/${route.params.id}/attendee?sort=ASC`)
-    const headers = ['#', t('operators.callSign'), t('operators.name'), t('operators.qth'), t('operators.signal'), t('netReport.joinTime')].join(',')
+    const headers = ['#', t('operators.callSign'), t('operators.name'), t('operators.qth'), t('operators.signal'), t('netReport.joinTime')]
     const rows = sorted.map((a, i) => {
       const qth = [a.district, a.city].filter(Boolean).join(', ') || '-'
-      const fields = [i + 1, a.callSign || '', (a.name || '').replace(/"/g, '""'), qth.replace(/"/g, '""'), formatReadabilitySignal(a), formatDateTime(a.createdAt).replace(/"/g, '""')]
-      return fields.map(f => {
-        const str = String(f)
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) return `"${str}"`
-        return str
-      }).join(',')
+      return [i + 1, a.callSign || '', a.name || '', qth, formatReadabilitySignal(a), formatDateTime(a.createdAt)]
     })
-    const blob = new Blob(['\ufeff' + [headers, ...rows].join('\n')], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = `${net.value.name.replace(/[/\\?%*:|"<>]/g, '-')}.csv`
-    link.click()
-    URL.revokeObjectURL(link.href)
+    const workbook = XLSX.utils.book_new()
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows])
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendees')
+    const filename = `${net.value.name.replace(/[/\\?%*:|"<>]/g, '-')}.xlsx`
+    XLSX.writeFile(workbook, filename)
     toast.success(t('netReport.exportSuccess'))
   } catch {
     toast.error(t('error.serverError'))
@@ -955,7 +950,7 @@ const fetchComparePrevious = async () => {
       <NetHeader :net="net" :can-manage="canManageNet" :can-delete="canDeleteNet"
         :is-admin="canManageNet" :attendees-count="attendees.length" :is-exporting="isExporting"
         @start="startNet" @end="endNet" @edit="openEditNet" @delete="showDeleteNetDialog = true"
-        @export-csv="exportToCsv" @export-pdf="exportToPdf"
+        @export-excel="exportToExcel" @export-pdf="exportToPdf"
         @export-png="exportToPng" @export-certificates="exportCertificates" @share-report="openShareFlow">
         <template v-if="net?.certificateTemplate && (certificatePreviewImageUrl || isLoadingCertificatePreview)"
           #certificate>
@@ -1182,12 +1177,12 @@ const fetchComparePrevious = async () => {
                   size="sm"
                   class="w-full gap-2 justify-center"
                   :disabled="isExporting"
-                  @click="exportToCsv"
-                  :title="t('netDetail.exportCsvTooltip')"
-                  :aria-label="t('netDetail.exportCsvTooltip')"
+                  @click="exportToExcel"
+                  :title="t('netDetail.exportExcelTooltip')"
+                  :aria-label="t('netDetail.exportExcelTooltip')"
                 >
                   <FileSpreadsheet class="h-4 w-4" />
-                  CSV
+                  Excel
                 </Button>
                 <Button
                   variant="outline"
