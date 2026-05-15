@@ -427,6 +427,10 @@
     "openMap": "Haritayı aç",
     "addOrEditQth": "QTH ekle",
     "myInventoryTitle": "Envanterim",
+    "branchesImIn": "Dahil Olduğum Şubeler",
+    "noBranchesYet": "Henüz bir şubeye dahil değilsiniz",
+    "myCertificatesTitle": "Sertifikalarım",
+    "certificateEndpointUnavailable": "Sertifikalar şu anda görüntülenemiyor",
     "carouselIndicators": "Görsel galerisi",
     "carouselSlide": "Slayt {current} / {total}",
     "carouselPrev": "Önceki",
@@ -481,7 +485,8 @@
       "districts": "İlçeler",
       "geographyTotalParticipation": "Toplam katılımcı",
       "geographyUniqueParticipation": "Benzersiz katılımcı"
-    }
+    },
+    "allNets": "Tüm çevrimler"
   },
   "map": {
     "title": "QTH Locator Haritası",

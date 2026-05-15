@@ -2,8 +2,8 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Edit, Map, MapPin } from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
+import { MapPin } from 'lucide-vue-next'
+import DashboardWidget from './DashboardWidget.vue'
 import LocatorMapPreview from '@/components/shared/LocatorMapPreview.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -33,31 +33,9 @@ function openMapOrEdit() {
 </script>
 
 <template>
-  <div class="rounded-lg border border-border bg-background overflow-hidden">
-    <div class="px-3 py-2 border-b border-border/50 flex items-center justify-between gap-2">
-      <h3 class="text-sm font-medium text-muted-foreground flex items-center gap-2">
-        <MapPin class="h-4 w-4 shrink-0" aria-hidden="true" />
-        {{ t('dashboard.mapPreview') }}
-      </h3>
-      <Button
-        variant="outline"
-        size="sm"
-        class="shrink-0"
-        :aria-label="userGrid ? t('dashboard.openMap') : t('dashboard.addOrEditQth')"
-        @click="openMapOrEdit"
-      >
-        <Map v-if="userGrid" class="mr-2 h-4 w-4" aria-hidden="true" />
-        <Edit v-else class="mr-2 h-4 w-4" aria-hidden="true" />
-        {{ userGrid ? t('dashboard.openMap') : t('dashboard.addOrEditQth') }}
-      </Button>
-    </div>
-    <LocatorMapPreview
-      :grid-square="userGrid"
-      :city="userCity"
-      :district="userDistrict"
-      variant="dashboard"
-      :standalone="false"
-      :interactive="false"
-    />
-  </div>
+  <DashboardWidget :icon="MapPin" :title="t('dashboard.mapPreview')"
+    :action="{ click: openMapOrEdit, text: userGrid ? t('dashboard.openMap') : t('dashboard.addOrEditQth') }">
+    <LocatorMapPreview :grid-square="userGrid" :city="userCity" :district="userDistrict" variant="dashboard"
+      :standalone="false" :interactive="false" class="w-full h-full" />
+  </DashboardWidget>
 </template>

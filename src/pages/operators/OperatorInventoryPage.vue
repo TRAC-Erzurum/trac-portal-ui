@@ -271,6 +271,13 @@ onMounted(() => {
   fetchCategories()
   fetchStatuses()
   fetchEquipment()
+  
+  // Check for equipment query param and open details sheet
+  const equipmentId = route.query.equipment as string | undefined
+  if (equipmentId) {
+    detailEquipmentId.value = equipmentId
+    showDetailSheet.value = true
+  }
 })
 </script>
 

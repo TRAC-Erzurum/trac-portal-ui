@@ -32,16 +32,15 @@ export const DEFAULT_ELEMENT_VALUES = {
   color: '#000000',
 }
 
-/** Varsayılan sertifika seri no öğesi: sağ altta, küçük punto, silinemez, düzenlenebilir (x,y %) */
 export const DEFAULT_SERIAL_ELEMENT: CertificateTemplateElement = {
   type: 'placeholder',
   placeholderKey: 'certificate_serial',
-  x: 70,
-  y: 95,
+  x: 74,
+  y: 94,
   boxWidth: 26,
   boxHeight: 6,
   textAlign: 'right',
-  fontSize: 10,
+  fontSize: 8,
   color: '#666666',
 }
 

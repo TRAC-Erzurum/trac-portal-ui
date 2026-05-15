@@ -253,11 +253,9 @@ const showActions = computed(() => c.value.isActive || props.canManage)
             {{ branchName }}
           </p>
         </div>
-
-        <!-- 1) Technical info – uniform table-like layout for all types -->
         <div
           v-if="hasTechnicalInfo"
-          class="space-y-1.5 text-xs grid grid-cols-[minmax(6.5rem,auto)_1fr] gap-x-2 gap-y-1 items-baseline"
+          class="space-y-1.5 text-xs grid grid-cols-[minmax(2.5rem,auto)_1fr] gap-x-2 gap-y-1 items-baseline"
         >
           <template v-if="repeaterConnectionDisplay">
             <template v-if="repeaterConnectionDisplay.txFreq">

@@ -361,7 +361,7 @@ const CERTIFICATE_BOX_FRAME_CLASS =
             <Label class="text-xs">{{ t('certificates.fontSize') }}</Label>
             <Input
               type="number"
-              min="8"
+              min="1"
               max="120"
               :model-value="String(el.fontSize)"
               class="mt-1 max-w-[8rem]"

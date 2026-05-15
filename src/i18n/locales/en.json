@@ -427,6 +427,10 @@
     "openMap": "Open map",
     "addOrEditQth": "Add QTH",
     "myInventoryTitle": "My inventory",
+    "branchesImIn": "Branches I'm in",
+    "noBranchesYet": "You are not in any branches yet",
+    "myCertificatesTitle": "My certificates",
+    "certificateEndpointUnavailable": "Certificates are currently unavailable",
     "carouselIndicators": "Image carousel",
     "carouselSlide": "Slide {current} of {total}",
     "carouselPrev": "Previous",
@@ -481,7 +485,8 @@
       "districts": "Districts",
       "geographyTotalParticipation": "Total participation",
       "geographyUniqueParticipation": "Unique participation"
-    }
+    },
+    "allNets": "All nets"
   },
   "map": {
     "title": "QTH Locator Map",
