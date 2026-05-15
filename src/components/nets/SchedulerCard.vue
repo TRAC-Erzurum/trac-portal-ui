@@ -129,7 +129,7 @@ const branchIsHeadquarters = computed(() => props.scheduler.branch?.isHeadquarte
 </script>
 
 <template>
-  <div class="w-full text-left p-4 rounded-lg border border-border/50 transition-all flex flex-col relative">
+  <div class="w-full text-left p-4 rounded-lg border border-border/50 bg-background transition-all flex flex-col relative">
     <Award
       v-if="scheduler.certificateTemplateId"
       class="absolute top-2.5 right-2.5 h-3.5 w-3.5 text-amber-500 dark:text-amber-400 shrink-0"
@@ -146,7 +146,6 @@ const branchIsHeadquarters = computed(() => props.scheduler.branch?.isHeadquarte
             <p class="font-semibold truncate">{{ resolvedName }}</p>
             <div v-if="branchName" class="flex items-center gap-2 mt-1 min-w-0">
               <Building2 class="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
-              <span class="text-xs text-muted-foreground shrink-0">{{ t('nets.branch') }}:</span>
               <span class="text-sm font-medium truncate">
                 <template v-if="!branchIsHeadquarters && branchCallSign">
                   <span class="font-mono">{{ branchCallSign }}</span>
@@ -217,7 +216,7 @@ const branchIsHeadquarters = computed(() => props.scheduler.branch?.isHeadquarte
             <div
               v-for="item in displayedNets"
               :key="item.date"
-              class="w-full text-left p-4 rounded-lg border border-border/50 flex flex-col gap-1"
+              class="w-full text-left p-4 rounded-lg border border-border/50 bg-background flex flex-col gap-1"
             >
               <p class="font-semibold truncate">{{ item.name }}</p>
               <p class="text-sm text-muted-foreground flex items-center gap-1">
@@ -228,7 +227,7 @@ const branchIsHeadquarters = computed(() => props.scheduler.branch?.isHeadquarte
           </div>
           <div
             v-if="hasMoreThanFive"
-            class="w-full rounded-lg border border-dashed border-border/70 flex items-center justify-center py-3 text-muted-foreground/60"
+            class="w-full rounded-lg border border-dashed border-border/70 bg-background flex items-center justify-center py-3 text-muted-foreground/60"
             :aria-label="t('scheduler.plannedNetsMoreHint')"
           >
             <span class="text-lg tracking-widest" aria-hidden="true">⋯</span>

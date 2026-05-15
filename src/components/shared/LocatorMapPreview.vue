@@ -216,7 +216,7 @@ const selectionSummary = computed(() => {
     @keydown.enter="interactive ? onMapClick() : undefined"
     @keydown.space.prevent="interactive ? onMapClick() : undefined"
   >
-    <div class="h-48 relative">
+    <div class="h-[300px] relative">
       <div
         class="absolute inset-0 z-0"
         :class="interactive ? 'cursor-pointer' : 'pointer-events-none'"
@@ -269,7 +269,7 @@ const selectionSummary = computed(() => {
       </div>
       <div
         v-if="variant === 'dashboard' && userParsed && markerLatLng"
-        class="absolute bottom-2 left-2 right-2 z-[500] pointer-events-none"
+        class="absolute bottom-2 left-2 right-2 z-[39] pointer-events-none"
       >
         <div
           class="rounded-md border border-border bg-background/95 backdrop-blur-sm px-3 py-2 shadow-sm min-w-0"

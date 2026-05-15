@@ -7,7 +7,7 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import { SearchInput } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import CertificateFilledPreview from '@/components/certificates/CertificateFilledPreview.vue'
-import { type CertificateTemplateElement } from '@/components/certificates/certificate-template-defaults'
+import CertificatePreviewDialog from '@/components/certificates/CertificatePreviewDialog.vue'
 import { useAuthStore } from '@/stores/auth'
 import { api, API_BASE, type ApiError } from '@/lib/api'
 import { debounce } from '@/lib/utils'
@@ -15,6 +15,7 @@ import { formatCallSign, formatDateLong } from '@/lib/formatters'
 import { getFilenameFromContentDisposition } from '@/lib/content-disposition'
 import { translateError } from '@/i18n'
 import { useAsyncStaleGuard } from '@/composables'
+import { useCertificateAssets } from '@/composables/useCertificateAssets'
 
 interface OperatorSearchResult {
   id: string
@@ -35,12 +36,6 @@ interface OperatorCertificateItem {
   certificateTemplateId: string
 }
 
-interface CertificatePreviewData {
-  imagePath: string
-  elements: CertificateTemplateElement[]
-  placeholders: Record<string, string>
-}
-
 interface SelectedOperator {
   id: string
   label: string
@@ -55,16 +50,22 @@ const searchResults = ref<OperatorSearchResult[]>([])
 const searchResultsQuery = ref('')
 const selectedOperator = ref<SelectedOperator | null>(null)
 const certificates = ref<OperatorCertificateItem[]>([])
-const certificatePreviews = ref<Record<string, CertificatePreviewData | null>>({})
 const isSearchingOperators = ref(false)
 const isLoadingCertificates = ref(false)
-const isLoadingCertificatePreviews = ref(false)
 const isDownloadingAll = ref(false)
-const downloadingAttendeeId = ref<string | null>(null)
+const certificatePreviewDialogCert = ref<OperatorCertificateItem | null>(null)
+
+const {
+  certificatePreviews,
+  isLoadingCertificatePreviews,
+  downloadingAttendeeId,
+  loadCertificatePreviews,
+  resetCertificatePreviews,
+  downloadCertificate,
+} = useCertificateAssets()
 
 const operatorSearchGuard = useAsyncStaleGuard()
 const certificateListGuard = useAsyncStaleGuard()
-const certificatePreviewGuard = useAsyncStaleGuard()
 
 const currentUserOperator = computed(() => authStore.user?.operator ?? null)
 const selectedOperatorLabel = computed(() => selectedOperator.value?.label ?? '')
@@ -77,23 +78,10 @@ const formatOperatorLabel = (op: { prefix?: string; callSign: string; suffix?: s
 
 const getDisplayName = (op: OperatorSearchResult) => op.fullName?.trim() || ''
 
-const getCertificateFilename = (item: OperatorCertificateItem) => {
-  const raw = `${item.netName || 'certificate'}.pdf`
-  return raw.replace(/[/\\?%*:|"<>]/g, '-')
-}
-
-const downloadBlob = (blob: Blob, filename: string) => {
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
-  link.download = filename
-  link.click()
-  URL.revokeObjectURL(link.href)
-}
-
 const loadCertificatesForOperator = async (operatorId: string) => {
   const token = certificateListGuard.beginReplace()
   isLoadingCertificates.value = true
-  certificatePreviews.value = {}
+  resetCertificatePreviews()
   try {
     const items = await api.get<OperatorCertificateItem[]>(`/operator/${operatorId}/certificates`)
     if (!certificateListGuard.isCurrent(token)) return
@@ -102,38 +90,12 @@ const loadCertificatesForOperator = async (operatorId: string) => {
   } catch (e) {
     if (!certificateListGuard.isCurrent(token)) return
     certificates.value = []
-    certificatePreviews.value = {}
+    resetCertificatePreviews()
     const error = e as ApiError
     toast.error(translateError(error.message || 'error.serverError'))
   } finally {
     if (certificateListGuard.isCurrent(token)) {
       isLoadingCertificates.value = false
-    }
-  }
-}
-
-const loadCertificatePreviews = async (items: OperatorCertificateItem[]) => {
-  const token = certificatePreviewGuard.beginReplace()
-  isLoadingCertificatePreviews.value = true
-  try {
-    const results = await Promise.allSettled(
-      items.map((item) =>
-        api.get<CertificatePreviewData | null>(
-          `/net/${item.netId}/certificate/${item.attendeeId}/preview-data`
-        )
-      )
-    )
-    if (!certificatePreviewGuard.isCurrent(token)) return
-
-    const next: Record<string, CertificatePreviewData | null> = {}
-    items.forEach((item, index) => {
-      const result = results[index]
-      next[item.attendeeId] = result?.status === 'fulfilled' ? result.value : null
-    })
-    certificatePreviews.value = next
-  } finally {
-    if (certificatePreviewGuard.isCurrent(token)) {
-      isLoadingCertificatePreviews.value = false
     }
   }
 }
@@ -149,6 +111,7 @@ const syncCurrentUserOperator = async () => {
     selectedOperator.value = null
     searchQuery.value = ''
     certificates.value = []
+    resetCertificatePreviews()
     return
   }
 
@@ -212,7 +175,7 @@ watch(searchQuery, (value) => {
   }
   selectedOperator.value = null
   certificates.value = []
-  certificatePreviews.value = {}
+  resetCertificatePreviews()
   searchOperators(trimmed)
 })
 
@@ -221,31 +184,6 @@ const selectOperator = (op: OperatorSearchResult) => {
   setSelectedOperator({ id: op.id, label, fullName: op.fullName })
   searchResults.value = []
   void loadCertificatesForOperator(op.id)
-}
-
-const downloadSingleCertificate = async (item: OperatorCertificateItem) => {
-  if (!selectedOperator.value || downloadingAttendeeId.value) return
-  downloadingAttendeeId.value = item.attendeeId
-  try {
-    const res = await fetch(`${API_BASE}/net/${item.netId}/certificate/${item.attendeeId}`, {
-      credentials: 'include',
-    })
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error((err as { message?: string }).message || 'error.serverError')
-    }
-    const blob = await res.blob()
-    const filename =
-      getFilenameFromContentDisposition(res.headers.get('Content-Disposition')) ??
-      getCertificateFilename(item)
-    downloadBlob(blob, filename)
-    toast.success(t('certificates.downloadSuccess'))
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : 'error.serverError'
-    toast.error(translateError(msg))
-  } finally {
-    downloadingAttendeeId.value = null
-  }
 }
 
 const downloadAllCertificates = async () => {
@@ -264,7 +202,11 @@ const downloadAllCertificates = async () => {
     const filename =
       getFilenameFromContentDisposition(res.headers.get('Content-Disposition')) ??
       `${selectedOperator.value?.label || 'certificates'}-certificates.zip`.replace(/[/\\?%*:|"<>]/g, '-')
-    downloadBlob(blob, filename)
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(link.href)
     toast.success(t('certificates.downloadAllSuccess'))
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : 'error.serverError'
@@ -373,6 +315,7 @@ const downloadAllCertificates = async () => {
           >
             <button
               type="button"
+              @click="certificatePreviewDialogCert = item"
               class="w-full bg-muted/20 text-left transition-colors hover:bg-muted/30 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset"
               :aria-label="t('certificates.previewFull')"
             >
@@ -410,26 +353,23 @@ const downloadAllCertificates = async () => {
                 </p>
               </div>
 
-              <div class="mt-auto flex items-center justify-end">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  class="w-full gap-2 sm:w-auto"
-                  :disabled="downloadingAttendeeId === item.attendeeId || isDownloadingAll"
-                  @click="downloadSingleCertificate(item)"
-                >
-                  <Loader2
-                    v-if="downloadingAttendeeId === item.attendeeId"
-                    class="h-4 w-4 animate-spin"
-                  />
-                  <Download v-else class="h-4 w-4" />
-                  {{ t('certificates.download') }}
-                </Button>
+              <div class="mt-auto flex items-center justify-end text-xs text-muted-foreground">
+                {{ t('certificates.previewFull') }}
               </div>
             </div>
           </article>
         </div>
       </section>
     </div>
+
+    <CertificatePreviewDialog
+      :open="!!certificatePreviewDialogCert"
+      :certificate="certificatePreviewDialogCert"
+      :preview="certificatePreviewDialogCert ? certificatePreviews[certificatePreviewDialogCert.attendeeId] ?? null : null"
+      :is-downloading="downloadingAttendeeId === certificatePreviewDialogCert?.attendeeId"
+      :is-loading="isLoadingCertificatePreviews"
+      @update:open="(open) => !open && (certificatePreviewDialogCert = null)"
+      @download="certificatePreviewDialogCert && downloadCertificate(certificatePreviewDialogCert, { successMessage: t('certificates.downloadSuccess') })"
+    />
   </AppLayout>
 </template>

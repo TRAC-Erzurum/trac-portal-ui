@@ -7,7 +7,6 @@ import { NetCard, NetCardSkeleton } from '@/components/shared'
 interface ActiveNet {
   id: string
   name: string
-  operatorCallSign: string
   attendeeCount: number
   startedAt: string
   durationMinutes: number
@@ -26,7 +25,8 @@ interface ActiveNet {
 interface PendingNet {
   id: string
   name: string
-  operatorCallSign: string
+  scheduledAt?: string | null
+  estimatedDurationMinutes?: number | null
   certificateTemplateId?: string | null
   branch?: {
     id: string
@@ -42,7 +42,6 @@ interface PendingNet {
 interface CancelledNet {
   id: string
   name: string
-  operatorCallSign: string
   endedAt?: string
   certificateTemplateId?: string | null
   branch?: {
@@ -59,21 +58,15 @@ interface CancelledNet {
 interface DisplayNet {
   id: string
   name: string
-  operatorCallSign: string
   status: 'active' | 'pending' | 'completed' | 'cancelled'
   attendeeCount?: number
   durationMinutes?: number
+  startedAt?: string
   endedAt?: string
+  scheduledAt?: string | null
+  estimatedDurationMinutes?: number | null
   certificateTemplateId?: string | null
-  branch?: {
-    id: string
-    name: string
-    isHeadquarters?: boolean
-  }
-  branchCallSign?: {
-    id: string
-    callSign: string
-  }
+  branchLabel?: string
 }
 
 interface Props {
@@ -93,6 +86,17 @@ const props = withDefaults(defineProps<Props>(), {
 
 const { t } = useI18n()
 
+const resolveBranchLabel = (
+  branch?: { name: string; isHeadquarters?: boolean },
+  branchCallSign?: { callSign: string }
+) => {
+  if (!branch) return undefined
+  if (!branch.isHeadquarters && branchCallSign?.callSign) {
+    return `${branchCallSign.callSign} · ${branch.name}`
+  }
+  return branch.name
+}
+
 const displayNets = computed<DisplayNet[]>(() => {
   const result: DisplayNet[] = []
   const max = props.maxNets
@@ -102,13 +106,12 @@ const displayNets = computed<DisplayNet[]>(() => {
     result.push({
       id: net.id,
       name: net.name,
-      operatorCallSign: net.operatorCallSign,
+      startedAt: net.startedAt,
       status: 'active',
       attendeeCount: net.attendeeCount,
       durationMinutes: net.durationMinutes,
       certificateTemplateId: net.certificateTemplateId,
-      branch: net.branch,
-      branchCallSign: net.branchCallSign,
+      branchLabel: resolveBranchLabel(net.branch, net.branchCallSign),
     })
   }
   
@@ -117,11 +120,11 @@ const displayNets = computed<DisplayNet[]>(() => {
     result.push({
       id: net.id,
       name: net.name,
-      operatorCallSign: net.operatorCallSign,
+      scheduledAt: net.scheduledAt,
+      estimatedDurationMinutes: net.estimatedDurationMinutes,
       status: 'pending',
       certificateTemplateId: net.certificateTemplateId,
-      branch: net.branch,
-      branchCallSign: net.branchCallSign,
+      branchLabel: resolveBranchLabel(net.branch, net.branchCallSign),
     })
   }
   
@@ -130,13 +133,11 @@ const displayNets = computed<DisplayNet[]>(() => {
     result.push({
       id: net.id,
       name: net.name,
-      operatorCallSign: net.operatorCallSign,
       status: 'completed',
       attendeeCount: net.attendeeCount,
       durationMinutes: net.durationMinutes,
       certificateTemplateId: net.certificateTemplateId,
-      branch: net.branch,
-      branchCallSign: net.branchCallSign,
+      branchLabel: resolveBranchLabel(net.branch, net.branchCallSign),
     })
   }
 
@@ -145,12 +146,10 @@ const displayNets = computed<DisplayNet[]>(() => {
     result.push({
       id: net.id,
       name: net.name,
-      operatorCallSign: net.operatorCallSign,
       status: 'cancelled',
       endedAt: net.endedAt,
       certificateTemplateId: net.certificateTemplateId,
-      branch: net.branch,
-      branchCallSign: net.branchCallSign,
+      branchLabel: resolveBranchLabel(net.branch, net.branchCallSign),
     })
   }
 
@@ -167,7 +166,7 @@ const displayNets = computed<DisplayNet[]>(() => {
     </h3>
 
     <div v-if="isLoading" class="grid grid-cols-1 lg:grid-cols-3 gap-3">
-      <NetCardSkeleton v-for="i in 3" :key="i" compact />
+      <NetCardSkeleton v-for="i in 3" :key="i" />
     </div>
 
     <template v-else>
@@ -177,15 +176,14 @@ const displayNets = computed<DisplayNet[]>(() => {
           :key="net.id"
           :id="net.id"
           :name="net.name"
-          :operator-call-sign="net.operatorCallSign"
           :status="net.status"
           :attendee-count="net.attendeeCount"
           :duration-minutes="net.durationMinutes"
+          :started-at="net.startedAt"
           :ended-at="net.endedAt"
-          :branch-name="net.branch?.name"
-          :branch-call-sign="net.branchCallSign?.callSign"
-          :branch-is-headquarters="net.branch?.isHeadquarters"
-          :show-branch="true"
+          :scheduled-at="net.scheduledAt"
+          :estimated-duration-minutes="net.estimatedDurationMinutes"
+          :branch-label="net.branchLabel"
           :has-certificate="!!net.certificateTemplateId"
         />
       </div>

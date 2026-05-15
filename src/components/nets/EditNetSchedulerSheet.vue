@@ -32,6 +32,12 @@ interface CertificateTemplate {
   elements: unknown[]
 }
 
+interface BranchCallSign {
+  id: string
+  callSign: string
+  isDefault: boolean
+}
+
 interface Scheduler {
   id: string
   name: string
@@ -42,8 +48,9 @@ interface Scheduler {
   scheduledTime: string
   estimatedDurationMinutes: number
   certificateTemplateId?: string | null
-  branch?: { name: string }
-  branchCallSign?: { callSign?: string } | null
+  branchCallSignId?: string | null
+  branch?: { id?: string; name: string }
+  branchCallSign?: { id?: string; callSign?: string } | null
   operator?: { callSign: string; fullName?: string }
 }
 
@@ -67,7 +74,7 @@ const namePreview = computed(() => {
   const s = scheduler.value
   if (!s?.startDate) return name.value.replace(/\{\{[^}]*\}\}/g, '')
   const branchName = s.branch?.name ?? ''
-  const branchCallsign = s.branchCallSign?.callSign ?? ''
+  const branchCallsign = branchCallSignDisplay.value
   const date = new Date(s.startDate + 'T12:00:00')
   const day = String(date.getDate()).padStart(2, '0')
   const month = date.toLocaleDateString('tr-TR', { month: 'long' })
@@ -102,23 +109,67 @@ const NO_TEMPLATE_VALUE = '__none__'
 const certificateTemplates = ref<CertificateTemplate[]>([])
 const selectedCertificateTemplateId = ref<string>(NO_TEMPLATE_VALUE)
 const isLoadingCertificateTemplates = ref(false)
+const branchCallSigns = ref<BranchCallSign[]>([])
+const selectedCallSignId = ref('')
+const isLoadingCallSigns = ref(false)
+
+const needsBranchCallSign = computed(
+  () => !isLoadingCallSigns.value && branchCallSigns.value.length > 0,
+)
 
 // Form validation setup
 const validators = computed(() => ({
   name: [
     (_value: string) => name.value.trim() ? true : t('form.validation.required')
-  ]
+  ],
+  callSign: [
+    (_value: string) =>
+      !needsBranchCallSign.value || selectedCallSignId.value
+        ? true
+        : t('form.validation.required'),
+  ],
 }))
 
 const { validateForm, getFieldError, shouldShowError, fieldErrors } = useFormValidation(
   validators.value,
-  { name: name }
+  { name: name, callSign: selectedCallSignId }
 )
 
 const scheduledTimeDisplay = computed(() => {
   const raw = scheduler.value?.scheduledTime ?? '20:00:00'
   return raw.slice(0, 5)
 })
+
+const branchDisplayName = computed(() => scheduler.value?.branch?.name ?? '')
+const branchCallSignDisplay = computed(() => {
+  const selectedCallSign = branchCallSigns.value.find(
+    callSign => callSign.id === selectedCallSignId.value,
+  )
+  return selectedCallSign?.callSign ?? scheduler.value?.branchCallSign?.callSign ?? ''
+})
+
+const loadBranchCallSigns = async (branchId: string) => {
+  if (!branchId) {
+    branchCallSigns.value = []
+    selectedCallSignId.value = ''
+    return
+  }
+
+  isLoadingCallSigns.value = true
+  try {
+    const branchData = await api.get<{ callSigns?: BranchCallSign[] }>(`/branches/${branchId}`)
+    branchCallSigns.value = branchData.callSigns || []
+    if (!selectedCallSignId.value) {
+      selectedCallSignId.value = branchCallSigns.value[0]?.id ?? ''
+    }
+  } catch (error) {
+    console.error('Failed to load call signs:', error)
+    branchCallSigns.value = []
+    selectedCallSignId.value = ''
+  } finally {
+    isLoadingCallSigns.value = false
+  }
+}
 
 const loadCertificateTemplates = async (branchId: string) => {
   if (!branchId) {
@@ -148,10 +199,13 @@ const loadScheduler = async () => {
     recurrence.value = s.recurrence as typeof recurrence.value
     endDate.value = s.endDate ?? ''
     selectedCertificateTemplateId.value = s.certificateTemplateId ?? NO_TEMPLATE_VALUE
+    selectedCallSignId.value = s.branchCallSignId ?? s.branchCallSign?.id ?? ''
     const branchId = s.branchId ?? (s.branch as { id?: string } | undefined)?.id
     if (branchId) {
+      await loadBranchCallSigns(branchId)
       await loadCertificateTemplates(branchId)
     } else {
+      branchCallSigns.value = []
       certificateTemplates.value = []
     }
   } catch (e) {
@@ -193,6 +247,9 @@ async function handleSubmit() {
         selectedCertificateTemplateId.value === NO_TEMPLATE_VALUE
           ? null
           : selectedCertificateTemplateId.value,
+      branchCallSignId: needsBranchCallSign.value
+        ? selectedCallSignId.value || null
+        : null,
     })
     toast.success(t('common.save'))
     emit('updated')
@@ -220,6 +277,38 @@ async function handleSubmit() {
 
       <template v-else-if="scheduler">
         <form @submit.prevent="handleSubmit" class="space-y-6 py-2 px-1">
+          <div class="space-y-2">
+            <Label for="branch">{{ t('nets.branch') }}</Label>
+            <Input
+              id="branch"
+              :model-value="branchDisplayName"
+              type="text"
+              disabled
+              class="w-full bg-muted"
+            />
+          </div>
+
+          <div v-if="needsBranchCallSign || isLoadingCallSigns" class="space-y-2">
+            <Label for="callSign">{{ t('nets.branchCallSign') }}</Label>
+            <Select v-model="selectedCallSignId" :disabled="!branchDisplayName || isLoadingCallSigns">
+              <SelectTrigger
+                id="callSign"
+                class="w-full"
+                :class="shouldShowError('callSign', isSubmitted) ? 'border-destructive' : ''"
+              >
+                <SelectValue :placeholder="t('nets.selectCallSign')" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem v-for="cs in branchCallSigns" :key="cs.id" :value="cs.id">
+                  {{ cs.callSign }} {{ cs.isDefault ? `(${t('branches.defaultCallSign')})` : '' }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p v-if="shouldShowError('callSign', isSubmitted)" class="text-xs text-destructive">
+              {{ getFieldError('callSign') }}
+            </p>
+          </div>
+
           <div class="space-y-2">
             <Label for="name">{{ t('nets.nameTemplate') }}</Label>
             <NameTemplateInput

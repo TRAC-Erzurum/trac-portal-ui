@@ -29,10 +29,6 @@ interface Net {
   attendeeCount: number
   totalDurationMinutes?: number
   certificateTemplateId?: string | null
-  operator: {
-    id: string
-    callSign: string
-  }
   branch?: {
     id: string
     name: string
@@ -60,6 +56,14 @@ const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
+
+const resolveBranchLabel = (net: Pick<Net, 'branch' | 'branchCallSign'>) => {
+  if (!net.branch) return ''
+  if (!net.branch.isHeadquarters && net.branchCallSign?.callSign) {
+    return `${net.branchCallSign.callSign} · ${net.branch.name}`
+  }
+  return net.branch.name
+}
 
 const nets = ref<Net[]>([])
 const total = ref(0)
@@ -473,7 +477,6 @@ onMounted(async () => {
             :key="net.id"
             :id="net.id"
             :name="net.name"
-            :operator-call-sign="net.operator.callSign"
             :status="getNetStatus(net)"
             :attendee-count="net.attendeeCount"
             :duration-minutes="net.totalDurationMinutes"
@@ -481,10 +484,7 @@ onMounted(async () => {
             :ended-at="net.endedAt"
             :scheduled-at="net.scheduledAt"
             :estimated-duration-minutes="net.estimatedDurationMinutes"
-            :branch-name="net.branch?.name"
-            :branch-call-sign="net.branchCallSign?.callSign"
-            :branch-is-headquarters="net.branch?.isHeadquarters"
-            :show-branch="true"
+            :branch-label="resolveBranchLabel(net)"
             :has-certificate="!!net.certificateTemplateId"
           />
         </div>

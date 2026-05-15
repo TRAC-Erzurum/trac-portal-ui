@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Award, Building2, Calendar, ChevronDown, ChevronRight, Download, Ear, Edit, Key, Mail, Package, Radio, Signal, Trash2, TrendingUp, UserCircle, Users, X } from 'lucide-vue-next'
+import { Award, Building2, Calendar, ChevronDown, ChevronRight, Ear, Edit, Key, Mail, Package, Radio, Signal, Trash2, TrendingUp, UserCircle, Users, X } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import EquipmentCard from '@/components/inventory/EquipmentCard.vue'
 import EquipmentCardSkeleton from '@/components/inventory/EquipmentCardSkeleton.vue'
@@ -23,12 +23,12 @@ import { useDateFormat } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import CertificateFilledPreview from '@/components/certificates/CertificateFilledPreview.vue'
-import type { CertificateTemplateElement } from '@/components/certificates/certificate-template-defaults'
-import { api, API_BASE, type ApiError } from '@/lib/api'
-import { getFilenameFromContentDisposition } from '@/lib/content-disposition'
+import CertificatePreviewDialog from '@/components/certificates/CertificatePreviewDialog.vue'
+import { api, type ApiError } from '@/lib/api'
 import { formatCallSign } from '@/lib/formatters'
 import { translateError } from '@/i18n'
 import { matchesTurkishSearch } from '@/lib/turkish-search'
+import { useCertificateAssets } from '@/composables/useCertificateAssets'
 
 interface Operator {
   id: string
@@ -91,12 +91,6 @@ interface OperatorCertificateItem {
   certificateTemplateId: string
 }
 
-interface CertificatePreviewData {
-  imagePath: string
-  elements: CertificateTemplateElement[]
-  placeholders: Record<string, string>
-}
-
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
@@ -126,9 +120,23 @@ const netsPageSize = 6
 const hasMoreNets = ref(true)
 const certificates = ref<OperatorCertificateItem[]>([])
 const isLoadingCertificates = ref(false)
-const certificatePreviews = ref<Record<string, CertificatePreviewData | null>>({})
-const loadingPreviewAttendeeIds = ref<Set<string>>(new Set())
 const certificatePreviewDialogCert = ref<OperatorCertificateItem | null>(null)
+
+const {
+  certificatePreviews,
+  isLoadingCertificatePreviews,
+  downloadingAttendeeId,
+  loadCertificatePreviews,
+  resetCertificatePreviews,
+  downloadCertificate,
+} = useCertificateAssets()
+
+const downloadProfileCertificate = (item: OperatorCertificateItem) => {
+  return downloadCertificate(item, {
+    successMessage: t('certificates.downloadSuccess'),
+    fallbackFilename: (cert) => `${(cert.netName || 'certificate').replace(/[/\\?%*:|"<>]/g, '-')}-certificate.pdf`,
+  })
+}
 
 const equipmentItems = ref<any[]>([])
 const equipmentTotal = ref(0)
@@ -142,10 +150,6 @@ const isDeletingEquipment = ref(false)
 
 const operatorId = computed(() => route.params.id as string)
 const isEquipmentOwner = computed(() => authStore.user?.operator?.id === operatorId.value)
-
-const isProfileOwner = computed(() =>
-  !!authStore.user?.id && authStore.user.id === operator.value?.user?.id
-)
 
 const canEdit = computed(() => authStore.canManageRequestQueues)
 
@@ -232,66 +236,17 @@ const fetchMemberships = async () => {
 
 const fetchCertificates = async () => {
   isLoadingCertificates.value = true
-  certificatePreviews.value = {}
+  resetCertificatePreviews()
   try {
     certificates.value = await api.get<OperatorCertificateItem[]>(
       `/operator/${operatorId.value}/certificates`
     )
-    fetchCertificatePreviews()
+    await loadCertificatePreviews(certificates.value)
   } catch {
     certificates.value = []
+    resetCertificatePreviews()
   } finally {
     isLoadingCertificates.value = false
-  }
-}
-
-const fetchCertificatePreviews = async () => {
-  const list = certificates.value
-  loadingPreviewAttendeeIds.value = new Set(list.map((c) => c.attendeeId))
-  const results = await Promise.allSettled(
-    list.map((cert) =>
-      api.get<CertificatePreviewData | null>(
-        `/net/${cert.netId}/certificate/${cert.attendeeId}/preview-data`
-      )
-    )
-  )
-  const next: Record<string, CertificatePreviewData | null> = {}
-  list.forEach((cert, i) => {
-    const r = results[i]
-    if (r?.status === 'fulfilled' && r.value != null) {
-      next[cert.attendeeId] = r.value
-    } else {
-      next[cert.attendeeId] = null
-    }
-  })
-  certificatePreviews.value = next
-  loadingPreviewAttendeeIds.value = new Set()
-}
-
-const downloadCertificateFromProfile = async (item: OperatorCertificateItem) => {
-  try {
-    const res = await fetch(
-      `${API_BASE}/net/${item.netId}/certificate/${item.attendeeId}`,
-      { credentials: 'include' }
-    )
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      throw new Error((err as { message?: string }).message || 'error.serverError')
-    }
-    const blob = await res.blob()
-    const cd = res.headers.get('Content-Disposition')
-    const filename =
-      getFilenameFromContentDisposition(cd) ??
-      `${(item.netName || 'certificate').replace(/[/\\?%*:|"<>]/g, '-')}-certificate.pdf`
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = filename
-    link.click()
-    URL.revokeObjectURL(link.href)
-    toast.success(t('certificates.downloadSuccess'))
-  } catch (e: unknown) {
-    const msg = (e instanceof Error ? e.message : null) || 'error.serverError'
-    toast.error(translateError(msg))
   }
 }
 
@@ -861,13 +816,10 @@ onMounted(async () => {
                 type="button"
                 class="min-h-[140px] flex items-center justify-center bg-muted/20 w-full cursor-pointer hover:bg-muted/30 transition-colors text-left focus:outline-none focus:ring-2 focus:ring-primary focus:ring-inset rounded-t-lg"
                 :aria-label="t('certificates.previewFull')"
-                @click="certificatePreviews[cert.attendeeId] && (certificatePreviewDialogCert = cert)"
+                @click="certificatePreviewDialogCert = cert"
               >
-                <div v-if="loadingPreviewAttendeeIds.has(cert.attendeeId)" class="py-8 px-4">
-                  <span class="text-xs text-muted-foreground">{{ t('common.loading') }}</span>
-                </div>
                 <CertificateFilledPreview
-                  v-else-if="certificatePreviews[cert.attendeeId]"
+                    v-if="certificatePreviews[cert.attendeeId]"
                   :image-path="certificatePreviews[cert.attendeeId]!.imagePath"
                   :elements="certificatePreviews[cert.attendeeId]!.elements"
                   :placeholders="certificatePreviews[cert.attendeeId]!.placeholders"
@@ -892,16 +844,6 @@ onMounted(async () => {
                   >
                     <ChevronRight class="h-4 w-4" />
                     {{ t('profile.viewNet') }}
-                  </Button>
-                  <Button
-                    v-if="isProfileOwner"
-                    variant="outline"
-                    size="sm"
-                    class="gap-2"
-                    @click="downloadCertificateFromProfile(cert)"
-                  >
-                    <Download class="h-4 w-4" />
-                    {{ t('certificates.download') }}
                   </Button>
                 </div>
               </div>
@@ -1093,20 +1035,15 @@ onMounted(async () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog :open="!!certificatePreviewDialogCert" @update:open="(v) => !v && (certificatePreviewDialogCert = null)">
-        <DialogContent class="max-w-2xl max-h-[90vh] overflow-auto">
-          <DialogHeader>
-            <DialogTitle>{{ certificatePreviewDialogCert?.netName ?? t('certificates.previewFull') }}</DialogTitle>
-          </DialogHeader>
-          <div v-if="certificatePreviewDialogCert && certificatePreviews[certificatePreviewDialogCert.attendeeId]" class="mt-4">
-            <CertificateFilledPreview
-              :image-path="certificatePreviews[certificatePreviewDialogCert.attendeeId]!.imagePath"
-              :elements="certificatePreviews[certificatePreviewDialogCert.attendeeId]!.elements"
-              :placeholders="certificatePreviews[certificatePreviewDialogCert.attendeeId]!.placeholders"
-            />
-          </div>
-        </DialogContent>
-      </Dialog>
+      <CertificatePreviewDialog
+        :open="!!certificatePreviewDialogCert"
+        :certificate="certificatePreviewDialogCert"
+        :preview="certificatePreviewDialogCert ? certificatePreviews[certificatePreviewDialogCert.attendeeId] ?? null : null"
+        :is-loading="isLoadingCertificatePreviews"
+        :is-downloading="downloadingAttendeeId === certificatePreviewDialogCert?.attendeeId"
+        @update:open="(v) => !v && (certificatePreviewDialogCert = null)"
+        @download="certificatePreviewDialogCert && downloadProfileCertificate(certificatePreviewDialogCert)"
+      />
 
     </div>
   </AppLayout>
