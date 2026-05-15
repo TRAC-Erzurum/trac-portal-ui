@@ -15,7 +15,7 @@ import { formatCallSign, formatDateLong } from '@/lib/formatters'
 import { getFilenameFromContentDisposition } from '@/lib/content-disposition'
 import { translateError } from '@/i18n'
 import { useAsyncStaleGuard } from '@/composables'
-import { useCertificateAssets, type CertificatePreviewData } from '@/composables/useCertificateAssets'
+import { useCertificateAssets } from '@/composables/useCertificateAssets'
 
 interface OperatorSearchResult {
   id: string
@@ -66,7 +66,6 @@ const {
 
 const operatorSearchGuard = useAsyncStaleGuard()
 const certificateListGuard = useAsyncStaleGuard()
-const certificatePreviewGuard = useAsyncStaleGuard()
 
 const currentUserOperator = computed(() => authStore.user?.operator ?? null)
 const selectedOperatorLabel = computed(() => selectedOperator.value?.label ?? '')
