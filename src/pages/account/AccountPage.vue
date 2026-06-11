@@ -3,15 +3,17 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { Calendar, Camera, ChevronRight, Edit, Key, LogIn, Mail, Trash2, UserCircle, Phone, MapPin, HeartPulse, Briefcase, GraduationCap } from 'lucide-vue-next'
+import { Calendar, Camera, ChevronRight, Edit, Key, LogIn, Mail, Radio, Trash2, UserCircle, Phone, MapPin, HeartPulse, Briefcase, GraduationCap } from 'lucide-vue-next'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ChangePasswordSheet from '@/components/profile/ChangePasswordSheet.vue'
 import EditOperatorSheet from '@/components/profile/EditOperatorSheet.vue'
+import SetOperatorSheet from '@/components/profile/SetOperatorSheet.vue'
 import EditContactInfoSheet from '@/components/profile/EditContactInfoSheet.vue'
 import EditPersonalBasicsSheet from '@/components/profile/EditPersonalBasicsSheet.vue'
 import EditEmergencyContactsSheet from '@/components/profile/EditEmergencyContactsSheet.vue'
 import EditExpertiseSheet from '@/components/profile/EditExpertiseSheet.vue'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
 import { UserAvatar } from '@/components/ui/user-avatar'
 import { useDateFormat } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
@@ -72,6 +74,7 @@ const showEditPersonalBasics = ref(false)
 const showEditEmergency = ref(false)
 const showEditExpertise = ref(false)
 const showEditOperator = ref(false)
+const showSetOperator = ref(false)
 const showChangePassword = ref(false)
 const pendingEditOperator = ref(false)
 
@@ -81,6 +84,13 @@ const formattedCallSign = computed(() => {
   return formatCallSign(op)
 })
 
+const hasOperator = computed(() => !!profile.value?.operator)
+
+const displayName = computed(() => {
+  if (hasOperator.value) return formattedCallSign.value
+  return profile.value?.fullName || profile.value?.email || '-'
+})
+
 const gridSquareForMap = computed(() =>
   profile.value?.operator?.gridSquare?.trim() ?? null
 )
@@ -88,8 +98,18 @@ const gridSquareForMap = computed(() =>
 function onLocatorMapClick() {
   if (gridSquareForMap.value) {
     router.push({ path: '/map', query: { locator: gridSquareForMap.value } })
-  } else {
+  } else if (hasOperator.value) {
     showEditOperator.value = true
+  } else {
+    showSetOperator.value = true
+  }
+}
+
+function openOperatorSheet() {
+  if (hasOperator.value) {
+    showEditOperator.value = true
+  } else {
+    showSetOperator.value = true
   }
 }
 
@@ -196,7 +216,11 @@ watch(
   ([p, pending]) => {
     if (pending && p) {
       pendingEditOperator.value = false
-      showEditOperator.value = true
+      if (p.operator) {
+        showEditOperator.value = true
+      } else {
+        showSetOperator.value = true
+      }
     }
   },
   { immediate: true }
@@ -208,27 +232,27 @@ watch(
     <div class="space-y-6">
       <template v-if="isLoading">
         <div class="animate-pulse space-y-8">
-          <div class="flex gap-6">
-            <div class="h-24 w-24 rounded-full bg-muted" />
-            <div class="flex-1 space-y-3">
-              <div class="h-7 w-32 bg-muted rounded" />
-              <div class="h-5 w-48 bg-muted rounded" />
-              <div class="h-4 w-40 bg-muted rounded" />
+          <div class="flex flex-col gap-4 sm:flex-row sm:gap-6">
+            <div class="h-24 w-24 rounded-full bg-muted self-center sm:self-start shrink-0" />
+            <div class="flex-1 space-y-3 w-full min-w-0">
+              <div class="h-7 w-full max-w-xs bg-muted rounded mx-auto sm:mx-0" />
+              <div class="h-5 w-full max-w-sm bg-muted rounded mx-auto sm:mx-0" />
+              <div class="h-4 w-full max-w-xs bg-muted rounded mx-auto sm:mx-0" />
             </div>
           </div>
           <div class="h-px bg-muted" />
           <div class="space-y-3">
             <div class="h-5 w-40 bg-muted rounded" />
-            <div class="h-4 w-64 bg-muted rounded" />
+            <div class="h-4 w-full max-w-md bg-muted rounded" />
           </div>
         </div>
       </template>
 
       <template v-else-if="profile">
 
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
-          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
-            <div class="relative group flex justify-center sm:justify-start shrink-0">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+          <div class="flex flex-col items-center sm:items-start shrink-0 gap-1">
+            <div class="relative group">
               <UserAvatar :picture="profile.picture" class="h-24 w-24" />
               <div
                 class="absolute inset-0 flex items-center justify-center gap-2 bg-black/60 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
@@ -248,85 +272,120 @@ watch(
               </div>
               <input ref="fileInputRef" type="file" accept="image/jpeg,image/png,image/webp" class="hidden"
                 @change="handleAvatarChange" />
-              <p class="text-xs text-muted-foreground mt-1 text-center sm:text-left">{{ t('common.maxUploadSize') }}</p>
             </div>
-            <div class="min-w-0 flex-1 space-y-3">
-              <div class="flex flex-wrap items-start justify-between gap-3">
-                <div class="min-w-0 flex-1">
-                  <h2 class="text-2xl font-bold">{{ formattedCallSign }}</h2>
-                  <p v-if="profile.fullName" class="text-lg text-muted-foreground">{{ profile.fullName }}</p>
-                </div>
-              </div>
-              <div class="flex flex-wrap items-start justify-between gap-3 text-sm text-muted-foreground">
-                <div
-                  class="flex min-w-0 flex-1 flex-col gap-y-2 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1">
-                  <span v-if="memberSince" class="flex items-center gap-1.5">
-                    <Calendar class="h-4 w-4 shrink-0" />
-                    {{ memberSince }}
-                  </span>
-                  <span class="flex items-center gap-1.5">
-                    <Mail class="h-4 w-4 shrink-0" />
-                    {{ profile.email }}
-                  </span>
-                  <span v-if="profile.provider" class="flex items-center gap-1.5">
-                    <LogIn class="h-4 w-4 shrink-0" />
-                    <span class="capitalize">{{ profile.provider }}</span>
-                  </span>
-                </div>
-              </div>
-            </div>
+            <p class="text-xs text-muted-foreground text-center sm:text-left">{{ t('common.maxUploadSize') }}</p>
           </div>
-
-          <div class="min-w-0 space-y-3">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-              <div class="min-w-0 flex-1">
-                <p class="text-xs text-muted-foreground">{{ t('profile.dmrId') }}</p>
-                <div class="flex items-center justify-between gap-2">
-                  <p class="text-sm font-medium font-mono">{{ profile.operator?.dmrId || '-' }}</p>
-                </div>
-              </div>
-              <div class="flex flex-wrap items-center gap-2 shrink-0">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  @click="showEditOperator = true"
-                  :title="t('profile.editOperatorAction')"
-                  :aria-label="t('profile.editOperatorAction')"
-                >
-                  <Edit class="h-4 w-4" />
-                  {{ t('common.edit') }}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  @click="showChangePassword = true"
-                  :title="t('profile.changePassword')"
-                  :aria-label="t('profile.changePassword')"
-                >
-                  <Key class="h-4 w-4" />
-                  {{ t('profile.changePassword') }}
-                </Button>
-              </div>
+          <div class="min-w-0 flex-1 w-full space-y-3">
+            <div class="min-w-0">
+              <h2 class="text-2xl font-bold break-words">{{ displayName }}</h2>
+              <p v-if="hasOperator && profile.fullName" class="text-lg text-muted-foreground break-words">{{ profile.fullName }}</p>
             </div>
-            <p class="text-xs text-muted-foreground">{{ t('profile.qth') }}</p>
-            <LocatorMapPreview :grid-square="gridSquareForMap" @click="onLocatorMapClick" />
+            <div class="flex flex-col gap-y-2 text-sm text-muted-foreground">
+              <span v-if="memberSince" class="flex items-center gap-1.5">
+                <Calendar class="h-4 w-4 shrink-0" />
+                {{ memberSince }}
+              </span>
+              <span class="flex items-start gap-1.5 min-w-0">
+                <Mail class="h-4 w-4 shrink-0 mt-0.5" />
+                <span class="break-all min-w-0">{{ profile.email }}</span>
+              </span>
+              <span v-if="profile.provider" class="flex items-center gap-1.5">
+                <LogIn class="h-4 w-4 shrink-0" />
+                <span class="capitalize">{{ profile.provider }}</span>
+              </span>
+            </div>
           </div>
         </div>
 
-        <!-- Detailed Profile Information (Sensitive) -->
-         
-        <div class="mt-6 bg-muted/50 p-3 rounded-md border border-muted text-xs text-muted-foreground mb-6 text-center">
+        <Separator class="my-8" />
+
+        <div v-if="!hasOperator" class="w-full min-w-0">
+          <div class="rounded-xl border border-dashed border-border p-4 sm:p-6 space-y-4">
+            <div class="flex items-start gap-4">
+              <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                <Radio class="h-6 w-6" />
+              </div>
+              <div class="min-w-0 flex-1 space-y-2">
+                <h3 class="text-base font-semibold">{{ t('account.setOperatorTitle') }}</h3>
+                <p class="text-sm text-muted-foreground">{{ t('account.setOperatorDesc') }}</p>
+              </div>
+            </div>
+            <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Button
+                variant="outline"
+                size="sm"
+                class="w-full sm:w-auto"
+                @click="showSetOperator = true"
+                :title="t('account.setOperatorAction')"
+                :aria-label="t('account.setOperatorAction')"
+              >
+                <Radio class="h-4 w-4 mr-2" />
+                {{ t('account.setOperatorAction') }}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                class="w-full sm:w-auto"
+                @click="showChangePassword = true"
+                :title="t('profile.changePassword')"
+                :aria-label="t('profile.changePassword')"
+              >
+                <Key class="h-4 w-4 mr-2" />
+                {{ t('profile.changePassword') }}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="w-full min-w-0 space-y-3">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div class="min-w-0 flex-1">
+              <p class="text-xs text-muted-foreground">{{ t('profile.dmrId') }}</p>
+              <p class="text-sm font-medium font-mono">{{ profile.operator?.dmrId || '-' }}</p>
+            </div>
+            <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap w-full sm:w-auto shrink-0">
+              <Button
+                variant="outline"
+                size="sm"
+                class="w-full sm:w-auto"
+                @click="openOperatorSheet"
+                :title="t('profile.editOperatorAction')"
+                :aria-label="t('profile.editOperatorAction')"
+              >
+                <Edit class="h-4 w-4 mr-2" />
+                {{ t('common.edit') }}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                class="w-full sm:w-auto"
+                @click="showChangePassword = true"
+                :title="t('profile.changePassword')"
+                :aria-label="t('profile.changePassword')"
+              >
+                <Key class="h-4 w-4 mr-2" />
+                {{ t('profile.changePassword') }}
+              </Button>
+            </div>
+          </div>
+          <p class="text-xs text-muted-foreground">{{ t('profile.qth') }}</p>
+          <LocatorMapPreview :grid-square="gridSquareForMap" @click="onLocatorMapClick" />
+        </div>
+
+        <Separator class="my-8" />
+
+        <div class="bg-muted/50 p-3 rounded-md border border-muted text-xs text-muted-foreground">
           {{ t('account.sensitiveDataNotice') }}
         </div>
-        <div class="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
+        <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
           <!-- Contact Info Section -->
           <div class="space-y-4 rounded-xl border p-5">
-            <div class="flex flex-row items-center justify-between gap-3">
-              <h3 class="flex items-center gap-2 font-semibold min-w-0 flex-1 shrink">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <h3 class="flex items-center gap-2 font-semibold min-w-0 flex-1">
                 <Phone class="h-4 w-4 text-primary shrink-0" />
                 <span class="truncate">{{ t('account.contactInfo') }}</span>
               </h3>
-              <Button variant="outline" size="sm" class="shrink-0"
+              <Button variant="outline" size="sm" class="shrink-0 w-full sm:w-auto"
                 @click="showEditContact = true" :title="t('account.contactInfo')"
                 :aria-label="t('account.contactInfo')">
                 <Edit class="h-4 w-4" />
@@ -362,12 +421,12 @@ watch(
 
           <!-- Personal Info Section -->
           <div class="space-y-4 rounded-xl border p-5">
-            <div class="flex flex-row items-center justify-between gap-3">
-              <h3 class="flex items-center gap-2 font-semibold min-w-0 flex-1 shrink">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <h3 class="flex items-center gap-2 font-semibold min-w-0 flex-1">
                 <UserCircle class="h-4 w-4 text-primary shrink-0" />
                 <span class="truncate">{{ t('account.personalInfo') }}</span>
               </h3>
-              <Button variant="outline" size="sm" class="shrink-0"
+              <Button variant="outline" size="sm" class="shrink-0 w-full sm:w-auto"
                 @click="showEditPersonalBasics = true" :title="t('account.personalInfo')"
                 :aria-label="t('account.personalInfo')">
                 <Edit class="h-4 w-4" />
@@ -401,12 +460,12 @@ watch(
 
           <!-- Emergency Contact Section -->
           <div class="space-y-4 rounded-xl border p-5 md:col-span-2">
-            <div class="flex flex-row items-center justify-between gap-3">
-              <h3 class="flex items-center gap-2 font-semibold min-w-0 flex-1 shrink">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <h3 class="flex items-center gap-2 font-semibold min-w-0 flex-1">
                 <HeartPulse class="h-4 w-4 text-destructive shrink-0" />
                 <span class="truncate">{{ t('account.emergencyContacts') }}</span>
               </h3>
-              <Button variant="outline" size="sm" class="shrink-0"
+              <Button variant="outline" size="sm" class="shrink-0 w-full sm:w-auto"
                 @click="showEditEmergency = true" :title="t('account.emergencyContacts')"
                 :aria-label="t('account.emergencyContacts')">
                 <Edit class="h-4 w-4" />
@@ -431,12 +490,12 @@ watch(
 
           <!-- Expertise & Training Section -->
           <div class="space-y-6 rounded-xl border p-5 md:col-span-2">
-            <div class="flex flex-row items-center justify-between gap-3">
-              <h3 class="flex items-center gap-2 font-semibold min-w-0 flex-1 shrink">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <h3 class="flex items-center gap-2 font-semibold min-w-0 flex-1">
                 <GraduationCap class="h-4 w-4 text-primary shrink-0" />
                 <span class="truncate">{{ t('account.expertise') }}</span>
               </h3>
-              <Button variant="outline" size="sm" class="shrink-0"
+              <Button variant="outline" size="sm" class="shrink-0 w-full sm:w-auto"
                 @click="showEditExpertise = true" :title="t('account.editExpertise')"
                 :aria-label="t('account.editExpertise')">
                 <Edit class="h-4 w-4" />
@@ -481,9 +540,10 @@ watch(
           </div>
         </div>
 
-        <section v-if="profileUrl && !authStore.isGuest" class="mt-10 space-y-4">
+        <section v-if="profileUrl && !authStore.isGuest" class="mt-8 space-y-4">
+          <Separator class="mb-8" />
           <RouterLink :to="profileUrl"
-            class="flex items-center gap-5 p-6 rounded-xl border border-border bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all duration-200 group">
+            class="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-5 p-4 sm:p-6 rounded-xl border border-border bg-muted/20 hover:bg-muted/40 hover:border-primary/30 transition-all duration-200 group min-w-0">
             <div
               class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary/15 transition-colors">
               <UserCircle class="h-8 w-8" />
@@ -509,7 +569,8 @@ watch(
     <EditEmergencyContactsSheet v-model:open="showEditEmergency" :initial-profile="profile"
       @updated="handleProfileUpdated" />
     <EditExpertiseSheet v-model:open="showEditExpertise" :initial-profile="profile" @updated="handleProfileUpdated" />
-    <EditOperatorSheet v-model:open="showEditOperator" :initial-profile="profile" @updated="handleProfileUpdated" />
+    <SetOperatorSheet v-model:open="showSetOperator" @updated="handleProfileUpdated" />
+    <EditOperatorSheet v-if="hasOperator" v-model:open="showEditOperator" :initial-profile="profile" @updated="handleProfileUpdated" />
     <ChangePasswordSheet v-model:open="showChangePassword" />
   </AppLayout>
 </template>

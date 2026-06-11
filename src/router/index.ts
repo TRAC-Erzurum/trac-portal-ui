@@ -130,6 +130,18 @@ const router = createRouter({
       meta: { requiresAuth: false, titleKey: 'nav.communicationChannels' }
     },
     {
+      path: '/disasters',
+      name: 'disasters',
+      component: () => import('@/pages/disasters/DisastersPage.vue'),
+      meta: { requiresAuth: true, minRole: 'guest', titleKey: 'nav.disasters' }
+    },
+    {
+      path: '/disasters/:id',
+      name: 'disaster-detail',
+      component: () => import('@/pages/disasters/DisasterDetailPage.vue'),
+      meta: { requiresAuth: true, minRole: 'guest', titleKey: 'nav.disasters' }
+    },
+    {
       path: '/admin/requests',
       name: 'admin-requests',
       component: () => import('@/pages/admin/AdminRequestsPage.vue'),
@@ -157,6 +169,12 @@ const router = createRouter({
       name: 'admin-inventory',
       component: () => import('@/pages/admin/InventoryAdminPage.vue'),
       meta: { requiresAuth: true, minRole: 'super_admin' as UserRole, titleKey: 'inventory.inventoryManagement' }
+    },
+    {
+      path: '/admin/users',
+      name: 'admin-users',
+      component: () => import('@/pages/admin/UsersPage.vue'),
+      meta: { requiresAuth: true, minRole: 'super_admin' as UserRole, titleKey: 'nav.userManagement' }
     },
     {
       path: '/map',
@@ -230,14 +248,14 @@ router.beforeEach(async (to) => {
 
   if (to.meta.minRole && authStore.isAuthenticated) {
     if (!authStore.hasRole(to.meta.minRole)) {
-      toast.error(t('error.guestRestriction'))
+      toast.error(t(authStore.guestRestrictionKey))
       return { name: 'dashboard' }
     }
   }
 
   if (to.meta.requiresRequestQueueAccess && authStore.isAuthenticated) {
     if (!authStore.canManageRequestQueues) {
-      toast.error(t('error.guestRestriction'))
+      toast.error(t(authStore.guestRestrictionKey))
       return { name: 'dashboard' }
     }
   }

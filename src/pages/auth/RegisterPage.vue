@@ -71,19 +71,18 @@ const locatorSelection = computed({
   }
 })
 
-const headquartersId = computed(() => branches.value.find((b) => b.isHeadquarters)?.id ?? null)
-
 const { validateForm, shouldShowError, getFieldError } = useFormValidation(
   {
     email: [
       (value: string) => (!value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) ? true : t('form.validation.invalid')
     ],
     callSign: [
-      (value: string) => value.trim() ? true : t('form.validation.required'),
-      (value: string) =>
-        isValidCallSignFormat(value, { allowSlashes: false })
+      (value: string) => {
+        if (!value.trim()) return true
+        return isValidCallSignFormat(value, { allowSlashes: false })
           ? true
-          : t('error.callSignPlainOnly'),
+          : t('error.callSignPlainOnly')
+      },
     ],
     password: [
       (value: string) => value.trim() ? true : t('form.validation.required'),
@@ -107,7 +106,6 @@ const { validateForm, shouldShowError, getFieldError } = useFormValidation(
 )
 
 function toggleBranch(branchId: string) {
-  if (branchId === headquartersId.value) return
   const idx = selectedBranchIds.value.indexOf(branchId)
   if (idx === -1) {
     selectedBranchIds.value = [...selectedBranchIds.value, branchId]
@@ -124,10 +122,6 @@ async function loadBranches() {
     const res = await api.get<{ data: Branch[]; total: number }>('/auth/branches')
     const data = res.data ?? []
     branches.value = [...data].sort((a, b) => (b.isHeadquarters ? 1 : 0) - (a.isHeadquarters ? 1 : 0))
-    const hq = branches.value.find((b) => b.isHeadquarters)
-    if (hq && !selectedBranchIds.value.includes(hq.id)) {
-      selectedBranchIds.value = [hq.id, ...selectedBranchIds.value.filter((id) => id !== hq.id)]
-    }
   } catch {
     branches.value = []
   } finally {
@@ -141,21 +135,23 @@ async function handleSubmit() {
   isSubmitted.value = true
   
   if (!validateForm()) return
-  if (selectedBranchIds.value.length < 1) return
   if (captchaRef.value?.isEnabled && !captchaToken.value) return
+
+  const trimmedCallSign = callSign.value.trim()
+  const hasLocation = !!(city.value || '').trim() || !!(district.value || '').trim() || !!(gridSquare.value || '').trim()
 
   isLoading.value = true
   try {
     await authStore.register({
       email: email.value.trim(),
-      callSign: callSign.value.trim(),
+      callSign: trimmedCallSign || undefined,
       password: password.value,
-      branchIds: selectedBranchIds.value,
+      branchIds: selectedBranchIds.value.length > 0 ? selectedBranchIds.value : undefined,
       fullName: (fullName.value || '').trim() || undefined,
-      city: (city.value || '').trim() || undefined,
-      district: (district.value || '').trim() || undefined,
-      country: (city.value || '').trim() ? t('form.country') : undefined,
-      gridSquare: (gridSquare.value || '').trim() ? gridSquare.value.trim().toUpperCase() : undefined,
+      city: hasLocation ? (city.value || '').trim() || undefined : undefined,
+      district: hasLocation ? (district.value || '').trim() || undefined : undefined,
+      country: hasLocation && (city.value || '').trim() ? t('form.country') : undefined,
+      gridSquare: hasLocation && (gridSquare.value || '').trim() ? gridSquare.value.trim().toUpperCase() : undefined,
       captchaToken: captchaToken.value || undefined,
       privacyAccepted: privacyAccepted.value
     })
@@ -221,12 +217,11 @@ function handleGoogleLogin() {
             <p v-if="shouldShowError('email', isSubmitted)" class="text-xs text-destructive">{{ getFieldError('email') }}</p>
           </div>
           <div class="space-y-2">
-            <Label for="callSign">{{ t('form.callSign') }} {{ t('form.required') }}</Label>
+            <Label for="callSign">{{ t('form.callSign') }} ({{ t('form.optionalLabel') }})</Label>
             <CallSignInput 
               id="callSign" 
               v-model="callSign"
               :class="shouldShowError('callSign', isSubmitted) ? 'border-destructive' : ''"
-              required
             />
             <p v-if="shouldShowError('callSign', isSubmitted)" class="text-xs text-destructive">{{ getFieldError('callSign') }}</p>
           </div>
@@ -267,9 +262,11 @@ function handleGoogleLogin() {
           />
         </div>
 
+        <p class="text-xs text-muted-foreground">{{ t('auth.operatorOptionalHelper') }}</p>
+
         <div class="space-y-2">
           <div class="flex items-center gap-2">
-            <Label class="text-xs text-muted-foreground">{{ t('auth.branchSelection') }}</Label>
+            <Label class="text-xs text-muted-foreground">{{ t('auth.branchSelection') }} ({{ t('form.optionalLabel') }})</Label>
             <PopoverRoot>
               <PopoverTrigger
                 type="button"
@@ -291,16 +288,12 @@ function handleGoogleLogin() {
             <label
               v-for="b in branches"
               :key="b.id"
-              :class="[
-                'flex items-center gap-2 rounded px-2 py-1.5 -mx-2 -my-1.5',
-                b.isHeadquarters ? 'cursor-default opacity-90' : 'cursor-pointer hover:bg-muted/50'
-              ]"
+              class="flex items-center gap-2 rounded px-2 py-1.5 -mx-2 -my-1.5 cursor-pointer hover:bg-muted/50"
             >
               <input
                 type="checkbox"
-                :checked="b.isHeadquarters || selectedBranchIds.includes(b.id)"
-                :disabled="b.isHeadquarters"
-                class="h-4 w-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background disabled:opacity-70"
+                :checked="selectedBranchIds.includes(b.id)"
+                class="h-4 w-4 rounded border-border bg-background text-primary focus:ring-primary focus:ring-offset-background"
                 @change="toggleBranch(b.id)"
               />
               <span class="font-medium">{{ b.name }}</span>

@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import AppLayout from '@/components/layout/AppLayout.vue'
-import { api, type ApiError } from '@/lib/api'
-import DashboardCarousel from '@/components/dashboard/widgets/DashboardCarousel.vue'
+import { useRouter } from 'vue-router'
 import { Award, Building2, Package, Radio, TowerControl } from 'lucide-vue-next'
+import AppLayout from '@/components/layout/AppLayout.vue'
+import DashboardActiveDisasters from '@/components/dashboard/DashboardActiveDisasters.vue'
+import NoOperatorBanner from '@/components/dashboard/NoOperatorBanner.vue'
+import DashboardCarousel from '@/components/dashboard/widgets/DashboardCarousel.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useBranchStore } from '@/stores/branch'
-import { useRouter } from 'vue-router'
 import { getUploadedFileUrl } from '@/composables'
 import NetCard from '@/components/shared/NetCard.vue'
 import type { CommunicationChannel } from '@/types/communication-channel'
@@ -15,6 +16,7 @@ import CommunicationChannelCard from '@/components/shared/CommunicationChannelCa
 import BranchCard from '@/components/shared/BranchCard.vue'
 import CertificatePreviewDialog from '@/components/certificates/CertificatePreviewDialog.vue'
 import { useCertificateAssets } from '@/composables/useCertificateAssets'
+import { api, type ApiError } from '@/lib/api'
 
 const MapPreviewWidget = defineAsyncComponent(
   () => import('@/components/dashboard/widgets/MapPreviewWidget.vue')
@@ -156,6 +158,9 @@ const netCarouselItems = computed<NetCarouselItem[]>(() => {
 // Inventory
 const authStore = useAuthStore()
 const branchStore = useBranchStore()
+const showNoOperatorBanner = computed(
+  () => authStore.isAuthenticated && !authStore.hasOperator
+)
 const operatorId = computed(() => authStore.user?.operator?.id ?? null)
 const inventoryLink = computed(() => (operatorId.value ? `/operators/${operatorId.value}/inventory` : ''))
 
@@ -315,6 +320,10 @@ onMounted(async () => {
 
 <template>
   <AppLayout :title="t('nav.dashboard')">
+    <NoOperatorBanner v-if="showNoOperatorBanner" class="mb-4 lg:mb-6" />
+
+    <DashboardActiveDisasters class="mb-4 lg:mb-6" />
+
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:gap-6">
       <DashboardCarousel :icon="Radio" :title="t('dashboard.nets')" :button-text="t('dashboard.allNets')" to="/nets"
         :items="netCarouselItems" :is-loading="isLoadingNets" item-key="id">

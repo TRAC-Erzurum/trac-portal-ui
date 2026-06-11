@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Award, BarChart3, Building2, ClipboardList, Map, MessageSquareText, PanelLeft, PanelLeftClose, Radio, TowerControl, Users } from 'lucide-vue-next'
+import { Award, BarChart3, Building2, ClipboardList, Map, MessageSquareText, PanelLeft, PanelLeftClose, Radio, Siren, TowerControl, UserCog, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
 import { useFeedbackStore } from '@/stores/feedback'
@@ -52,6 +52,7 @@ const allNavItems = computed(() => {
     { icon: ClipboardList, label: t('nav.inventory'), route: `/operators/${operatorId}/inventory`, restricted: true },
     { icon: Award, label: t('nav.certificates'), route: '/certificates', restricted: true },
     { icon: Map, label: t('nav.map'), route: '/map', restricted: false },
+    { icon: Siren, label: t('nav.disasters'), route: '/disasters', restricted: false },
     { icon: TowerControl, label: t('nav.communicationChannels'), route: '/communication-channels', restricted: false },
     { icon: Radio, label: t('nav.nets'), route: '/nets', restricted: true },
     { icon: Building2, label: t('nav.branches'), route: '/branches', restricted: true },
@@ -59,6 +60,7 @@ const allNavItems = computed(() => {
   ]
   if (authStore.isSuperAdmin) {
     items.push({ icon: ClipboardList, label: t('inventory.inventoryManagement'), route: '/admin/inventory', restricted: false })
+    items.push({ icon: UserCog, label: t('nav.userManagement'), route: '/admin/users', restricted: false })
   }
   return items
 })
@@ -79,7 +81,7 @@ function isRestricted(item: { restricted: boolean }) {
 function handleNavClick(item: { route: string; restricted: boolean }, event: Event) {
   event.preventDefault()
   if (isRestricted(item)) {
-    toast.error(t('error.guestRestriction'))
+    toast.error(t(authStore.guestRestrictionKey))
     return
   }
   if (isMobile.value) emit('update:mobileOpen', false)

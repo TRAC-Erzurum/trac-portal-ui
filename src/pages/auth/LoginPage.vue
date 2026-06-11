@@ -4,9 +4,9 @@ import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PasswordInput } from '@/components/ui/password-input'
-import { CallSignInput } from '@/components/ui/call-sign-input'
 import AuthLayout from '@/components/layout/AuthLayout.vue'
 import Captcha from '@/components/Captcha.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -19,7 +19,7 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-const callSign = ref('')
+const identifier = ref('')
 const password = ref('')
 const captchaToken = ref('')
 const captchaRef = ref<InstanceType<typeof Captcha>>()
@@ -28,8 +28,8 @@ const isSubmitted = ref(false)
 
 // Form validation setup
 const validators = computed(() => ({
-  callSign: [
-    (_value: string) => callSign.value.trim() ? true : t('form.validation.required')
+  identifier: [
+    (_value: string) => identifier.value.trim() ? true : t('form.validation.required')
   ],
   password: [
     (_value: string) => password.value.trim() ? true : t('form.validation.required')
@@ -39,7 +39,7 @@ const validators = computed(() => ({
 const { validateForm, getFieldError, shouldShowError } = useFormValidation(
   validators.value,
   {
-    callSign,
+    identifier,
     password
   }
 )
@@ -60,7 +60,7 @@ async function handleSubmit() {
   
   isLoading.value = true
   try {
-    const response = await authStore.login(callSign.value.trim(), password.value, captchaToken.value || undefined)
+    const response = await authStore.login(identifier.value.trim(), password.value, captchaToken.value || undefined)
     
     if (response.isTemporaryPassword) {
       router.push('/change-password')
@@ -74,6 +74,13 @@ async function handleSubmit() {
     toast.error(translateError(error.message))
   } finally {
     isLoading.value = false
+  }
+}
+
+function handleIdentifierBlur() {
+  const value = identifier.value.trim()
+  if (value && !/\S+@\S+/.test(value)) {
+    identifier.value = value.toUpperCase()
   }
 }
 
@@ -95,15 +102,18 @@ function handleGoogleLogin() {
 
       <form @submit.prevent="handleSubmit" class="space-y-4">
         <div class="space-y-2">
-          <Label for="callSign">{{ t('form.callSign') }}</Label>
-          <CallSignInput 
-            id="callSign" 
-            v-model="callSign"
+          <Label for="identifier">{{ t('form.emailOrCallSign') }}</Label>
+          <Input
+            id="identifier"
+            v-model="identifier"
+            type="text"
+            autocomplete="username"
             required
-            :class="shouldShowError('callSign', isSubmitted) ? 'border-destructive' : ''"
+            :class="shouldShowError('identifier', isSubmitted) ? 'border-destructive' : ''"
+            @blur="handleIdentifierBlur"
           />
-          <p v-if="shouldShowError('callSign', isSubmitted)" class="text-xs text-destructive">
-            {{ getFieldError('callSign') }}
+          <p v-if="shouldShowError('identifier', isSubmitted)" class="text-xs text-destructive">
+            {{ getFieldError('identifier') }}
           </p>
         </div>
         <div class="space-y-2">
@@ -111,7 +121,6 @@ function handleGoogleLogin() {
           <PasswordInput 
             id="password" 
             v-model="password"
-            placeholder="••••••••" 
             required
             :class="shouldShowError('password', isSubmitted) ? 'border-destructive' : ''"
           />
