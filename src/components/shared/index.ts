@@ -15,4 +15,5 @@ export { default as CommunicationChannelCardSkeleton } from './CommunicationChan
 export { default as GithubMarkIcon } from './GithubMarkIcon.vue'
 export { default as MemberCard } from './MemberCard.vue'
 export { default as AutocompleteCombobox } from './AutocompleteCombobox.vue'
+export { default as ObservationCard } from './ObservationCard.vue'
 export { default as SearchInput } from './SearchInput.vue'

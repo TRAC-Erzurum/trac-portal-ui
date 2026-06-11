@@ -28,7 +28,7 @@ function isRestricted(item: { restricted: boolean }) {
 function handleNavClick(item: { route: string; restricted: boolean }, event: Event) {
   event.preventDefault()
   if (isRestricted(item)) {
-    toast.error(t('error.guestRestriction'))
+    toast.error(t(authStore.guestRestrictionKey))
     return
   }
   router.push(item.route)

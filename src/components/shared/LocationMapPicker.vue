@@ -20,6 +20,7 @@ export interface LocationSelection {
 
 const TURKEY_CENTER: [number, number] = [39.93, 32.85]
 const MAP_ZOOM = 6
+const FOCUS_ZOOM = 14
 
 const props = withDefaults(
   defineProps<{
@@ -160,6 +161,9 @@ async function fetchElevation(lat: number, lng: number): Promise<number | null> 
 function onMapReady() {
   const map = mapRef.value?.leafletObject
   if (!map) return
+  if (userLatLng.value) {
+    map.setView(mapCenter.value, FOCUS_ZOOM, { animate: false })
+  }
   map.on('click', async (e: { latlng: { lat: number; lng: number } }) => {
     const { lat, lng } = e.latlng
     const gridSquare = WGS84ToMaidenhead({ lat, lng }, 6)
@@ -217,7 +221,8 @@ watch(
     nextTick(() => {
       const map = mapRef.value?.leafletObject
       if (map && mapCenter.value) {
-        map.setView(mapCenter.value, MAP_ZOOM, { animate: false })
+        const zoom = userLatLng.value ? FOCUS_ZOOM : MAP_ZOOM
+        map.setView(mapCenter.value, zoom, { animate: false })
       }
     })
   }

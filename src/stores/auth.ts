@@ -50,7 +50,7 @@ interface AuthCheckResponse {
 
 interface RegisterData {
   email: string
-  callSign: string
+  callSign?: string
   password: string
   branchIds?: string[]
   fullName?: string
@@ -69,7 +69,11 @@ export const useAuthStore = defineStore('auth', () => {
   const isTemporaryPassword = ref(false)
 
   const isAuthenticated = computed(() => !!user.value)
+  const hasOperator = computed(() => !!user.value?.operator)
   const isGuest = computed(() => user.value?.role === 'guest')
+  const guestRestrictionKey = computed(() =>
+    hasOperator.value ? 'error.guestRestriction' : 'error.guestRestrictionNoOperator'
+  )
   const isVolunteer = computed(() => hasRole('volunteer'))
   const isAdmin = computed(() => hasRole('admin'))
   const isSuperAdmin = computed(() => user.value?.role === 'super_admin')
@@ -109,6 +113,8 @@ export const useAuthStore = defineStore('auth', () => {
         x.status === 'approved' && (x.role === 'admin' || x.role === 'president')
     )
   })
+
+  const canCreateDisaster = canManageRequestQueues
 
   function hasRole(minRole: UserRole): boolean {
     if (!user.value) return false
@@ -180,13 +186,16 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     error,
     isAuthenticated,
+    hasOperator,
     isGuest,
+    guestRestrictionKey,
     isVolunteer,
     isAdmin,
     isSuperAdmin,
     isHeadquartersLeader,
     canLeadBranch,
     canManageRequestQueues,
+    canCreateDisaster,
     isInitialized,
     isTemporaryPassword,
     hasRole,
