@@ -153,7 +153,7 @@ function onMapClick(e: L.LeafletMouseEvent) {
   L.popup({ minWidth: 220, className: 'trac-map-popup' })
       .setLatLng(e.latlng)
     .setContent(buildCreatePopup(e.latlng))
-    .openOn(map)
+    .openOn(map as unknown as L.Map)
 }
 
 const tileLayerUrl = computed(() => {

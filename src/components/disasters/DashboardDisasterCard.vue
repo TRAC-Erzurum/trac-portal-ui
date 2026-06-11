@@ -27,7 +27,7 @@ const stats = computed(() => props.disaster.stats)
 
 const lastUpdateLabel = computed(() => {
   if (stats.value.lastObservationAt) {
-    return formatDateTime(stats.value.lastObservationAt, locale)
+    return formatDateTime(stats.value.lastObservationAt, locale.value)
   }
   return t('disaster.observationsEmpty')
 })
