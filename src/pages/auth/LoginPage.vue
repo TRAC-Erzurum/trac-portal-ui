@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 import { useFormValidation } from '@/composables'
 import type { ApiError } from '@/lib/api'
+import { rememberPostLoginRedirect } from '@/lib/post-login-redirect'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -85,6 +86,7 @@ function handleIdentifierBlur() {
 }
 
 function handleGoogleLogin() {
+  rememberPostLoginRedirect(route.query.redirect)
   window.location.href = `${import.meta.env.VITE_API_URL}/auth/google`
 }
 </script>
