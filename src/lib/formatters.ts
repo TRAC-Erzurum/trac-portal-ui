@@ -22,66 +22,86 @@ export function formatCallSign(parts: CallSignParts): string {
   return callSign
 }
 
-export function formatDateTime(dateStr?: string | null, locale: string = 'tr-TR'): string {
-  if (!dateStr) return '-'
+export function getBrowserTimeZone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+}
+
+export function parseDateInput(dateStr?: string | null): Date | null {
+  if (dateStr == null || dateStr === '') return null
+
+  const value = String(dateStr).trim()
+  if (!value) return null
+
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function formatWithBrowserTimeZone(
+  dateStr: string | null | undefined,
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+  fallback = '-'
+): string {
+  const date = parseDateInput(dateStr)
+  if (!date) return fallback
+
   const intlLocale = toIntlLocale(locale)
-  return new Date(dateStr).toLocaleString(intlLocale, {
+  const timeZone = getBrowserTimeZone()
+
+  return new Intl.DateTimeFormat(intlLocale, {
+    ...options,
+    timeZone,
+  }).format(date)
+}
+
+export function formatDateTime(dateStr?: string | null, locale: string = 'tr-TR'): string {
+  return formatWithBrowserTimeZone(dateStr, locale, {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit'
-  })
+  }, '-')
 }
 
 export function formatDateShort(dateStr?: string | null, locale: string = 'tr-TR'): string {
-  if (!dateStr) return ''
-  const intlLocale = toIntlLocale(locale)
-  return new Date(dateStr).toLocaleDateString(intlLocale, {
+  return formatWithBrowserTimeZone(dateStr, locale, {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
     minute: '2-digit'
-  })
+  }, '')
 }
 
 export function formatDateLong(dateStr?: string | null, locale: string = 'tr-TR'): string {
-  if (!dateStr) return '-'
-  const intlLocale = toIntlLocale(locale)
-  return new Date(dateStr).toLocaleDateString(intlLocale, {
+  return formatWithBrowserTimeZone(dateStr, locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric'
-  })
+  }, '-')
 }
 
 export function formatDateSimple(dateStr?: string | null, locale: string = 'tr-TR'): string {
-  if (!dateStr) return '-'
-  const intlLocale = toIntlLocale(locale)
-  return new Date(dateStr).toLocaleDateString(intlLocale, {
+  return formatWithBrowserTimeZone(dateStr, locale, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit'
-  })
+  }, '-')
 }
 
 export function formatNetDate(dateStr?: string | null, locale: string = 'tr-TR'): string {
-  if (!dateStr) return ''
-  const intlLocale = toIntlLocale(locale)
-  return new Date(dateStr).toLocaleDateString(intlLocale, {
+  return formatWithBrowserTimeZone(dateStr, locale, {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
-  })
+  }, '')
 }
 
 export function formatTime(dateStr?: string | null, locale: string = 'tr-TR'): string {
-  if (!dateStr) return '-'
-  const intlLocale = toIntlLocale(locale)
-  return new Date(dateStr).toLocaleTimeString(intlLocale, {
+  return formatWithBrowserTimeZone(dateStr, locale, {
     hour: '2-digit',
     minute: '2-digit'
-  })
+  }, '-')
 }
 
 /** Band key from TX frequency (MHz) for VHF/UHF repeater */
