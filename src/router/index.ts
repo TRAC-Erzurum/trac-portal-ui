@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore, type UserRole } from '@/stores/auth'
 import { toast } from 'vue-sonner'
 import { i18n } from '@/i18n'
+import { takePostLoginRedirect } from '@/lib/post-login-redirect'
 
 const BASE_TITLE = 'TRAC Portal'
 
@@ -177,6 +178,18 @@ const router = createRouter({
       meta: { requiresAuth: true, minRole: 'super_admin' as UserRole, titleKey: 'nav.userManagement' }
     },
     {
+      path: '/admin/oidc-clients',
+      name: 'admin-oidc-clients',
+      component: () => import('@/pages/admin/OidcClientsPage.vue'),
+      meta: { requiresAuth: true, minRole: 'super_admin' as UserRole, titleKey: 'nav.oidcClients' }
+    },
+    {
+      path: '/oidc/consent',
+      name: 'oidc-consent',
+      component: () => import('@/pages/oidc/OidcConsentPage.vue'),
+      meta: { requiresAuth: true, titleKey: 'oidc.consent.title' }
+    },
+    {
       path: '/map',
       name: 'map',
       component: () => import('@/pages/MapPage.vue'),
@@ -230,6 +243,13 @@ router.beforeEach(async (to) => {
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  if (authStore.isAuthenticated && !authStore.isTemporaryPassword) {
+    const pending = takePostLoginRedirect()
+    if (pending && pending !== to.fullPath) {
+      return pending
+    }
   }
 
   if (to.meta.guestOnly && authStore.isAuthenticated) {

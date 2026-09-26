@@ -111,7 +111,14 @@
     "feedbackGithubFailed": "Could not create the record on GitHub. Please try again later.",
     "feedbackAttachmentRejected": "Attachment was rejected (type or size).",
     "feedbackBodyTooLarge": "Description text is too long.",
-    "feedbackSummaryTooLong": "Summary text is too long."
+    "feedbackSummaryTooLong": "Summary text is too long.",
+    "oidcInvalidClient": "This application is not registered with TRAC Portal.",
+    "oidcInvalidRedirectUri": "The application's return address is not registered.",
+    "oidcNotConfigured": "Sign-in with the portal is not configured yet.",
+    "oidcClientNotFound": "Application not found.",
+    "oidcClientNameRequired": "Application name is required.",
+    "oidcRedirectUriRequired": "Enter at least one return address.",
+    "oidcRedirectUriInvalid": "Return addresses must start with https:// (http:// only for localhost) and must not contain #."
   },
   "auth": {
     "login": "Login",
@@ -653,7 +660,8 @@
     "map": "Map",
     "disasters": "Disasters",
     "account": "My Account",
-    "userManagement": "User Management"
+    "userManagement": "User Management",
+    "oidcClients": "Connected Applications"
   },
   "userManagement": {
     "searchPlaceholder": "Search email or name...",
@@ -1484,6 +1492,61 @@
       "MEDIUM": "Medium",
       "HIGH": "High",
       "CRITICAL": "Critical"
+    }
+  },
+  "oidc": {
+    "consent": {
+      "title": "Sign-in permission",
+      "loading": "Checking the request...",
+      "heading": "{client} wants to sign you in with your TRAC Portal account",
+      "sharedFields": "If you allow it, this application will receive:",
+      "notShared": "Your branch, membership status and role are not shared.",
+      "remembered": "Your approval is remembered; you will not be asked again next time you sign in to this application.",
+      "approve": "Allow",
+      "deny": "Deny",
+      "redirecting": "Taking you back to the application...",
+      "errorTitle": "The sign-in request could not be processed",
+      "claims": {
+        "sub": "A permanent user ID",
+        "email": "Your email address",
+        "email_verified": "Whether your email address is verified",
+        "name": "Your full name",
+        "call_sign": "Your call sign",
+        "verified": "Whether you are a verified operator"
+      }
+    },
+    "clients": {
+      "title": "Connected Applications",
+      "description": "Applications using \"Sign in with TRAC Portal\" (OpenID Connect clients).",
+      "add": "Add application",
+      "empty": "No applications registered yet.",
+      "name": "Application name",
+      "namePlaceholder": "e.g. Disaster Communications Portal",
+      "redirectUris": "Return addresses",
+      "redirectUrisHint": "One address per line. Must match exactly.",
+      "clientId": "Client ID (client_id)",
+      "clientSecret": "Client secret (client_secret)",
+      "active": "Active",
+      "inactive": "Deactivated",
+      "createdAt": "Created",
+      "create": "Create",
+      "creating": "Creating...",
+      "created": "Application created",
+      "rotateSecret": "Rotate secret",
+      "rotateSecretConfirm": "A new client secret will be generated for {name}. The old secret stops working immediately. Continue?",
+      "secretRotated": "Client secret rotated",
+      "deactivate": "Deactivate",
+      "deactivateConfirm": "{name} will be deactivated. Nobody will be able to sign in to it through the portal. Continue?",
+      "deactivated": "Application deactivated",
+      "secretTitle": "Save the client secret now",
+      "secretWarning": "This secret is shown only once and cannot be displayed again. If you lose it you will have to rotate it.",
+      "copy": "Copy",
+      "copied": "Copied",
+      "done": "I have saved it",
+      "discoveryUrl": "Discovery URL",
+      "rotateKey": "Rotate signing key",
+      "rotateKeyConfirm": "A new signing key will be generated and new ID tokens will be signed with it. The old key stays published for verification for 7 days. Continue?",
+      "keyRotated": "Signing key rotated"
     }
   }
 }

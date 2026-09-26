@@ -111,7 +111,14 @@
     "feedbackGithubFailed": "GitHub üzerinde kayıt oluşturulamadı. Lütfen daha sonra tekrar deneyin.",
     "feedbackAttachmentRejected": "Ek dosya kabul edilmedi (tür veya boyut).",
     "feedbackBodyTooLarge": "Açıklama metni çok uzun.",
-    "feedbackSummaryTooLong": "Özet metni çok uzun."
+    "feedbackSummaryTooLong": "Özet metni çok uzun.",
+    "oidcInvalidClient": "Bu uygulama TRAC Portal'a kayıtlı değil.",
+    "oidcInvalidRedirectUri": "Uygulamanın geri dönüş adresi kayıtlı değil.",
+    "oidcNotConfigured": "Portal ile giriş henüz yapılandırılmadı.",
+    "oidcClientNotFound": "Uygulama bulunamadı.",
+    "oidcClientNameRequired": "Uygulama adı zorunludur.",
+    "oidcRedirectUriRequired": "En az bir geri dönüş adresi girin.",
+    "oidcRedirectUriInvalid": "Geri dönüş adresleri https:// ile başlamalı (yalnızca localhost için http://) ve # içermemelidir."
   },
   "auth": {
     "login": "Giriş Yap",
@@ -654,7 +661,8 @@
     "disasters": "Afet Yönetimi",
     "account": "Hesabım",
     "inventory": "Envanterim",
-    "userManagement": "Kullanıcı Yönetimi"
+    "userManagement": "Kullanıcı Yönetimi",
+    "oidcClients": "Bağlı Uygulamalar"
   },
   "userManagement": {
     "searchPlaceholder": "E-posta veya ad ara...",
@@ -1486,6 +1494,61 @@
       "MEDIUM": "Orta",
       "HIGH": "Yüksek",
       "CRITICAL": "Kritik"
+    }
+  },
+  "oidc": {
+    "consent": {
+      "title": "Giriş izni",
+      "loading": "İstek kontrol ediliyor...",
+      "heading": "{client} TRAC Portal hesabınızla giriş yapmak istiyor",
+      "sharedFields": "Onaylarsanız bu uygulamayla şu bilgiler paylaşılacak:",
+      "notShared": "Şube, üyelik durumu ve rol bilgileriniz paylaşılmaz.",
+      "remembered": "Onayınız hatırlanır; bu uygulamaya bir sonraki girişinizde tekrar sorulmaz.",
+      "approve": "İzin ver",
+      "deny": "Reddet",
+      "redirecting": "Uygulamaya yönlendiriliyorsunuz...",
+      "errorTitle": "Giriş isteği işlenemedi",
+      "claims": {
+        "sub": "Değişmeyen kullanıcı kimliğiniz",
+        "email": "E-posta adresiniz",
+        "email_verified": "E-posta adresinizin doğrulanıp doğrulanmadığı",
+        "name": "Adınız soyadınız",
+        "call_sign": "Çağrı işaretiniz",
+        "verified": "Doğrulanmış operatör olup olmadığınız"
+      }
+    },
+    "clients": {
+      "title": "Bağlı Uygulamalar",
+      "description": "\"TRAC Portal ile giriş\" kullanan uygulamalar (OpenID Connect istemcileri).",
+      "add": "Uygulama ekle",
+      "empty": "Henüz kayıtlı uygulama yok.",
+      "name": "Uygulama adı",
+      "namePlaceholder": "Örn. Afet Haberleşme Portalı",
+      "redirectUris": "Geri dönüş adresleri",
+      "redirectUrisHint": "Her satıra bir adres. Tam eşleşme aranır.",
+      "clientId": "İstemci kimliği (client_id)",
+      "clientSecret": "İstemci parolası (client_secret)",
+      "active": "Etkin",
+      "inactive": "Devre dışı",
+      "createdAt": "Oluşturulma",
+      "create": "Oluştur",
+      "creating": "Oluşturuluyor...",
+      "created": "Uygulama oluşturuldu",
+      "rotateSecret": "Parolayı yenile",
+      "rotateSecretConfirm": "{name} için yeni bir istemci parolası oluşturulacak. Eski parola hemen geçersiz olur. Devam edilsin mi?",
+      "secretRotated": "İstemci parolası yenilendi",
+      "deactivate": "Devre dışı bırak",
+      "deactivateConfirm": "{name} devre dışı bırakılacak. Bu uygulamayla portal üzerinden giriş yapılamaz. Devam edilsin mi?",
+      "deactivated": "Uygulama devre dışı bırakıldı",
+      "secretTitle": "İstemci parolasını şimdi kaydedin",
+      "secretWarning": "Bu parola yalnızca bir kez gösterilir ve tekrar görüntülenemez. Kaybederseniz yenilemeniz gerekir.",
+      "copy": "Kopyala",
+      "copied": "Kopyalandı",
+      "done": "Kaydettim",
+      "discoveryUrl": "Keşif adresi",
+      "rotateKey": "İmzalama anahtarını yenile",
+      "rotateKeyConfirm": "Yeni bir imzalama anahtarı oluşturulacak ve yeni kimlik jetonları onunla imzalanacak. Eski anahtar 7 gün boyunca doğrulama için yayında kalır. Devam edilsin mi?",
+      "keyRotated": "İmzalama anahtarı yenilendi"
     }
   }
 }
