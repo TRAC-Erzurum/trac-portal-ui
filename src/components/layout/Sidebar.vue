@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Award, BarChart3, Building2, ClipboardList, KeyRound, Map, MessageSquareText, PanelLeft, PanelLeftClose, Radio, Siren, TowerControl, UserCog, Users } from 'lucide-vue-next'
+import { Award, BarChart3, Building2, ClipboardList, KeyRound, Map, MessageSquareText, PanelLeft, PanelLeftClose, Radio, Send, Siren, TowerControl, UserCog, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
 import { useFeedbackStore } from '@/stores/feedback'
@@ -62,6 +62,7 @@ const allNavItems = computed(() => {
     items.push({ icon: ClipboardList, label: t('inventory.inventoryManagement'), route: '/admin/inventory', restricted: false })
     items.push({ icon: UserCog, label: t('nav.userManagement'), route: '/admin/users', restricted: false })
     items.push({ icon: KeyRound, label: t('nav.oidcClients'), route: '/admin/oidc-clients', restricted: false })
+    items.push({ icon: Send, label: t('nav.publishTargets'), route: '/admin/publish-targets', restricted: false })
   }
   return items
 })

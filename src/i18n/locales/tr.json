@@ -118,7 +118,11 @@
     "oidcClientNotFound": "Uygulama bulunamadı.",
     "oidcClientNameRequired": "Uygulama adı zorunludur.",
     "oidcRedirectUriRequired": "En az bir geri dönüş adresi girin.",
-    "oidcRedirectUriInvalid": "Geri dönüş adresleri https:// ile başlamalı (yalnızca localhost için http://) ve # içermemelidir."
+    "oidcRedirectUriInvalid": "Geri dönüş adresleri https:// ile başlamalı (yalnızca localhost için http://) ve # içermemelidir.",
+    "publishTargetNotFound": "Yayın hedefi bulunamadı veya etkin değil.",
+    "publishTargetNameRequired": "Hedef adı zorunludur.",
+    "publishTargetUrlInvalid": "Kabul adresi https:// ile başlamalıdır (http:// yalnızca localhost için) ve # içermemelidir.",
+    "publishTargetRequired": "Yayını açmak için önce bir hedef seçin."
   },
   "auth": {
     "login": "Giriş Yap",
@@ -672,7 +676,8 @@
     "account": "Hesabım",
     "inventory": "Envanterim",
     "userManagement": "Kullanıcı Yönetimi",
-    "oidcClients": "Bağlı Uygulamalar"
+    "oidcClients": "Bağlı Uygulamalar",
+    "publishTargets": "Yayın Hedefleri"
   },
   "userManagement": {
     "searchPlaceholder": "E-posta veya ad ara...",
@@ -1559,6 +1564,46 @@
       "rotateKey": "İmzalama anahtarını yenile",
       "rotateKeyConfirm": "Yeni bir imzalama anahtarı oluşturulacak ve yeni kimlik jetonları onunla imzalanacak. Eski anahtar 7 gün boyunca doğrulama için yayında kalır. Devam edilsin mi?",
       "keyRotated": "İmzalama anahtarı yenilendi"
+    }
+  },
+  "publishing": {
+    "targets": {
+      "title": "Yayın Hedefleri",
+      "description": "Afet gözlemlerinin yayınlanabileceği dış sistemler. Paylaşılan gizli anahtar yalnızca yazılır; hiçbir ekranda gösterilmez.",
+      "add": "Hedef Ekle",
+      "edit": "Hedefi Düzenle",
+      "empty": "Henüz kayıtlı yayın hedefi yok.",
+      "name": "Ad",
+      "intakeUrl": "Kabul adresi",
+      "intakeUrlHint": "Hedefin gözlem kabul adresi (https://).",
+      "sourceId": "Kaynak kimliği",
+      "sourceIdHint": "Hedefin bu portala atadığı kaynak kimliği.",
+      "sharedSecret": "Paylaşılan gizli anahtar",
+      "sharedSecretHint": "Hedefin verdiği anahtar. Kaydedildikten sonra bir daha gösterilmez.",
+      "sharedSecretKeepHint": "Mevcut anahtarı korumak için boş bırakın. Yeni anahtar, kimlik doğrulama hatasıyla bekletilen kuyruğu yeniden başlatır.",
+      "active": "Etkin",
+      "inactive": "Devre dışı",
+      "authFailing": "Kimlik doğrulama hatası",
+      "authFailingHint": "Hedef imzayı reddetti. Bu hedefin tüm kuyruğu, anahtar veya kaynak kimliği değiştirilene kadar bekletiliyor.",
+      "updatedAt": "Son güncelleme",
+      "created": "Yayın hedefi eklendi.",
+      "updated": "Yayın hedefi güncellendi."
+    },
+    "disaster": {
+      "title": "Gözlem Yayını",
+      "description": "Bu afetin gözlemlerini kayıtlı bir dış hedefe gönderin. Yalnızca bu afetin yöneticileri değiştirebilir.",
+      "target": "Hedef",
+      "targetPlaceholder": "Hedef seçin",
+      "noTargets": "Etkin yayın hedefi yok. Sistem yöneticisinden bir hedef eklemesini isteyin.",
+      "targetAuthFailing": "Hedef kimlik doğrulamayı reddetti; gönderim, sistem yöneticisi anahtarı güncelleyene kadar bekliyor.",
+      "enabled": "Yayın açık",
+      "enabledHint": "Yalnızca yayın açıkken oluşturulan gözlemler kuyruğa alınır. Kapatmak bekleyen gönderimleri durdurur; gönderilmiş kayıtları geri çekmez.",
+      "queue": "Kuyruk",
+      "waiting": "Bekleyen",
+      "delivered": "Gönderilen",
+      "failed": "Başarısız",
+      "photosNotSent": "Fotoğraflar bu sürümde gönderilmez.",
+      "saved": "Yayın ayarları kaydedildi."
     }
   }
 }

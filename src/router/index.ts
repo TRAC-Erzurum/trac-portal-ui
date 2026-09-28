@@ -190,6 +190,12 @@ const router = createRouter({
       meta: { requiresAuth: true, minRole: 'super_admin' as UserRole, titleKey: 'nav.oidcClients' }
     },
     {
+      path: '/admin/publish-targets',
+      name: 'admin-publish-targets',
+      component: () => import('@/pages/admin/PublishTargetsPage.vue'),
+      meta: { requiresAuth: true, minRole: 'super_admin' as UserRole, titleKey: 'nav.publishTargets' }
+    },
+    {
       path: '/oidc/consent',
       name: 'oidc-consent',
       component: () => import('@/pages/oidc/OidcConsentPage.vue'),
