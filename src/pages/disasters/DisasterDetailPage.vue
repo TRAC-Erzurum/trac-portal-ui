@@ -3,13 +3,14 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Archive, CalendarPlus, Pencil, RotateCcw, Siren, Users } from 'lucide-vue-next'
+import { Archive, CalendarPlus, Pencil, RotateCcw, Send, Siren, Users } from 'lucide-vue-next'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import AddInformationSheet from '@/components/disasters/AddInformationSheet.vue'
 import CreateObservationSheet from '@/components/disasters/CreateObservationSheet.vue'
 import DisasterObservationsMap from '@/components/disasters/DisasterObservationsMap.vue'
 import EditDisasterSheet from '@/components/disasters/EditDisasterSheet.vue'
 import ManageMembersSheet from '@/components/disasters/ManageMembersSheet.vue'
+import PublishingSheet from '@/components/disasters/PublishingSheet.vue'
 import ObservationTypeButtons from '@/components/disasters/ObservationTypeButtons.vue'
 import { ObservationCard } from '@/components/shared'
 import { Button } from '@/components/ui/button'
@@ -58,6 +59,7 @@ const createObservationLat = ref<number | undefined>(undefined)
 const createObservationLng = ref<number | undefined>(undefined)
 const showAddInformationSheet = ref(false)
 const showManageMembersSheet = ref(false)
+const showPublishingSheet = ref(false)
 const addInformationParent = ref<Observation | null>(null)
 const addInformationType = ref<ObservationType | undefined>(undefined)
 const highlightedObservationId = ref<string | null>(null)
@@ -298,6 +300,10 @@ onMounted(() => {
           <Users class="h-4 w-4 mr-2" />
           {{ t('disaster.manageMembers') }}
         </Button>
+        <Button variant="outline" size="sm" @click="showPublishingSheet = true">
+          <Send class="h-4 w-4 mr-2" />
+          {{ t('publishing.disaster.title') }}
+        </Button>
       </div>
 
       <p v-if="isArchived" class="text-sm text-amber-700 dark:text-amber-400">
@@ -404,6 +410,8 @@ onMounted(() => {
       :members="members"
       @updated="fetchMembers"
     />
+
+    <PublishingSheet v-model:open="showPublishingSheet" :disaster-id="disasterId" />
 
     <Dialog v-model:open="showArchiveDialog">
       <DialogContent>
