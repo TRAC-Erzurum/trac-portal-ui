@@ -85,6 +85,8 @@ const getActivityText = (activity: Activity) => {
         branch: branchName,
         role: t(`roles.${newRole}`),
       })
+    case 'account.google_password_replaced':
+      return t('dashboard.activityGooglePasswordReplaced')
     default:
       return type
   }

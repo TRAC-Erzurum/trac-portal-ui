@@ -59,6 +59,12 @@ const router = createRouter({
       meta: { requiresAuth: false, titleKey: 'auth.completeSsoTitle' }
     },
     {
+      path: '/login/google-link',
+      name: 'google-link',
+      component: () => import('@/pages/auth/GoogleLinkPage.vue'),
+      meta: { requiresAuth: false, titleKey: 'auth.googleLinkTitle' }
+    },
+    {
       path: '/change-password',
       name: 'force-change-password',
       component: () => import('@/pages/auth/ForceChangePasswordPage.vue'),
