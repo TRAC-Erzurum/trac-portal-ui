@@ -178,6 +178,7 @@ onMounted(fetchTargets)
           <div class="space-y-2">
             <Label for="publish-target-name">{{ t('publishing.targets.name') }}</Label>
             <Input id="publish-target-name" v-model="name" required />
+            <p class="text-xs text-muted-foreground">{{ t('publishing.targets.nameHint') }}</p>
           </div>
           <div class="space-y-2">
             <Label for="publish-target-url">{{ t('publishing.targets.intakeUrl') }}</Label>

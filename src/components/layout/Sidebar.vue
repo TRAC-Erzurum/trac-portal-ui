@@ -3,12 +3,27 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Award, BarChart3, Building2, ClipboardList, KeyRound, Map, MessageSquareText, PanelLeft, PanelLeftClose, Radio, Send, Siren, TowerControl, UserCog, Users } from 'lucide-vue-next'
+import type { Component } from 'vue'
+import { Award, BarChart3, Building2, ClipboardList, KeyRound, Map, MessageSquareText, PanelLeft, PanelLeftClose, Radio, Siren, TowerControl, UserCog, Users } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useAuthStore } from '@/stores/auth'
 import { useFeedbackStore } from '@/stores/feedback'
 
 const MOBILE_HIDDEN_ROUTES = ['/dashboard', '/nets', '/map']
+
+interface NavChild {
+  label: string
+  route: string
+}
+
+interface NavItem {
+  icon: Component
+  label: string
+  route: string
+  restricted: boolean
+  /** Sub-items, listed under the item while the sidebar is expanded. */
+  children?: NavChild[]
+}
 
 const props = defineProps<{
   collapsed: boolean
@@ -46,13 +61,16 @@ const effectiveExpanded = computed(
 
 const allNavItems = computed(() => {
   const operatorId = authStore.user?.operator?.id
+  const disasterChildren: NavChild[] = authStore.isSuperAdmin
+    ? [{ label: t('nav.observationSharing'), route: '/disasters/sharing' }]
+    : []
 
-  const items = [
+  const items: NavItem[] = [
     { icon: BarChart3, label: t('nav.insights'), route: '/insights', restricted: true },
     { icon: ClipboardList, label: t('nav.inventory'), route: `/operators/${operatorId}/inventory`, restricted: true },
     { icon: Award, label: t('nav.certificates'), route: '/certificates', restricted: true },
     { icon: Map, label: t('nav.map'), route: '/map', restricted: false },
-    { icon: Siren, label: t('nav.disasters'), route: '/disasters', restricted: false },
+    { icon: Siren, label: t('nav.disasters'), route: '/disasters', restricted: false, children: disasterChildren },
     { icon: TowerControl, label: t('nav.communicationChannels'), route: '/communication-channels', restricted: false },
     { icon: Radio, label: t('nav.nets'), route: '/nets', restricted: true },
     { icon: Building2, label: t('nav.branches'), route: '/branches', restricted: true },
@@ -62,7 +80,6 @@ const allNavItems = computed(() => {
     items.push({ icon: ClipboardList, label: t('inventory.inventoryManagement'), route: '/admin/inventory', restricted: false })
     items.push({ icon: UserCog, label: t('nav.userManagement'), route: '/admin/users', restricted: false })
     items.push({ icon: KeyRound, label: t('nav.oidcClients'), route: '/admin/oidc-clients', restricted: false })
-    items.push({ icon: Send, label: t('nav.publishTargets'), route: '/admin/publish-targets', restricted: false })
   }
   return items
 })
@@ -72,7 +89,9 @@ const navItems = computed(() => {
   return allNavItems.value.filter((item) => !MOBILE_HIDDEN_ROUTES.includes(item.route))
 })
 
-function isActive(path: string) {
+function isActive(item: { route: string; children?: NavChild[] }) {
+  const path = item.route
+  if (item.children?.some((child) => isActive(child))) return false
   return route.path === path || route.path.startsWith(path + '/')
 }
 
@@ -125,18 +144,36 @@ function openFeedbackSheet() {
     </div>
 
     <nav class="flex-1 p-2 space-y-1 overflow-y-auto">
-      <a v-for="item in navItems" :key="item.route" href="#" @click="handleNavClick(item, $event)" :class="[
-        'flex items-center gap-3 rounded-md transition-colors cursor-pointer',
-        effectiveExpanded ? 'px-3 py-2' : 'justify-center px-2 py-2',
-        isActive(item.route)
-          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-          : isRestricted(item)
-            ? 'text-sidebar-foreground/50 hover:bg-sidebar-accent/30'
-            : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
-      ]" :title="!effectiveExpanded ? item.label : undefined">
-        <component :is="item.icon" class="h-5 w-5 flex-shrink-0" />
-        <span v-if="effectiveExpanded" class="truncate">{{ item.label }}</span>
-      </a>
+      <template v-for="item in navItems" :key="item.route">
+        <a href="#" @click="handleNavClick(item, $event)" :class="[
+          'flex items-center gap-3 rounded-md transition-colors cursor-pointer',
+          effectiveExpanded ? 'px-3 py-2' : 'justify-center px-2 py-2',
+          isActive(item)
+            ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+            : isRestricted(item)
+              ? 'text-sidebar-foreground/50 hover:bg-sidebar-accent/30'
+              : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+        ]" :title="!effectiveExpanded ? item.label : undefined">
+          <component :is="item.icon" class="h-5 w-5 flex-shrink-0" />
+          <span v-if="effectiveExpanded" class="truncate">{{ item.label }}</span>
+        </a>
+        <template v-if="effectiveExpanded">
+          <a
+            v-for="child in item.children ?? []"
+            :key="child.route"
+            href="#"
+            @click="handleNavClick({ route: child.route, restricted: false }, $event)"
+            :class="[
+              'flex items-center rounded-md transition-colors cursor-pointer py-1.5 pl-11 pr-3 text-sm',
+              isActive(child)
+                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+            ]"
+          >
+            <span class="truncate">{{ child.label }}</span>
+          </a>
+        </template>
+      </template>
     </nav>
 
     <div class="border-t border-sidebar-border flex-shrink-0 p-2 space-y-2">
