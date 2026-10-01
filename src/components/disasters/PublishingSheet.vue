@@ -41,6 +41,13 @@ const targetOptions = computed(() => {
   return options
 })
 
+/** The chosen recipient's own name (without the "inactive" note), for the switch's label. */
+const recipientName = computed(() => {
+  const current = state.value?.target
+  if (current && current.id === targetId.value) return current.name
+  return state.value?.availableTargets.find((o) => o.id === targetId.value)?.name ?? null
+})
+
 async function load() {
   isLoading.value = true
   try {
@@ -118,21 +125,27 @@ async function save() {
         <div class="flex items-start gap-3">
           <Checkbox id="publishing-enabled" v-model="enabled" class="mt-0.5" />
           <div class="space-y-1">
-            <Label for="publishing-enabled">{{ t('publishing.disaster.enabled') }}</Label>
+            <Label for="publishing-enabled">
+              {{
+                recipientName
+                  ? t('publishing.disaster.enabledWithName', { name: recipientName })
+                  : t('publishing.disaster.enabled')
+              }}
+            </Label>
             <p class="text-xs text-muted-foreground">{{ t('publishing.disaster.enabledHint') }}</p>
           </div>
         </div>
 
         <div class="space-y-2">
-          <p class="text-sm font-medium text-muted-foreground">{{ t('publishing.disaster.queue') }}</p>
+          <p class="text-sm font-medium text-muted-foreground">{{ t('publishing.disaster.status') }}</p>
           <dl class="grid grid-cols-3 gap-2 text-center">
-            <div class="rounded-md border border-border p-2">
-              <dd class="text-lg font-semibold">{{ state.counts.waiting }}</dd>
-              <dt class="text-xs text-muted-foreground">{{ t('publishing.disaster.waiting') }}</dt>
-            </div>
             <div class="rounded-md border border-border p-2">
               <dd class="text-lg font-semibold">{{ state.counts.delivered }}</dd>
               <dt class="text-xs text-muted-foreground">{{ t('publishing.disaster.delivered') }}</dt>
+            </div>
+            <div class="rounded-md border border-border p-2">
+              <dd class="text-lg font-semibold">{{ state.counts.waiting }}</dd>
+              <dt class="text-xs text-muted-foreground">{{ t('publishing.disaster.waiting') }}</dt>
             </div>
             <div class="rounded-md border border-border p-2">
               <dd class="text-lg font-semibold">{{ state.counts.failed }}</dd>

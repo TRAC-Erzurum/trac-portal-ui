@@ -143,6 +143,13 @@ const router = createRouter({
       meta: { requiresAuth: true, minRole: 'guest', titleKey: 'nav.disasters' }
     },
     {
+      // Super admins only; a static path, so it never matches /disasters/:id.
+      path: '/disasters/sharing',
+      name: 'disaster-sharing',
+      component: () => import('@/pages/admin/PublishTargetsPage.vue'),
+      meta: { requiresAuth: true, minRole: 'super_admin' as UserRole, titleKey: 'nav.observationSharing' }
+    },
+    {
       path: '/disasters/:id',
       name: 'disaster-detail',
       component: () => import('@/pages/disasters/DisasterDetailPage.vue'),
@@ -190,10 +197,9 @@ const router = createRouter({
       meta: { requiresAuth: true, minRole: 'super_admin' as UserRole, titleKey: 'nav.oidcClients' }
     },
     {
+      // The page's former address; bookmarks keep working.
       path: '/admin/publish-targets',
-      name: 'admin-publish-targets',
-      component: () => import('@/pages/admin/PublishTargetsPage.vue'),
-      meta: { requiresAuth: true, minRole: 'super_admin' as UserRole, titleKey: 'nav.publishTargets' }
+      redirect: { name: 'disaster-sharing' }
     },
     {
       path: '/oidc/consent',

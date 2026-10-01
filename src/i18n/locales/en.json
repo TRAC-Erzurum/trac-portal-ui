@@ -119,10 +119,10 @@
     "oidcClientNameRequired": "Application name is required.",
     "oidcRedirectUriRequired": "Enter at least one return address.",
     "oidcRedirectUriInvalid": "Return addresses must start with https:// (http:// only for localhost) and must not contain #.",
-    "publishTargetNotFound": "Publish target not found or not active.",
-    "publishTargetNameRequired": "Target name is required.",
-    "publishTargetUrlInvalid": "The intake URL must start with https:// (http:// only for localhost) and must not contain #.",
-    "publishTargetRequired": "Choose a target before turning publishing on."
+    "publishTargetNotFound": "Recipient not found or not active.",
+    "publishTargetNameRequired": "Recipient name is required.",
+    "publishTargetUrlInvalid": "The delivery address must start with https:// (http:// only for localhost) and must not contain #.",
+    "publishTargetRequired": "Choose a recipient before turning sharing on."
   },
   "auth": {
     "login": "Login",
@@ -676,7 +676,7 @@
     "account": "My Account",
     "userManagement": "User Management",
     "oidcClients": "Connected Applications",
-    "publishTargets": "Publish Targets"
+    "observationSharing": "Observation sharing"
   },
   "userManagement": {
     "searchPlaceholder": "Search email or name...",
@@ -1566,42 +1566,44 @@
   },
   "publishing": {
     "targets": {
-      "title": "Publish Targets",
-      "description": "External systems disaster observations can be published to. The shared secret is write-only and never shown on any screen.",
-      "add": "Add Target",
-      "edit": "Edit Target",
-      "empty": "No publish targets registered yet.",
+      "title": "Observation sharing",
+      "description": "Recipients that disaster observations can be shared with, such as the Disaster Communication Portal. Disaster admins can choose the recipients added here for their disasters.",
+      "add": "Add Recipient",
+      "edit": "Edit Recipient",
+      "empty": "No recipients registered yet.",
       "name": "Name",
-      "intakeUrl": "Intake URL",
-      "intakeUrlHint": "The target's observation intake address (https://).",
+      "nameHint": "The name disaster admins see in the list of recipients.",
+      "intakeUrl": "Delivery address",
+      "intakeUrlHint": "The https:// address where the recipient receives observations; the recipient's administrator provides it.",
       "sourceId": "Source ID",
-      "sourceIdHint": "The source ID the target assigned to this portal.",
+      "sourceIdHint": "The short name the recipient gave this portal to recognise it; it must match exactly.",
       "sharedSecret": "Shared secret",
-      "sharedSecretHint": "The key the target issued. It is never shown again after saving.",
-      "sharedSecretKeepHint": "Leave blank to keep the current secret. A new secret releases a queue held by an authentication failure.",
+      "sharedSecretHint": "The secret key the recipient issued; every delivery is signed with it, and it is never shown again after saving.",
+      "sharedSecretKeepHint": "Leave blank to keep the current secret. Entering a new one restarts deliveries held because the recipient refused the old one.",
       "active": "Active",
       "inactive": "Inactive",
-      "authFailing": "Authentication failing",
-      "authFailingHint": "The target rejected the signature. Its whole queue is held until the secret or source ID is changed.",
+      "authFailing": "Recipient refuses deliveries",
+      "authFailingHint": "The recipient did not accept the shared secret or source ID. Until they are corrected nothing is sent to this recipient; observations wait.",
       "updatedAt": "Last updated",
-      "created": "Publish target added.",
-      "updated": "Publish target updated."
+      "created": "Recipient added.",
+      "updated": "Recipient updated."
     },
     "disaster": {
-      "title": "Observation Publishing",
-      "description": "Send this disaster's observations to a registered external target. Only this disaster's administrators can change it.",
-      "target": "Target",
-      "targetPlaceholder": "Choose a target",
-      "noTargets": "No active publish targets. Ask a system administrator to add one.",
-      "targetAuthFailing": "The target rejected authentication; delivery waits until a system administrator updates the secret.",
-      "enabled": "Publishing on",
-      "enabledHint": "Only observations created while publishing is on are queued. Turning it off pauses pending deliveries; it never withdraws records already delivered.",
-      "queue": "Queue",
-      "waiting": "Waiting",
+      "title": "Observation sharing",
+      "description": "Share this disaster's observations with another system. Only this disaster's administrators can change it.",
+      "target": "Recipient",
+      "targetPlaceholder": "Choose a recipient",
+      "noTargets": "No recipients registered. Ask a system administrator to add one.",
+      "targetAuthFailing": "The recipient is not accepting deliveries; observations wait until a system administrator fixes the settings.",
+      "enabled": "Share this disaster's observations",
+      "enabledWithName": "Share this disaster's observations with {name}",
+      "enabledHint": "Only observations added while sharing is on are sent. If you turn it off, observations not yet sent wait; those already sent are not withdrawn.",
+      "status": "Sharing status",
       "delivered": "Delivered",
+      "waiting": "Waiting",
       "failed": "Failed",
-      "photosNotSent": "Photos are not sent in this version.",
-      "saved": "Publishing settings saved."
+      "photosNotSent": "Photos are not shared for now.",
+      "saved": "Sharing settings saved."
     }
   }
 }

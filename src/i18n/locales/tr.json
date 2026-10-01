@@ -119,10 +119,10 @@
     "oidcClientNameRequired": "Uygulama adı zorunludur.",
     "oidcRedirectUriRequired": "En az bir geri dönüş adresi girin.",
     "oidcRedirectUriInvalid": "Geri dönüş adresleri https:// ile başlamalı (yalnızca localhost için http://) ve # içermemelidir.",
-    "publishTargetNotFound": "Yayın hedefi bulunamadı veya etkin değil.",
-    "publishTargetNameRequired": "Hedef adı zorunludur.",
-    "publishTargetUrlInvalid": "Kabul adresi https:// ile başlamalıdır (http:// yalnızca localhost için) ve # içermemelidir.",
-    "publishTargetRequired": "Yayını açmak için önce bir hedef seçin."
+    "publishTargetNotFound": "Alıcı bulunamadı veya etkin değil.",
+    "publishTargetNameRequired": "Alıcı adı zorunludur.",
+    "publishTargetUrlInvalid": "Gönderim adresi https:// ile başlamalıdır (http:// yalnızca localhost için) ve # içermemelidir.",
+    "publishTargetRequired": "Paylaşımı açmak için önce bir alıcı seçin."
   },
   "auth": {
     "login": "Giriş Yap",
@@ -677,7 +677,7 @@
     "inventory": "Envanterim",
     "userManagement": "Kullanıcı Yönetimi",
     "oidcClients": "Bağlı Uygulamalar",
-    "publishTargets": "Yayın Hedefleri"
+    "observationSharing": "Gözlem Paylaşımı"
   },
   "userManagement": {
     "searchPlaceholder": "E-posta veya ad ara...",
@@ -1568,42 +1568,44 @@
   },
   "publishing": {
     "targets": {
-      "title": "Yayın Hedefleri",
-      "description": "Afet gözlemlerinin yayınlanabileceği dış sistemler. Paylaşılan gizli anahtar yalnızca yazılır; hiçbir ekranda gösterilmez.",
-      "add": "Hedef Ekle",
-      "edit": "Hedefi Düzenle",
-      "empty": "Henüz kayıtlı yayın hedefi yok.",
+      "title": "Gözlem Paylaşımı",
+      "description": "Afet gözlemlerinin paylaşılabileceği alıcılar, örneğin Afet Haberleşme Portalı. Burada eklenen alıcıları afet yöneticileri kendi afetleri için seçebilir.",
+      "add": "Alıcı Ekle",
+      "edit": "Alıcıyı Düzenle",
+      "empty": "Henüz kayıtlı alıcı yok.",
       "name": "Ad",
-      "intakeUrl": "Kabul adresi",
-      "intakeUrlHint": "Hedefin gözlem kabul adresi (https://).",
+      "nameHint": "Afet yöneticilerinin alıcı listesinde göreceği ad.",
+      "intakeUrl": "Gönderim adresi",
+      "intakeUrlHint": "Alıcının gözlemleri teslim aldığı https:// adresi; alıcı sistemin yöneticisi verir.",
       "sourceId": "Kaynak kimliği",
-      "sourceIdHint": "Hedefin bu portala atadığı kaynak kimliği.",
-      "sharedSecret": "Paylaşılan gizli anahtar",
-      "sharedSecretHint": "Hedefin verdiği anahtar. Kaydedildikten sonra bir daha gösterilmez.",
-      "sharedSecretKeepHint": "Mevcut anahtarı korumak için boş bırakın. Yeni anahtar, kimlik doğrulama hatasıyla bekletilen kuyruğu yeniden başlatır.",
+      "sourceIdHint": "Alıcının bu portalı tanımak için verdiği kısa ad; harfi harfine aynı yazılmalıdır.",
+      "sharedSecret": "Paylaşılan sır",
+      "sharedSecretHint": "Alıcının verdiği gizli anahtar; her gönderim bununla imzalanır ve kaydedildikten sonra bir daha gösterilmez.",
+      "sharedSecretKeepHint": "Mevcut sırrı korumak için boş bırakın. Yeni bir sır girerseniz, alıcı eskisini reddettiği için bekleyen gönderimler yeniden başlar.",
       "active": "Etkin",
       "inactive": "Devre dışı",
-      "authFailing": "Kimlik doğrulama hatası",
-      "authFailingHint": "Hedef imzayı reddetti. Bu hedefin tüm kuyruğu, anahtar veya kaynak kimliği değiştirilene kadar bekletiliyor.",
+      "authFailing": "Alıcı gönderimleri reddediyor",
+      "authFailingHint": "Alıcı, paylaşılan sırrı veya kaynak kimliğini kabul etmedi. Bunlar düzeltilene kadar bu alıcıya hiçbir gözlem gönderilmez; gözlemler bekler.",
       "updatedAt": "Son güncelleme",
-      "created": "Yayın hedefi eklendi.",
-      "updated": "Yayın hedefi güncellendi."
+      "created": "Alıcı eklendi.",
+      "updated": "Alıcı güncellendi."
     },
     "disaster": {
-      "title": "Gözlem Yayını",
-      "description": "Bu afetin gözlemlerini kayıtlı bir dış hedefe gönderin. Yalnızca bu afetin yöneticileri değiştirebilir.",
-      "target": "Hedef",
-      "targetPlaceholder": "Hedef seçin",
-      "noTargets": "Etkin yayın hedefi yok. Sistem yöneticisinden bir hedef eklemesini isteyin.",
-      "targetAuthFailing": "Hedef kimlik doğrulamayı reddetti; gönderim, sistem yöneticisi anahtarı güncelleyene kadar bekliyor.",
-      "enabled": "Yayın açık",
-      "enabledHint": "Yalnızca yayın açıkken oluşturulan gözlemler kuyruğa alınır. Kapatmak bekleyen gönderimleri durdurur; gönderilmiş kayıtları geri çekmez.",
-      "queue": "Kuyruk",
-      "waiting": "Bekleyen",
-      "delivered": "Gönderilen",
-      "failed": "Başarısız",
-      "photosNotSent": "Fotoğraflar bu sürümde gönderilmez.",
-      "saved": "Yayın ayarları kaydedildi."
+      "title": "Gözlem Paylaşımı",
+      "description": "Bu afetin gözlemlerini başka bir sistemle paylaşın. Yalnızca bu afetin yöneticileri değiştirebilir.",
+      "target": "Alıcı",
+      "targetPlaceholder": "Alıcı seçin",
+      "noTargets": "Kayıtlı alıcı yok. Sistem yöneticisinden bir alıcı eklemesini isteyin.",
+      "targetAuthFailing": "Alıcı gönderimleri kabul etmiyor; sistem yöneticisi ayarları düzeltene kadar gözlemler bekliyor.",
+      "enabled": "Bu afetin gözlemlerini paylaş",
+      "enabledWithName": "Bu afetin gözlemlerini {name} ile paylaş",
+      "enabledHint": "Yalnızca paylaşım açıkken eklenen gözlemler gönderilir. Kapatırsanız henüz gönderilmemiş gözlemler bekler; gönderilmiş olanlar geri alınmaz.",
+      "status": "Paylaşım durumu",
+      "delivered": "Gönderildi",
+      "waiting": "Bekliyor",
+      "failed": "Gönderilemedi",
+      "photosNotSent": "Fotoğraflar şimdilik paylaşılmaz.",
+      "saved": "Paylaşım ayarları kaydedildi."
     }
   }
 }
