@@ -18,6 +18,20 @@ Ortam değişkenleri: `.env.example` → `.env` (bu dizinde).
 |----------|----------|
 | `VITE_API_URL` | API base URL (örn. `http://localhost:8000/api`) |
 | `VITE_TURNSTILE_SITE_KEY` | Cloudflare Turnstile site key (kayıt/giriş için) |
+| `VITE_CARTO_API_KEY` | Carto basemap API key (opsiyonel; Carto uyarısını kaldırmak için) |
+
+`VITE_CARTO_API_KEY` Vite build-time değişkenidir; anahtarı kaynak koda veya git'e
+eklemeyin. Yerel geliştirmede git tarafından yok sayılan `.env.local` içine verin. Docker image üretirken build
+arg olarak geçirin:
+
+```bash
+docker build --build-arg VITE_CARTO_API_KEY="$VITE_CARTO_API_KEY" -t trac-portal-ui .
+```
+
+GitHub Actions image build'i için repository secret olarak `CARTO_API_KEY`
+tanımlanır ve workflow bunu build arg olarak geçirir. Production'da çalışan
+image önceden derlendiği için key'i yalnızca container runtime environment'ına
+eklemek yeterli değildir.
 
 ## Komutlar
 

@@ -6,6 +6,7 @@ import { LMap, LTileLayer, LMarker, LPopup } from '@vue-leaflet/vue-leaflet'
 import 'leaflet/dist/leaflet.css'
 import MapSelectionSummary from '@/components/shared/MapSelectionSummary.vue'
 import { useThemeStore } from '@/stores/theme'
+import { withCartoApiKey } from '@/lib/carto'
 import { api } from '@/lib/api'
 import { parseLocatorForMap } from '@/lib/maidenhead'
 
@@ -163,7 +164,7 @@ const tileLayerUrl = computed(() => {
   }
   const isDark = themeStore.effectiveTheme === 'dark'
   return isDark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    ? withCartoApiKey('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png')
     : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 })
 
@@ -176,7 +177,7 @@ const tileLayerAttribution = computed(() => {
     : undefined
 })
 
-const satelliteLabelsUrl = 'https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png'
+const satelliteLabelsUrl = withCartoApiKey('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png')
 
 const mapOptions = {
   dragging: false,

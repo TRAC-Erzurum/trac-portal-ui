@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/sheet'
 import { useCookieConsentStore } from '@/stores/cookieConsent'
 import { useThemeStore } from '@/stores/theme'
+import { withCartoApiKey } from '@/lib/carto'
 import { buildTutorialContent } from '@/lib/tutorial-content'
 import { api } from '@/lib/api'
 import { formatCommunicationChannelLabel } from '@/lib/formatters'
@@ -169,7 +170,7 @@ const tileLayerUrl = computed(() => {
   }
   const isDark = themeStore.effectiveTheme === 'dark'
   return isDark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    ? withCartoApiKey('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png')
     : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 })
 const tileLayerAttribution = computed(() => {
@@ -185,7 +186,7 @@ const tileLayerAttribution = computed(() => {
     : undefined
 })
 
-const satelliteLabelsUrl = 'https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png'
+const satelliteLabelsUrl = withCartoApiKey('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png')
 
 const center = ref<[number, number]>(TURKEY_CENTER)
 const zoom = ref(TURKEY_ZOOM)

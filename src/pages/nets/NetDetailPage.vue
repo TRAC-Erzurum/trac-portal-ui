@@ -25,6 +25,7 @@ import { api, API_BASE } from '@/lib/api'
 import { getFilenameFromContentDisposition } from '@/lib/content-disposition'
 import { useAuthStore } from '@/stores/auth'
 import { useThemeStore } from '@/stores/theme'
+import { withCartoApiKey } from '@/lib/carto'
 import { toast } from 'vue-sonner'
 import { useDateFormat } from '@/composables'
 import { translateError } from '@/i18n'
@@ -170,7 +171,7 @@ const mapLoading = ref(false)
 const tileLayerUrl = computed(() => {
   const isDark = themeStore.effectiveTheme === 'dark'
   return isDark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    ? withCartoApiKey('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png')
     : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 })
 const tileLayerAttribution = computed(() => {
