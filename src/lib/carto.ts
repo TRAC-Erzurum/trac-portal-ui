@@ -4,5 +4,5 @@ export function withCartoApiKey(url: string): string {
   if (!CARTO_API_KEY) return url
 
   const separator = url.includes('?') ? '&' : '?'
-  return `${url}${separator}api_key=${encodeURIComponent(CARTO_API_KEY)}`
+  return `${url}${separator}key=${encodeURIComponent(CARTO_API_KEY)}`
 }
