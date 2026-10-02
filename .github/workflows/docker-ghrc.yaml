@@ -59,7 +59,7 @@ jobs:
       - name: Build UI Image
         if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'pull_request'
         run: |
-          docker build --no-cache --build-arg VERSION=${{ steps.docker_tags.outputs.version }} -t temp-ui-image .
+          docker build --no-cache --build-arg VERSION=${{ steps.docker_tags.outputs.version }} --build-arg VITE_CARTO_API_KEY=${{ secrets.CARTO_API_KEY }} -t temp-ui-image .
 
       - name: Tag and Push UI Image
         if: github.event_name != 'pull_request' && steps.docker_tags.outputs.ui_tags != ''

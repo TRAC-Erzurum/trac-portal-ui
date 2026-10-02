@@ -7,6 +7,7 @@ import 'leaflet/dist/leaflet.css'
 import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster'
 import { useThemeStore } from '@/stores/theme'
+import { withCartoApiKey } from '@/lib/carto'
 import { getObservationTypeIcon } from '@/lib/observation-icons'
 import { ROOT_OBSERVATION_TYPES } from '@/lib/observation-hierarchy'
 import type { ObservationType, RankedObservation } from '@/types/disaster'
@@ -159,7 +160,7 @@ function onMapClick(e: L.LeafletMouseEvent) {
 const tileLayerUrl = computed(() => {
   const isDark = themeStore.effectiveTheme === 'dark'
   return isDark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    ? withCartoApiKey('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png')
     : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 })
 

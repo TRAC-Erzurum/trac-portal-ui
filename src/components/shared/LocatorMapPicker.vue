@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import MapSelectionSummary from '@/components/shared/MapSelectionSummary.vue'
 import { useThemeStore } from '@/stores/theme'
 import { api } from '@/lib/api'
+import { withCartoApiKey } from '@/lib/carto'
 import { WGS84ToMaidenhead, parseLocatorForMap } from '@/lib/maidenhead'
 
 export interface LocatorSelection {
@@ -71,7 +72,7 @@ const pendingMarkerLatLng = computed((): [number, number] | null => {
 const tileLayerUrl = computed(() => {
   const isDark = themeStore.effectiveTheme === 'dark'
   return isDark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+    ? withCartoApiKey('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png')
     : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 })
 

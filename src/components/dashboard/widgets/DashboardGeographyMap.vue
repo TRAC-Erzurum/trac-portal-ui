@@ -6,6 +6,7 @@ import type { Map as LeafletMap } from 'leaflet'
 import { LMap, LTileLayer } from '@vue-leaflet/vue-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { useThemeStore } from '@/stores/theme'
+import { withCartoApiKey } from '@/lib/carto'
 
 const TUR_ADM1_URL = '/geojson/gadm41_TUR_1.json'
 
@@ -80,15 +81,15 @@ const countLabel = computed(() =>
 const tileLayerUrl = computed(() => {
   const isDark = themeStore.effectiveTheme === 'dark'
   return isDark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png'
+    ? withCartoApiKey('https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png')
+    : withCartoApiKey('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png')
 })
 
 const tileLabelLayerUrl = computed(() => {
   const isDark = themeStore.effectiveTheme === 'dark'
   return isDark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png'
+    ? withCartoApiKey('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png')
+    : withCartoApiKey('https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png')
 })
 
 const tileLayerAttribution = computed(() => {
