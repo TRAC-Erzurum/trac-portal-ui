@@ -411,7 +411,7 @@ onMounted(() => {
       @updated="fetchMembers"
     />
 
-    <PublishingSheet v-model:open="showPublishingSheet" :disaster-id="disasterId" />
+    <PublishingSheet v-model:open="showPublishingSheet" :disaster-id="disasterId" :archived="isArchived" />
 
     <Dialog v-model:open="showArchiveDialog">
       <DialogContent>
