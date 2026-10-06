@@ -61,16 +61,13 @@ const effectiveExpanded = computed(
 
 const allNavItems = computed(() => {
   const operatorId = authStore.user?.operator?.id
-  const disasterChildren: NavChild[] = authStore.isSuperAdmin
-    ? [{ label: t('nav.observationSharing'), route: '/disasters/sharing' }]
-    : []
 
   const items: NavItem[] = [
     { icon: BarChart3, label: t('nav.insights'), route: '/insights', restricted: true },
     { icon: ClipboardList, label: t('nav.inventory'), route: `/operators/${operatorId}/inventory`, restricted: true },
     { icon: Award, label: t('nav.certificates'), route: '/certificates', restricted: true },
     { icon: Map, label: t('nav.map'), route: '/map', restricted: false },
-    { icon: Siren, label: t('nav.disasters'), route: '/disasters', restricted: false, children: disasterChildren },
+    { icon: Siren, label: t('nav.disasters'), route: '/disasters', restricted: false },
     { icon: TowerControl, label: t('nav.communicationChannels'), route: '/communication-channels', restricted: false },
     { icon: Radio, label: t('nav.nets'), route: '/nets', restricted: true },
     { icon: Building2, label: t('nav.branches'), route: '/branches', restricted: true },

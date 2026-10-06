@@ -123,7 +123,9 @@
     "publishTargetNameRequired": "Alıcı adı zorunludur.",
     "publishTargetUrlInvalid": "Gönderim adresi https:// ile başlamalıdır (http:// yalnızca localhost için) ve # içermemelidir.",
     "publishTargetRequired": "Paylaşımı açmak için önce bir alıcı seçin.",
-    "publishingNotEnabled": "Aktarım için önce paylaşımı açıp kaydedin."
+    "publishingNotEnabled": "Göndermek için önce paylaşımı etkinleştirip kaydedin.",
+    "publishTargetKeyRequired": "Alıcının verdiği anahtarı girin.",
+    "publicationNotFailed": "Yalnızca başarısız olan kayıt yeniden denenebilir."
   },
   "auth": {
     "login": "Giriş Yap",
@@ -677,8 +679,7 @@
     "account": "Hesabım",
     "inventory": "Envanterim",
     "userManagement": "Kullanıcı Yönetimi",
-    "oidcClients": "Bağlı Uygulamalar",
-    "observationSharing": "Gözlem Paylaşımı"
+    "oidcClients": "Bağlı Uygulamalar"
   },
   "userManagement": {
     "searchPlaceholder": "E-posta veya ad ara...",
@@ -1568,55 +1569,36 @@
     }
   },
   "publishing": {
-    "targets": {
-      "title": "Gözlem Paylaşımı",
-      "description": "Afet gözlemlerinin paylaşılabileceği alıcılar, örneğin Afet Haberleşme Portalı. Burada eklenen alıcıları afet yöneticileri kendi afetleri için seçebilir.",
-      "add": "Alıcı Ekle",
-      "edit": "Alıcıyı Düzenle",
-      "empty": "Henüz kayıtlı alıcı yok.",
-      "name": "Ad",
-      "nameHint": "Afet yöneticilerinin alıcı listesinde göreceği ad.",
-      "intakeUrl": "Gönderim adresi",
-      "intakeUrlHint": "Alıcının gözlemleri teslim aldığı https:// adresi; alıcı sistemin yöneticisi verir.",
-      "sourceId": "Kaynak kimliği",
-      "sourceIdHint": "Alıcının bu portalı tanımak için verdiği kısa ad; harfi harfine aynı yazılmalıdır.",
-      "sharedSecret": "Paylaşılan anahtar",
-      "sharedSecretHint": "Alıcının verdiği gizli anahtar; her gönderim bununla imzalanır ve kaydedildikten sonra bir daha gösterilmez.",
-      "sharedSecretKeepHint": "Mevcut anahtarı korumak için boş bırakın. Yeni bir anahtar girerseniz, alıcı eskisini reddettiği için bekleyen gönderimler yeniden başlar.",
-      "active": "Etkin",
-      "inactive": "Devre dışı",
-      "authFailing": "Alıcı gönderimleri reddediyor",
-      "authFailingHint": "Alıcı, paylaşılan anahtarı veya kaynak kimliğini kabul etmedi. Bunlar düzeltilene kadar bu alıcıya hiçbir gözlem gönderilmez; gözlemler bekler.",
-      "updatedAt": "Son güncelleme",
-      "created": "Alıcı eklendi.",
-      "updated": "Alıcı güncellendi."
+    "settings": {
+      "title": "Paylaşım ayarları",
+      "name": "Alıcı adı",
+      "address": "Adres",
+      "addressHint": "Alıcının bu afet için verdiği gönderim adresi. Kaynak numarası adresin sonunda yer alır, ayrıca girmeniz gerekmez.",
+      "key": "Anahtar",
+      "keyHint": "Alıcının bu afet için ürettiği anahtarı yapıştırın.",
+      "keyKeepHint": "Mevcut anahtarı korumak için boş bırakın. Yeni bir anahtar girerseniz bundan sonraki gönderimler onunla yapılır.",
+      "enabled": "Etkin",
+      "enabledHint": "Etkinken eklenen gözlemler fotoğraflarıyla birlikte otomatik gönderilir. Kapalıyken hiçbir şey gönderilmez; daha önce gönderilenler geri alınmaz."
+    },
+    "history": {
+      "title": "Paylaşım geçmişi",
+      "syncAll": "Tümünü tekrar aktar",
+      "syncHint": "Başarısız olanları ve daha önce hiç gönderilmemiş gözlemleri (arşivlenmiş afetler dahil) bir kez gönderir. Zaten gönderilmiş olanlara dokunulmaz. Her kayıt ayrı bir istekle gider; başarısız olanlar kendiliğinden yeniden denenmez.",
+      "needsEnabled": "Göndermek için paylaşımı etkinleştirip kaydedin (arşivlenmiş afetlerde gerekmez).",
+      "statusDelivered": "Gönderildi",
+      "statusAlreadyExisted": "Zaten vardı",
+      "statusFailed": "Başarısız",
+      "statusWaiting": "Sırada",
+      "notSent": "Gönderilmedi",
+      "alreadyExistedCount": "Gönderilenlerden {count} tanesi alıcıda zaten vardı; ek işlem gerekmedi.",
+      "empty": "Henüz gönderilen kayıt yok.",
+      "retry": "Tekrar dene",
+      "loadMore": "Daha fazla göster",
+      "syncStarted": "{queued} gözlem sıraya alındı, {retried} başarısız kayıt yeniden gönderilecek."
     },
     "disaster": {
       "title": "Gözlem Paylaşımı",
       "description": "Bu afetin gözlemlerini başka bir sistemle paylaşın. Yalnızca bu afetin yöneticileri değiştirebilir.",
-      "target": "Alıcı",
-      "targetPlaceholder": "Alıcı seçin",
-      "noTargets": "Kayıtlı alıcı yok. Sistem yöneticisinden bir alıcı eklemesini isteyin.",
-      "targetAuthFailing": "Alıcı gönderimleri kabul etmiyor; sistem yöneticisi ayarları düzeltene kadar gözlemler bekliyor.",
-      "enabled": "Bu afetin gözlemlerini paylaş",
-      "enabledWithName": "Bu afetin gözlemlerini {name} ile paylaş",
-      "enabledHint": "Paylaşım açıkken eklenen gözlemler fotoğraflarıyla birlikte gönderilir. Kapatırsanız henüz gönderilmemiş gözlemler bekler; gönderilmiş olanlar geri alınmaz.",
-      "status": "Paylaşım durumu",
-      "delivered": "Gönderildi",
-      "waiting": "Bekliyor",
-      "failed": "Gönderilemedi",
-      "saveToSync": "Eski gözlemleri aktarabilmek için önce alıcıyı kaydedin.",
-      "alreadyExisted": "Gönderilenlerden {count} tanesi alıcıda zaten vardı; ek işlem gerekmedi.",
-      "sync": "Eski gözlemleri aktar",
-      "syncHint": "Paylaşım açılmadan önce eklenmiş gözlemleri (arşivlenmiş afetler dahil) alıcıya gönderir; başarısız olan ve yeniden denenmeyi bekleyen kayıtları hemen yeniden dener. Her kayıt ayrı ayrı gönderilir; alıcıda zaten olan kayıtlar yeniden eklenmez.",
-      "notSent": "Henüz gönderilmemiş gözlem: {count}",
-      "syncButton": "Şimdi aktar",
-      "syncNeedsEnabled": "Aktarım için paylaşımı açıp kaydedin (arşivlenmiş afetlerde gerekmez).",
-      "syncStarted": "{queued} gözlem sıraya alındı, {retried} başarısız kayıt hemen yeniden denenecek.",
-      "issues": "Gönderilemeyen kayıtlar",
-      "issueFailed": "Alıcı bu kaydı kabul etmedi; sorunu giderip yeniden aktarın.",
-      "issueRetrying": "Gönderilemedi ({count}. deneme); otomatik olarak yeniden denenecek.",
-      "issuesTruncated": "Yalnızca ilk kayıtlar gösteriliyor.",
       "saved": "Paylaşım ayarları kaydedildi."
     }
   }
