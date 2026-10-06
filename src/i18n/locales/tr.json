@@ -122,7 +122,8 @@
     "publishTargetNotFound": "Alıcı bulunamadı veya etkin değil.",
     "publishTargetNameRequired": "Alıcı adı zorunludur.",
     "publishTargetUrlInvalid": "Gönderim adresi https:// ile başlamalıdır (http:// yalnızca localhost için) ve # içermemelidir.",
-    "publishTargetRequired": "Paylaşımı açmak için önce bir alıcı seçin."
+    "publishTargetRequired": "Paylaşımı açmak için önce bir alıcı seçin.",
+    "publishingNotEnabled": "Aktarım için önce paylaşımı açıp kaydedin."
   },
   "auth": {
     "login": "Giriş Yap",
@@ -1605,6 +1606,17 @@
       "waiting": "Bekliyor",
       "failed": "Gönderilemedi",
       "photosNotSent": "Fotoğraflar şimdilik paylaşılmaz.",
+      "alreadyExisted": "Gönderilenlerden {count} tanesi alıcıda zaten vardı; ek işlem gerekmedi.",
+      "sync": "Eski gözlemleri aktar",
+      "syncHint": "Paylaşım açılmadan önce eklenmiş gözlemleri (arşivlenmiş afetler dahil) ve alıcının reddettiği kayıtları alıcıya gönderir. Her kayıt ayrı ayrı gönderilir; alıcıda zaten olan kayıtlar yeniden eklenmez.",
+      "notSent": "Henüz gönderilmemiş gözlem: {count}",
+      "syncButton": "Şimdi aktar",
+      "syncNeedsEnabled": "Aktarım için paylaşımı açıp kaydedin.",
+      "syncStarted": "{queued} gözlem sıraya alındı, {retried} reddedilen kayıt yeniden denenecek.",
+      "issues": "Gönderilemeyen kayıtlar",
+      "issueFailed": "Alıcı bu kaydı kabul etmedi; sorunu giderip yeniden aktarın.",
+      "issueRetrying": "Gönderilemedi ({count}. deneme); otomatik olarak yeniden denenecek.",
+      "issuesTruncated": "Yalnızca ilk kayıtlar gösteriliyor.",
       "saved": "Paylaşım ayarları kaydedildi."
     }
   }

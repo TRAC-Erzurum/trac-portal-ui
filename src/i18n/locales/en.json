@@ -122,7 +122,8 @@
     "publishTargetNotFound": "Recipient not found or not active.",
     "publishTargetNameRequired": "Recipient name is required.",
     "publishTargetUrlInvalid": "The delivery address must start with https:// (http:// only for localhost) and must not contain #.",
-    "publishTargetRequired": "Choose a recipient before turning sharing on."
+    "publishTargetRequired": "Choose a recipient before turning sharing on.",
+    "publishingNotEnabled": "Turn sharing on and save before syncing."
   },
   "auth": {
     "login": "Login",
@@ -1603,6 +1604,17 @@
       "waiting": "Waiting",
       "failed": "Failed",
       "photosNotSent": "Photos are not shared for now.",
+      "alreadyExisted": "{count} of the delivered records were already at the recipient; nothing more was needed.",
+      "sync": "Sync earlier observations",
+      "syncHint": "Sends observations added before sharing was turned on (archived disasters included) and records the recipient refused. Each record is sent on its own; records the recipient already has are not added again.",
+      "notSent": "Observations not sent yet: {count}",
+      "syncButton": "Sync now",
+      "syncNeedsEnabled": "Turn sharing on and save to sync.",
+      "syncStarted": "{queued} observations queued, {retried} refused records will be retried.",
+      "issues": "Records that could not be sent",
+      "issueFailed": "The recipient refused this record; fix the cause and sync again.",
+      "issueRetrying": "Not sent (attempt {count}); it will be retried automatically.",
+      "issuesTruncated": "Only the first records are shown.",
       "saved": "Sharing settings saved."
     }
   }
