@@ -16,6 +16,8 @@ import type { DisasterPublishing, DisasterPublishingSync } from '@/types/publish
 interface Props {
   open: boolean
   disasterId: string
+  /** An archived disaster is synced without the sharing switch. */
+  archived?: boolean
 }
 
 const props = defineProps<Props>()
@@ -57,7 +59,9 @@ function startRefreshing() {
 onBeforeUnmount(stopRefreshing)
 
 /** Sync needs a saved, switched-on recipient: the form's unsaved choices do not count. */
-const canSync = computed(() => !!state.value?.target && state.value.enabled && state.value.target.active)
+const canSync = computed(
+  () => !!state.value?.target && state.value.target.active && (state.value.enabled || !!props.archived),
+)
 
 function observationLabel(issue: { observationType: string | null }): string {
   return issue.observationType ? t(`disaster.observationType.${issue.observationType}`) : '—'
@@ -205,8 +209,11 @@ async function save() {
           <p v-if="state.counts.alreadyExisted > 0" class="text-xs text-muted-foreground">
             {{ t('publishing.disaster.alreadyExisted', { count: state.counts.alreadyExisted }) }}
           </p>
-          <p class="text-xs text-muted-foreground">{{ t('publishing.disaster.photosNotSent') }}</p>
         </div>
+
+        <p v-if="!state.target && targetId" class="text-xs text-muted-foreground">
+          {{ t('publishing.disaster.saveToSync') }}
+        </p>
 
         <div v-if="state.target" class="space-y-2">
           <p class="text-sm font-medium text-muted-foreground">{{ t('publishing.disaster.sync') }}</p>
