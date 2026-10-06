@@ -123,7 +123,9 @@
     "publishTargetNameRequired": "Recipient name is required.",
     "publishTargetUrlInvalid": "The delivery address must start with https:// (http:// only for localhost) and must not contain #.",
     "publishTargetRequired": "Choose a recipient before turning sharing on.",
-    "publishingNotEnabled": "Turn sharing on and save before syncing."
+    "publishingNotEnabled": "Enable sharing and save before sending.",
+    "publishTargetKeyRequired": "Enter the key the recipient gave you.",
+    "publicationNotFailed": "Only a failed record can be retried."
   },
   "auth": {
     "login": "Login",
@@ -676,8 +678,7 @@
     "disasters": "Disasters",
     "account": "My Account",
     "userManagement": "User Management",
-    "oidcClients": "Connected Applications",
-    "observationSharing": "Observation sharing"
+    "oidcClients": "Connected Applications"
   },
   "userManagement": {
     "searchPlaceholder": "Search email or name...",
@@ -1566,55 +1567,36 @@
     }
   },
   "publishing": {
-    "targets": {
-      "title": "Observation sharing",
-      "description": "Recipients that disaster observations can be shared with, such as the Disaster Communication Portal. Disaster admins can choose the recipients added here for their disasters.",
-      "add": "Add Recipient",
-      "edit": "Edit Recipient",
-      "empty": "No recipients registered yet.",
-      "name": "Name",
-      "nameHint": "The name disaster admins see in the list of recipients.",
-      "intakeUrl": "Delivery address",
-      "intakeUrlHint": "The https:// address where the recipient receives observations; the recipient's administrator provides it.",
-      "sourceId": "Source ID",
-      "sourceIdHint": "The short name the recipient gave this portal to recognise it; it must match exactly.",
-      "sharedSecret": "Shared secret",
-      "sharedSecretHint": "The secret key the recipient issued; every delivery is signed with it, and it is never shown again after saving.",
-      "sharedSecretKeepHint": "Leave blank to keep the current secret. Entering a new one restarts deliveries held because the recipient refused the old one.",
-      "active": "Active",
-      "inactive": "Inactive",
-      "authFailing": "Recipient refuses deliveries",
-      "authFailingHint": "The recipient did not accept the shared secret or source ID. Until they are corrected nothing is sent to this recipient; observations wait.",
-      "updatedAt": "Last updated",
-      "created": "Recipient added.",
-      "updated": "Recipient updated."
+    "settings": {
+      "title": "Sharing settings",
+      "name": "Recipient name",
+      "address": "Address",
+      "addressHint": "The address the recipient gave for this disaster. The source number is the end of the address; there is nothing else to enter.",
+      "key": "Key",
+      "keyHint": "Paste the key the recipient generated for this disaster.",
+      "keyKeepHint": "Leave empty to keep the current key. A new key is used for every delivery from now on.",
+      "enabled": "Enabled",
+      "enabledHint": "While enabled, observations added are sent automatically with their photos. While disabled nothing is sent; what was already sent is not withdrawn."
+    },
+    "history": {
+      "title": "Sharing history",
+      "syncAll": "Send all again",
+      "syncHint": "Sends the failed records and the observations never sent before (archived disasters included), once. Records already sent are left alone. Each record is its own request; failed ones are not retried by themselves.",
+      "needsEnabled": "Enable sharing and save to send (not needed for an archived disaster).",
+      "statusDelivered": "Sent",
+      "statusAlreadyExisted": "Already there",
+      "statusFailed": "Failed",
+      "statusWaiting": "Queued",
+      "notSent": "Not sent",
+      "alreadyExistedCount": "{count} of the sent records were already at the recipient; nothing more was needed.",
+      "empty": "Nothing has been sent yet.",
+      "retry": "Retry",
+      "loadMore": "Show more",
+      "syncStarted": "{queued} observations queued, {retried} failed records will be sent again."
     },
     "disaster": {
       "title": "Observation sharing",
       "description": "Share this disaster's observations with another system. Only this disaster's administrators can change it.",
-      "target": "Recipient",
-      "targetPlaceholder": "Choose a recipient",
-      "noTargets": "No recipients registered. Ask a system administrator to add one.",
-      "targetAuthFailing": "The recipient is not accepting deliveries; observations wait until a system administrator fixes the settings.",
-      "enabled": "Share this disaster's observations",
-      "enabledWithName": "Share this disaster's observations with {name}",
-      "enabledHint": "Observations added while sharing is on are sent with their photos. If you turn it off, observations not yet sent wait; those already sent are not withdrawn.",
-      "status": "Sharing status",
-      "delivered": "Delivered",
-      "waiting": "Waiting",
-      "failed": "Failed",
-      "saveToSync": "Save the recipient first to sync earlier observations.",
-      "alreadyExisted": "{count} of the delivered records were already at the recipient; nothing more was needed.",
-      "sync": "Sync earlier observations",
-      "syncHint": "Sends observations added before sharing was turned on (archived disasters included) and retries failed records at once. Each record is sent on its own; records the recipient already has are not added again.",
-      "notSent": "Observations not sent yet: {count}",
-      "syncButton": "Sync now",
-      "syncNeedsEnabled": "Turn sharing on and save to sync (not needed for an archived disaster).",
-      "syncStarted": "{queued} observations queued, {retried} failed records will be retried now.",
-      "issues": "Records that could not be sent",
-      "issueFailed": "The recipient refused this record; fix the cause and sync again.",
-      "issueRetrying": "Not sent (attempt {count}); it will be retried automatically.",
-      "issuesTruncated": "Only the first records are shown.",
       "saved": "Sharing settings saved."
     }
   }
