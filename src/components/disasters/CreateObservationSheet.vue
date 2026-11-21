@@ -65,6 +65,7 @@ const selectedProvince = ref('')
 const selectedDistrict = ref('')
 const isLoading = ref(false)
 const isLocating = ref(false)
+const isSyncingFromMap = ref(false)
 const similarObservations = ref<Observation[]>([])
 const showSimilarDialog = ref(false)
 
@@ -187,32 +188,46 @@ watch(() => props.open, async (isOpen) => {
 })
 
 // A dropdown choice replaces any map selection: the marker and coordinates are removed.
-// Set only by user interaction, so map-driven sync below never clears the location.
+// Ignored while the map-driven sync below is writing the dropdowns, so programmatic
+// updates never null out the location.
 function onProvinceChange(value: unknown) {
-  selectedProvince.value = typeof value === 'string' ? value : ''
+  const next = typeof value === 'string' ? value : ''
+  if (isSyncingFromMap.value || next === selectedProvince.value) return
+  selectedProvince.value = next
   selectedDistrict.value = ''
   location.value = null
 }
 
 function onDistrictChange(value: unknown) {
-  selectedDistrict.value = typeof value === 'string' ? value : ''
+  const next = typeof value === 'string' ? value : ''
+  if (isSyncingFromMap.value || next === selectedDistrict.value) return
+  selectedDistrict.value = next
   location.value = null
 }
 
+// Map-driven sync: the dropdowns always mirror the current map selection, so a stale
+// province/district can never be submitted with a new map point. A null location
+// (cleared by the user) is left alone here.
 watch(location, async (loc) => {
-  if (!loc?.city && !loc?.district) return
-  if (loc.city) {
-    const provinceMatch = findMatch(cities.value, loc.city)
-    if (provinceMatch && provinceMatch !== selectedProvince.value) {
+  if (!loc) return
+  isSyncingFromMap.value = true
+  try {
+    const provinceMatch = loc.city ? findMatch(cities.value, loc.city) : null
+    if (!provinceMatch) {
+      selectedProvince.value = ''
+      selectedDistrict.value = ''
+      return
+    }
+    if (provinceMatch !== selectedProvince.value) {
+      selectedDistrict.value = ''
       selectedProvince.value = provinceMatch
       await nextTick()
     }
-  }
-  if (loc.district && selectedProvince.value) {
-    const districtMatch = findMatch(getDistricts(selectedProvince.value), loc.district)
-    if (districtMatch && districtMatch !== selectedDistrict.value) {
-      selectedDistrict.value = districtMatch
-    }
+    const districtMatch = loc.district ? findMatch(getDistricts(provinceMatch), loc.district) : null
+    selectedDistrict.value = districtMatch ?? ''
+  } finally {
+    await nextTick()
+    isSyncingFromMap.value = false
   }
 }, { deep: true })
 

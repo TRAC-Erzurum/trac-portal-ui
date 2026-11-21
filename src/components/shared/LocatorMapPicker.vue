@@ -256,17 +256,18 @@ const selectionSummary = computed(() => {
 <template>
   <div
     :class="[
-      'rounded-lg border border-border bg-background',
-      standalone ? '' : 'border-0 rounded-b-lg'
+      'border border-border bg-background',
+      standalone ? 'rounded-lg' : 'border-0 rounded-md'
     ]"
   >
     <div class="h-56 relative">
+      <!-- The dropdown row follows the map, so only the top corners are rounded. -->
       <LMap
         ref="mapRef"
         :use-global-leaflet="true"
         :center="mapCenter"
         :zoom="MAP_ZOOM"
-        :class="['h-full w-full', standalone ? 'rounded-lg' : 'rounded-b-lg']"
+        :class="['h-full w-full', standalone ? 'rounded-t-lg' : 'rounded-t-md']"
         :options="mapOptions"
         @ready="onMapReady"
       >
@@ -310,10 +311,7 @@ const selectionSummary = computed(() => {
       </LMap>
       <div
         v-if="!userParsed || addressLoading"
-        :class="[
-          'absolute inset-x-0 bottom-0 z-10 flex items-center justify-center py-2 bg-background/80 backdrop-blur-sm text-center',
-          standalone ? 'rounded-b-lg' : ''
-        ]"
+        class="absolute inset-x-0 bottom-0 z-10 flex items-center justify-center py-2 bg-background/80 backdrop-blur-sm text-center"
       >
         <p class="text-xs font-medium text-muted-foreground px-4">
           {{ addressLoading ? t('common.loading') : t('dashboard.mapPickerSelectHint') }}
