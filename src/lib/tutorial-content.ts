@@ -57,7 +57,17 @@ const DMR_NETWORK_LABELS = new Map<string, string>([
   ['freedmr', 'FreeDMR'],
 ])
 
-const HTML_ESCAPES: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }
+const VALUE_ESCAPES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  // renderMarkdown turns "[text](url)" into a link (javascript: URLs possible), so markdown metacharacters are encoded too.
+  '[': '&#91;',
+  ']': '&#93;',
+  '*': '&#42;',
+  '`': '&#96;',
+}
 
 /** Parses a number from a number, a numeric string, or a string with a unit (e.g. "+600 kHz"). */
 function parseNumber(v: unknown): number | undefined {
@@ -107,11 +117,14 @@ function networkLabel(network: unknown, t: TFunction): string | undefined {
   return DMR_NETWORK_LABELS.get(v) ?? v
 }
 
-/** Replaces [[key]] placeholders (avoids vue-i18n interpreting {key}). Values are HTML-escaped. */
+/** Entity-encodes a channel value for HTML and markdown output; line breaks become spaces. */
+function escapeValue(v: string): string {
+  return v.replace(/[\r\n]+/g, ' ').replace(/[&<>"[\]*`]/g, (c) => VALUE_ESCAPES[c])
+}
+
+/** Replaces [[key]] placeholders (avoids vue-i18n interpreting {key}). Values are escaped. */
 function interpolate(template: string, vars: Record<string, string>): string {
-  return template.replace(/\[\[(\w+)\]\]/g, (_, key: string) =>
-    key in vars ? vars[key].replace(/[&<>"]/g, (c) => HTML_ESCAPES[c]) : '',
-  )
+  return template.replace(/\[\[(\w+)\]\]/g, (_, key: string) => (key in vars ? escapeValue(vars[key]) : ''))
 }
 
 /** Snake-case counterpart of camelCase key (e.g. rxFrequency -> rx_frequency). */

@@ -370,7 +370,7 @@ function buildChannelPopupHtml(ch: CommunicationChannel): string {
     <div class="text-xs text-muted-foreground mb-2">${typeName}${location}</div>
     <hr class="my-2 border-border" />
     <p class="text-xs font-medium text-muted-foreground mb-1">${howTo}</p>
-    <div class="text-xs whitespace-pre-line leading-snug">${escapeHtml(tutorial.content)}</div>
+    <div class="text-xs whitespace-pre-line leading-snug">${tutorial.content}</div>
   </div>`
 }
 
