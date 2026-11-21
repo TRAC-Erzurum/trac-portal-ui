@@ -6,6 +6,7 @@ import {
   Award,
   Clock,
   FileSpreadsheet,
+  FileUp,
   Image,
   MapPin,
   Plus,
@@ -37,6 +38,7 @@ import ExportReportTemplate from '@/components/nets/ExportReportTemplate.vue'
 import NetHeader from '@/components/nets/NetHeader.vue'
 import AddAttendeePanel from '@/components/nets/AddAttendeePanel.vue'
 import AttendeeList from '@/components/nets/AttendeeList.vue'
+import ImportAttendeesSheet from '@/components/nets/ImportAttendeesSheet.vue'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -153,6 +155,7 @@ const shareQrDataUrl = ref('')
 const certificatePreview = ref<CertificatePreview | null>(null)
 const isLoadingCertificatePreview = ref(false)
 const showAddAttendeeForm = ref(false)
+const isImportSheetOpen = ref(false)
 
 const themeStore = useThemeStore()
 const mapRef = ref<{ leafletObject: LeafletMap } | null>(null)
@@ -655,6 +658,11 @@ const handleAttendeeAdded = async () => {
   }
 }
 
+const handleAttendeesImported = async () => {
+  await fetchAttendees()
+  if (net.value) net.value.attendeeCount = attendees.value.length
+}
+
 const certificatePreviewImageUrl = computed(() => {
   const path = certificatePreview.value?.imagePath ?? net.value?.certificateTemplate?.imagePath
   if (!path) return ''
@@ -868,26 +876,46 @@ const openShareFlow = async () => {
   }
 }
 
+const REPORT_PRINT_STYLES = `
+@page { size: A4 portrait; margin: 12mm; }
+html, body { margin: 0; padding: 0; background: #ffffff; }
+* { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.report-container { position: static !important; width: 100% !important; min-width: 0 !important; min-height: 0 !important; padding: 0 !important; }
+.attendees-table { min-width: 0 !important; }
+thead { display: table-header-group; }
+tr, .city-stats { break-inside: avoid; }
+`
+
 const exportToPdf = async () => {
   if (!net.value || isExporting.value) return
   isExporting.value = true
+  // Open the window synchronously, inside the click handler, so popup blockers allow it.
+  const win = window.open('', '_blank')
+  if (!win) {
+    toast.error(t('error.serverError'))
+    isExporting.value = false
+    return
+  }
+  const netName = net.value.name
   try {
-    const canvas = await prepareReportCanvas()
-    if (!canvas) {
-      toast.error(t('error.serverError'))
-      return
-    }
-    const img = canvas.toDataURL('image/png')
-    const win = window.open('', '_blank')
-    if (win) {
-      const title = escapeHtml(net.value.name)
-      win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>body{margin:0;padding:24px;display:flex;justify-content:center;background:#fff}</style></head><body><img src="${img}" style="width:${REPORT_EXPORT_WIDTH}px;max-width:100%;display:block;" /></body></html>`)
-      win.document.close()
+    const sorted = await api.get<Attendee[]>(`/net/${route.params.id}/attendee?sort=ASC`)
+    exportAttendees.value = sorted
+    await nextTick()
+    await new Promise(r => requestAnimationFrame(r))
+    const templateEl = exportTemplateRef.value?.templateRef ?? null
+    if (!templateEl) throw new Error('report template is not rendered')
+    // The off-screen positioning classes are dropped so the report flows in the print document.
+    const reportClone = templateEl.cloneNode(true) as HTMLElement
+    reportClone.className = 'report-container'
+    const title = escapeHtml(netName)
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><style>${getReportExportStyles(REPORT_EXPORT_WIDTH)}${REPORT_PRINT_STYLES}</style></head><body>${reportClone.outerHTML}</body></html>`)
+    win.addEventListener('load', () => {
       win.focus()
-    } else {
-      toast.error(t('error.serverError'))
-    }
+      win.print()
+    }, { once: true })
+    win.document.close()
   } catch {
+    win.close()
     toast.error(t('error.serverError'))
   } finally {
     isExporting.value = false
@@ -1159,6 +1187,18 @@ const fetchComparePrevious = async () => {
               </Button>
             </div>
 
+            <div v-if="canManageNet && (netStatus === 'active' || netStatus === 'completed')" class="w-full sm:w-auto">
+              <Button
+                size="sm"
+                variant="outline"
+                class="w-full gap-2 justify-center sm:w-auto"
+                @click="isImportSheetOpen = true"
+              >
+                <FileUp class="h-4 w-4" />
+                {{ t('netDetail.importFromExcel') }}
+              </Button>
+            </div>
+
             <div v-if="showDownloadMyCertificate && myAttendee" class="w-full sm:w-auto">
               <Button
                 variant="outline"
@@ -1247,6 +1287,9 @@ const fetchComparePrevious = async () => {
 
     <EditAttendeeSheet v-if="editingAttendee" :open="isEditSheetOpen" :attendee="editingAttendee"
       :net-id="(route.params.id as string)" @update:open="isEditSheetOpen = $event" @updated="handleAttendeeUpdated" />
+
+    <ImportAttendeesSheet :open="isImportSheetOpen" :net-id="(route.params.id as string)"
+      @update:open="isImportSheetOpen = $event" @imported="handleAttendeesImported" />
 
     <EditNetSheet v-if="net" :open="isEditNetSheetOpen" :net="net as any" @update:open="isEditNetSheetOpen = $event"
       @updated="handleNetUpdated" />

@@ -68,7 +68,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { cities, getDistricts, isLoading: isLoadingCities, loadCities } = useQthData()
+const { cities, citiesData, getDistricts, isLoading: isLoadingCities, loadCities } = useQthData()
 const operatorSearchGuard = useAsyncStaleGuard()
 
 const searchQuery = ref('')
@@ -82,10 +82,26 @@ const selectedEntry = ref<SelectedEntry | null>(null)
 const searchContainerRef = ref<HTMLDivElement | null>(null)
 const entryPanelRef = ref<HTMLDivElement | null>(null)
 const isSelectingOperator = ref(false)
+const isSelectingDistrict = ref(false)
+
+// Every district in Türkiye, labelled "İlçe (İl)", used when no city is chosen.
+const allDistrictEntries = computed(() => {
+  const entries: { label: string; city: string; district: string }[] = []
+  for (const c of citiesData.value) {
+    for (const d of c.districts) {
+      entries.push({ label: `${d.name} (${c.name})`, city: c.name, district: d.name })
+    }
+  }
+  return entries.sort((a, b) => a.label.localeCompare(b.label, 'tr'))
+})
+
+const allDistrictByLabel = computed(
+  () => new Map(allDistrictEntries.value.map((e) => [e.label, e] as const))
+)
 
 const districts = computed(() => {
-  if (!selectedEntry.value?.city) return []
-  return getDistricts(selectedEntry.value.city)
+  if (selectedEntry.value?.city) return getDistricts(selectedEntry.value.city)
+  return allDistrictEntries.value.map((e) => e.label)
 })
 
 const nextAttendeeOrder = computed(() => props.attendees.length + 1)
@@ -185,12 +201,27 @@ watch(suggestionItems, (items) => {
   }
 })
 
-watch(() => selectedEntry.value?.city, (newCity) => {
-  if (isSelectingOperator.value) return
-  if (selectedEntry.value && newCity) {
+watch(() => selectedEntry.value?.city, () => {
+  if (isSelectingOperator.value || isSelectingDistrict.value) return
+  if (selectedEntry.value) {
     selectedEntry.value.district = ''
   }
 })
+
+const onDistrictUpdate = async (value: string) => {
+  if (!selectedEntry.value) return
+  const match = selectedEntry.value.city ? undefined : allDistrictByLabel.value.get(value)
+  if (!match) {
+    selectedEntry.value.district = value
+    return
+  }
+  // Picking "İlçe (İl)" also fills the city; keep the city watcher from clearing the district.
+  isSelectingDistrict.value = true
+  selectedEntry.value.city = match.city
+  selectedEntry.value.district = match.district
+  await nextTick()
+  isSelectingDistrict.value = false
+}
 
 const selectOperatorFromSuggestion = async (op: Operator) => {
   isSelectingOperator.value = true
@@ -566,9 +597,9 @@ onUnmounted(() => {
             id="add-attendee-district"
             :model-value="selectedEntry?.district ?? ''"
             :options="districts"
-            :placeholder="selectedEntry?.city ? t('form.districtPlaceholder') : '-'"
-            :disabled="!selectedEntry?.city"
-            @update:model-value="(v) => { if (selectedEntry) selectedEntry.district = v }"
+            :placeholder="t('form.districtPlaceholder')"
+            :disabled="isLoadingCities"
+            @update:model-value="onDistrictUpdate"
           />
         </div>
         <div>

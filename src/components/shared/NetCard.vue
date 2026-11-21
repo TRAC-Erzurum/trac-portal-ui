@@ -20,10 +20,12 @@ interface Props {
   scheduledAt?: string | null
   estimatedDurationMinutes?: number | null
   hasCertificate?: boolean
+  compact?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   hasCertificate: false,
+  compact: false,
 })
 
 const emit = defineEmits<{
@@ -76,6 +78,13 @@ const formatDuration = (minutes?: number) => {
   return remainingMins > 0 ? `${hours}s ${remainingMins}dk` : `${hours}s`
 }
 
+const compactStatusDotClass = computed(() => {
+  if (props.status === 'active') return 'bg-green-500'
+  if (props.status === 'pending') return 'bg-blue-500'
+  if (props.status === 'cancelled') return 'bg-amber-500'
+  return 'bg-muted-foreground'
+})
+
 const scheduledLabel = computed(() => {
   if (!props.scheduledAt) return ''
   const d = new Date(props.scheduledAt)
@@ -85,14 +94,31 @@ const scheduledLabel = computed(() => {
 </script>
 
 <template>
-  <div class="w-full text-left p-4 rounded-lg border border-border/50 bg-background transition-all flex flex-col relative">
+  <component
+    :is="compact ? RouterLink : 'div'"
+    :to="compact ? netDetailLink : undefined"
+    :class="[
+      'w-full text-left rounded-lg border border-border/50 bg-background transition-all flex flex-col relative',
+      compact ? 'p-3 hover:border-border focus:outline-none focus-visible:ring-2 focus-visible:ring-ring' : 'p-4',
+    ]"
+    @click="compact && emit('click', props.id)"
+  >
     <Award
       v-if="hasCertificate"
       class="absolute top-2.5 right-2.5 h-3.5 w-3.5 text-amber-500 dark:text-amber-400 shrink-0"
       :title="t('certificates.template')"
       aria-hidden
     />
-    <div class="flex items-start gap-3 flex-1 min-w-0">
+    <div v-if="compact" class="min-w-0 flex flex-col gap-1 pr-5">
+      <p class="truncate font-semibold" :title="name">{{ name }}</p>
+      <div class="flex items-center gap-2 min-w-0 text-xs text-muted-foreground">
+        <span class="h-2 w-2 shrink-0 rounded-full" :class="compactStatusDotClass" aria-hidden="true" />
+        <span v-if="branchLabel" class="flex-1 min-w-0 truncate" :title="branchLabel">{{ branchLabel }}</span>
+        <span v-else class="flex-1" />
+        <span v-if="footerStatusLabel" class="shrink-0 whitespace-nowrap">{{ footerStatusLabel }}</span>
+      </div>
+    </div>
+    <div v-else class="flex items-start gap-3 flex-1 min-w-0">
       <div class="mt-0.5 flex-shrink-0">
         <span v-if="status === 'active'" class="relative flex h-2.5 w-2.5">
           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>
@@ -129,7 +155,10 @@ const scheduledLabel = computed(() => {
         </div>
       </div>
     </div>
-    <div class="mt-auto flex items-center justify-between gap-2 pt-2 border-t border-border/30">
+    <div
+      v-if="!compact"
+      class="mt-auto flex items-center justify-between gap-2 pt-2 border-t border-border/30"
+    >
       <slot name="actions" />
       <div class="flex items-center gap-1 ml-auto">
         <Button
@@ -145,5 +174,5 @@ const scheduledLabel = computed(() => {
         </Button>
       </div>
     </div>
-  </div>
+  </component>
 </template>

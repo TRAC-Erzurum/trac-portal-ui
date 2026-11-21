@@ -108,6 +108,39 @@ const callSignColumnWidth = computed(() => {
 const attendeesTableStyle = computed<Record<string, string>>(() => ({
   '--attendees-call-sign-col-width': callSignColumnWidth.value
 }))
+
+interface CityRow {
+  label: string
+  count: number
+}
+
+const cityStats = computed(() => {
+  const byKey = new Map<string, CityRow>()
+  let unspecifiedCount = 0
+  for (const attendee of attendees) {
+    const city = attendee.city?.trim()
+    if (!city) {
+      unspecifiedCount++
+      continue
+    }
+    const key = city.toLocaleLowerCase('tr')
+    const entry = byKey.get(key)
+    if (entry) entry.count++
+    else byKey.set(key, { label: city, count: 1 })
+  }
+  const rows = [...byKey.values()].sort(
+    (a, b) => b.count - a.count || a.label.localeCompare(b.label, 'tr')
+  )
+  if (unspecifiedCount > 0) {
+    rows.push({ label: t('netReport.cityNotSpecified'), count: unspecifiedCount })
+  }
+  return { cityCount: byKey.size, rows }
+})
+
+const cityListClass = computed(() => ({
+  'city-stats-list-multi': cityStats.value.rows.length > 10,
+  'city-stats-list-triple': cityStats.value.rows.length > 30
+}))
 </script>
 
 <template>
@@ -167,5 +200,15 @@ const attendeesTableStyle = computed<Record<string, string>>(() => ({
         </tr>
       </tfoot>
     </table>
+    <section v-if="attendees.length > 0" class="city-stats">
+      <h2 class="city-stats-title">{{ t('netReport.cityStatsTitle') }}</h2>
+      <p class="city-stats-count">{{ t('netReport.citiesRepresented', { count: cityStats.cityCount }) }}</p>
+      <ul class="city-stats-list" :class="cityListClass">
+        <li v-for="(row, index) in cityStats.rows" :key="index" class="city-stats-item">
+          <span class="city-stats-name">{{ row.label }}</span>
+          <span class="city-stats-value">{{ row.count }}</span>
+        </li>
+      </ul>
+    </section>
   </div>
 </template>
