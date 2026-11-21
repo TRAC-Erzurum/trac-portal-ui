@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { api } from '@/lib/api'
-import { useMapMeasurement } from '@/composables/useMapMeasurement'
+import { useMapMeasurement, formatDistance } from '@/composables/useMapMeasurement'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -123,8 +123,7 @@ function startSelectPoint(which: 'A' | 'B') {
 const distanceDisplay = computed(() => {
   const m = distanceM.value
   if (m == null) return ''
-  if (m < 1000) return `${Math.round(m)} m`
-  return `${(m / 1000).toFixed(2)} km`
+  return formatDistance(m)
 })
 
 const elevationDiffDisplay = computed(() => {
