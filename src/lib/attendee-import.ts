@@ -1,13 +1,9 @@
 /**
- * Pure parsing for the net attendee Excel/CSV import (see root issue #73).
+ * Pure logic for the net attendee Excel/CSV import (see root issue #73, column mapping #150).
  * No DOM, no XLSX dependency: callers pass the sheet as a matrix of cell values.
  */
 
 export const ATTENDEE_IMPORT_MAX_ROWS = 500
-
-export const ATTENDEE_TEMPLATE_FILE_NAME = 'cevrim-katilimci-sablonu.xlsx'
-export const ATTENDEE_TEMPLATE_HEADERS = ['Çağrı İşareti', 'Adı Soyadı', 'İl', 'İlçe', 'Sinyal']
-export const ATTENDEE_TEMPLATE_EXAMPLE_ROW = ['TA9A', 'Örnek Kişi', 'Erzurum', 'Yakutiye', '59']
 
 const DEFAULT_READABILITY = 5
 const DEFAULT_SIGNAL_STRENGTH = 9
@@ -36,35 +32,68 @@ export interface AttendeeImportResponse {
   skipped: AttendeeImportSkipped[]
 }
 
-export interface AttendeeImportParseResult {
-  mode: 'header' | 'positional'
-  rows: AttendeeImportRow[]
-}
+/** Import fields in the order the mapping UI shows them. */
+export const ATTENDEE_IMPORT_FIELDS = [
+  'callSign',
+  'name',
+  'city',
+  'district',
+  'signal',
+  'readability',
+  'signalStrength'
+] as const
 
-type Field = 'callSign' | 'name' | 'city' | 'district' | 'signal' | 'readability' | 'signalStrength'
+export type ImportField = (typeof ATTENDEE_IMPORT_FIELDS)[number]
 
-const HEADER_ALIASES: Record<Field, string[]> = {
-  callSign: ['çağrı işareti', 'cagri isareti', 'çağrı', 'call sign', 'callsign', 'call'],
+/** Field to zero-based column index. Unmapped fields are absent. */
+export type ColumnMapping = Partial<Record<ImportField, number>>
+
+/** Aliases are normalized with the same rules as cell values before matching. */
+const HEADER_ALIASES: Record<ImportField, string[]> = {
+  callSign: ['çağrı işareti', 'çağrı kodu', 'çağrı', 'callsign', 'call sign', 'call'],
   name: ['adı soyadı', 'ad soyad', 'adı', 'ad', 'isim', 'name', 'full name'],
-  city: ['il', 'şehir', 'sehir', 'city', 'province'],
-  district: ['ilçe', 'ilce', 'district'],
+  city: ['il', 'şehir', 'city', 'province'],
+  district: ['ilçe', 'district'],
   signal: ['sinyal', 'rs', 'rapor', 'signal', 'report'],
   readability: ['okunabilirlik', 'r', 'readability'],
-  signalStrength: ['sinyal gücü', 'sinyal gucu', 's', 'signal strength']
+  signalStrength: ['sinyal gücü', 's', 'signal strength', 'strength']
 }
 
-/** Trim, collapse inner whitespace, lower-case with Turkish rules. */
-export function normalizeHeader(value: unknown): string {
+const TURKISH_TO_ASCII: Record<string, string> = {
+  ç: 'c',
+  ğ: 'g',
+  ı: 'i',
+  ö: 'o',
+  ş: 's',
+  ü: 'u'
+}
+
+/** Trim, Turkish lower-case, fold Turkish letters to ASCII, keep only a-z0-9. */
+function normalizeHeader(value: unknown): string {
   return String(value ?? '')
     .trim()
-    .replace(/\s+/g, ' ')
     .toLocaleLowerCase('tr')
+    .replace(/[çğıöşü]/g, char => TURKISH_TO_ASCII[char] ?? char)
+    .replace(/[^a-z0-9]/g, '')
 }
 
-function findColumn(headerRow: unknown[], field: Field): number | undefined {
-  const aliases = HEADER_ALIASES[field]
-  const index = headerRow.findIndex(cell => aliases.includes(normalizeHeader(cell)))
-  return index >= 0 ? index : undefined
+const EXACT_MATCH = 2
+const PARTIAL_MATCH = 1
+
+/**
+ * Scores a cell against one alias: exact matches beat substring matches, and longer aliases
+ * beat shorter ones. Returns 0 for no match. Aliases shorter than 3 characters match exactly only.
+ */
+function matchScore(cell: string, alias: string): number {
+  if (!cell || !alias) return 0
+  if (cell === alias) return EXACT_MATCH * 100 + alias.length
+  if (alias.length >= 3 && cell.includes(alias)) return PARTIAL_MATCH * 100 + alias.length
+  return 0
+}
+
+function fieldScore(cell: unknown, field: ImportField): number {
+  const normalized = normalizeHeader(cell)
+  return Math.max(0, ...HEADER_ALIASES[field].map(alias => matchScore(normalized, normalizeHeader(alias))))
 }
 
 function cellText(row: unknown[], index: number | undefined): string {
@@ -99,70 +128,105 @@ export function parseCombinedSignal(text: string): { readability?: number; signa
   return {}
 }
 
+/** True when any cell of the first row matches a field alias. */
+export function detectHeaderRow(firstRow: unknown[]): boolean {
+  return firstRow.some(cell => ATTENDEE_IMPORT_FIELDS.some(field => fieldScore(cell, field) > 0))
+}
+
 /**
- * Parses sheet rows into import rows.
+ * Maps fields to columns.
  *
- * Header mode: when any cell of the first row matches a call-sign alias, the first row is the header
- * and columns are matched by name. Otherwise positional mode: A=callSign, B=name, C=city, D=district,
- * E=combined signal, and every row is data.
- *
- * @param matrix sheet rows, first row first (cell values as read from the file)
- * @param firstRowNumber spreadsheet row number of matrix[0] (defaults to 1)
+ * With a header: each field gets its best-matching column. Candidates are assigned greedily by
+ * score, so a column is never used for two fields and exact matches win over substring matches.
+ * Without a header: positional mapping A=callSign, B=name, C=city, D=district, E=signal.
  */
-export function parseAttendeeRows(matrix: unknown[][], firstRowNumber = 1): AttendeeImportParseResult {
-  const first = matrix[0] ?? []
-  const isHeaderMode = findColumn(first, 'callSign') !== undefined
+export function autoMapColumns(firstRow: unknown[], hasHeader: boolean, columnCount: number): ColumnMapping {
+  const mapping: ColumnMapping = {}
 
-  let columns: Partial<Record<Field, number>>
-  let dataRows: unknown[][]
-  let dataStartRowNumber: number
-
-  if (isHeaderMode) {
-    columns = {
-      callSign: findColumn(first, 'callSign'),
-      name: findColumn(first, 'name'),
-      city: findColumn(first, 'city'),
-      district: findColumn(first, 'district'),
-      signal: findColumn(first, 'signal'),
-      readability: findColumn(first, 'readability'),
-      signalStrength: findColumn(first, 'signalStrength')
-    }
-    dataRows = matrix.slice(1)
-    dataStartRowNumber = firstRowNumber + 1
-  } else {
-    columns = { callSign: 0, name: 1, city: 2, district: 3, signal: 4 }
-    dataRows = matrix
-    dataStartRowNumber = firstRowNumber
+  if (!hasHeader) {
+    const positional: ImportField[] = ['callSign', 'name', 'city', 'district', 'signal']
+    positional.forEach((field, index) => {
+      if (index < columnCount) mapping[field] = index
+    })
+    return mapping
   }
 
+  const candidates: { field: ImportField; column: number; score: number; fieldOrder: number }[] = []
+  firstRow.slice(0, columnCount).forEach((cell, column) => {
+    ATTENDEE_IMPORT_FIELDS.forEach((field, fieldOrder) => {
+      const score = fieldScore(cell, field)
+      if (score > 0) candidates.push({ field, column, score, fieldOrder })
+    })
+  })
+
+  candidates.sort((a, b) => b.score - a.score || a.fieldOrder - b.fieldOrder || a.column - b.column)
+
+  const usedColumns = new Set<number>()
+  for (const candidate of candidates) {
+    if (mapping[candidate.field] !== undefined || usedColumns.has(candidate.column)) continue
+    mapping[candidate.field] = candidate.column
+    usedColumns.add(candidate.column)
+  }
+  return mapping
+}
+
+/**
+ * Builds import rows from the sheet matrix using the given mapping.
+ * Data starts after the header row when hasHeader is set. Rows keep their spreadsheet row numbers
+ * and rows with an empty call sign are skipped. Without a call sign column there are no rows.
+ *
+ * @param matrix sheet rows, first row first (cell values as read from the file)
+ * @param firstRowNumber spreadsheet row number of matrix[0]
+ */
+export function buildImportRows(
+  matrix: unknown[][],
+  hasHeader: boolean,
+  mapping: ColumnMapping,
+  firstRowNumber: number
+): AttendeeImportRow[] {
+  if (mapping.callSign === undefined) return []
+
+  const dataStart = hasHeader ? 1 : 0
   const rows: AttendeeImportRow[] = []
 
-  dataRows.forEach((cells, index) => {
-    const callSign = cellText(cells, columns.callSign).toUpperCase()
+  matrix.slice(dataStart).forEach((cells, index) => {
+    const callSign = cellText(cells, mapping.callSign).toUpperCase()
     if (!callSign) return
 
-    const combined = parseCombinedSignal(cellText(cells, columns.signal))
-    const readabilityText = cellText(cells, columns.readability)
-    const strengthText = cellText(cells, columns.signalStrength)
+    const combined = parseCombinedSignal(cellText(cells, mapping.signal))
+    const readabilityText = cellText(cells, mapping.readability)
+    const strengthText = cellText(cells, mapping.signalStrength)
 
-    // Separate columns take precedence over the combined column when they exist in the file.
-    const readability = columns.readability !== undefined
+    // Separate columns take precedence over the combined column when they are mapped.
+    const readability = mapping.readability !== undefined
       ? toIntInRange(readabilityText, 1, 5, DEFAULT_READABILITY)
       : combined.readability ?? DEFAULT_READABILITY
-    const signalStrength = columns.signalStrength !== undefined
+    const signalStrength = mapping.signalStrength !== undefined
       ? toIntInRange(strengthText, 1, 9, DEFAULT_SIGNAL_STRENGTH)
       : combined.signalStrength ?? DEFAULT_SIGNAL_STRENGTH
 
     rows.push({
-      row: dataStartRowNumber + index,
+      row: firstRowNumber + dataStart + index,
       callSign,
-      name: cellText(cells, columns.name) || undefined,
-      city: cellText(cells, columns.city) || undefined,
-      district: cellText(cells, columns.district) || undefined,
+      name: cellText(cells, mapping.name) || undefined,
+      city: cellText(cells, mapping.city) || undefined,
+      district: cellText(cells, mapping.district) || undefined,
       readability,
       signalStrength
     })
   })
 
-  return { mode: isHeaderMode ? 'header' : 'positional', rows }
+  return rows
+}
+
+/** Spreadsheet column letter for a zero-based index: 0 → A, 25 → Z, 26 → AA. */
+export function columnLetter(index: number): string {
+  let n = index + 1
+  let letters = ''
+  while (n > 0) {
+    const remainder = (n - 1) % 26
+    letters = String.fromCharCode(65 + remainder) + letters
+    n = Math.floor((n - 1) / 26)
+  }
+  return letters
 }
