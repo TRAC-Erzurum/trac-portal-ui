@@ -10,7 +10,7 @@ import { PasswordInput } from '@/components/ui/password-input'
 import { translateError } from '@/i18n'
 import type { ApiError } from '@/lib/api'
 
-const props = defineProps<{
+defineProps<{
   open: boolean
 }>()
 

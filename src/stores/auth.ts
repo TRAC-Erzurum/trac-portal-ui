@@ -157,6 +157,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await api.get('/auth/logout')
     } catch {
+      // Logout is best-effort; local state is cleared below.
     } finally {
       user.value = null
       isTemporaryPassword.value = false

@@ -16,7 +16,7 @@ import { useBranchStore } from '@/stores/branch'
 import { useAuthStore } from '@/stores/auth'
 import { translateError } from '@/i18n'
 
-const props = defineProps<{
+defineProps<{
   compact?: boolean
 }>()
 
