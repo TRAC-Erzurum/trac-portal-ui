@@ -14,7 +14,7 @@ ENV VITE_CARTO_API_KEY=$VITE_CARTO_API_KEY
 
 RUN yarn build
 
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
