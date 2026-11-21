@@ -42,7 +42,9 @@ function loadFromCache(): CityData[] | null {
   } catch {
     try {
       localStorage.removeItem(CACHE_KEY)
-    } catch {}
+    } catch {
+      // Cache cleanup is best-effort; storage may be unavailable.
+    }
     return null
   }
 }

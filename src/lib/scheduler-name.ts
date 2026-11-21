@@ -58,7 +58,7 @@ export function getNextOccurrenceDate(
   afterDateStr?: string,
 ): string | null {
   const after = afterDateStr ?? new Date().toISOString().slice(0, 10)
-  let current = new Date(after + 'T12:00:00Z')
+  const current = new Date(after + 'T12:00:00Z')
   const maxIter = 400
   for (let i = 0; i < maxIter; i++) {
     const y = current.getFullYear()

@@ -3,9 +3,8 @@ export function getLineBlockBounds(text: string, selStart: number, selEnd: numbe
   const start = selStart < 0 ? 0 : selStart
   const end = selEnd < 0 ? 0 : selEnd
   const blockStart = start === 0 ? 0 : text.lastIndexOf('\n', start - 1) + 1
-  let blockEnd = end
   const nl = text.indexOf('\n', end)
-  blockEnd = nl === -1 ? text.length : nl
+  const blockEnd = nl === -1 ? text.length : nl
   return { blockStart, blockEnd }
 }
 

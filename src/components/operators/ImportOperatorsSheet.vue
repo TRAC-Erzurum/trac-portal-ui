@@ -17,7 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { api, type ApiError } from '@/lib/api'
 import { translateError } from '@/i18n'
 
-const props = defineProps<{
+defineProps<{
   open: boolean
 }>()
 

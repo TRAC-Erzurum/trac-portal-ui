@@ -2,9 +2,11 @@
 
 Frontend: Vue 3, TypeScript, Vite, Vue Router, Pinia, Tailwind. Ana repo (trac-portal): [TRAC-Erzurum/trac-portal](https://github.com/TRAC-Erzurum/trac-portal).
 
+AI ajanları ve geliştirici kuralları (kurulum, doğrulama, PR kuralları): [AGENTS.md](AGENTS.md).
+
 ## Gereksinimler
 
-Node 18+, yarn.
+Node 24 LTS+, yarn.
 
 ## Kurulum
 

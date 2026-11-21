@@ -89,7 +89,9 @@ async function shareBlob() {
   if (navigator.share && navigator.canShare?.({ files: [file] })) {
     try {
       await navigator.share({ files: [file] });
-    } catch (_) {}
+    } catch {
+      // Share sheet dismissed or unsupported; nothing to report.
+    }
   } else {
     downloadBlob();
   }

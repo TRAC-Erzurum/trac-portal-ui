@@ -14,7 +14,7 @@ const props = withDefaults(defineProps<{ scope?: StatsScope; branchId?: string |
   branchId: null,
 })
 
-interface Cell extends UtcBusiestCell {}
+type Cell = UtcBusiestCell
 
 interface BusiestData {
   byDay: { dayOfWeek: number; count: number }[]

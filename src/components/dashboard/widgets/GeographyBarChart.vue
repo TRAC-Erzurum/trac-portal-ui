@@ -22,8 +22,8 @@ const isDark = computed(() => themeStore.effectiveTheme === 'dark')
 const TOP = 15
 
 const chartOption = computed(() => {
-  let categories: string[] = []
-  let values: number[] = []
+  let categories: string[]
+  let values: number[]
 
   if (props.activeTab === 'countries') {
     const rows = [...props.countries].sort((a, b) => b.count - a.count).slice(0, TOP)
