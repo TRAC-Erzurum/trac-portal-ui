@@ -958,6 +958,41 @@
     "selectBranch": "Şube Seç",
     "switchBranchSuccess": "Şube başarıyla değiştirildi"
   },
+  "attendeeImport": {
+    "title": "Katılımcıları Excel'den içe aktar",
+    "description": "Çağrı işaretlerini içeren bir dosya seçin. Mevcut ve geçersiz satırlar atlanır.",
+    "templateDescription": "Şablonu indirip doldurun ve buradan seçin. Yalnızca Çağrı İşareti sütunu zorunludur.",
+    "downloadTemplate": "Şablonu indir",
+    "sheetName": "Katılımcılar",
+    "selectFile": "Dosya seç (.xlsx, .xls, .csv)",
+    "headerDetected": "Başlık satırı algılandı. Sütunlar başlık adlarına göre eşleştirilir.",
+    "positionalDetected": "Başlık satırı yok. Sütunlar sırayla okunur: A Çağrı İşareti, B Adı Soyadı, C İl, D İlçe, E Sinyal.",
+    "invalidFileType": "Geçersiz dosya türü. Bir .xlsx, .xls veya .csv dosyası seçin.",
+    "readError": "Dosya okunamadı.",
+    "noRows": "Dosyada içe aktarılacak satır bulunamadı.",
+    "tooManyRows": "Bir seferde en fazla {max} satır içe aktarılabilir.",
+    "previewTitle": "Önizleme",
+    "rowCount": "{count} satır içe aktarılacak",
+    "columns": {
+      "row": "Satır",
+      "callSign": "Çağrı İşareti",
+      "name": "Adı Soyadı",
+      "city": "İl",
+      "district": "İlçe",
+      "signal": "R/S",
+      "reason": "Neden"
+    },
+    "import": "İçe aktar",
+    "importing": "İçe aktarılıyor...",
+    "resultTitle": "Sonuç",
+    "resultSummary": "{added} eklendi, {skipped} atlandı",
+    "skippedTitle": "Atlanan satırlar",
+    "skipReasons": {
+      "invalidCallSign": "Geçersiz çağrı işareti",
+      "duplicate": "Zaten çevrimde veya dosyada tekrar ediyor",
+      "failed": "Kaydedilemedi"
+    }
+  },
   "netDetail": {
     "start": "Başlat",
     "end": "Bitir",
@@ -1019,7 +1054,8 @@
     "exportExcelTooltip": "Excel olarak dışa aktar",
     "exportPdfTooltip": "PDF olarak dışa aktar",
     "exportPngTooltip": "PNG olarak dışa aktar",
-    "shareReportAsPng": "Raporu PNG olarak paylaş"
+    "shareReportAsPng": "Raporu PNG olarak paylaş",
+    "importFromExcel": "Excel'den içe aktar"
   },
   "netReport": {
     "noAttendees": "Bu çevrimde hiç katılımcı yok!",

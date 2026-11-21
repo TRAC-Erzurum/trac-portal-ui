@@ -6,6 +6,7 @@ import {
   Award,
   Clock,
   FileSpreadsheet,
+  FileUp,
   Image,
   MapPin,
   Plus,
@@ -37,6 +38,7 @@ import ExportReportTemplate from '@/components/nets/ExportReportTemplate.vue'
 import NetHeader from '@/components/nets/NetHeader.vue'
 import AddAttendeePanel from '@/components/nets/AddAttendeePanel.vue'
 import AttendeeList from '@/components/nets/AttendeeList.vue'
+import ImportAttendeesSheet from '@/components/nets/ImportAttendeesSheet.vue'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -153,6 +155,7 @@ const shareQrDataUrl = ref('')
 const certificatePreview = ref<CertificatePreview | null>(null)
 const isLoadingCertificatePreview = ref(false)
 const showAddAttendeeForm = ref(false)
+const isImportSheetOpen = ref(false)
 
 const themeStore = useThemeStore()
 const mapRef = ref<{ leafletObject: LeafletMap } | null>(null)
@@ -653,6 +656,11 @@ const handleAttendeeAdded = async () => {
   if (netStatus.value === 'completed') {
     showAddAttendeeForm.value = false
   }
+}
+
+const handleAttendeesImported = async () => {
+  await fetchAttendees()
+  if (net.value) net.value.attendeeCount = attendees.value.length
 }
 
 const certificatePreviewImageUrl = computed(() => {
@@ -1159,6 +1167,18 @@ const fetchComparePrevious = async () => {
               </Button>
             </div>
 
+            <div v-if="canManageNet && (netStatus === 'active' || netStatus === 'completed')" class="w-full sm:w-auto">
+              <Button
+                size="sm"
+                variant="outline"
+                class="w-full gap-2 justify-center sm:w-auto"
+                @click="isImportSheetOpen = true"
+              >
+                <FileUp class="h-4 w-4" />
+                {{ t('netDetail.importFromExcel') }}
+              </Button>
+            </div>
+
             <div v-if="showDownloadMyCertificate && myAttendee" class="w-full sm:w-auto">
               <Button
                 variant="outline"
@@ -1247,6 +1267,9 @@ const fetchComparePrevious = async () => {
 
     <EditAttendeeSheet v-if="editingAttendee" :open="isEditSheetOpen" :attendee="editingAttendee"
       :net-id="(route.params.id as string)" @update:open="isEditSheetOpen = $event" @updated="handleAttendeeUpdated" />
+
+    <ImportAttendeesSheet :open="isImportSheetOpen" :net-id="(route.params.id as string)"
+      @update:open="isImportSheetOpen = $event" @imported="handleAttendeesImported" />
 
     <EditNetSheet v-if="net" :open="isEditNetSheetOpen" :net="net as any" @update:open="isEditNetSheetOpen = $event"
       @updated="handleNetUpdated" />

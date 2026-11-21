@@ -958,6 +958,41 @@
     "selectBranch": "Select Branch",
     "switchBranchSuccess": "Branch switched successfully"
   },
+  "attendeeImport": {
+    "title": "Import attendees from Excel",
+    "description": "Select a file with call signs. Existing and invalid rows are skipped.",
+    "templateDescription": "Download the template, fill it in and select it here. Only the Call Sign column is required.",
+    "downloadTemplate": "Download template",
+    "sheetName": "Attendees",
+    "selectFile": "Select file (.xlsx, .xls, .csv)",
+    "headerDetected": "Header row detected. Columns are matched by their header names.",
+    "positionalDetected": "No header row. Columns are read in order: A Call Sign, B Name, C City, D District, E Signal.",
+    "invalidFileType": "Invalid file type. Select a .xlsx, .xls or .csv file.",
+    "readError": "The file could not be read.",
+    "noRows": "No rows to import were found in the file.",
+    "tooManyRows": "At most {max} rows can be imported at once.",
+    "previewTitle": "Preview",
+    "rowCount": "{count} rows will be imported",
+    "columns": {
+      "row": "Row",
+      "callSign": "Call Sign",
+      "name": "Name",
+      "city": "City",
+      "district": "District",
+      "signal": "R/S",
+      "reason": "Reason"
+    },
+    "import": "Import",
+    "importing": "Importing...",
+    "resultTitle": "Result",
+    "resultSummary": "{added} added, {skipped} skipped",
+    "skippedTitle": "Skipped rows",
+    "skipReasons": {
+      "invalidCallSign": "Invalid call sign",
+      "duplicate": "Already in the net or repeated in the file",
+      "failed": "Could not be saved"
+    }
+  },
   "netDetail": {
     "start": "Start",
     "end": "End",
@@ -1019,7 +1054,8 @@
     "exportExcelTooltip": "Export as Excel",
     "exportPdfTooltip": "Export as PDF",
     "exportPngTooltip": "Export as PNG",
-    "shareReportAsPng": "Share Report as PNG"
+    "shareReportAsPng": "Share Report as PNG",
+    "importFromExcel": "Import from Excel"
   },
   "netReport": {
     "noAttendees": "No attendees in this net!",
