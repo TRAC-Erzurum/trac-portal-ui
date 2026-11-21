@@ -7,6 +7,10 @@ import DashboardWidget from './DashboardWidget.vue'
 import type { RouteLocationRaw } from 'vue-router'
 
 const CAROUSEL_INTERVAL_MS = 4200
+const SWIPE_MAX_THRESHOLD_PX = 40
+const SWIPE_WIDTH_RATIO = 0.2
+const SWIPE_AXIS_LOCK_PX = 8
+const SWIPE_CLICK_SUPPRESS_MS = 400
 
 const props = defineProps({
   icon: {
@@ -104,6 +108,97 @@ function goToSlide(index: number) {
   maybeStartCarousel()
 }
 
+interface SwipeState {
+  pointerId: number
+  startX: number
+  startY: number
+  width: number
+  axis: 'pending' | 'horizontal'
+}
+
+let swipe: SwipeState | null = null
+const dragOffset = ref(0)
+const isDragging = ref(false)
+let suppressClick = false
+let suppressClickTimer: ReturnType<typeof setTimeout> | null = null
+
+function resetDrag() {
+  isDragging.value = false
+  dragOffset.value = 0
+}
+
+function onSwipeStart(event: PointerEvent) {
+  if (event.pointerType !== 'touch' || !event.isPrimary || !hasCarousel.value) return
+  swipe = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    width: (event.currentTarget as HTMLElement).clientWidth,
+    axis: 'pending',
+  }
+}
+
+function onSwipeMove(event: PointerEvent) {
+  if (!swipe || event.pointerId !== swipe.pointerId) return
+  const dx = event.clientX - swipe.startX
+  const dy = event.clientY - swipe.startY
+  if (swipe.axis === 'pending') {
+    if (Math.abs(dx) < SWIPE_AXIS_LOCK_PX && Math.abs(dy) < SWIPE_AXIS_LOCK_PX) return
+    if (Math.abs(dy) > Math.abs(dx)) {
+      // Vertical gesture: leave it to the page scroll.
+      swipe = null
+      return
+    }
+    swipe.axis = 'horizontal'
+    isDragging.value = true
+    stopCarousel()
+  }
+  dragOffset.value = dx
+}
+
+function armClickSuppression() {
+  suppressClick = true
+  if (suppressClickTimer) clearTimeout(suppressClickTimer)
+  suppressClickTimer = setTimeout(() => {
+    suppressClick = false
+    suppressClickTimer = null
+  }, SWIPE_CLICK_SUPPRESS_MS)
+}
+
+function onSwipeEnd(event: PointerEvent) {
+  if (!swipe || event.pointerId !== swipe.pointerId) return
+  const state = swipe
+  swipe = null
+  if (state.axis !== 'horizontal') return
+
+  const dx = event.clientX - state.startX
+  const threshold = Math.min(SWIPE_MAX_THRESHOLD_PX, state.width * SWIPE_WIDTH_RATIO)
+  resetDrag()
+  armClickSuppression()
+  if (Math.abs(dx) >= threshold) {
+    if (dx < 0) scrollNext()
+    else scrollPrev()
+  } else {
+    maybeStartCarousel()
+  }
+}
+
+function onSwipeCancel(event: PointerEvent) {
+  if (!swipe || event.pointerId !== swipe.pointerId) return
+  const wasHorizontal = swipe.axis === 'horizontal'
+  swipe = null
+  if (!wasHorizontal) return
+  resetDrag()
+  maybeStartCarousel()
+}
+
+function onClickCapture(event: MouseEvent) {
+  if (!suppressClick) return
+  suppressClick = false
+  event.preventDefault()
+  event.stopPropagation()
+}
+
 watch(
   () => [carouselItems.value.length, props.isLoading, props.autoplay],
   () => {
@@ -129,6 +224,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopCarousel()
+  if (suppressClickTimer) clearTimeout(suppressClickTimer)
 })
 </script>
 
@@ -180,10 +276,20 @@ onUnmounted(() => {
             </Button>
           </div>
 
-          <div class="overflow-hidden rounded-xl">
+          <div
+            class="overflow-hidden rounded-xl touch-pan-y"
+            @pointerdown="onSwipeStart"
+            @pointermove="onSwipeMove"
+            @pointerup="onSwipeEnd"
+            @pointercancel="onSwipeCancel"
+            @click.capture="onClickCapture"
+          >
             <div
-              class="flex transition-transform duration-500 ease-out"
-              :style="{ transform: `translate3d(-${selectedIndex * 100}%, 0, 0)` }"
+              class="flex"
+              :class="{ 'transition-transform duration-500 ease-out': !isDragging }"
+              :style="{
+                transform: `translate3d(calc(-${selectedIndex * 100}% + ${dragOffset}px), 0, 0)`,
+              }"
             >
               <div
                 v-for="(item, index) in carouselItems"
