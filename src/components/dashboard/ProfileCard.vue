@@ -12,9 +12,9 @@ const authStore = useAuthStore()
 
 const operator = computed(() => authStore.user?.operator ?? null)
 
-const displayName = computed(
-  () => authStore.user?.fullName || operator.value?.fullName || authStore.user?.email || ''
-)
+const fullName = computed(() => authStore.user?.fullName || operator.value?.fullName || '')
+
+const displayName = computed(() => fullName.value || authStore.user?.email || '')
 
 const callSignLabel = computed(() => {
   const op = operator.value
@@ -40,7 +40,7 @@ const qthLabel = computed(() => {
         <template v-if="operator">
           <p class="text-sm font-medium text-muted-foreground truncate">{{ callSignLabel }}</p>
         </template>
-        <p v-else class="text-sm text-muted-foreground truncate">{{ authStore.user?.email }}</p>
+        <p v-else-if="fullName" class="text-sm text-muted-foreground truncate">{{ authStore.user?.email }}</p>
       </div>
     </div>
 

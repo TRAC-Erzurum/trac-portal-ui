@@ -55,14 +55,14 @@ onMounted(() => {
             <Users class="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
             {{ stats.attendedNets }}
           </div>
-          <p class="text-xs text-muted-foreground mt-1">{{ t('dashboard.attended') }}</p>
+          <p class="text-xs text-muted-foreground mt-1">{{ t('dashboard.attendedNetsLabel') }}</p>
         </div>
         <div class="p-3 rounded-lg border border-border/50 bg-background text-center">
           <div class="flex items-center justify-center gap-1 text-xl font-bold">
             <Radio class="h-4 w-4 text-muted-foreground shrink-0" aria-hidden="true" />
             {{ stats.managedNets }}
           </div>
-          <p class="text-xs text-muted-foreground mt-1">{{ t('dashboard.managed') }}</p>
+          <p class="text-xs text-muted-foreground mt-1">{{ t('dashboard.managedNetsLabel') }}</p>
         </div>
         <div class="p-3 rounded-lg border border-border/50 bg-background text-center">
           <div class="flex items-center justify-center gap-1 text-xl font-bold">

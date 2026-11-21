@@ -407,7 +407,7 @@ onMounted(async () => {
         </Suspense>
       </div>
 
-      <aside class="lg:col-span-1 min-w-0 space-y-4 lg:sticky lg:top-4 lg:self-start">
+      <aside class="lg:col-span-1 min-w-0 space-y-4 lg:sticky lg:top-[81px] lg:self-start">
         <div class="hidden lg:block">
           <ProfileCard />
         </div>

@@ -524,7 +524,9 @@
     },
     "allNets": "All nets",
     "allBranches": "All branches",
-    "statisticsButton": "Statistics"
+    "statisticsButton": "Statistics",
+    "attendedNetsLabel": "Nets attended",
+    "managedNetsLabel": "Nets managed"
   },
   "map": {
     "title": "QTH Locator Map",

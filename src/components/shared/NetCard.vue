@@ -78,6 +78,13 @@ const formatDuration = (minutes?: number) => {
   return remainingMins > 0 ? `${hours}s ${remainingMins}dk` : `${hours}s`
 }
 
+const compactStatusDotClass = computed(() => {
+  if (props.status === 'active') return 'bg-green-500'
+  if (props.status === 'pending') return 'bg-blue-500'
+  if (props.status === 'cancelled') return 'bg-amber-500'
+  return 'bg-muted-foreground'
+})
+
 const scheduledLabel = computed(() => {
   if (!props.scheduledAt) return ''
   const d = new Date(props.scheduledAt)
@@ -102,7 +109,16 @@ const scheduledLabel = computed(() => {
       :title="t('certificates.template')"
       aria-hidden
     />
-    <div class="flex items-start gap-3 flex-1 min-w-0">
+    <div v-if="compact" class="min-w-0 flex flex-col gap-1 pr-5">
+      <p class="truncate font-semibold" :title="name">{{ name }}</p>
+      <div class="flex items-center gap-2 min-w-0 text-xs text-muted-foreground">
+        <span class="h-2 w-2 shrink-0 rounded-full" :class="compactStatusDotClass" aria-hidden="true" />
+        <span v-if="branchLabel" class="flex-1 min-w-0 truncate" :title="branchLabel">{{ branchLabel }}</span>
+        <span v-else class="flex-1" />
+        <span v-if="footerStatusLabel" class="shrink-0 whitespace-nowrap">{{ footerStatusLabel }}</span>
+      </div>
+    </div>
+    <div v-else class="flex items-start gap-3 flex-1 min-w-0">
       <div class="mt-0.5 flex-shrink-0">
         <span v-if="status === 'active'" class="relative flex h-2.5 w-2.5">
           <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-75"></span>

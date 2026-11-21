@@ -524,7 +524,9 @@
     },
     "allNets": "Tüm çevrimler",
     "allBranches": "Tüm şubeler",
-    "statisticsButton": "İstatistikler"
+    "statisticsButton": "İstatistikler",
+    "attendedNetsLabel": "Katıldığım çevrim",
+    "managedNetsLabel": "Yönettiğim çevrim"
   },
   "map": {
     "title": "QTH Locator Haritası",
