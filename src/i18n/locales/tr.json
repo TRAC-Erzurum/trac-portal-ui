@@ -1411,6 +1411,7 @@
     "pickTypeTitle": "Ne gözlemlediniz?",
     "pickTypeDescription": "Sahada gördüğünüze en uygun türü seçin.",
     "activeDisastersTitle": "Aktif afetler",
+    "quickReportPrompt": "Hızlı rapor:",
     "createObservationPrompt": "Olay bildir:",
     "addInformationPrompt": "Güncelleme ekle:",
     "reportedBy": "Bildiren",
