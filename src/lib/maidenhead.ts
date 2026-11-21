@@ -101,7 +101,7 @@ export function nativeMaidenheadToWGS84(loc: string): WGS84 {
   }
   if (i < s.length) {
     const iLon = charToIdx24(s[i++] ?? ''),
-      iLat = charToIdx24(s[i + 1] ?? '')
+      iLat = charToIdx24(s[i] ?? '')
     if (iLon < 0 || iLat < 0) throw new Error('Invalid pair 5')
     lonLow += (iLon * 2) / 24 / 10 / 24
     latLow += (iLat * 1) / 24 / 10 / 24
@@ -160,7 +160,7 @@ export function nativeMaidenheadToBoundingBox(loc: string): [LatLng, LatLng] {
   }
   if (i < s.length) {
     const iLon = charToIdx24(s[i++] ?? ''),
-      iLat = charToIdx24(s[i + 1] ?? '')
+      iLat = charToIdx24(s[i] ?? '')
     if (iLon < 0 || iLat < 0) throw new Error('Invalid pair 5')
     lonLow += (iLon * 2) / 24 / 10 / 24
     latLow += (iLat * 1) / 24 / 10 / 24
