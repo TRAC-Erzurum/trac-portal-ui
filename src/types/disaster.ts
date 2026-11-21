@@ -113,8 +113,9 @@ export interface Observation {
   disasterId: string
   parentObservationId: string | null
   type: ObservationType
-  lat: number
-  lng: number
+  /** Null when the observation was saved with a city/district only. */
+  lat: number | null
+  lng: number | null
   locationLabel: string | null
   severity: ObservationSeverity | null
   description: string | null

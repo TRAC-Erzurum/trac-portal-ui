@@ -69,7 +69,9 @@ function feedbackFor(id: string): ObservationFeedbackType | null {
 
 const locationSummary = computed(() => {
   if (props.observation.locationLabel) return props.observation.locationLabel
-  return `${props.observation.lat.toFixed(4)}, ${props.observation.lng.toFixed(4)}`
+  const { lat, lng } = props.observation
+  if (lat == null || lng == null) return '-'
+  return `${lat.toFixed(4)}, ${lng.toFixed(4)}`
 })
 
 function severityDotClass(severity: ObservationSeverity | null): string {

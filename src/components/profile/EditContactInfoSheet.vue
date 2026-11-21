@@ -16,7 +16,9 @@ import { api, type ApiError } from '@/lib/api'
 interface Address {
   type: string
   address: string
-  qth: string
+  qth?: string | null
+  city?: string | null
+  district?: string | null
 }
 
 interface UserProfile {
@@ -66,7 +68,9 @@ function handleQthSelect(index: number, val: { gridSquare: string; city: string;
   if (val) {
     const addr = addresses.value[index]
     if (addr) {
-      addr.qth = val.gridSquare
+      addr.qth = val.gridSquare || undefined
+      addr.city = val.city || undefined
+      addr.district = val.district || undefined
     }
   }
 }
@@ -76,7 +80,14 @@ async function handleSubmit() {
   try {
     const payload = {
       phoneNumbers: phoneNumbers.value.filter(p => !!p),
-      addresses: addresses.value.filter(a => !!a.address || !!a.qth),
+      addresses: addresses.value
+        .filter(a => !!a.address || !!a.qth || !!a.city || !!a.district)
+        .map(a => ({
+          ...a,
+          qth: a.qth || undefined,
+          city: a.city || undefined,
+          district: a.district || undefined,
+        })),
     }
 
     await api.patch('/user', payload)
@@ -152,9 +163,9 @@ async function handleSubmit() {
               <div class="space-y-2">
                 <Label>{{ t('profile.qth') }}</Label>
                 <LocatorMapPicker
-                  :model-value="{ gridSquare: addr.qth, city: '', district: '' }"
+                  :model-value="{ gridSquare: addr.qth ?? '', city: addr.city ?? '', district: addr.district ?? '' }"
                   :standalone="false"
-                  class="h-48 border rounded-md"
+                  class="border rounded-md"
                   @update:model-value="(val) => handleQthSelect(index, val)"
                 />
               </div>

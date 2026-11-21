@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { LMap, LMarker, LPopup, LTileLayer } from '@vue-leaflet/vue-leaflet'
 import 'leaflet/dist/leaflet.css'
 import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import AutocompleteCombobox from '@/components/shared/AutocompleteCombobox.vue'
 import MapSelectionSummary from '@/components/shared/MapSelectionSummary.vue'
+import { useQthData } from '@/composables/useQthData'
 import { useThemeStore } from '@/stores/theme'
 import { api } from '@/lib/api'
 import { withCartoApiKey } from '@/lib/carto'
@@ -47,16 +50,69 @@ const pendingSelection = ref<{
 const addressLoading = ref(false)
 const addressCache = new Map<string, { province: string; district: string }>()
 
+const { cities, getDistricts, loadCities } = useQthData()
+const fieldId = useId()
+const cityValue = ref('')
+const districtValue = ref('')
+const districtOptions = computed(() => (cityValue.value ? getDistricts(cityValue.value) : []))
+
+// Keep the dropdowns in sync with the value the parent holds.
+watch(
+  () => props.modelValue,
+  (v) => {
+    cityValue.value = v?.city ?? ''
+    districtValue.value = v?.district ?? ''
+  },
+  { immediate: true }
+)
+
+onMounted(() => {
+  loadCities()
+})
+
+function normalizeName(value: string): string {
+  return value.trim().toLocaleLowerCase('tr')
+}
+
+/** Returns the canonical name from `options`, or null when there is no match. */
+function findCanonicalName(options: string[], target: string): string | null {
+  const normalized = normalizeName(target)
+  if (!normalized) return null
+  return options.find((option) => normalizeName(option) === normalized) ?? null
+}
+
+function emitDropdownSelection(city: string, district: string) {
+  cityValue.value = city
+  districtValue.value = district
+  // A dropdown choice replaces the map selection: no coordinates, grid square or marker.
+  emit('update:modelValue', { gridSquare: '', city, district })
+}
+
+function onCityChange(value: string) {
+  emitDropdownSelection(value, '')
+}
+
+function onDistrictChange(value: string) {
+  emitDropdownSelection(cityValue.value, value)
+}
+
 const userGrid = computed(() => props.modelValue?.gridSquare?.trim()?.toUpperCase() ?? null)
 const userParsed = computed(() =>
   userGrid.value ? parseLocatorForMap(userGrid.value) : null
 )
 
-const mapCenter = computed((): [number, number] => {
-  if (!userParsed.value) return TURKEY_CENTER
-  const [a, b] = userParsed.value.bounds
-  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
-})
+// Only updated while a grid square is set. Clearing it (dropdown change) must not
+// reset LMap's center prop, otherwise the map jumps back to Turkey.
+const mapCenter = ref<[number, number]>(TURKEY_CENTER)
+watch(
+  userParsed,
+  (parsed) => {
+    if (!parsed) return
+    const [a, b] = parsed.bounds
+    mapCenter.value = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
+  },
+  { immediate: true }
+)
 
 const markerLatLng = computed((): [number, number] | null => {
   if (!userParsed.value) return null
@@ -116,12 +172,18 @@ function onMapReady() {
     addressLoading.value = true
     const { province, district } = await fetchAddress(lat, lng)
     addressLoading.value = false
+    // Use the canonical QTH names when they match; otherwise keep the geocoded text.
+    const canonicalCity = findCanonicalName(cities.value, province)
+    const cityName = canonicalCity ?? province
+    const districtName = canonicalCity
+      ? (findCanonicalName(getDistricts(canonicalCity), district) ?? district)
+      : district
     pendingSelection.value = {
       lat,
       lng,
       gridSquare,
-      city: province,
-      district
+      city: cityName,
+      district: districtName
     }
     nextTick(() => {
       setTimeout(openPendingPopup, 80)
@@ -194,7 +256,7 @@ const selectionSummary = computed(() => {
 <template>
   <div
     :class="[
-      'overflow-hidden rounded-lg border border-border bg-background',
+      'rounded-lg border border-border bg-background',
       standalone ? '' : 'border-0 rounded-b-lg'
     ]"
   >
@@ -263,7 +325,30 @@ const selectionSummary = computed(() => {
       :district="selectionSummary.district"
       :lat="selectionSummary.lat"
       :lng="selectionSummary.lng"
-      :rounded-bottom="standalone"
+      :rounded-bottom="false"
     />
+    <div class="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2">
+      <div class="space-y-2">
+        <Label :for="`${fieldId}-city`">{{ t('form.city') }}</Label>
+        <AutocompleteCombobox
+          :id="`${fieldId}-city`"
+          :model-value="cityValue"
+          :options="cities"
+          :placeholder="t('form.cityPlaceholder')"
+          @update:model-value="onCityChange"
+        />
+      </div>
+      <div class="space-y-2">
+        <Label :for="`${fieldId}-district`">{{ t('form.district') }}</Label>
+        <AutocompleteCombobox
+          :id="`${fieldId}-district`"
+          :model-value="districtValue"
+          :options="districtOptions"
+          :disabled="!cityValue"
+          :placeholder="t('form.districtPlaceholder')"
+          @update:model-value="onDistrictChange"
+        />
+      </div>
+    </div>
   </div>
 </template>
