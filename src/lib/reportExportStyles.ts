@@ -37,5 +37,14 @@ export function getReportExportStyles(width: number = REPORT_EXPORT_WIDTH): stri
 .attendees-tfoot .attendees-td { border: 1px solid #d4d4d8 !important; background: #fafafa !important; }
 .attendees-tfoot-label { font-weight: 600 !important; text-align: right !important; white-space: nowrap !important; width: 1% !important; }
 .attendees-tfoot-value { text-align: left !important; }
+.city-stats { margin-top: 1.5rem; background: #ffffff !important; color: #000000 !important; }
+.city-stats-title { margin: 0 0 0.25rem; font-weight: 700; font-size: 1.125rem; color: #000000 !important; background: transparent !important; }
+.city-stats-count { margin: 0 0 0.5rem; font-weight: 600; font-size: 0.875rem; color: #000000 !important; background: transparent !important; }
+.city-stats-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid #d4d4d8; font-size: 0.875rem; color: #000000 !important; background: #ffffff !important; }
+.city-stats-list-multi { column-count: 2; column-gap: 1.5rem; }
+.city-stats-list-triple { column-count: 3; }
+.city-stats-item { display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 0.25rem 0.5rem; border-bottom: 1px solid #d4d4d8; break-inside: avoid; color: #000000 !important; background: #ffffff !important; }
+.city-stats-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.city-stats-value { flex-shrink: 0; font-weight: 600; }
 `
 }

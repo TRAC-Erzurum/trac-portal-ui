@@ -1025,7 +1025,10 @@
     "noAttendees": "No attendees in this net!",
     "totalAttendees": "Total Attendees",
     "joinTime": "Join Time",
-    "exportSuccess": "Export successful"
+    "exportSuccess": "Export successful",
+    "cityStatsTitle": "City statistics",
+    "citiesRepresented": "Cities represented: {count}",
+    "cityNotSpecified": "Not specified"
   },
   "admin": {
     "resetPassword": "Reset Password",
