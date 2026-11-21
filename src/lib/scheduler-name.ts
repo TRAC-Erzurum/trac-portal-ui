@@ -52,12 +52,31 @@ export function dateFallsInRecurrence(
   }
 }
 
+const ISTANBUL_DATE_FORMAT = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Istanbul',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
+/** Today as YYYY-MM-DD in Europe/Istanbul, matching the API's day boundary. */
+export function getTodayIstanbul(): string {
+  return ISTANBUL_DATE_FORMAT.format(new Date())
+}
+
+/** Shifts a YYYY-MM-DD date by a number of days (UTC arithmetic, no DST drift). */
+function shiftDateStr(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T12:00:00Z')
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
 /** First occurrence date (YYYY-MM-DD) on or after afterDateStr. */
 export function getNextOccurrenceDate(
   scheduler: SchedulerForResolve,
   afterDateStr?: string,
 ): string | null {
-  const after = afterDateStr ?? new Date().toISOString().slice(0, 10)
+  const after = afterDateStr ?? getTodayIstanbul()
   const current = new Date(after + 'T12:00:00Z')
   const maxIter = 400
   for (let i = 0; i < maxIter; i++) {
@@ -69,6 +88,28 @@ export function getNextOccurrenceDate(
     current.setDate(current.getDate() + 1)
   }
   return null
+}
+
+/**
+ * Last occurrence date (YYYY-MM-DD) up to min(endDate, today), searching back to startDate.
+ * Used for display when the plan has no future occurrence. Falls back to startDate.
+ */
+export function getLastOccurrenceDate(
+  scheduler: SchedulerForResolve,
+  todayStr: string = getTodayIstanbul(),
+): string {
+  const upper =
+    scheduler.endDate != null && scheduler.endDate < todayStr
+      ? scheduler.endDate
+      : todayStr
+  let current = upper
+  const maxIter = 400
+  for (let i = 0; i < maxIter; i++) {
+    if (current < scheduler.startDate) break
+    if (dateFallsInRecurrence(scheduler, current)) return current
+    current = shiftDateStr(current, -1)
+  }
+  return scheduler.startDate
 }
 
 /** Resolve name template with placeholders for the given date. */
@@ -126,5 +167,8 @@ export function resolveSchedulerName(
   for (const [key, value] of Object.entries(map)) {
     out = out.split(key).join(value)
   }
-  return out.replace(/\{\{[^}]+\}\}/g, '').trim() || scheduler.name
+  return (
+    out.replace(/\{\{[^}]+\}\}/g, '').trim() ||
+    scheduler.name.replace(/\{\{[^}]+\}\}/g, '').trim()
+  )
 }

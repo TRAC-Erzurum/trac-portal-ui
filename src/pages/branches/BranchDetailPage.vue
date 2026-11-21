@@ -17,6 +17,7 @@ import EditCommChannelSheet from '@/components/infrastructure/EditCommChannelShe
 import CreateNetSheet from '@/components/nets/CreateNetSheet.vue'
 import EditNetSchedulerSheet from '@/components/nets/EditNetSchedulerSheet.vue'
 import SchedulerCard from '@/components/nets/SchedulerCard.vue'
+import PastSchedulersSection from '@/components/nets/PastSchedulersSection.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import CommunityModule from '@/components/dashboard/CommunityModule.vue'
 import NetsAttendeesTrendWidget from '@/components/dashboard/widgets/NetsAttendeesTrendWidget.vue'
@@ -148,6 +149,11 @@ const isDeletingCertificateTemplate = ref(false)
 const netsUsingCertificateTemplate = ref<{ id: string; name: string }[]>([])
 const schedulers = ref<any[]>([])
 const isLoadingSchedulers = ref(false)
+const isLoadingMoreSchedulers = ref(false)
+const schedulersTotal = ref(0)
+const hasMoreSchedulers = ref(false)
+const schedulerRefreshKey = ref(0)
+const SCHEDULER_PAGE_SIZE = 6
 const selectedSchedulerId = ref<string | null>(null)
 const isEditSchedulerSheetOpen = ref(false)
 
@@ -785,27 +791,44 @@ const handleNetCreated = async () => {
   await fetchSchedulers()
 }
 
-const fetchSchedulers = async () => {
+/** Branch-scoped filter shared by the active list and the past/paused section. */
+const schedulerBranchQuery = computed(() => `branchId=${route.params.id}`)
+
+const fetchSchedulers = async (append = false) => {
   if (!route.params.id || !canCreateNet.value) return
-  const token = branchSchedulersListGuard.beginReplace()
-  isLoadingSchedulers.value = true
+  const token = append ? branchSchedulersListGuard.beginAppend() : branchSchedulersListGuard.beginReplace()
+  if (append) {
+    isLoadingMoreSchedulers.value = true
+  } else {
+    isLoadingSchedulers.value = true
+  }
   try {
-    const list = await api.get<any[]>(`/net-schedulers?branchId=${route.params.id}`)
+    const offset = append ? schedulers.value.length : 0
+    const res = await api.get<{ data: any[]; total: number }>(
+      `/net-schedulers?${schedulerBranchQuery.value}&status=active&limit=${SCHEDULER_PAGE_SIZE}&offset=${offset}`,
+    )
     if (!branchSchedulersListGuard.isCurrent(token)) {
       return
     }
-    schedulers.value = list
+    schedulers.value = append ? [...schedulers.value, ...res.data] : res.data
+    schedulersTotal.value = res.total
+    hasMoreSchedulers.value = schedulers.value.length < res.total
   } catch {
     if (!branchSchedulersListGuard.isCurrent(token)) {
       return
     }
-    schedulers.value = []
+    if (!append) schedulers.value = []
+    schedulersTotal.value = 0
+    hasMoreSchedulers.value = false
   } finally {
     if (branchSchedulersListGuard.isCurrent(token)) {
       isLoadingSchedulers.value = false
+      isLoadingMoreSchedulers.value = false
     }
   }
 }
+
+const loadMoreSchedulers = () => fetchSchedulers(true)
 
 const openEditScheduler = (id: string) => {
   selectedSchedulerId.value = id
@@ -814,6 +837,7 @@ const openEditScheduler = (id: string) => {
 
 const handleSchedulerUpdated = () => {
   fetchSchedulers()
+  schedulerRefreshKey.value += 1
 }
 
 const getNetStatus = (net: any): 'active' | 'pending' | 'completed' | 'cancelled' => {
@@ -1322,8 +1346,32 @@ onMounted(() => {
               :scheduler="s"
               :show-edit-button="canCreateNet"
               @edit="openEditScheduler"
+              @updated="handleSchedulerUpdated"
             />
           </div>
+          <div v-if="!isLoadingSchedulers" class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-4">
+            <p v-if="schedulersTotal > 0 || schedulers.length > 0" class="text-sm text-muted-foreground order-2 lg:order-1">
+              {{ schedulers.length }}/{{ schedulersTotal }} {{ t('scheduler.name') }}
+            </p>
+            <div v-if="hasMoreSchedulers" class="order-1 lg:order-2 w-full lg:w-auto">
+              <Button
+                variant="outline"
+                class="trac-load-more-btn"
+                :disabled="isLoadingMoreSchedulers"
+                @click="loadMoreSchedulers"
+              >
+                <ChevronDown v-if="!isLoadingMoreSchedulers" class="h-4 w-4 mr-2" />
+                {{ isLoadingMoreSchedulers ? t('common.loading') : t('common.loadMore') }}
+              </Button>
+            </div>
+          </div>
+          <PastSchedulersSection
+            :query="schedulerBranchQuery"
+            :refresh-key="schedulerRefreshKey"
+            :show-edit-button="canCreateNet"
+            @edit="openEditScheduler"
+            @updated="handleSchedulerUpdated"
+          />
         </section>
 
         <Separator class="my-8" />

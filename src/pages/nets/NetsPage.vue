@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import EditNetSchedulerSheet from '@/components/nets/EditNetSchedulerSheet.vue'
 import SchedulerCard from '@/components/nets/SchedulerCard.vue'
+import PastSchedulersSection from '@/components/nets/PastSchedulersSection.vue'
 import {
   Select,
   SelectContent,
@@ -87,6 +88,7 @@ const hasMoreSchedulers = ref(false)
 const schedulerPageSize = 6
 const selectedSchedulerId = ref<string | null>(null)
 const isEditSchedulerSheetOpen = ref(false)
+const schedulerRefreshKey = ref(0)
 
 const netsListGuard = useAsyncStaleGuard()
 const schedulersListGuard = useAsyncStaleGuard()
@@ -98,6 +100,27 @@ interface SchedulerResponse {
   offset: number
 }
 
+/** Branch and search filters shared by the active list and the past/paused section. */
+const schedulerFilterQuery = computed(() => {
+  const params = new URLSearchParams()
+  if (branchFilter.value === 'all') {
+    params.set('branchFilter', 'all')
+  } else if (branchFilter.value === 'my-branches') {
+    params.set('branchFilter', 'my-branches')
+  } else {
+    const branchId = selectedBranchId.value
+    if (branchId) {
+      params.set('branchFilter', 'branch')
+      params.set('branchId', branchId)
+    }
+  }
+  if (search.value?.trim()) params.set('search', search.value.trim())
+  return params.toString()
+})
+
+/** Filter query as last applied by fetchSchedulers (search is debounced there). */
+const appliedSchedulerQuery = ref('')
+
 const fetchSchedulers = async (append = false) => {
   if (!canCreate.value) return
   const token = append ? schedulersListGuard.beginAppend() : schedulersListGuard.beginReplace()
@@ -105,22 +128,12 @@ const fetchSchedulers = async (append = false) => {
     isLoadingMoreSchedulers.value = true
   } else {
     isLoadingSchedulers.value = true
+    appliedSchedulerQuery.value = schedulerFilterQuery.value
   }
   try {
     const offset = append ? schedulers.value.length : 0
-    const params = new URLSearchParams()
-    if (branchFilter.value === 'all') {
-      params.set('branchFilter', 'all')
-    } else if (branchFilter.value === 'my-branches') {
-      params.set('branchFilter', 'my-branches')
-    } else {
-      const branchId = selectedBranchId.value
-      if (branchId) {
-        params.set('branchFilter', 'branch')
-        params.set('branchId', branchId)
-      }
-    }
-    if (search.value?.trim()) params.set('search', search.value.trim())
+    const params = new URLSearchParams(schedulerFilterQuery.value)
+    params.set('status', 'active')
     params.set('limit', String(schedulerPageSize))
     params.set('offset', String(offset))
     const response = await api.get<SchedulerResponse | typeof schedulers.value>(
@@ -165,6 +178,7 @@ const openEditScheduler = (id: string) => {
 
 const handleSchedulerUpdated = () => {
   fetchSchedulers()
+  schedulerRefreshKey.value += 1
 }
 
 const selectedBranchId = computed(() =>
@@ -433,6 +447,7 @@ onMounted(async () => {
               :scheduler="s"
               :show-edit-button="canCreate"
               @edit="openEditScheduler"
+              @updated="handleSchedulerUpdated"
             />
           </div>
           <div v-if="!isLoadingSchedulers" class="flex flex-wrap items-center justify-between gap-2 pt-4 pb-4">
@@ -451,6 +466,13 @@ onMounted(async () => {
               </Button>
             </div>
           </div>
+          <PastSchedulersSection
+            :query="appliedSchedulerQuery"
+            :refresh-key="schedulerRefreshKey"
+            :show-edit-button="canCreate"
+            @edit="openEditScheduler"
+            @updated="handleSchedulerUpdated"
+          />
         </section>
 
         <Separator class="my-8" />
