@@ -1,6 +1,6 @@
-import MarkdownIt from 'markdown-it'
+import MarkdownIt, { type MarkdownIt as MarkdownItInstance } from 'markdown-it'
 
-function createFeedbackMarkdownIt(): MarkdownIt {
+function createFeedbackMarkdownIt(): MarkdownItInstance {
   const md = new MarkdownIt({
     html: false,
     linkify: true,
@@ -22,9 +22,9 @@ function createFeedbackMarkdownIt(): MarkdownIt {
   return md
 }
 
-let cached: MarkdownIt | null = null
+let cached: MarkdownItInstance | null = null
 
-export function getFeedbackMarkdownIt(): MarkdownIt {
+export function getFeedbackMarkdownIt(): MarkdownItInstance {
   if (!cached) cached = createFeedbackMarkdownIt()
   return cached
 }

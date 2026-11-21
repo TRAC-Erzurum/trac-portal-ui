@@ -31,9 +31,9 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vue-vendor': ['vue', 'vue-router', 'pinia'],
-          'ui-vendor': ['vue-i18n', 'vue-sonner', 'lucide-vue-next'],
+        manualChunks(id: string) {
+          if (/node_modules\/(vue|@vue|vue-router|pinia)\//.test(id)) return 'vue-vendor'
+          if (/node_modules\/(vue-i18n|@intlify|vue-sonner|lucide-vue-next)\//.test(id)) return 'ui-vendor'
         }
       }
     }
