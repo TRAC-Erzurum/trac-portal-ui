@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
@@ -24,6 +24,8 @@ import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import MapSearchPanel from '@/components/shared/MapSearchPanel.vue'
+import MapSelectionBanner from '@/components/shared/MapSelectionBanner.vue'
+import { useMapMeasurement } from '@/composables/useMapMeasurement'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
@@ -111,7 +113,7 @@ function createClusterIcon(cluster: any): L.DivIcon {
 // ---- Programmatic cluster layer ----
 let channelClusterGroup: any = null
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const themeStore = useThemeStore()
@@ -214,11 +216,23 @@ const locatorSearchQuery = ref('')
 let searchDebounceTimer: ReturnType<typeof setTimeout> | null = null
 
 /* ---- Search panel state ---- */
-const searchPanelRef = ref<InstanceType<typeof MapSearchPanel> | null>(null)
-const mobileSearchPanelRef = ref<InstanceType<typeof MapSearchPanel> | null>(null)
 const mobileSheetOpen = ref(false)
 const desktopPanelOpen = ref(false)
-const mapSelectingPoint = ref<'A' | 'B' | null>(null)
+
+/* ---- Measurement state (shared with MapSearchPanel; survives panel/sheet unmounts) ---- */
+const {
+  pointA: measureA,
+  pointB: measureB,
+  selectingPoint,
+  selectionOrigin,
+  panelTab,
+  setPoint: setMeasurePoint,
+  startSelecting,
+  cancelSelecting,
+  resetMeasurement,
+} = useMapMeasurement()
+
+const isMobileViewport = () => window.innerWidth < 1024
 
 function openSearchPanel() {
   if (window.innerWidth >= 1024) {
@@ -246,13 +260,13 @@ function createPointIcon(letter: string, color: string): L.DivIcon {
 const pointAIcon = createPointIcon('A', '#2563eb')
 const pointBIcon = createPointIcon('B', '#dc2626')
 
-/** Computed measurement marker positions (reactive from search panel) */
+/** Measurement marker positions, read directly from the shared measurement state */
 const measurePointA = computed(() => {
-  const p = searchPanelRef.value?.pointA
+  const p = measureA.value
   return p ? [p.lat, p.lng] as [number, number] : null
 })
 const measurePointB = computed(() => {
-  const p = searchPanelRef.value?.pointB
+  const p = measureB.value
   return p ? [p.lat, p.lng] as [number, number] : null
 })
 const measureLine = computed(() => {
@@ -285,7 +299,8 @@ function handleSearchGoTo(lat: number, lng: number, _label: string) {
   mobileSheetOpen.value = false
 }
 
-/** Popup'taki ölçüm butonu: A noktasını seç, panel aç, popup kapat */
+/** Popup'taki ölçüm butonu: A noktasını set et, ölçüm tabını aç, B seçim modunu başlat, popup kapat.
+ *  Mobilde sheet açılmaz; harita üstündeki seçim banner'ı gösterilir. */
 function startMeasureFromPopup() {
   const ll = selectedLatLng.value
   if (!ll) return
@@ -293,38 +308,14 @@ function startMeasureFromPopup() {
   const lng = ll[1]
   const label = popupAddressDisplay.value || `${lat.toFixed(5)}, ${lng.toFixed(5)}`
 
-  // Popup'u kapat
   clearSelection()
 
-  const isMobile = window.innerWidth < 1024
+  setMeasurePoint('A', lat, lng, label)
+  panelTab.value = 'measure'
+  startSelecting('B', 'popup')
 
-  if (!isMobile) {
-    // Desktop: sidebar aç, ölçüm tabına geç, A noktasını set et
+  if (!isMobileViewport()) {
     desktopPanelOpen.value = true
-    nextTick(() => {
-      const panel = searchPanelRef.value
-      if (panel) {
-        panel.activeTab = 'measure'
-        panel.setMeasurementPoint(lat, lng, label, 'A')
-      }
-    })
-  } else {
-    // Mobil: gizli desktop panel üzerinde de set et (harita markerları için)
-    if (searchPanelRef.value) {
-      searchPanelRef.value.activeTab = 'measure'
-      searchPanelRef.value.setMeasurementPoint(lat, lng, label, 'A')
-    }
-    // Sheet'i aç
-    mobileSheetOpen.value = true
-    nextTick(() => {
-      nextTick(() => {
-        const panel = mobileSearchPanelRef.value
-        if (panel) {
-          panel.activeTab = 'measure'
-          panel.setMeasurementPoint(lat, lng, label, 'A')
-        }
-      })
-    })
   }
 }
 
@@ -434,12 +425,15 @@ async function fetchElevation(lat: number, lng: number) {
     const data = await api.get<{ elevation: number | null }>(
       `/qth/elevation?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`
     )
-    const m = data.elevation
-    const value = typeof m === 'number' && Number.isFinite(m) ? m : 0
-    elevationMeters.value = value
-    elevationCache.set(key, value)
+    const m = data?.elevation
+    if (typeof m === 'number' && Number.isFinite(m)) {
+      elevationMeters.value = m
+      elevationCache.set(key, m)
+    } else {
+      elevationMeters.value = null
+    }
   } catch {
-    elevationMeters.value = 0
+    elevationMeters.value = null
   } finally {
     elevationLoading.value = false
   }
@@ -561,23 +555,9 @@ function onMapReady(map: LeafletMap) {
   })
   map.on('click', (e: { latlng: { lat: number; lng: number } }) => {
     const { lat, lng } = e.latlng
-    // If in measurement point selection mode, delegate to search panel
-    const selecting = mapSelectingPoint.value || searchPanelRef.value?.selectingPoint
-    if (selecting) {
-      // Panel may be unmounted (mobile sheet closed), so re-open first and set point
-      mapSelectingPoint.value = null
-      if (window.innerWidth < 1024) {
-        // Mobile: open sheet, then set point on panel once mounted
-        mobileSheetOpen.value = true
-        nextTick(() => {
-          nextTick(() => {
-            const panel = mobileSearchPanelRef.value || searchPanelRef.value
-            if (panel) panel.setMeasurementPoint(lat, lng, '', selecting)
-          })
-        })
-      } else {
-        searchPanelRef.value?.setMeasurementPoint(lat, lng, '', selecting)
-      }
+    // Measurement point selection mode: the click sets A or B and nothing else
+    if (selectingPoint.value) {
+      pickMeasurePoint(lat, lng, '')
       return
     }
     const locator = nativeWGS84ToMaidenhead({ lat, lng }, 10)
@@ -601,6 +581,22 @@ function clearSelection() {
       router.replace({ name: 'map', query: {} })
     }
   })
+}
+
+/** A/B seçim modunda haritaya tıklanınca nokta set edilir. Panelden başlatıldıysa mobilde sheet ölçüm tabında geri açılır. */
+function pickMeasurePoint(lat: number, lng: number, label: string) {
+  const which = selectingPoint.value
+  if (!which) return
+  const origin = selectionOrigin.value
+  setMeasurePoint(which, lat, lng, label)
+  if (origin === 'panel' && isMobileViewport()) {
+    panelTab.value = 'measure'
+    mobileSheetOpen.value = true
+  }
+}
+
+function onMeasureSelectionKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && selectingPoint.value) cancelSelecting()
 }
 
 function goBack() {
@@ -734,7 +730,11 @@ watch(
 )
 
 // Search box: en az 2 karakter girilince debounce ile QTH araması yap.
-watch(locatorSearchQuery, (val) => {
+// Yalnızca kullanıcının yazması bu fonksiyonu çağırır; harita tıklaması / arama sonucu gibi
+// programatik güncellemeler locatorSearchQuery'yi değiştirir ama arama tetiklemez (M6).
+function onLocatorInput(raw: string | number) {
+  const val = String(raw ?? '')
+  locatorSearchQuery.value = val
   if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
   const s = val.trim().toUpperCase()
   if (s === '' && (selectedLatLng.value || selectedLocator.value)) {
@@ -747,6 +747,17 @@ watch(locatorSearchQuery, (val) => {
       searchDebounceTimer = null
     }, SEARCH_DEBOUNCE_MS)
   }
+}
+
+// Dil değişince kanal popup'ları yeniden üretilsin (popup HTML'i locale'e bağlı)
+watch(locale, () => nextTick(updateChannelCluster))
+
+onMounted(() => window.addEventListener('keydown', onMeasureSelectionKeydown))
+onUnmounted(() => {
+  window.removeEventListener('keydown', onMeasureSelectionKeydown)
+  if (searchDebounceTimer) clearTimeout(searchDebounceTimer)
+  // Ölçüm durumu yalnızca bu sayfadan çıkınca temizlenir
+  resetMeasurement()
 })
 
 // Popup aç: tıklanınca veya query string ile açıldığında. Marker bazen henüz mount olmamış olur (query ile açılış),
@@ -856,10 +867,8 @@ watch(selectedLatLng, (latlng) => {
             </Button>
           </div>
           <MapSearchPanel
-            ref="searchPanelRef"
             :visible="desktopPanelOpen"
             @go-to="handleSearchGoTo"
-            @select-point="(w: 'A' | 'B') => { mapSelectingPoint = w }"
           />
         </aside>
       </Transition>
@@ -876,6 +885,17 @@ watch(selectedLatLng, (latlng) => {
       >
         <Search class="h-4 w-4" />
       </Button>
+      <!-- A/B nokta seçim banner'ı (haritanın üstünde, header'ın altında) -->
+      <div
+        v-if="selectingPoint"
+        class="absolute left-1/2 -translate-x-1/2 top-2 z-[900] px-2 pointer-events-none"
+      >
+        <MapSelectionBanner
+          :point="selectingPoint"
+          @pick="pickMeasurePoint"
+          @cancel="cancelSelecting"
+        />
+      </div>
       <!-- Alt orta: QTH bilgisi (fare üzerindeyken) + search box, ikisi de transparan -->
       <div
         class="absolute left-1/2 -translate-x-1/2 bottom-4 z-[500] flex items-center gap-2 px-2"
@@ -897,8 +917,9 @@ watch(selectedLatLng, (latlng) => {
             aria-hidden="true"
           />
           <Input
-            v-model="locatorSearchQuery"
+            :model-value="locatorSearchQuery"
             type="text"
+            @update:model-value="onLocatorInput"
             :placeholder="t('map.searchPlaceholder')"
             :maxlength="LOCATOR_SEARCH_MAX_LEN"
             :class="[
@@ -969,7 +990,7 @@ watch(selectedLatLng, (latlng) => {
                 <MapPin v-if="!coordModeDMS" class="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <Compass v-else class="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
                 <span class="text-xs font-medium tabular-nums min-w-0 flex-1 truncate">{{ coordModeDMS ? popupDMS : popupDecimalDisplay }}</span>
-                <Button variant="ghost" size="icon-sm" class="trac-icon-btn-xs" @click.stop="copyActiveCoord">
+                <Button variant="ghost" size="icon-sm" class="trac-icon-btn-xs" :aria-label="t('map.copyCoordA11y')" @click.stop="copyActiveCoord">
                   <Copy class="h-3 w-3" aria-hidden="true" />
                 </Button>
               </div>
@@ -1075,11 +1096,9 @@ watch(selectedLatLng, (latlng) => {
             <SheetTitle>{{ t('mapSearch.openSearch') }}</SheetTitle>
           </SheetHeader>
           <MapSearchPanel
-            :ref="(el: any) => { mobileSearchPanelRef = el; if (!desktopPanelOpen) searchPanelRef = el }"
             :visible="mobileSheetOpen"
             @go-to="handleSearchGoTo"
             @close="mobileSheetOpen = false"
-            @select-point="(w: 'A' | 'B') => { mapSelectingPoint = w }"
           />
         </SheetContent>
       </Sheet>

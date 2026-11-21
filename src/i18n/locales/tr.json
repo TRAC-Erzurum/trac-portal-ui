@@ -529,6 +529,7 @@
     "managedNetsLabel": "Yönettiğim çevrim"
   },
   "map": {
+    "copyCoordA11y": "Koordinatı kopyala",
     "title": "QTH Locator Haritası",
     "locatorCopied": "Locator kopyalandı",
     "decimalCopied": "Koordinat kopyalandı",
@@ -548,6 +549,7 @@
     "measureFromHere": "Buradan ölçüm başlat"
   },
   "mapSearch": {
+    "selectionBanner": "Haritada {point} noktasını seçin",
     "searchTab": "Ara",
     "measureTab": "Ölçüm",
     "searchPlaceholder": "İl, ilçe, sokak, yer adı ara...",

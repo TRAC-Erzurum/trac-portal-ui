@@ -529,6 +529,7 @@
     "managedNetsLabel": "Nets managed"
   },
   "map": {
+    "copyCoordA11y": "Copy coordinates",
     "title": "QTH Locator Map",
     "locatorCopied": "Locator copied",
     "decimalCopied": "Decimal coordinates copied",
@@ -548,6 +549,7 @@
     "measureFromHere": "Measure from here"
   },
   "mapSearch": {
+    "selectionBanner": "Select point {point} on the map",
     "searchTab": "Search",
     "measureTab": "Measure",
     "searchPlaceholder": "Search city, district, street, place...",
