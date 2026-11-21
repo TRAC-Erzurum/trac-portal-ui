@@ -1309,30 +1309,40 @@
     "howToConnect": "How to Connect?",
     "tutorialDescription": "Connection instructions and technical details.",
     "tutorials": {
-      "vhf_uhf_repeater": {
-        "title": "Connection Instructions",
-        "step1Body": "Enter the transmit (TX) or receive (RX) frequency.",
-        "step2ToneBody": "Set the CTCSS or DCS tone if required.",
-        "step3OffsetBody": "Enter the offset value if needed.",
-        "step4TestBody": "Test the connection and ensure you receive a signal."
-      },
-      "echolink": {
-        "title": "EchoLink Connection",
-        "step1Body": "Open the EchoLink software.",
-        "step2Body": "Enter the node number or name.",
-        "connectHintNodeAndName": "Connect using node [[node]] name [[name]].",
-        "connectHintNodeOnly": "Connect using node [[node]].",
-        "connectHintNameOnly": "Connect using name [[name]].",
-        "step3ConnectBody": "Follow prompts while the connection is being made.",
-        "step4Body": "Ensure the connection is successful."
-      },
-      "aprs": {
-        "title": "APRS Instructions",
-        "step1FreqBody": "Enter the APRS frequency.",
-        "step2IgateBody": "If configured as an IGate, check the settings.",
-        "step3PathBody": "Enter the digipeater path (e.g. WIDE1-1).",
-        "step4Body": "Test your device and send APRS data."
-      }
+        "vhf_uhf_repeater": {
+          "title": "Connection Instructions",
+          "listen": "Set your radio's receive frequency to [[tx]] MHz.",
+          "transmitShift": "Your transmit frequency must be [[rx]] MHz; set the shift to [[shift]].",
+          "simplex": "Simplex: transmit and receive use the same frequency.",
+          "encodeTone": "Set the transmit tone (CTCSS/DCS) to [[rxTone]]; the repeater will not open without it.",
+          "noTone": "The repeater needs no tone.",
+          "decodeTone": "Optional: set the receive tone to [[txTone]] to hear only this repeater.",
+          "dmr": "DMR: [[details]].",
+          "dmrColorCode": "color code CC[[cc]]",
+          "dmrNetwork": "network [[network]]",
+          "dmrRepeaterId": "repeater ID [[id]]",
+          "talkgroup": "TG [[id]][[name]] — TS[[timeslot]][[kind]]",
+          "talkgroupStatic": "static",
+          "talkgroupDynamic": "dynamic",
+          "test": "Test with a short call (say your call sign)."
+        },
+        "echolink": {
+          "title": "EchoLink Connection",
+          "connectHintNodeAndName": "Open node [[node]] ([[name]]) in the EchoLink app.",
+          "connectHintNodeOnly": "Connect using node [[node]].",
+          "connectHintNameOnly": "Connect using name [[name]].",
+          "step4Body": "Ensure the connection is successful."
+        },
+        "aprs": {
+          "title": "APRS Instructions",
+          "step1FreqBody": "Set your APRS device to [[freq]] MHz.",
+          "step3PathBody": "Use [[path]] as the digipeater path.",
+          "igateStep": "This station is an IGate ([[mode]]); your packets are forwarded to APRS-IS ([[server]]).",
+          "igateStepNoServer": "This station is an IGate ([[mode]]); your packets are forwarded to APRS-IS.",
+          "igateRxOnlyNote": "In RX-only mode it only uploads and does not transmit.",
+          "digipeaterStep": "This station is a [[type]] digipeater.",
+          "step4Body": "Test your device and send APRS data."
+        }
     },
     "type": "Communication Channel Type",
     "description": "Description",
