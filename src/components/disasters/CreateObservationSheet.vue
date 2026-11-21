@@ -208,8 +208,7 @@ function onDistrictChange(value: unknown) {
 // province/district can never be submitted with a new map point. A null location
 // (cleared by the user) is left alone here.
 watch(location, async (loc) => {
-  // No name on the point (e.g. a device fix before reverse geocoding): keep the dropdowns as chosen.
-  if (!loc?.city && !loc?.district) return
+  if (!loc) return
   isSyncingFromMap.value = true
   try {
     const provinceMatch = loc.city ? findMatch(cities.value, loc.city) : null
