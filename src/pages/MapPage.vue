@@ -25,7 +25,7 @@ import 'leaflet.markercluster'
 import AppFooter from '@/components/layout/AppFooter.vue'
 import MapSearchPanel from '@/components/shared/MapSearchPanel.vue'
 import MapSelectionBanner from '@/components/shared/MapSelectionBanner.vue'
-import { useMapMeasurement } from '@/composables/useMapMeasurement'
+import { useMapMeasurement, formatDistance } from '@/composables/useMapMeasurement'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
@@ -226,6 +226,7 @@ const {
   selectingPoint,
   selectionOrigin,
   panelTab,
+  distanceM,
   setPoint: setMeasurePoint,
   startSelecting,
   cancelSelecting,
@@ -273,6 +274,31 @@ const measureLine = computed(() => {
   if (!measurePointA.value || !measurePointB.value) return null
   return [measurePointA.value, measurePointB.value]
 })
+
+/** Permanent distance label at the midpoint of the A-B line (same format as the panel) */
+const measureMidpoint = computed(() => {
+  const a = measurePointA.value
+  const b = measurePointB.value
+  if (!a || !b) return null
+  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] as [number, number]
+})
+function createDistanceLabelIcon(text: string): L.DivIcon {
+  return L.divIcon({
+    className: 'measurement-distance-label',
+    html: `<span style="display:inline-block;white-space:nowrap;transform:translate(-50%,-50%);padding:2px 6px;border-radius:6px;border:1px solid #2563eb;background:rgba(255,255,255,0.95);color:#0f172a;font-size:12px;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,0.3)">${text}</span>`,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+  })
+}
+const measureDistanceLabelIcon = computed(() =>
+  distanceM.value == null ? null : createDistanceLabelIcon(formatDistance(distanceM.value)),
+)
+/* Remount the label marker whenever its text or position changes (icon/latLng updates are not relied on) */
+const measureDistanceLabelKey = computed(() =>
+  measureMidpoint.value && distanceM.value != null
+    ? `${formatDistance(distanceM.value)}|${measureMidpoint.value.join(',')}`
+    : '',
+)
 
 /** Ölçüm markerına tıklanınca o konumda popup aç */
 function openPopupAtMeasurePoint(latlng: [number, number]) {
@@ -589,7 +615,15 @@ function pickMeasurePoint(lat: number, lng: number, label: string) {
   if (!which) return
   const origin = selectionOrigin.value
   setMeasurePoint(which, lat, lng, label)
-  if (origin === 'panel' && isMobileViewport()) {
+  if (measureA.value && measureB.value) {
+    // A-B complete: show the result on the measure tab, whatever started the pick
+    panelTab.value = 'measure'
+    if (isMobileViewport()) {
+      mobileSheetOpen.value = true
+    } else {
+      desktopPanelOpen.value = true
+    }
+  } else if (origin === 'panel' && isMobileViewport()) {
     panelTab.value = 'measure'
     mobileSheetOpen.value = true
   }
@@ -1083,6 +1117,13 @@ watch(selectedLatLng, (latlng) => {
           v-if="measureLine"
           :lat-lngs="measureLine"
           :options="{ color: '#2563eb', weight: 2, dashArray: '8, 6', opacity: 0.8 }"
+        />
+        <LMarker
+          v-if="measureMidpoint && measureDistanceLabelIcon"
+          :key="measureDistanceLabelKey"
+          :lat-lng="measureMidpoint"
+          :icon="(measureDistanceLabelIcon as any)"
+          :options="{ interactive: false, keyboard: false }"
         />
       </LMap>
       </div><!-- /map inner -->

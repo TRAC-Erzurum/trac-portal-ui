@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import { api } from '@/lib/api'
 
 /**
@@ -32,6 +32,12 @@ const panelTab = ref<MeasureTab>('search')
 const elevationCache = new Map<string, number>()
 
 const EARTH_RADIUS_M = 6371000
+
+/** Bird's-eye distance label, e.g. "850 m" or "12.35 km". */
+export function formatDistance(m: number): string {
+  if (m < 1000) return `${Math.round(m)} m`
+  return `${(m / 1000).toFixed(2)} km`
+}
 
 function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const toRad = (deg: number) => (deg * Math.PI) / 180
@@ -95,13 +101,15 @@ async function loadElevation(point: MeasurePoint) {
 
 /** Set point A or B from coordinates and fetch its elevation. Clears the selection mode for that point. */
 function setPoint(which: MeasureLetter, lat: number, lng: number, label = '') {
-  const point: MeasurePoint = {
+  // Make the point reactive BEFORE storing it: the ref then holds this same proxy,
+  // so mutations in loadElevation are seen by the UI and identity checks match.
+  const point = reactive<MeasurePoint>({
     lat,
     lng,
     label: label || `${lat.toFixed(5)}, ${lng.toFixed(5)}`,
     elevation: null,
     elevationLoading: false,
-  }
+  })
   pointRef(which).value = point
   if (selectingPoint.value === which) selectingPoint.value = null
   void loadElevation(point)
