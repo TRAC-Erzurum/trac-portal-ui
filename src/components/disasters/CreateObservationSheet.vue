@@ -95,14 +95,11 @@ function findMatch(options: string[], target: string): string | null {
 }
 
 function buildLocationLabel(): string | undefined {
-  const parts: string[] = []
-  if (selectedDistrict.value) parts.push(selectedDistrict.value)
-  if (selectedProvince.value) parts.push(selectedProvince.value)
-  if (parts.length > 0) return parts.join(', ')
-  if (location.value?.city || location.value?.district) {
-    return [location.value.district, location.value.city].filter(Boolean).join(', ')
-  }
-  return undefined
+  // While a map selection is active, a geocoded name that did not match the QTH list is kept as text.
+  const district = selectedDistrict.value || (location.value?.district ?? '')
+  const province = selectedProvince.value || (location.value?.city ?? '')
+  const parts = [district, province].filter(Boolean)
+  return parts.length > 0 ? parts.join(', ') : undefined
 }
 
 async function reverseGeocode(
@@ -139,6 +136,9 @@ function attemptDeviceLocation() {
   isLocating.value = true
   navigator.geolocation.getCurrentPosition(
     (pos) => {
+      isLocating.value = false
+      // The user already chose a province or district: do not add a marker that disagrees with it.
+      if (selectedProvince.value || selectedDistrict.value) return
       const { latitude: lat, longitude: lng } = pos.coords
       location.value = {
         lat,
@@ -148,7 +148,6 @@ function attemptDeviceLocation() {
         district: '',
         altitude: null,
       }
-      isLocating.value = false
       applyReverseGeocode(lat, lng)
     },
     () => {
@@ -209,7 +208,8 @@ function onDistrictChange(value: unknown) {
 // province/district can never be submitted with a new map point. A null location
 // (cleared by the user) is left alone here.
 watch(location, async (loc) => {
-  if (!loc) return
+  // No name on the point (e.g. a device fix before reverse geocoding): keep the dropdowns as chosen.
+  if (!loc?.city && !loc?.district) return
   isSyncingFromMap.value = true
   try {
     const provinceMatch = loc.city ? findMatch(cities.value, loc.city) : null
