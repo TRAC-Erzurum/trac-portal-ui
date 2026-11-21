@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { toast } from 'vue-sonner'
-import { Download, FileType, Loader2, Upload, X } from 'lucide-vue-next'
+import { FileType, Loader2, Upload, X } from 'lucide-vue-next'
 import {
   Sheet,
   SheetContent,
@@ -12,16 +12,21 @@ import {
   SheetFooter
 } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { api, type ApiError } from '@/lib/api'
 import { translateError } from '@/i18n'
 import {
+  ATTENDEE_IMPORT_FIELDS,
   ATTENDEE_IMPORT_MAX_ROWS,
-  ATTENDEE_TEMPLATE_EXAMPLE_ROW,
-  ATTENDEE_TEMPLATE_FILE_NAME,
-  ATTENDEE_TEMPLATE_HEADERS,
-  parseAttendeeRows,
+  autoMapColumns,
+  buildImportRows,
+  columnLetter,
+  detectHeaderRow,
   type AttendeeImportResponse,
-  type AttendeeImportRow
+  type ColumnMapping,
+  type ImportField
 } from '@/lib/attendee-import'
 
 const props = defineProps<{
@@ -36,24 +41,51 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+/** Sentinel for "no column mapped"; SelectItem cannot use value="" */
+const UNMAPPED_VALUE = '__unmapped__'
+
 const fileInput = ref<HTMLInputElement | null>(null)
 const selectedFileName = ref('')
-const rows = ref<AttendeeImportRow[]>([])
-const parseMode = ref<'header' | 'positional' | null>(null)
+const isSheetLoaded = ref(false)
+const matrix = shallowRef<unknown[][]>([])
+const firstRowNumber = ref(1)
+const hasHeader = ref(false)
+const mapping = ref<ColumnMapping>({})
 const parseError = ref('')
 const isParsing = ref(false)
 const isImporting = ref(false)
 const result = ref<AttendeeImportResponse | null>(null)
 const hasImported = ref(false)
 
-const hasValidRows = computed(
-  () => rows.value.length > 0 && rows.value.length <= ATTENDEE_IMPORT_MAX_ROWS
+const columnCount = computed(() => matrix.value.reduce((max, row) => Math.max(max, row.length), 0))
+const columnOptions = computed(() => Array.from({ length: columnCount.value }, (_, index) => index))
+const headerRow = computed(() => matrix.value[0] ?? [])
+const rows = computed(() =>
+  buildImportRows(matrix.value, hasHeader.value, mapping.value, firstRowNumber.value)
 )
+const isCallSignMapped = computed(() => mapping.value.callSign !== undefined)
+const hasValidRows = computed(
+  () => isCallSignMapped.value && rows.value.length > 0 && rows.value.length <= ATTENDEE_IMPORT_MAX_ROWS
+)
+
+const validationMessage = computed(() => {
+  if (!isSheetLoaded.value) return ''
+  if (rows.value.length > ATTENDEE_IMPORT_MAX_ROWS) {
+    return t('attendeeImport.tooManyRows', { max: ATTENDEE_IMPORT_MAX_ROWS })
+  }
+  if (!isCallSignMapped.value) return t('attendeeImport.callSignRequired')
+  if (rows.value.length === 0) return t('attendeeImport.noRows')
+  return ''
+})
+const errorMessage = computed(() => parseError.value || validationMessage.value)
 
 function resetState() {
   selectedFileName.value = ''
-  rows.value = []
-  parseMode.value = null
+  isSheetLoaded.value = false
+  matrix.value = []
+  firstRowNumber.value = 1
+  hasHeader.value = false
+  mapping.value = {}
   parseError.value = ''
   result.value = null
   hasImported.value = false
@@ -70,6 +102,36 @@ watch(
   }
 )
 
+function applyAutoMapping(nextHasHeader: boolean) {
+  mapping.value = autoMapColumns(headerRow.value, nextHasHeader, columnCount.value)
+}
+
+function setHasHeader(value: boolean) {
+  hasHeader.value = value
+  applyAutoMapping(value)
+}
+
+function mappedValue(field: ImportField): string {
+  const column = mapping.value[field]
+  return column === undefined ? UNMAPPED_VALUE : String(column)
+}
+
+function setMappedColumn(field: ImportField, value: unknown) {
+  const next = { ...mapping.value }
+  if (typeof value === 'string' && value !== UNMAPPED_VALUE) {
+    next[field] = Number(value)
+  } else {
+    delete next[field]
+  }
+  mapping.value = next
+}
+
+function columnOptionLabel(column: number): string {
+  const letter = columnLetter(column)
+  const header = hasHeader.value ? String(headerRow.value[column] ?? '').trim() : ''
+  return header ? `${letter} — ${header}` : t('attendeeImport.columnLabel', { letter })
+}
+
 async function handleFileSelect(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
@@ -78,14 +140,16 @@ async function handleFileSelect(event: Event) {
   const lowerName = file.name.toLowerCase()
   if (!['.xlsx', '.xls', '.csv'].some(ext => lowerName.endsWith(ext))) {
     parseError.value = t('attendeeImport.invalidFileType')
-    rows.value = []
-    parseMode.value = null
+    isSheetLoaded.value = false
+    matrix.value = []
+    mapping.value = {}
     return
   }
 
   selectedFileName.value = file.name
   result.value = null
   parseError.value = ''
+  isSheetLoaded.value = false
   isParsing.value = true
   try {
     const XLSX = await import('xlsx')
@@ -95,43 +159,23 @@ async function handleFileSelect(event: Event) {
 
     // Keep matrix index aligned with spreadsheet row numbers (blank rows included).
     const range = worksheet['!ref'] ? XLSX.utils.decode_range(worksheet['!ref']) : null
-    const firstRowNumber = (range?.s.r ?? 0) + 1
-    const matrix = XLSX.utils.sheet_to_json(worksheet, {
+    firstRowNumber.value = (range?.s.r ?? 0) + 1
+    const sheet = XLSX.utils.sheet_to_json(worksheet, {
       header: 1,
       blankrows: true,
       defval: ''
     }) as unknown[][]
 
-    const parsed = parseAttendeeRows(matrix, firstRowNumber)
-    parseMode.value = parsed.mode
-    rows.value = parsed.rows
-
-    if (parsed.rows.length === 0) {
-      parseError.value = t('attendeeImport.noRows')
-    } else if (parsed.rows.length > ATTENDEE_IMPORT_MAX_ROWS) {
-      parseError.value = t('attendeeImport.tooManyRows', { max: ATTENDEE_IMPORT_MAX_ROWS })
-    }
+    matrix.value = sheet
+    isSheetLoaded.value = true
+    setHasHeader(detectHeaderRow(sheet[0] ?? []))
   } catch {
-    rows.value = []
-    parseMode.value = null
+    isSheetLoaded.value = false
+    matrix.value = []
+    mapping.value = {}
     parseError.value = t('attendeeImport.readError')
   } finally {
     isParsing.value = false
-  }
-}
-
-async function downloadTemplate() {
-  try {
-    const XLSX = await import('xlsx')
-    const workbook = XLSX.utils.book_new()
-    const worksheet = XLSX.utils.aoa_to_sheet([
-      [...ATTENDEE_TEMPLATE_HEADERS],
-      [...ATTENDEE_TEMPLATE_EXAMPLE_ROW]
-    ])
-    XLSX.utils.book_append_sheet(workbook, worksheet, t('attendeeImport.sheetName'))
-    XLSX.writeFile(workbook, ATTENDEE_TEMPLATE_FILE_NAME)
-  } catch {
-    toast.error(t('error.serverError'))
   }
 }
 
@@ -176,15 +220,6 @@ function close() {
       </SheetHeader>
 
       <div class="flex-1 overflow-y-auto px-6 py-4 space-y-6">
-        <!-- Template -->
-        <div class="space-y-2">
-          <p class="text-sm text-muted-foreground">{{ t('attendeeImport.templateDescription') }}</p>
-          <Button type="button" variant="outline" size="sm" class="gap-2" @click="downloadTemplate">
-            <Download class="h-4 w-4" aria-hidden="true" />
-            {{ t('attendeeImport.downloadTemplate') }}
-          </Button>
-        </div>
-
         <!-- File selection -->
         <div class="space-y-3">
           <input
@@ -209,13 +244,51 @@ function close() {
             {{ selectedFileName }}
           </p>
           <p v-if="isParsing" class="text-sm text-muted-foreground">{{ t('common.loading') }}</p>
-          <p v-if="parseError" role="alert" class="text-sm text-destructive">{{ parseError }}</p>
-          <p v-if="parseMode === 'header'" class="text-xs text-muted-foreground">
-            {{ t('attendeeImport.headerDetected') }}
-          </p>
-          <p v-else-if="parseMode === 'positional'" class="text-xs text-muted-foreground">
-            {{ t('attendeeImport.positionalDetected') }}
-          </p>
+          <p v-if="errorMessage" role="alert" class="text-sm text-destructive">{{ errorMessage }}</p>
+        </div>
+
+        <!-- Column mapping -->
+        <div v-if="isSheetLoaded && !result" class="space-y-4 pt-4 border-t">
+          <div class="flex items-center gap-3">
+            <Checkbox
+              id="attendee-import-header"
+              :model-value="hasHeader"
+              @update:model-value="setHasHeader($event === true)"
+            />
+            <Label for="attendee-import-header">{{ t('attendeeImport.firstRowHeader') }}</Label>
+          </div>
+
+          <div class="space-y-3">
+            <h3 class="text-sm font-medium text-muted-foreground">{{ t('attendeeImport.mappingTitle') }}</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div v-for="field in ATTENDEE_IMPORT_FIELDS" :key="field" class="space-y-2">
+                <Label
+                  :for="`attendee-column-${field}`"
+                  class="text-xs uppercase text-muted-foreground font-bold flex items-center gap-1"
+                >
+                  {{ t(`attendeeImport.fields.${field}`) }}
+                  <template v-if="field === 'callSign'">
+                    <span class="text-destructive" aria-hidden="true">*</span>
+                    <span class="sr-only">({{ t('attendeeImport.required') }})</span>
+                  </template>
+                </Label>
+                <Select
+                  :model-value="mappedValue(field)"
+                  @update:model-value="setMappedColumn(field, $event)"
+                >
+                  <SelectTrigger :id="`attendee-column-${field}`">
+                    <SelectValue :placeholder="t('common.select')" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem :value="UNMAPPED_VALUE">--</SelectItem>
+                    <SelectItem v-for="column in columnOptions" :key="column" :value="String(column)">
+                      {{ columnOptionLabel(column) }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Preview -->
