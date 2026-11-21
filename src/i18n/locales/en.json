@@ -107,9 +107,10 @@
     "membershipNotApproved": "Membership has not been approved yet.",
     "cannotChangeSuperAdminRole": "Cannot change the role of a super admin.",
     "lastAdminCannotBeDemoted": "The last admin cannot be demoted.",
-    "feedbackNotConfigured": "Feedback is not configured.",
     "feedbackInvalidCategory": "Invalid feedback category.",
-    "feedbackGithubFailed": "Could not create the record on GitHub. Please try again later.",
+    "feedbackNotConfigured": "GitHub integration is not configured yet; records are kept and will be forwarded automatically once it is.",
+    "feedbackAlreadySent": "This feedback was already forwarded to GitHub.",
+    "feedbackSecurityNotForwardable": "Security reports cannot be forwarded to GitHub.",
     "feedbackAttachmentRejected": "Attachment was rejected (type or size).",
     "feedbackBodyTooLarge": "Description text is too long.",
     "feedbackSummaryTooLong": "Summary text is too long.",
@@ -218,6 +219,35 @@
     "removeFile": "Remove",
     "submit": "Submit",
     "submitted": "Your feedback was submitted",
+    "admin": {
+      "categoryFilter": "Category",
+      "statusFilter": "GitHub status",
+      "all": "All",
+      "forwardPending": "Forward pending to GitHub",
+      "forwardPendingDone": "Processed {processed}, sent {sent}, failed {failed}.",
+      "countLabel": "records",
+      "empty": "No feedback found",
+      "callSign": "Call sign",
+      "createdAt": "Date",
+      "githubStatus": "GitHub status",
+      "attachments": "Screenshots",
+      "attachmentAlt": "Screenshot {n}",
+      "openFullSize": "Click a screenshot to open it at full size.",
+      "lastError": "Last error",
+      "detailTitle": "Feedback details",
+      "forward": "Forward to GitHub",
+      "forwarding": "Forwarding...",
+      "forwarded": "Feedback forwarded to GitHub",
+      "forwardFailed": "Could not forward to GitHub. See the last error.",
+      "opensInNewTab": "opens in a new tab",
+      "securityNotForwardable": "Security reports are not forwarded to GitHub.",
+      "status": {
+        "pending": "Pending",
+        "sent": "Sent",
+        "failed": "Failed",
+        "skipped": "Not forwarded"
+      }
+    },
     "securityWarning": "Do not share sensitive security details here; submissions become public GitHub issues.",
     "categories": {
       "bug": {
@@ -686,7 +716,8 @@
     "account": "My Account",
     "inventory": "My Inventory",
     "userManagement": "User Management",
-    "oidcClients": "Connected Applications"
+    "oidcClients": "Connected Applications",
+    "feedback": "Feedback"
   },
   "userManagement": {
     "searchPlaceholder": "Search email or name...",
