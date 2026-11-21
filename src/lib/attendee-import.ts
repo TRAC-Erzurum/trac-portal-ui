@@ -128,9 +128,25 @@ export function parseCombinedSignal(text: string): { readability?: number; signa
   return {}
 }
 
-/** True when any cell of the first row matches a field alias. */
+const CALL_SIGN_PATTERN = /^([a-z0-9]{1,4}\/)?[a-z0-9]{1,3}[0-9][a-z0-9]{0,3}[a-z](\/[a-z0-9]{1,4})?$/i
+
+/** True when the trimmed cell text looks like an amateur radio call sign (e.g. TA9A, TA1/DL1ABC, TA9A/P). */
+export function looksLikeCallSign(value: unknown): boolean {
+  return CALL_SIGN_PATTERN.test(String(value ?? '').trim())
+}
+
+/**
+ * True when the first row is a header. A row containing a call sign is never a header.
+ * Otherwise a cell must match a field alias exactly, or partially (substring) with no digits,
+ * so data such as "Kadir Yılmaz" or "Kırşehir 59" does not count as a header.
+ */
 export function detectHeaderRow(firstRow: unknown[]): boolean {
-  return firstRow.some(cell => ATTENDEE_IMPORT_FIELDS.some(field => fieldScore(cell, field) > 0))
+  if (firstRow.some(looksLikeCallSign)) return false
+  return firstRow.some(cell => {
+    const score = ATTENDEE_IMPORT_FIELDS.reduce((best, field) => Math.max(best, fieldScore(cell, field)), 0)
+    if (score >= EXACT_MATCH * 100) return true
+    return score > 0 && !/\d/.test(String(cell ?? ''))
+  })
 }
 
 /**
