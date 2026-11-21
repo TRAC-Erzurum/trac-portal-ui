@@ -191,16 +191,16 @@ onMounted(() => {
             @click="openRecord(item)"
           >
             <div class="flex items-start justify-between gap-3">
-              <p class="font-medium break-words min-w-0">{{ item.summary }}</p>
+              <span class="block font-medium break-words min-w-0">{{ item.summary }}</span>
               <span class="shrink-0 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-muted text-foreground">
                 {{ t(`feedback.categories.${item.category}.title`) }}
               </span>
             </div>
-            <p class="text-xs text-muted-foreground">
+            <span class="block text-xs text-muted-foreground">
               {{ formatDateTime(item.createdAt, locale) }}
               <span aria-hidden="true">·</span>
               <span class="font-mono">{{ item.callSign || '—' }}</span>
-            </p>
+            </span>
           </button>
 
           <div class="flex flex-wrap items-center gap-2">

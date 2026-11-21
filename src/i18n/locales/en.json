@@ -238,7 +238,7 @@
       "forwarding": "Forwarding...",
       "forwarded": "Feedback forwarded to GitHub",
       "forwardFailed": "Could not forward to GitHub. See the last error.",
-    "opensInNewTab": "opens in a new tab",
+      "opensInNewTab": "opens in a new tab",
       "securityNotForwardable": "Security reports are not forwarded to GitHub.",
       "status": {
         "pending": "Pending",

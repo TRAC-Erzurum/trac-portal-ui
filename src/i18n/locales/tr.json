@@ -238,7 +238,7 @@
       "forwarding": "Aktarılıyor...",
       "forwarded": "Geri bildirim GitHub'a aktarıldı",
       "forwardFailed": "GitHub'a aktarılamadı. Son hataya bakın.",
-    "opensInNewTab": "yeni sekmede açılır",
+      "opensInNewTab": "yeni sekmede açılır",
       "securityNotForwardable": "Güvenlik bildirimleri GitHub'a aktarılmaz.",
       "status": {
         "pending": "Bekliyor",
