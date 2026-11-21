@@ -21,7 +21,7 @@ Versions are the ranges declared in `package.json`; `yarn.lock` pins the exact v
 - Maps: Leaflet `^1.9.4` + `@vue-leaflet/vue-leaflet`; charts: ECharts `^6` + `vue-echarts`
 - Lint: ESLint 10 flat config with `typescript-eslint` 8 and `eslint-plugin-vue`
 - Package manager: **yarn 1** (`yarn.lock`). Never use npm or pnpm.
-- Runtime for Docker/CI: Node 20 (`node:20-alpine`). ESLint 10 needs Node `^20.19 || ^22.13 || >=24`.
+- Runtime for Docker/CI: Node 24 LTS (`node:24-alpine`; `package.json` `engines` is `>=24`). `@types/node` is kept on the 24.x line. ESLint 10 needs Node `^20.19 || ^22.13 || >=24`.
 
 ## Setup & run
 
