@@ -1025,7 +1025,10 @@
     "noAttendees": "Bu çevrimde hiç katılımcı yok!",
     "totalAttendees": "Toplam Katılımcı",
     "joinTime": "Katılım Zamanı",
-    "exportSuccess": "Dışa aktarma başarılı"
+    "exportSuccess": "Dışa aktarma başarılı",
+    "cityStatsTitle": "İl istatistikleri",
+    "citiesRepresented": "Katılan il sayısı: {count}",
+    "cityNotSpecified": "Belirtilmemiş"
   },
   "admin": {
     "resetPassword": "Parola Sıfırla",
