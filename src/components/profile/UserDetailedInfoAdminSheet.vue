@@ -10,7 +10,9 @@ import { api } from '@/lib/api'
 interface Address {
   type: string
   address: string
-  qth: string
+  qth?: string | null
+  city?: string | null
+  district?: string | null
 }
 
 interface EmergencyContact {
@@ -102,6 +104,7 @@ watch(() => props.open, (isOpen) => {
                     {{ addr.qth }}
                   </span>
                 </div>
+                <div v-if="addr.district || addr.city" class="text-xs text-muted-foreground">{{ [addr.district, addr.city].filter(Boolean).join(', ') }}</div>
                 <div class="text-sm whitespace-pre-wrap">{{ addr.address }}</div>
               </div>
             </div>

@@ -95,14 +95,11 @@ function findMatch(options: string[], target: string): string | null {
 }
 
 function buildLocationLabel(): string | undefined {
-  const parts: string[] = []
-  if (selectedDistrict.value) parts.push(selectedDistrict.value)
-  if (selectedProvince.value) parts.push(selectedProvince.value)
-  if (parts.length > 0) return parts.join(', ')
-  if (location.value?.city || location.value?.district) {
-    return [location.value.district, location.value.city].filter(Boolean).join(', ')
-  }
-  return undefined
+  // While a map selection is active, a geocoded name that did not match the QTH list is kept as text.
+  const district = selectedDistrict.value || (location.value?.district ?? '')
+  const province = selectedProvince.value || (location.value?.city ?? '')
+  const parts = [district, province].filter(Boolean)
+  return parts.length > 0 ? parts.join(', ') : undefined
 }
 
 async function reverseGeocode(
@@ -139,6 +136,9 @@ function attemptDeviceLocation() {
   isLocating.value = true
   navigator.geolocation.getCurrentPosition(
     (pos) => {
+      isLocating.value = false
+      // The user already chose a province or district: do not add a marker that disagrees with it.
+      if (selectedProvince.value || selectedDistrict.value) return
       const { latitude: lat, longitude: lng } = pos.coords
       location.value = {
         lat,
@@ -148,7 +148,6 @@ function attemptDeviceLocation() {
         district: '',
         altitude: null,
       }
-      isLocating.value = false
       applyReverseGeocode(lat, lng)
     },
     () => {
@@ -187,43 +186,44 @@ watch(() => props.open, async (isOpen) => {
   }
 })
 
-watch(selectedProvince, (newVal, oldVal) => {
-  if (isSyncingFromMap.value) return
-  if (newVal !== oldVal) {
-    selectedDistrict.value = ''
-  }
-})
+// A dropdown choice replaces any map selection: the marker and coordinates are removed.
+// Ignored while the map-driven sync below is writing the dropdowns, so programmatic
+// updates never null out the location.
+function onProvinceChange(value: unknown) {
+  const next = typeof value === 'string' ? value : ''
+  if (isSyncingFromMap.value || next === selectedProvince.value) return
+  selectedProvince.value = next
+  selectedDistrict.value = ''
+  location.value = null
+}
 
-watch([selectedProvince, selectedDistrict], () => {
-  if (isSyncingFromMap.value) return
-  if (!location.value) return
-  const city = selectedProvince.value || location.value.city
-  const district = selectedDistrict.value || location.value.district
-  if (city === location.value.city && district === location.value.district) return
-  location.value = {
-    ...location.value,
-    city,
-    district,
-  }
-})
+function onDistrictChange(value: unknown) {
+  const next = typeof value === 'string' ? value : ''
+  if (isSyncingFromMap.value || next === selectedDistrict.value) return
+  selectedDistrict.value = next
+  location.value = null
+}
 
+// Map-driven sync: the dropdowns always mirror the current map selection, so a stale
+// province/district can never be submitted with a new map point. A null location
+// (cleared by the user) is left alone here.
 watch(location, async (loc) => {
-  if (!loc?.city && !loc?.district) return
+  if (!loc) return
   isSyncingFromMap.value = true
   try {
-    if (loc.city) {
-      const provinceMatch = findMatch(cities.value, loc.city)
-      if (provinceMatch && provinceMatch !== selectedProvince.value) {
-        selectedProvince.value = provinceMatch
-        await nextTick()
-      }
+    const provinceMatch = loc.city ? findMatch(cities.value, loc.city) : null
+    if (!provinceMatch) {
+      selectedProvince.value = ''
+      selectedDistrict.value = ''
+      return
     }
-    if (loc.district && selectedProvince.value) {
-      const districtMatch = findMatch(getDistricts(selectedProvince.value), loc.district)
-      if (districtMatch && districtMatch !== selectedDistrict.value) {
-        selectedDistrict.value = districtMatch
-      }
+    if (provinceMatch !== selectedProvince.value) {
+      selectedDistrict.value = ''
+      selectedProvince.value = provinceMatch
+      await nextTick()
     }
+    const districtMatch = loc.district ? findMatch(getDistricts(provinceMatch), loc.district) : null
+    selectedDistrict.value = districtMatch ?? ''
   } finally {
     await nextTick()
     isSyncingFromMap.value = false
@@ -244,8 +244,14 @@ async function uploadPhotos(observationId: string) {
   }
 }
 
+// A map selection or at least a province is required. Without a map selection the
+// observation is saved with the province/district label and no coordinates.
+function hasLocationChoice(): boolean {
+  return !!location.value || !!selectedProvince.value
+}
+
 async function createObservation(manageLoading = true) {
-  if (!type.value || !location.value) {
+  if (!type.value || !hasLocationChoice()) {
     toast.error(t('form.validation.required'))
     return false
   }
@@ -256,8 +262,8 @@ async function createObservation(manageLoading = true) {
       `/disaster/${props.disasterId}/observations`,
       {
         type: type.value,
-        lat: location.value.lat,
-        lng: location.value.lng,
+        lat: location.value?.lat,
+        lng: location.value?.lng,
         locationLabel: buildLocationLabel(),
         severity: severity.value === 'NONE' ? undefined : severity.value,
         description: description.value.trim() || undefined,
@@ -279,8 +285,14 @@ async function createObservation(manageLoading = true) {
 }
 
 async function checkSimilarAndSubmit() {
-  if (!type.value || !location.value) {
+  if (!type.value || !hasLocationChoice()) {
     toast.error(t('form.validation.required'))
+    return
+  }
+
+  // Similar-observation matching is coordinate based, so it is skipped without a map selection.
+  if (!location.value) {
+    await createObservation()
     return
   }
 
@@ -370,7 +382,7 @@ async function handleCreateAnyway() {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div class="space-y-2">
             <Label for="obs-province">{{ t('disaster.province') }}</Label>
-            <Select v-model="selectedProvince">
+            <Select :model-value="selectedProvince" @update:model-value="onProvinceChange">
               <SelectTrigger id="obs-province" class="w-full">
                 <SelectValue :placeholder="t('disaster.selectProvince')" />
               </SelectTrigger>
@@ -383,7 +395,7 @@ async function handleCreateAnyway() {
           </div>
           <div class="space-y-2">
             <Label for="obs-district">{{ t('disaster.district') }}</Label>
-            <Select v-model="selectedDistrict" :disabled="!selectedProvince">
+            <Select :model-value="selectedDistrict" :disabled="!selectedProvince" @update:model-value="onDistrictChange">
               <SelectTrigger id="obs-district" class="w-full">
                 <SelectValue :placeholder="t('disaster.selectDistrict')" />
               </SelectTrigger>
@@ -451,7 +463,7 @@ async function handleCreateAnyway() {
         >
           <p class="font-medium">{{ t(`disaster.observationType.${obs.type}`) }}</p>
           <p class="text-muted-foreground text-xs mt-1">
-            {{ obs.locationLabel || `${obs.lat.toFixed(4)}, ${obs.lng.toFixed(4)}` }}
+            {{ obs.locationLabel || (obs.lat != null && obs.lng != null ? `${obs.lat.toFixed(4)}, ${obs.lng.toFixed(4)}` : '-') }}
           </p>
         </li>
       </ul>

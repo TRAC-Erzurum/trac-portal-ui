@@ -69,12 +69,22 @@ const userParsed = computed(() =>
   userGrid.value ? parseLocatorForMap(userGrid.value) : null
 )
 
-const mapCenter = computed((): [number, number] => {
-  if (userLatLng.value) return userLatLng.value
-  if (!userParsed.value) return TURKEY_CENTER
-  const [a, b] = userParsed.value.bounds
-  return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
-})
+// Only updated while a selection exists. Clearing it (dropdown change) must not
+// reset LMap's center prop, otherwise the map jumps back to Turkey.
+const mapCenter = ref<[number, number]>(TURKEY_CENTER)
+watch(
+  [userLatLng, userParsed],
+  () => {
+    if (userLatLng.value) {
+      mapCenter.value = userLatLng.value
+      return
+    }
+    if (!userParsed.value) return
+    const [a, b] = userParsed.value.bounds
+    mapCenter.value = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
+  },
+  { immediate: true }
+)
 
 const markerLatLng = computed((): [number, number] | null => {
   if (userLatLng.value) return userLatLng.value

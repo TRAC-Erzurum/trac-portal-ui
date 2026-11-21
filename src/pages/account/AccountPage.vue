@@ -48,7 +48,7 @@ interface Profile {
   birthDate?: string | null
   idNumber?: string | null
   phoneNumbers?: string[] | null
-  addresses?: { type: string; address: string; qth: string }[] | null
+  addresses?: { type: string; address: string; qth?: string | null; city?: string | null; district?: string | null }[] | null
   emergencyContacts?: { name: string; callSign?: string; phone: string }[] | null
   expertiseAreas?: string[] | null
   trainings?: { title: string; institution?: string; year?: number }[] | null
@@ -409,6 +409,7 @@ watch(
                       {{ addr.qth }}
                     </span>
                   </div>
+                  <div v-if="addr.district || addr.city" class="text-xs text-muted-foreground">{{ [addr.district, addr.city].filter(Boolean).join(', ') }}</div>
                   <div class="text-sm whitespace-pre-wrap">{{ addr.address }}</div>
                 </div>
               </div>

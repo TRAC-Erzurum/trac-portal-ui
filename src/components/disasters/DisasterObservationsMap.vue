@@ -71,7 +71,9 @@ function buildIcon(type: ObservationType): L.DivIcon {
 }
 
 function locationText(obs: RankedObservation): string {
-  return obs.locationLabel ?? `${obs.lat.toFixed(4)}, ${obs.lng.toFixed(4)}`
+  if (obs.locationLabel != null) return obs.locationLabel
+  if (!hasCoordinates(obs)) return '-'
+  return `${obs.lat.toFixed(4)}, ${obs.lng.toFixed(4)}`
 }
 
 function buildPopup(obs: RankedObservation): HTMLElement {
@@ -168,10 +170,20 @@ const tileLayerAttribution = computed(() =>
   themeStore.effectiveTheme === 'dark' ? '© OpenStreetMap © CARTO' : undefined,
 )
 
+type LocatedObservation = RankedObservation & { lat: number; lng: number }
+
+function hasCoordinates(obs: RankedObservation): obs is LocatedObservation {
+  return typeof obs.lat === 'number' && typeof obs.lng === 'number'
+}
+
+// Observations saved with a city/district only have no coordinates and are not plotted.
+const plottedObservations = computed(() => props.observations.filter(hasCoordinates))
+
 const mapCenter = computed((): [number, number] => {
-  if (props.observations.length === 0) return TURKEY_CENTER
-  const lat = props.observations.reduce((s, o) => s + o.lat, 0) / props.observations.length
-  const lng = props.observations.reduce((s, o) => s + o.lng, 0) / props.observations.length
+  const plotted = plottedObservations.value
+  if (plotted.length === 0) return TURKEY_CENTER
+  const lat = plotted.reduce((s, o) => s + o.lat, 0) / plotted.length
+  const lng = plotted.reduce((s, o) => s + o.lng, 0) / plotted.length
   return [lat, lng]
 })
 
@@ -188,7 +200,8 @@ function renderMarkers() {
   if (!map) return
 
   clearMarkers()
-  if (props.observations.length === 0) return
+  const plotted = plottedObservations.value
+  if (plotted.length === 0) return
 
   const markerClusterGroupFn = (
     L as typeof L & {
@@ -207,7 +220,7 @@ function renderMarkers() {
         iconAnchor: [19, 19],
       }),
   })
-  for (const obs of props.observations) {
+  for (const obs of plotted) {
     const marker = L.marker([obs.lat, obs.lng], { icon: buildIcon(obs.type) })
     marker.bindPopup(buildPopup(obs), { closeButton: true, minWidth: 160, className: 'trac-map-popup' })
     markersById.set(obs.id, marker)
@@ -215,10 +228,10 @@ function renderMarkers() {
   }
   map.addLayer(clusterGroup)
 
-  if (props.observations.length === 1) {
-    map.setView([props.observations[0]!.lat, props.observations[0]!.lng], 14)
+  if (plotted.length === 1) {
+    map.setView([plotted[0]!.lat, plotted[0]!.lng], 14)
   } else {
-    const bounds = L.latLngBounds(props.observations.map(o => [o.lat, o.lng] as [number, number]))
+    const bounds = L.latLngBounds(plotted.map(o => [o.lat, o.lng] as [number, number]))
     map.fitBounds(bounds, { padding: [24, 24], maxZoom: 14 })
   }
 }
