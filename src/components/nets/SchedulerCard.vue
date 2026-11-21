@@ -373,7 +373,7 @@ const branchIsHeadquarters = computed(() => props.scheduler.branch?.isHeadquarte
           >
             <span class="text-lg tracking-widest" aria-hidden="true">⋯</span>
           </div>
-          <p v-if="endDateLabel && lastListedDateLabel" class="text-sm text-muted-foreground">
+          <p v-if="endDateLabel && lastListedDateLabel && !hasMoreThanFive" class="text-sm text-muted-foreground">
             {{ t('scheduler.lastNetOn', { date: lastListedDateLabel }) }}
           </p>
         </template>
