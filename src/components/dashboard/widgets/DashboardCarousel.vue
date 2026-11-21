@@ -128,6 +128,7 @@ function resetDrag() {
 }
 
 function onSwipeStart(event: PointerEvent) {
+  clearClickSuppression()
   if (event.pointerType !== 'touch' || !event.isPrimary || !hasCarousel.value) return
   swipe = {
     pointerId: event.pointerId,
@@ -156,13 +157,16 @@ function onSwipeMove(event: PointerEvent) {
   dragOffset.value = dx
 }
 
-function armClickSuppression() {
-  suppressClick = true
+function clearClickSuppression() {
+  suppressClick = false
   if (suppressClickTimer) clearTimeout(suppressClickTimer)
-  suppressClickTimer = setTimeout(() => {
-    suppressClick = false
-    suppressClickTimer = null
-  }, SWIPE_CLICK_SUPPRESS_MS)
+  suppressClickTimer = null
+}
+
+function armClickSuppression() {
+  clearClickSuppression()
+  suppressClick = true
+  suppressClickTimer = setTimeout(clearClickSuppression, SWIPE_CLICK_SUPPRESS_MS)
 }
 
 function onSwipeEnd(event: PointerEvent) {
@@ -194,7 +198,7 @@ function onSwipeCancel(event: PointerEvent) {
 
 function onClickCapture(event: MouseEvent) {
   if (!suppressClick) return
-  suppressClick = false
+  clearClickSuppression()
   event.preventDefault()
   event.stopPropagation()
 }
@@ -224,7 +228,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopCarousel()
-  if (suppressClickTimer) clearTimeout(suppressClickTimer)
+  clearClickSuppression()
 })
 </script>
 
