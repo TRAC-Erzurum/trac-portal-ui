@@ -189,10 +189,18 @@ function repeaterSteps(infra: TutorialInfra, t: TFunction): string[] {
   }
 
   if (analog) {
-    const encode = toneLabel(infra.rxCtcssTone, infra.rxDcsCode, infra.rxDcsPolarity)
-    steps.push(encode ? interpolate(t(`${base}.encodeTone`), { rxTone: encode }) : t(`${base}.noTone`))
-    const decode = toneLabel(infra.txCtcssTone, infra.txDcsCode, infra.txDcsPolarity)
-    if (decode) steps.push(interpolate(t(`${base}.decodeTone`), { txTone: decode }))
+    // rx tone = user's transmit (encode) tone; tx tone = optional receive (decode) tone.
+    // If only a tx tone is stored, it is the single repeater tone, so it is shown once as the encode tone.
+    const rxTone = toneLabel(infra.rxCtcssTone, infra.rxDcsCode, infra.rxDcsPolarity)
+    const txTone = toneLabel(infra.txCtcssTone, infra.txDcsCode, infra.txDcsPolarity)
+    if (rxTone) {
+      steps.push(interpolate(t(`${base}.encodeTone`), { rxTone }))
+      if (txTone) steps.push(interpolate(t(`${base}.decodeTone`), { txTone }))
+    } else if (txTone) {
+      steps.push(interpolate(t(`${base}.encodeTone`), { rxTone: txTone }))
+    } else {
+      steps.push(t(`${base}.noTone`))
+    }
   }
 
   if (digital) {
