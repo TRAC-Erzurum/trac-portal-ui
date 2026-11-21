@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { api } from '@/lib/api'
+import { useMapMeasurement } from '@/composables/useMapMeasurement'
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -26,13 +27,6 @@ export interface SearchResult {
   lng: number
   displayName: string
   type: string
-}
-
-export interface SelectedPoint {
-  lat: number
-  lng: number
-  label: string
-  elevation: number | null
 }
 
 /* ------------------------------------------------------------------ */
@@ -48,8 +42,6 @@ const emit = defineEmits<{
   goTo: [lat: number, lng: number, label: string]
   /** Request to close the panel (mobile sheet) */
   close: []
-  /** Notify parent that point selection mode started */
-  selectPoint: [which: 'A' | 'B']
 }>()
 
 /* ------------------------------------------------------------------ */
@@ -58,10 +50,22 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 /* ------------------------------------------------------------------ */
-/*  Tab state                                                          */
+/*  Shared measurement state (survives panel/sheet unmount)            */
 /* ------------------------------------------------------------------ */
-type Tab = 'search' | 'measure'
-const activeTab = ref<Tab>('search')
+const {
+  pointA,
+  pointB,
+  selectingPoint,
+  panelTab,
+  distanceM,
+  elevationDiffM,
+  startSelecting,
+  clearPoint,
+  clearMeasurement,
+} = useMapMeasurement()
+
+/** Tab state lives in the shared store so the sidebar and the sheet open on the same tab */
+const activeTab = panelTab
 
 /* ------------------------------------------------------------------ */
 /*  Search                                                             */
@@ -105,168 +109,29 @@ function selectResult(result: SearchResult) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Measurement: two-point mode                                        */
+/*  Measurement actions                                                */
 /* ------------------------------------------------------------------ */
-const pointA = ref<SelectedPoint | null>(null)
-const pointB = ref<SelectedPoint | null>(null)
-const selectingPoint = ref<'A' | 'B' | null>(null)
-
-/** Set a measurement point (called from the map click handler via parent).
- *  forceWhich: directly set A or B without requiring selectingPoint (used by popup measure button). */
-function setMeasurementPoint(lat: number, lng: number, label: string, forceWhich?: 'A' | 'B') {
-  const shortLabel = label || `${lat.toFixed(5)}, ${lng.toFixed(5)}`
-  const point: SelectedPoint = { lat, lng, label: shortLabel, elevation: null }
-  const which = forceWhich ?? selectingPoint.value
-
-  if (which === 'A') {
-    pointA.value = point
-    fetchPointElevation('A', lat, lng)
-  } else if (which === 'B') {
-    pointB.value = point
-    fetchPointElevation('B', lat, lng)
-  }
-  if (!forceWhich) {
-    selectingPoint.value = null
-  }
-}
-
-const elevationCache = new Map<string, number>()
-
-async function fetchPointElevation(which: 'A' | 'B', lat: number, lng: number) {
-  const key = `${lat.toFixed(4)},${lng.toFixed(4)}`
-  const cached = elevationCache.get(key)
-  if (cached != null) {
-    if (which === 'A' && pointA.value) pointA.value.elevation = cached
-    if (which === 'B' && pointB.value) pointB.value.elevation = cached
-    return
-  }
-  try {
-    const data = await api.get<{ elevation: number | null }>(
-      `/qth/elevation?lat=${encodeURIComponent(lat)}&lng=${encodeURIComponent(lng)}`,
-    )
-    const m = data.elevation
-    const value = typeof m === 'number' && Number.isFinite(m) ? m : 0
-    elevationCache.set(key, value)
-    if (which === 'A' && pointA.value) pointA.value.elevation = value
-    if (which === 'B' && pointB.value) pointB.value.elevation = value
-  } catch {
-    const fallback = 0
-    if (which === 'A' && pointA.value) pointA.value.elevation = fallback
-    if (which === 'B' && pointB.value) pointB.value.elevation = fallback
-  }
-}
-
+/** Enter map-pick mode for A or B. On mobile the sheet closes so the map is reachable. */
 function startSelectPoint(which: 'A' | 'B') {
-  selectingPoint.value = which
-  emit('selectPoint', which)
-  // Mobilde sheet'i kapat ki haritadan nokta seçilebilsin
+  startSelecting(which, 'panel')
   emit('close')
 }
 
-function clearPoint(which: 'A' | 'B') {
-  if (which === 'A') pointA.value = null
-  else pointB.value = null
-}
-
-function clearMeasurement() {
-  pointA.value = null
-  pointB.value = null
-  selectingPoint.value = null
-}
-
 /* ------------------------------------------------------------------ */
-/*  Distance calculation (Haversine — bird's-eye)                      */
+/*  Display helpers                                                    */
 /* ------------------------------------------------------------------ */
-function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
-  const R = 6371000 // Earth radius in meters
-  const toRad = (deg: number) => (deg * Math.PI) / 180
-  const dLat = toRad(lat2 - lat1)
-  const dLng = toRad(lng2 - lng1)
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-  return R * c
-}
-
-const distance = computed(() => {
-  if (!pointA.value || !pointB.value) return null
-  return haversineDistance(
-    pointA.value.lat,
-    pointA.value.lng,
-    pointB.value.lat,
-    pointB.value.lng,
-  )
-})
-
 const distanceDisplay = computed(() => {
-  if (distance.value == null) return ''
-  const m = distance.value
+  const m = distanceM.value
+  if (m == null) return ''
   if (m < 1000) return `${Math.round(m)} m`
   return `${(m / 1000).toFixed(2)} km`
 })
 
-/* ------------------------------------------------------------------ */
-/*  Elevation difference                                               */
-/* ------------------------------------------------------------------ */
-const elevationDiff = computed(() => {
-  if (pointA.value?.elevation == null || pointB.value?.elevation == null) return null
-  return pointB.value.elevation - pointA.value.elevation
-})
-
 const elevationDiffDisplay = computed(() => {
-  if (elevationDiff.value == null) return null
-  const diff = elevationDiff.value
+  const diff = elevationDiffM.value
+  if (diff == null) return '—'
   const sign = diff > 0 ? '+' : ''
   return `${sign}${diff} m`
-})
-
-/* ------------------------------------------------------------------ */
-/*  Search from measurement mode                                       */
-/* ------------------------------------------------------------------ */
-const measureSearchQuery = ref('')
-const measureSearchResults = ref<SearchResult[]>([])
-const measureSearchLoading = ref(false)
-let measureSearchDebounce: ReturnType<typeof setTimeout> | null = null
-
-watch(measureSearchQuery, (val) => {
-  if (measureSearchDebounce) clearTimeout(measureSearchDebounce)
-  const q = val.trim()
-  if (q.length < MIN_QUERY_LEN) {
-    measureSearchResults.value = []
-    return
-  }
-  measureSearchLoading.value = true
-  measureSearchDebounce = setTimeout(async () => {
-    try {
-      const res = await api.get<SearchResult[]>(
-        `/qth/search?q=${encodeURIComponent(q)}&limit=5`,
-      )
-      measureSearchResults.value = res ?? []
-    } catch {
-      measureSearchResults.value = []
-    } finally {
-      measureSearchLoading.value = false
-    }
-  }, SEARCH_DEBOUNCE)
-})
-
-function selectMeasureResult(result: SearchResult) {
-  setMeasurementPoint(result.lat, result.lng, result.displayName)
-  measureSearchQuery.value = ''
-  measureSearchResults.value = []
-}
-
-/* ------------------------------------------------------------------ */
-/*  Expose for parent                                                  */
-/* ------------------------------------------------------------------ */
-defineExpose({
-  setMeasurementPoint,
-  startSelectPoint,
-  selectingPoint,
-  pointA,
-  pointB,
-  activeTab,
 })
 </script>
 
@@ -371,46 +236,6 @@ defineExpose({
           {{ t('mapSearch.measureHint') }}
         </p>
 
-        <!-- Search within measurement mode -->
-        <div v-if="selectingPoint" class="space-y-2">
-          <div class="relative">
-            <Search
-              class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <Input
-              v-model="measureSearchQuery"
-              type="text"
-              :placeholder="t('mapSearch.searchOrClickMap')"
-              :class="['pl-9 w-full text-sm', measureSearchQuery ? 'pr-9' : '']"
-            />
-            <button
-              v-if="measureSearchQuery"
-              type="button"
-              class="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-              @click="measureSearchQuery = ''; measureSearchResults = []"
-            >
-              <X class="h-3.5 w-3.5" />
-            </button>
-          </div>
-
-          <div v-if="measureSearchLoading" class="flex items-center justify-center py-3">
-            <Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
-          </div>
-
-          <div v-else-if="measureSearchResults.length > 0">
-            <button
-              v-for="(result, idx) in measureSearchResults"
-              :key="idx"
-              class="w-full flex items-start gap-2 px-2 py-2 hover:bg-muted/50 transition-colors text-left rounded-md"
-              @click="selectMeasureResult(result)"
-            >
-              <MapPin class="h-3.5 w-3.5 shrink-0 mt-0.5 text-muted-foreground" />
-              <p class="text-xs leading-snug break-words min-w-0 flex-1">{{ result.displayName }}</p>
-            </button>
-          </div>
-        </div>
-
         <!-- Point A -->
         <div class="rounded-lg border border-border p-3">
           <div class="flex items-center justify-between mb-1.5">
@@ -435,9 +260,10 @@ defineExpose({
                 variant="ghost"
                 size="icon-sm"
                 class="h-7 w-7 text-muted-foreground hover:text-destructive"
+                :aria-label="t('common.clear')"
                 @click="clearPoint('A')"
               >
-                <X class="h-3.5 w-3.5" />
+                <X class="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </div>
           </div>
@@ -447,9 +273,10 @@ defineExpose({
               {{ pointA.lat.toFixed(5) }}, {{ pointA.lng.toFixed(5) }}
             </p>
             <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Mountain class="h-3.5 w-3.5" />
-              <span v-if="pointA.elevation != null">{{ pointA.elevation }} m</span>
-              <Loader2 v-else class="h-3 w-3 animate-spin" />
+              <Mountain class="h-3.5 w-3.5" aria-hidden="true" />
+              <Loader2 v-if="pointA.elevationLoading" class="h-3 w-3 animate-spin" />
+              <span v-else-if="pointA.elevation != null">{{ pointA.elevation }} m</span>
+              <span v-else>—</span>
             </div>
           </div>
           <p v-else class="text-xs text-muted-foreground">
@@ -481,9 +308,10 @@ defineExpose({
                 variant="ghost"
                 size="icon-sm"
                 class="h-7 w-7 text-muted-foreground hover:text-destructive"
+                :aria-label="t('common.clear')"
                 @click="clearPoint('B')"
               >
-                <X class="h-3.5 w-3.5" />
+                <X class="h-3.5 w-3.5" aria-hidden="true" />
               </Button>
             </div>
           </div>
@@ -493,9 +321,10 @@ defineExpose({
               {{ pointB.lat.toFixed(5) }}, {{ pointB.lng.toFixed(5) }}
             </p>
             <div class="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Mountain class="h-3.5 w-3.5" />
-              <span v-if="pointB.elevation != null">{{ pointB.elevation }} m</span>
-              <Loader2 v-else class="h-3 w-3 animate-spin" />
+              <Mountain class="h-3.5 w-3.5" aria-hidden="true" />
+              <Loader2 v-if="pointB.elevationLoading" class="h-3 w-3 animate-spin" />
+              <span v-else-if="pointB.elevation != null">{{ pointB.elevation }} m</span>
+              <span v-else>—</span>
             </div>
           </div>
           <p v-else class="text-xs text-muted-foreground">
@@ -510,7 +339,7 @@ defineExpose({
           <!-- Distance -->
           <div class="rounded-lg bg-muted/50 p-3 space-y-2">
             <div class="flex items-center gap-2">
-              <Navigation class="h-4 w-4 text-primary" />
+              <Navigation class="h-4 w-4 text-primary" aria-hidden="true" />
               <span class="text-sm font-medium">{{ t('mapSearch.birdDistance') }}</span>
             </div>
             <p class="text-2xl font-bold tabular-nums">{{ distanceDisplay }}</p>
@@ -519,19 +348,14 @@ defineExpose({
           <!-- Elevation Difference -->
           <div class="rounded-lg bg-muted/50 p-3 space-y-2">
             <div class="flex items-center gap-2">
-              <Mountain class="h-4 w-4 text-primary" />
+              <Mountain class="h-4 w-4 text-primary" aria-hidden="true" />
               <span class="text-sm font-medium">{{ t('mapSearch.elevationDiff') }}</span>
             </div>
-            <div v-if="elevationDiffDisplay != null">
-              <p class="text-2xl font-bold tabular-nums">{{ elevationDiffDisplay }}</p>
-              <p class="text-xs text-muted-foreground mt-1">
-                A: {{ pointA!.elevation }} m → B: {{ pointB!.elevation }} m
-              </p>
-            </div>
-            <div v-else class="flex items-center gap-2 text-sm text-muted-foreground">
-              <Loader2 class="h-4 w-4 animate-spin" />
-              {{ t('common.loading') }}
-            </div>
+            <p class="text-2xl font-bold tabular-nums">{{ elevationDiffDisplay }}</p>
+            <p class="text-xs text-muted-foreground mt-1">
+              A: {{ pointA.elevation != null ? `${pointA.elevation} m` : '—' }}
+              → B: {{ pointB.elevation != null ? `${pointB.elevation} m` : '—' }}
+            </p>
           </div>
         </div>
 
@@ -543,7 +367,7 @@ defineExpose({
             class="w-full trac-btn-destructive-outlined"
             @click="clearMeasurement"
           >
-            <Trash2 class="h-4 w-4 mr-2" />
+            <Trash2 class="h-4 w-4 mr-2" aria-hidden="true" />
             {{ t('mapSearch.clearMeasurement') }}
           </Button>
         </div>
