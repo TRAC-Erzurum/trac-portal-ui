@@ -677,6 +677,7 @@
     "map": "Map",
     "disasters": "Disasters",
     "account": "My Account",
+    "inventory": "My Inventory",
     "userManagement": "User Management",
     "oidcClients": "Connected Applications"
   },
@@ -722,6 +723,9 @@
     "membershipUnregistered": "Unregistered",
     "noPortalAccount": "No portal account",
     "roleAll": "All Roles",
+    "deleteOperator": "Delete Operator",
+    "deleteOperatorConfirm": "Are you sure you want to delete this operator? This action cannot be undone.",
+    "deleteOperatorSuccess": "Operator deleted successfully",
     "import": "Import",
     "importTitle": "Import Operators",
     "importDescription": "Select an Excel file and map the columns.",
