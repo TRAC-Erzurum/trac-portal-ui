@@ -300,20 +300,20 @@ function statusClass(item: PublicationHistoryItem): string {
 
           <dl class="grid grid-cols-3 gap-2 text-center">
             <div class="rounded-md border border-border p-2">
-              <dd class="text-lg font-semibold">{{ state.counts.delivered }}</dd>
+              <dd class="text-lg font-semibold">{{ state?.counts.delivered }}</dd>
               <dt class="text-xs text-muted-foreground">{{ t('publishing.history.statusDelivered') }}</dt>
             </div>
             <div class="rounded-md border border-border p-2">
-              <dd class="text-lg font-semibold">{{ state.counts.failed }}</dd>
+              <dd class="text-lg font-semibold">{{ state?.counts.failed }}</dd>
               <dt class="text-xs text-muted-foreground">{{ t('publishing.history.statusFailed') }}</dt>
             </div>
             <div class="rounded-md border border-border p-2">
-              <dd class="text-lg font-semibold">{{ state.notSent + state.counts.waiting }}</dd>
+              <dd class="text-lg font-semibold">{{ (state?.notSent ?? 0) + (state?.counts.waiting ?? 0) }}</dd>
               <dt class="text-xs text-muted-foreground">{{ t('publishing.history.notSent') }}</dt>
             </div>
           </dl>
-          <p v-if="state.counts.alreadyExisted > 0" class="text-xs text-muted-foreground">
-            {{ t('publishing.history.alreadyExistedCount', { count: state.counts.alreadyExisted }) }}
+          <p v-if="(state?.counts.alreadyExisted ?? 0) > 0" class="text-xs text-muted-foreground">
+            {{ t('publishing.history.alreadyExistedCount', { count: state?.counts.alreadyExisted ?? 0 }) }}
           </p>
 
           <p v-if="history.length === 0" class="text-sm text-muted-foreground">{{ t('publishing.history.empty') }}</p>
