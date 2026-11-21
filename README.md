@@ -6,7 +6,7 @@ AI ajanları ve geliştirici kuralları (kurulum, doğrulama, PR kuralları): [A
 
 ## Gereksinimler
 
-Node 18+, yarn.
+Node 24 LTS+, yarn.
 
 ## Kurulum
 
