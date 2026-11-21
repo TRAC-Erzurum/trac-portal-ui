@@ -12,12 +12,34 @@ on:
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
-      - '.cursor/**'
       - '.editorconfig'
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: yarn
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Verify
+        env:
+          # Harmless placeholder so the build does not depend on a local .env. No secrets here.
+          VITE_API_URL: /api
+        run: yarn verify
+
   build-and-push-ui:
     runs-on: ubuntu-latest
+    needs: verify
 
     steps:
       - name: Checkout Repository
