@@ -190,6 +190,18 @@ const router = createRouter({
       meta: { requiresAuth: true, minRole: 'super_admin' as UserRole, titleKey: 'nav.oidcClients' }
     },
     {
+      path: '/admin/feedback',
+      name: 'admin-feedback',
+      component: () => import('@/pages/admin/FeedbackAdminPage.vue'),
+      meta: { requiresAuth: true, minRole: 'super_admin' as UserRole, titleKey: 'nav.feedback' }
+    },
+    {
+      path: '/admin/feedback/:id',
+      name: 'admin-feedback-detail',
+      component: () => import('@/pages/admin/FeedbackAdminPage.vue'),
+      meta: { requiresAuth: true, minRole: 'super_admin' as UserRole, titleKey: 'nav.feedback' }
+    },
+    {
       path: '/oidc/consent',
       name: 'oidc-consent',
       component: () => import('@/pages/oidc/OidcConsentPage.vue'),

@@ -106,9 +106,10 @@
     "membershipNotApproved": "Üyelik henüz onaylanmadı.",
     "cannotChangeSuperAdminRole": "Süper adminin rolü değiştirilemez.",
     "lastAdminCannotBeDemoted": "Son adminin yetkisi düşürülemez.",
-    "feedbackNotConfigured": "Geri bildirim şu anda yapılandırılmamış.",
     "feedbackInvalidCategory": "Geçersiz geri bildirim kategorisi.",
-    "feedbackGithubFailed": "GitHub üzerinde kayıt oluşturulamadı. Lütfen daha sonra tekrar deneyin.",
+    "feedbackNotConfigured": "GitHub entegrasyonu henüz yapılandırılmadı; kayıtlar bekliyor ve yapılandırılınca otomatik aktarılacak.",
+    "feedbackAlreadySent": "Bu geri bildirim zaten GitHub'a aktarıldı.",
+    "feedbackSecurityNotForwardable": "Güvenlik bildirimleri GitHub'a aktarılamaz.",
     "feedbackAttachmentRejected": "Ek dosya kabul edilmedi (tür veya boyut).",
     "feedbackBodyTooLarge": "Açıklama metni çok uzun.",
     "feedbackSummaryTooLong": "Özet metni çok uzun.",
@@ -217,6 +218,35 @@
     "removeFile": "Kaldır",
     "submit": "Gönder",
     "submitted": "Geri bildiriminiz iletildi",
+    "admin": {
+      "categoryFilter": "Kategori",
+      "statusFilter": "GitHub durumu",
+      "all": "Tümü",
+      "forwardPending": "Bekleyenleri GitHub'a aktar",
+      "forwardPendingDone": "{processed} işlendi, {sent} gönderildi, {failed} başarısız.",
+      "countLabel": "kayıt",
+      "empty": "Geri bildirim bulunamadı",
+      "callSign": "Çağrı işareti",
+      "createdAt": "Tarih",
+      "githubStatus": "GitHub durumu",
+      "attachments": "Ekran görüntüleri",
+      "attachmentAlt": "Ekran görüntüsü {n}",
+      "openFullSize": "Tam boyutta açmak için bir ekran görüntüsüne tıklayın.",
+      "lastError": "Son hata",
+      "detailTitle": "Geri bildirim detayı",
+      "forward": "GitHub'a aktar",
+      "forwarding": "Aktarılıyor...",
+      "forwarded": "Geri bildirim GitHub'a aktarıldı",
+      "forwardFailed": "GitHub'a aktarılamadı. Son hataya bakın.",
+    "opensInNewTab": "yeni sekmede açılır",
+      "securityNotForwardable": "Güvenlik bildirimleri GitHub'a aktarılmaz.",
+      "status": {
+        "pending": "Bekliyor",
+        "sent": "Gönderildi",
+        "failed": "Başarısız",
+        "skipped": "Aktarılmadı"
+      }
+    },
     "securityWarning": "Güvenlik konularında hassas bilgileri burada paylaşmayın; kayıtlar herkese açık GitHub issue olur.",
     "categories": {
       "bug": {
@@ -685,7 +715,8 @@
     "account": "Hesabım",
     "inventory": "Envanterim",
     "userManagement": "Kullanıcı Yönetimi",
-    "oidcClients": "Bağlı Uygulamalar"
+    "oidcClients": "Bağlı Uygulamalar",
+    "feedback": "Geri bildirim"
   },
   "userManagement": {
     "searchPlaceholder": "E-posta veya ad ara...",

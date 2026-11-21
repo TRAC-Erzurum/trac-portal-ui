@@ -23,6 +23,7 @@ import {
 import { useAppVersion } from '@/composables'
 import { api } from '@/lib/api'
 import { cn } from '@/lib/utils'
+import type { FeedbackSubmitResponse } from '@/types/feedback'
 
 const { t } = useI18n()
 const feedbackStore = useFeedbackStore()
@@ -82,7 +83,7 @@ async function submit() {
     for (const f of attachments.value) {
       fd.append('attachments', f)
     }
-    await api.post<{ success: boolean; issueUrl: string }>('/feedback', fd)
+    await api.post<FeedbackSubmitResponse>('/feedback', fd)
     toast.success(t('feedback.submitted'))
     feedbackStore.closeSheet()
   } catch {
