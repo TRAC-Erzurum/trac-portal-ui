@@ -522,7 +522,9 @@
       "geographyTotalParticipation": "Total participation",
       "geographyUniqueParticipation": "Unique participation"
     },
-    "allNets": "All nets"
+    "allNets": "All nets",
+    "allBranches": "All branches",
+    "statisticsButton": "Statistics"
   },
   "map": {
     "title": "QTH Locator Map",

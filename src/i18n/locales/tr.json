@@ -522,7 +522,9 @@
       "geographyTotalParticipation": "Toplam katılımcı",
       "geographyUniqueParticipation": "Benzersiz katılımcı"
     },
-    "allNets": "Tüm çevrimler"
+    "allNets": "Tüm çevrimler",
+    "allBranches": "Tüm şubeler",
+    "statisticsButton": "İstatistikler"
   },
   "map": {
     "title": "QTH Locator Haritası",

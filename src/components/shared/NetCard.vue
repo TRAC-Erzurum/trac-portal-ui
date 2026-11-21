@@ -20,10 +20,12 @@ interface Props {
   scheduledAt?: string | null
   estimatedDurationMinutes?: number | null
   hasCertificate?: boolean
+  compact?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   hasCertificate: false,
+  compact: false,
 })
 
 const emit = defineEmits<{
@@ -85,7 +87,15 @@ const scheduledLabel = computed(() => {
 </script>
 
 <template>
-  <div class="w-full text-left p-4 rounded-lg border border-border/50 bg-background transition-all flex flex-col relative">
+  <component
+    :is="compact ? RouterLink : 'div'"
+    :to="compact ? netDetailLink : undefined"
+    :class="[
+      'w-full text-left rounded-lg border border-border/50 bg-background transition-all flex flex-col relative',
+      compact ? 'p-3 hover:border-border focus:outline-none focus-visible:ring-2 focus-visible:ring-ring' : 'p-4',
+    ]"
+    @click="compact && emit('click', props.id)"
+  >
     <Award
       v-if="hasCertificate"
       class="absolute top-2.5 right-2.5 h-3.5 w-3.5 text-amber-500 dark:text-amber-400 shrink-0"
@@ -129,7 +139,10 @@ const scheduledLabel = computed(() => {
         </div>
       </div>
     </div>
-    <div class="mt-auto flex items-center justify-between gap-2 pt-2 border-t border-border/30">
+    <div
+      v-if="!compact"
+      class="mt-auto flex items-center justify-between gap-2 pt-2 border-t border-border/30"
+    >
       <slot name="actions" />
       <div class="flex items-center gap-1 ml-auto">
         <Button
@@ -145,5 +158,5 @@ const scheduledLabel = computed(() => {
         </Button>
       </div>
     </div>
-  </div>
+  </component>
 </template>
